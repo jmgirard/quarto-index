@@ -19,16 +19,23 @@
   spelled, and no element of yours is ever renamed. A name counts as carried
   where it is an attribute of a tag: one written where the page renders
   nothing — inside an HTML comment, or in a script's or stylesheet's own
-  text — contests nothing, and the mark written with it keeps it. HTML and
-  EPUB alike, both back-ends being the one code path. Three marks stay outside
-  all of this. A mark this filter cannot index at all — no visible text and no
+  text — contests nothing, and the mark written with it keeps it. Two names are
+  missed by that reading and stay on two elements unreported: one written in a
+  raw HTML block after a `script` or `style` element in that same block, and
+  one Quarto's own writer makes up after this extension has run — a footnote's
+  `fn1`, a code block's `cb1`, `title-block-header`. HTML and EPUB alike, both
+  back-ends being the one code path.
+
+- Two marks stay outside the rule above, and one route reads its result from
+  outside. A mark this filter cannot index at all — no visible text and no
   `entry=` — is left exactly as you wrote it, id and all, so a name it shares
-  with something else is still on two elements and nothing is reported. In a
-  book, a chapter read back from its own source rather than
-  from a record is settled against no rendered page, so a mark there keeps the
-  name you wrote whatever else carries it; and so does a mark written in a
-  book chapter's front matter, whose id the filter leaves alone because it
-  cannot see which of the title-block fields Quarto prints.
+  with something else is still on two elements and nothing is reported; so is
+  a mark written in a book chapter's front matter, whose id the filter leaves
+  alone because it cannot see which of the title-block fields Quarto prints.
+  And in a book, a chapter read back from its own source rather than from a
+  record is settled against no rendered page: a mark there is treated like any
+  other when that chapter itself renders, but the index link built for it names
+  the id you wrote, which by then may be on the element that kept it.
 
 ## 0.3.0 (2026-09-05)
 

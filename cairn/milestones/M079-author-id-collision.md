@@ -495,3 +495,32 @@ implementation this review by driving the census walker itself under
 PR #79 carries no reviews, no conversation comments and no review threads
 (`pulls/79/reviews`, `issues/79/comments` and a `reviewThreads` GraphQL query
 all empty). Nothing to triage; the blocking rule does not fire.
+
+### Round 3 — triage and disposition
+
+The maintainer chose the thrash rule's descope disposition at the gate: the
+six criteria are verified, the residue is outside every one of them and exits
+to the records, and no further round is convened under this plan. Defect
+returns stay at 2.
+
+- X1 — fixed as a claim, filed as a defect. The census walk is left as it is;
+  `KI254` records the three shapes it gets wrong, `CHANGELOG.md` and
+  `site/html.qmd` now name the script/style case as a name the reading misses,
+  and a claim row holds each page to it. A candidate row carries the code fix.
+- X2 — same treatment. `KI255` records the writer-generated names; both pages
+  now say a mark written with one still leaves it on two elements, held by a
+  claim row.
+- X3 — fixed now. `CHANGELOG.md`'s recovery-route sentence no longer says the
+  mark keeps the name; it says the chapter renders like any other and the index
+  link built for it names the id the author wrote, which is what
+  `site/html.qmd` already said.
+- X4, X5 — filed with X1 under `KI254`; the candidate row covers all three.
+- X6 — fixed now. `cairn/DESIGN.md` scopes its count to one rendered page and
+  says the recovery route is a second page's reading, so its "two" and the
+  shipped pages' "three" no longer read as a contradiction.
+- X7 — follow-up candidate row, distinct from the standing row on this
+  milestone's id-uniqueness instruments: that one covers red-proofs, this one
+  covers the census's untested domain.
+- F7-F10, R9, R12 — already carried by the standing candidate row; unchanged.
+- F11, R13 — rejected a third time: an unreachable branch with no behavior to
+  fix.

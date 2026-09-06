@@ -129,7 +129,37 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T16 written. D-056 supersedes the two sentences of D-055 this branch made false — that `assign_anchors` never renames an author's id, and that a colliding author id is unfenced because `tests/fragments.py` does not check a fragment resolves uniquely. What D-055 decided stands; its reason changes, and the recovery-route gap it now leaves open is named and pointed at the standing candidate row.
 
+- 2026-09-05: T17 written. The two user-visible rules the branch had recorded only in work-log lines are now entries in this file's Decisions section: a cross-reference mark yielding a contested id and being reported in a wording of its own, and a locator-contributing mark outranking a cross-reference mark for a shared name whichever is written first.
+
 ## Decisions
+
+- 2026-09-05: **a cross-reference mark yields a contested id, and is reported
+  in a wording of its own.** The implement gate had left such a mark's id
+  untouched, on the reasoning that no generated link points at one, so refusing
+  the id would break an author's own link and repair no locator. The review
+  showed the cost: a cross-reference mark beside an element carrying its name
+  renders that name on two elements, silently, which is the output the goal
+  calls incorrect whatever the elements are for. Such a mark is now tagged by
+  the Span pass, yields a contested name, and is minted over; the record stays
+  anchorless, so the id it ends up with never becomes a locator. Its report is
+  a second wording rather than the locator mark's — what a cross-reference mark
+  loses is only whatever the author pointed at the name themselves, there being
+  no locator to move. Declined: leaving the case alone and stating the
+  exception in the shipped pages, which would have shipped a documented way to
+  get two elements under one id. Falsified by an author who relies on a
+  cross-reference mark keeping a name something else on the page carries.
+
+- 2026-09-05: **a mark that files a locator outranks a cross-reference mark for
+  a name they share, whichever is written first.** Document order settles two
+  marks of a kind, and did settle every pair until cross-reference marks came
+  under the refusal rule. It is the wrong rule across the two kinds: a reader
+  follows a locator, so leaving the author's name on the mark nothing links to
+  and moving the locator off it is the worse of the two outcomes, and it is the
+  one document order gives whenever the cross-reference is written first.
+  Ranking decides between kinds and order decides within a kind. Declined:
+  order alone, which the fixture's `phi`/`chi` pair shows moving a locator to a
+  minted anchor while a cross-reference keeps the author's name. Falsified by a
+  case where the cross-reference is the element a reader wants the name on.
 
 ## Review
 

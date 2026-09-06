@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-05 (status audit, no work since the M078 stamp earlier today: nothing in flight, no open issues or PRs, no outside merges, no orphaned issues, tree clean. cairn_validate all PASS, no advisories. ROADMAP 54 lines / 11,995 bytes; LESSONS.md 48 lines / 19,935 bytes against its 20,000-byte cap — 65 bytes of headroom, so the next lesson needs a retirement. Nine unreleased CHANGELOG entries stand behind 0.2.0.)_
+_Last hygiene check: 2026-09-06 (M079 merged as PR #79 and archived; ROADMAP row done, M074 row aged out. Two candidate rows added for the census defects the review recorded as KI254/KI255, and KI254/KI255 written to DESIGN.md Known issues. M03's anchor-in-heading lesson retired — the M079-AC1 leg now sweeps every heading on the page and fails on the mistake it warned about — and M079's fixture-isolation lesson added in its place. cairn_validate all PASS, sizing advisory only. Suite green: 1412 checks, exit 0. ROADMAP 59 lines / 13,660 bytes; LESSONS.md 48 lines / 19,993 bytes, 7 bytes under its cap, so the next lesson needs a retirement. Two unreleased CHANGELOG entries, both M079's, stand behind 0.3.0.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,18 +10,19 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M079 | An author-written mark id never leaves two elements sharing it | review | — | normal | milestones/M079-author-id-collision.md |
+| M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |
 | M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
 | M077 | The suite's timing accounting checks only what its own window covers | done | — | normal | milestones/archive/M077-timing-accounting-window.md |
 | M076 | A store-report leg asserts every wording, not the ones its author recalled | done | — | normal | milestones/archive/M076-store-report-zero-controls.md |
 | M075 | The suite reports where its own time goes | done | — | normal | milestones/archive/M075-suite-timing-profile.md |
-| M074 | A record no render has written is reported by the chapter that prints the section, once | done | M073 | normal | milestones/archive/M074-never-written-report-site.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 5 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Repair the id census's raw-HTML walk, and the domain its leg covers: a `script` or `style` element aborts the walk, so a later `id=` in that block goes uncounted and a mark keeps a contested id in silence; a RAWTEXT element's content is read as markup; a closing tag's attributes are read. Promote with any other census pass — added 2026-09-06 — M079 review X1/X4/X5, X7 — KI254
+- See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11
 - Bind M079's cross-reference id shapes to criteria: the fixture's four collision cases, its uncontested control, and the rule that a locator mark outranks a cross-reference for a shared name are held by tasks and one suite leg alone, so deleting them leaves every criterion green. Promote with any other pass over the id-collision fixture — added 2026-09-05 — M079 amendment gate
 - Harden M079's id-uniqueness instruments: neither the EPUB `unique` sweep nor the AC1 page sweep is proven able to go red; `unique` reads only a document's first index section; an external href with a fragment reports a spurious miss; the AC1 leg keys minted anchors by element text. Promote with any other pass over the suite's self-test plants — added 2026-09-05 — M079 review F7-F10, R9

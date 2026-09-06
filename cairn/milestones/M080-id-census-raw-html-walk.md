@@ -82,7 +82,7 @@ sweep can go red → the suite's self-test-plants candidate row.
       `nu`'s on the empty span after the heading it is written in; and the
       untagged mark's `untagged-in-heading` is still on an element outside its
       heading.
-- [ ] AC6: `site/html.qmd` and `CHANGELOG.md` each state that an `id=` written
+- [x] AC6: `site/html.qmd` and `CHANGELOG.md` each state that an `id=` written
       in the text content of one of the elements the census's skip list names,
       or on a closing tag, is on nothing the rendered page carries and so
       contests nothing; each states that an `id=` written inside an element
@@ -180,6 +180,7 @@ not its findings.
 - 2026-09-06: T13 made the four wording repairs and the two wrap slips. `note_raw`'s comments no longer claim the walk reads a string exactly as a browser does; they state the shape the walk does model and name the limit — each raw string starts in the same state, so a block ending mid-`<script>` leaves a browser reading the Pandoc-generated markup after it as script text and this walk reading it as markup — and the stale "attribute of a tag" line becomes "of an opening tag". `tests/htmlindex.py`'s agreement claim is narrowed to the pages the fixtures write, with the two shapes that part reader from census named and each direction stated: `</textarea/>` ends the element for the census and not for Python (verified by running the reader), `<iframe/>` opens a raw-text element for the census and is self-closing for Python. The reader plant's header comment now names the five `buried-*` names as its discriminating power — measured by putting `CDATA_CONTENT_ELEMENTS` back to two, which returns exactly those five — and says the other negative names cannot fail there. `examples/id-collision.qmd:166` takes the opening-tag rule. `site/html.qmd`'s 106-column line and `cairn/DESIGN.md`'s 95-column one are rewrapped.
 - 2026-09-06: T14 filed the follow-ups, search-first against the census and instrument-hardening rows. Two candidate rows added — the three over-collection shapes in `note_raw`, and the missing fixture case for an `id=` on a raw-text element's own opening tag — with KI256-KI259 carrying the findings themselves per D-013. To hold ROADMAP under its line cap the three M075 suite-run-shape rows (parallel legs, named-subset run, per-render timing) were clustered into one; the file is 59 lines / 13,565 bytes.
 - 2026-09-06: T12's commit swept T13's and T14's working-tree changes in with it, so their code landed one commit before their checkboxes and these lines. Nothing outside this milestone was in the tree.- 2026-09-06: T11-T14 verified. `tests/run-tests.sh` green, 773 checks; `tests/run-tests.sh --self-test` exit 0, 1413 checks. The plain run finished clean (773 checks, no FAIL line) but lost its exit code when the desktop app closed mid-run, and the self-test was cut off and re-run whole. All fourteen tasks done, status back to review; AC6 stays unticked for review to verify against the amended wording.
+- 2026-09-06: review round 2 opened after the amendment return. Branch synced with `main` (unmoved since the cut) and pushed; PR #80 already open as a draft. Fresh suite runs taken this session: plain exit 0, 773 checks; `--self-test` exit 0, 1413 checks. Consistency gate run — `cairn_validate.py` exit 0, all sixteen PASS, only the sizing advisory (14 tasks). No principle text in the diff, so `cairn_impact` skipped. Round-2 evidence recorded for AC1-AC7 and AC6 ticked against the amended wording. Three review lenses spawned; blame-history and prior-review reported back, diff-bug still running.
 
 ## Decisions
 
@@ -240,6 +241,71 @@ Consistency gate: `cairn_validate.py` exit 0, all sixteen checks PASS and every
 advisory OK, including `coverage complete` and `release window`. No IP or GP
 principle text changed, so `cairn_impact.py` was not run. The active profile is
 `generic`, whose consistency-gate slot names no toolchain checks.
+
+### Round 2 — after the amendment return
+
+Evidence gathered 2026-09-06 against branch head `7e22786` on PR #80, from a
+fresh pair of suite runs taken this session (`tests/run-tests.sh` exit 0, 773
+checks; `--self-test` exit 0, 1413 checks; no FAIL line in either log). The
+page facts are read from that run's own capture,
+`tests/.work/cap/id-collision-html/id-collision.html`, and its render log
+`tests/.work/id-collision-html.log`, with `tests/htmlindex.py` as the reader.
+
+- AC1 — met. Each of `beyond-script`, `beyond-style`, `beyond-xmp`,
+  `beyond-iframe`, `beyond-noembed`, `beyond-noframes` and `beyond-textarea`
+  is on exactly one element, an author's `p` whose text opens "Raw HTML after
+  a … element". Each of the seven marks draws exactly one refusal report
+  naming its term and the id it gave up, and is anchored on a minted id,
+  `qi-mark-18` through `qi-mark-24`; `qi-mark-24`, the heading case
+  `after-textarea`, is on a span carrying no text.
+- AC2 — met. Each of `buried-script`, `buried-style`, `buried-xmp`,
+  `buried-iframe`, `buried-noembed`, `buried-noframes` and `buried-textarea`
+  is on exactly one element, a `span.index` whose text is its mark's term
+  (`inside-script` and so on), so it is the span printing the mark. No refusal
+  report names any of the seven terms.
+- AC3 — met. `veiled-script` and `veiled-textarea` are each on the
+  `span.index` printing `false-end-script` and `false-end-textarea`, with no
+  report naming either term. `past-spaced-script` and `past-spaced-textarea`
+  are each on exactly one element, an author's `p`, their marks
+  `spaced-end-script` and `spaced-end-textarea` anchored on `qi-mark-25` and
+  `qi-mark-26` and reported once each.
+- AC4 — met. `closing-p` and `closing-em` are each on the `span.index`
+  printing `on-closing-p` and `on-closing-em`, and no report names either
+  term.
+- AC5 — met. The twelve yielding terms are each reported exactly once; the
+  nine keeping terms draw no report and each still carries the id it was
+  written with, on exactly one element (`twin`, `solo`, `in-heading`,
+  `qi-mark-9`, `in-comment`, `in-raw-comment`, `twin-xref`, `in-script`,
+  `xref-solo`). `nu`'s `in-heading` and `untagged-in-heading` are each on a
+  span carrying no text, so both sit outside their headings. No id on the page
+  is carried twice, across all 158. The render log holds 21 refusal reports in
+  total, which is the twelve plus AC1's seven plus AC3's two and nothing else.
+  In the EPUB the same fixture renders to, the sweep reads 16 documents with no
+  id carried twice and 44 index fragments each naming an id its document
+  carries once.
+- AC6 — met, against the amended wording. `site/html.qmd` and `CHANGELOG.md`
+  each state the skip-list and closing-tag rule; each states that an element
+  whose content a browser reads as text but which the reading does not step
+  over is not covered, that a name written inside one is counted against a
+  mark which then yields it to a carrier the page does not have, that `title`
+  is one such element, and that how many others there are is not stated —
+  neither page counts those elements or the names the reading misses, the
+  retired "Two names are still missed" sentence being gone from `CHANGELOG.md`.
+  `site/html.qmd` no longer carries the sentence about a name after a `script`
+  or `style` element going unseen; a grep for it comes back empty. The suite's
+  `M079-AC5` claim rows pin all three clauses and read green in this run, and
+  planting the retired `title` sentence back into the row list turns that check
+  red, so it discriminates.
+- AC7 — met. `tests/run-tests.sh` exit 0, 773 checks; `tests/run-tests.sh
+  --self-test` exit 0, 1413 checks. Both runs clean on the first attempt this
+  session.
+
+Consistency gate: `cairn_validate.py` exit 0, all sixteen checks PASS, every
+advisory OK except `sizing`, which warns that M080 carries 14 tasks against a
+10-task tripwire — the four the amendment return added. No IP or GP principle
+text is added or removed by the diff, so `cairn_impact.py` was not run. The
+active profile is `generic`, whose consistency-gate slot names no toolchain
+checks.
 
 ### Findings
 

@@ -114,11 +114,11 @@ sweep can go red → the suite's self-test-plants candidate row.
       `textarea` becomes a real node and the AC2 cases are unreadable without
       this. Plant a page showing the reader reporting that phantom id before the
       change and not after.
-- [ ] T3: `note_raw`: distinguish an opening tag from a closing one, so the
+- [x] T3: `note_raw`: distinguish an opening tag from a closing one, so the
       character-data skip fires only on an opening tag (today's re-read of
       `</script` as an opener, `html.lua:592-601`) and a closing tag's
       attributes claim nothing (`html.lua:544-585`).
-- [ ] T4: `note_raw`: replace the two-name `script`/`style` test with the
+- [x] T4: `note_raw`: replace the two-name `script`/`style` test with the
       declared seven-element skip list, and match its end tag as `</` + name
       followed by whitespace, `/` or `>` rather than by prefix
       (`html.lua:596`).
@@ -156,6 +156,8 @@ sweep can go red → the suite's self-test-plants candidate row.
 - 2026-09-06: baseline before any change on this branch — `tests/run-tests.sh` exit 0, 773 checks, 21m18s.
 - 2026-09-06: question gate chose descriptive names for the twenty new marks (`after-script`, `inside-textarea`) over a second alphabet, one new fixture section per rule over one combined section, and overriding Python's parser list of text-content elements over hand-written skipping in `tests/htmlindex.py`.
 - 2026-09-06: T2 gave `tests/htmlindex.py` a `RAW_TEXT_ELEMENTS` list of the same seven and named it as `_Builder.CDATA_CONTENT_ELEMENTS`; Python's parser reads that list off the instance, so the five it did not know now get its own `script` rule, end-tag match included. A new suite section before M079-AC1 plants the defect: with the reader holding only `script`/`style` it reports `buried-xmp`, `buried-iframe`, `buried-noembed`, `buried-noframes` and `buried-textarea` as elements of its tree, and reports none of them after, while still reading the nine ids an element really carries.
+- 2026-09-06: T3 and T4 rewrote `note_raw`. A tag now records whether it is a closing one, so attributes are read to find the `>` but claim nothing on a closing tag, and the character-data skip fires on opening tags only; the two-name `script`/`style` test became a declared `RAW_TEXT_ELEMENTS` table of the seven, and the end tag is matched as `</` + name followed by whitespace, `/` or `>` rather than by prefix. Against T1's matrix the function now returns the browser's answer on all sixteen cases, the comment, quoted-attribute-value and unterminated-script controls unchanged.
+- 2026-09-06: T2, T3 and T4 were verified by one suite run rather than three, the run costing 21 minutes and the two `note_raw` repairs being halves of one rewrite; T9 reverts each of the four singly. `tests/run-tests.sh` exit 0, 773 checks (772 before this branch, the reader plant being the one added).
 - 2026-09-06: plan chose keeping every new case in `examples/id-collision.qmd` over a sibling fixture, because that page's whole-page duplicate-id sweep is the procedure AC1's and AC2's universals name and a second page would sit outside it; falsified by that render becoming a named cost in the suite's timing profile.
 
 ## Decisions

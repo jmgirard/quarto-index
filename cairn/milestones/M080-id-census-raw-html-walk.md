@@ -445,7 +445,9 @@ claims, and returned ten findings.
   openings per line. Disposition: fixed now; the text of each entry is
   unchanged.
 
-conversation:
+conversation: PR #80 — read once before the gate across all three surfaces:
+no reviews, no conversation comments, and no review threads at all, so none
+unresolved. Nothing to triage.
 conversation: PR #80 carries no reviews, no comments and no unresolved
 threads — the read came back empty.
 

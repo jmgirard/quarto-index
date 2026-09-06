@@ -1,6 +1,6 @@
 # M079: An author-written mark id never leaves two elements sharing it
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -47,10 +47,10 @@ An author-written id on an index mark never leaves two elements of one page carr
 - [x] T6: Correct `site/html.qmd`'s id paragraph and write the `CHANGELOG.md` entry, both against AC1's observed render.
 - [x] T7: Update `DESIGN.md`'s account of id assignment (line 364), which today states only that a minted id steps over an author's.
 
-- [ ] T8: Stop an `id=` written inside an HTML comment from counting as a carrier in the id census, so a mark keeps a name no element of the rendered page holds and no refusal is reported for one; add the fixture case and the suite leg, recorded red before the fix.
-- [ ] T9: Settle the cross-reference and page-only mark case, which carries no pending tag and so keeps a contested id unwarned: either bring such marks under the refusal rule or state the exception where an author reads it; add the fixture case either way.
-- [ ] T10: Narrow the claims in `CHANGELOG.md` and `site/html.qmd` to what the code does — the recovery route reads a chapter without its rendered page, the cross-reference exception, and the report naming a mark's `entry=` where it carries one rather than the term it prints.
-- [ ] T11: Add the step naming M079 to the warning-count comment in `tests/scans/warn-distinct.py`, which stops at M073's `83 + 1 = 84`.
+- [x] T8: Stop an `id=` written inside an HTML comment from counting as a carrier in the id census, so a mark keeps a name no element of the rendered page holds and no refusal is reported for one; add the fixture case and the suite leg, recorded red before the fix.
+- [x] T9: Settle the cross-reference and page-only mark case, which carries no pending tag and so keeps a contested id unwarned: either bring such marks under the refusal rule or state the exception where an author reads it; add the fixture case either way.
+- [x] T10: Narrow the claims in `CHANGELOG.md` and `site/html.qmd` to what the code does — the recovery route reads a chapter without its rendered page, the cross-reference exception, and the report naming a mark's `entry=` where it carries one rather than the term it prints.
+- [x] T11: Add the step naming M079 to the warning-count comment in `tests/scans/warn-distinct.py`, which stops at M073's `83 + 1 = 84`.
 
 ## Work log
 
@@ -101,6 +101,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 - 2026-09-05: the checkpoint commit `fe68d72` swept three beamer render artifacts (`examples/marker.nav`, `.snm`, `.toc`) into the branch — written by the suite run then in flight and uncovered by `.gitignore`. Untracked here and added to the ignore list, which is the recurrence the candidate row added 2026-09-03 names for a different file family.
 
 - 2026-09-05: the first whole-suite run after T9 stopped at M14 — `examples/id-collision.qmd` now writes `see=`/`see-also=` targets, so the roster read out of the corpus lists it and the pinned count manifest did not. Its row is 0: all five targets name `mu`, which the fixture indexes, and a gfm render draws no dangling-target report.
+
+- 2026-09-05: whole suite green with `--self-test` on this tree: 1412 checks across 158 sections, 1284s, exit 0, no failure. T8-T11 ticked; status to review. Two runs before it did not finish — the first stopped at the M14 manifest gap (fixed, above), the second at a `Segmentation fault: 11` in Quarto's Deno binary during M065-AC5, a render process dying rather than a check failing; that leg had passed in the first run and the crash did not recur in the third. The acceptance-criterion boxes stay unticked for review to fill against fresh evidence.
 
 ## Decisions
 

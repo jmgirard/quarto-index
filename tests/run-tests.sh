@@ -4219,6 +4219,9 @@ two marks	the one whose locator links to the name keeps it, whichever you wrote 
 two of a kind	between two of a kind the first in the document keeps it and the rest yield
 cross-reference	A mark that only points at another entry has no locator to move, but it carries an id like any other span and gives a contested one up the same way
 reported	Each yield is reported as the render runs, naming the id given up and what the mark files under
+unrendered names	An id counts where it is an attribute of a tag, and nowhere else
+numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
+numbering may mint an unrendered one	a name written where the page renders no element — inside an HTML comment, or in a script's or stylesheet's own text — is a name the numbering may mint
 M079CLAIMS
 python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \
   || fail "M079-AC5: site/html.qmd no longer states who keeps a contested id, what the yielding mark is given instead, how two marks written with one name are settled, that a cross-reference mark yields the same way, or that each yield is reported (its own FAIL line is above)"

@@ -125,6 +125,8 @@ An author-written id on an index mark never leaves two elements of one page carr
 
 - 2026-09-05: T14 written. The mini gate chose amending the clause over recording the gap or returning to plan; the amendment narrows what the clause promises rather than widening it — the old wording put the minted id on the mark itself, which the heading relocation has never done. No fresh reader was spawned: this criterion already carries its two `re-audit: AC3` lines, which is the stop, so the wording went to the maintainer instead. The AC1 leg drops the `RELOCATED` by-name exemption for a positive check — the span printing `tau` carries no id at all, the first minted anchor after its heading is on an empty span, and no id of any kind is left inside a heading. Proven red on the captured render two ways: planting `qi-mark-99` on the span inside the heading fires the first two clauses, and deleting the relocated `qi-mark-15` makes the check reach `phi` and say so.
 
+- 2026-09-05: T15 written. `site/html.qmd` no longer promises the generated numbering steps over any name written in the source: it steps over a name an element of the rendered page carries, and may mint one that only an HTML comment or a script's or stylesheet's own text holds — which displaces nothing, there being no element to displace. Read against a probe: with `qi-mark-1`, `qi-entry-1` and `qi-index` written only inside a comment, the render carries all three as minted names. The neighbouring paragraph now says an id counts where it is an attribute of a tag and names script and style text alongside comments. The pinned claim rows go from 7 to 10 and all 10 hold.
+
 ## Decisions
 
 ## Review

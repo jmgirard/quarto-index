@@ -32,6 +32,7 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
 """
 
 import posixpath
+import re
 import sys
 
 import epubindex
@@ -232,6 +233,22 @@ def cmd_absent(argv):
     return 0
 
 
+SCHEME = re.compile(r'[A-Za-z][A-Za-z0-9+.\-]*:')
+
+
+def leaves_publication(target):
+    """True where the file part of an href names something outside the EPUB.
+
+    A `//` opening is a protocol-relative reference and a `scheme:` opening an
+    absolute one; either names a resource the publication does not contain.
+    Joining one against the linking member's directory builds a zip name no
+    manifest can list, so a link that is not broken would be reported as one
+    that is. An empty file part is the linking document itself, and a relative
+    reference's first segment cannot carry a colon, so neither is caught here.
+    """
+    return target.startswith('//') or SCHEME.match(target) is not None
+
+
 def cmd_unique(argv):
     """No document repeats an id, and every index link lands on a unique one.
 
@@ -251,7 +268,9 @@ def cmd_unique(argv):
     The domain is stated with the verdict — documents swept, sections found,
     fragment-carrying links resolved, each required non-zero — so a
     publication whose index lost its links cannot pass here as one whose
-    links are all unique.
+    links are all unique. A link whose file part leaves the publication is
+    resolved by nothing here and counted separately, so the count of links
+    this check followed stays the count it could have caught something in.
     """
     if len(argv) != 1:
         print('usage: epubcheck.py unique <epub>', file=sys.stderr)
@@ -262,7 +281,7 @@ def cmd_unique(argv):
     for name, root in book.documents:
         for identifier in htmlindex.duplicate_ids(root):
             bad.append(f'{name} carries the id {identifier!r} more than once')
-    sections = fragments = 0
+    sections = fragments = outside = 0
     for name, root in book.documents:
         section = htmlindex.index_section(root)
         if section is None:
@@ -276,6 +295,9 @@ def cmd_unique(argv):
                 continue
             target, _, fragment = href.partition('#')
             if not fragment:
+                continue
+            if leaves_publication(target):
+                outside += 1
                 continue
             fragments += 1
             member = name
@@ -314,7 +336,9 @@ def cmd_unique(argv):
     print(f'ok   {path}: none of the {len(book.documents)} manifest-listed '
           f'document(s) carries an id twice, and each of the {fragments} '
           f'fragment(s) linked from the {sections} generated index section(s) '
-          f'names an id its document carries exactly once')
+          f'names an id its document carries exactly once; {outside} '
+          f'fragment-carrying link(s) leave the publication and were not '
+          f'resolved')
     return 0
 
 

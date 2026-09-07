@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M083: The EPUB id-uniqueness sweep goes red on what it claims to catch
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — every deliverable is a check, a plant or a report inside `tests/`, read by no consumer of this repo
-- **Branch/PR:** —
+- **Branch/PR:** `m083-epub-unique-instruments`
 
 ## Goal
 
@@ -83,6 +83,7 @@ CDATA divergence → its own Known issues entry, unchanged here.
 - 2026-09-07: created by /milestone-plan.
 - 2026-09-07: plan gate chose narrowing `unique`'s verdict to the first index section over teaching it to read every section, because the repo's checker-regress rule makes simplifying the default whenever a shipped internal checker is about to grow; falsified by a publication reaching this check whose document carries two index sections, or by an index locator into a second section found dangling.
 - 2026-09-07: plan gate chose two milestones split by instrument over one of five, because the five landed at about ten tasks and the two halves read different artifacts (an EPUB, a rendered HTML page); falsified by the M084 work turning out to need M083's plant harness rather than its own.
+- 2026-09-07: T1 — `cmd_unique` skips an href whose file part leaves the publication (a `//` opening or a `scheme:` opening) instead of joining it to the linking member's directory, and the verdict counts those separately. Both shapes were red before the change, reported as naming a manifest item the publication does not list; both are green after. Checkpoint: the verify suite is still running, so T1 is not ticked.
 - 2026-09-07: reduced criteria audit ([O], fresh context) returned two findings — AC3's two href shapes were promised without a leg for each, fixed here by naming three legs; and the backtick-escaping rider bound a property of how the suite reports rather than of this milestone's deliverable, taken to the gate and settled as a direct commit outside both milestones.
 
 ## Decisions

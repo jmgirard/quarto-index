@@ -36,13 +36,20 @@
   whose content a browser reads as text but which this reading does not step
   over is not covered: a name written inside one is counted against a mark,
   which then yields it to a carrier the page does not have. `title` is one such
-  element; how many others there are is not stated here. Some shapes the
-  reading still gets wrong, each counting a name no element of the page
-  carries: inside a `script` element, a `<!--` followed by a nested `<script>`,
-  which keeps a browser inside the outer element past the first `</script>`
-  where this reading resumes; and a
-  `template` element's content, which a browser parses into a fragment of its
-  own. How many such shapes there are is not stated here either. A name
+  element; how many others there are is not stated here. A `template` element's content is
+  stepped over as well, a browser parsing it into a document fragment of its
+  own that the page carries no element of, however deeply the templates nest;
+  the element's own opening tag carries its id like any other, as a `script`'s
+  or a `style`'s does. And inside a `script` element's text a `<!--` starts an
+  escaped run which a `<script>` opened inside it doubles, so the first
+  `</script>` after that returns the run to merely escaped rather than ending
+  the element and a name written past it is script text. One shape the reading
+  may still get wrong sits inside `svg` or `math`, where a browser reads markup
+  by rules of its own: a `<![CDATA[…]]>` runs to its `]]>` there, while this
+  reading ends it at the first `>`, so a name written between the two is
+  counted though the page carries no element of it — taken from the
+  specification, not checked against a browser here. How many such shapes there
+  are is not stated here either. A name
   Quarto's own writer makes up after this extension has run — a footnote's
   `fn1`, a code block's `cb1`, `title-block-header` — is missed too, and a
   mark written with one keeps it on two elements unreported. HTML and EPUB

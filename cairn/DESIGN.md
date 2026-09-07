@@ -385,11 +385,17 @@ Three back-ends ship:
   and not only a `<!--`: a `<!` opening anything else, a `<?`, and a `</`
   before a non-letter each open one that runs to the next `>`, and a `<!--`
   closes at an immediate `>`, an immediate `->`, a `-->` or a `--!>`, past any
-  of which the walk reads markup again (added M081). A text-content element
-  the skip list does not name still has its text read as markup, and a name
-  the HTML writer generates after the filter runs is outside the census
+  of which the walk reads markup again (added M081). A `template`'s content is
+  stepped over whole — a browser parses it into a fragment of its own — the
+  walk counting a depth rather than the first `</template>`, while the
+  element's own opening tag is counted like any other; and a `script` ends
+  where its escape states say it ends, a `<!--` opening an escaped run that a
+  nested `<script>` doubles, so the first `</script>` after that returns the
+  run to escaped rather than ending the element (added M082). A text-content
+  element the skip list does not name still has its text read as markup, and a
+  name the HTML writer generates after the filter runs is outside the census
   altogether (KI254, KI255); the shapes the walk itself reads wrongly are
-  KI256, KI258, KI261 and KI263. Two marks of one rendered page are outside all of
+  KI261 and KI263. Two marks of one rendered page are outside all of
   this; a third case, a chapter recovered from its own source, is a second
   page's reading of this one and is stated with them in the shipped pages. A
   front-matter mark of an HTML book chapter stays anchorless per D-048, this filter not being able to
@@ -428,7 +434,6 @@ exist is open (ROADMAP). The mention attribute is spelled `mention` rather than
 `role` for this reason and no other: Pandoc data-prefixes a name it does not
 know but emits `role` literally, so `role=` would ship an invalid ARIA role on
 every marked term (added M20). Corrected M06 — this paragraph previously said "untouched".
-
 
 **Per-locator styling leaves the encapsulation channel** (added M20, D-007).
 An `\index` command cannot say that one of a term's locators is its principal
@@ -918,26 +923,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `CHANGELOG.md` and `site/html.qmd` state the exception.
   — M079 review round 3, X2
 
-- **KI256.** The id census counts an `id=` written inside a `template`
-  element's content. A `template`'s contents are parsed into a separate
-  document fragment, so no element of the rendered page carries the name,
-  and a mark written with it yields to a carrier that is not there.
-  `template` is outside the census's skip list, whose members are the
-  elements whose content is character data; a `template`'s content is markup
-  that lands elsewhere. — M080 review F2
-
-- **KI258.** The id census does not model the script double-escape state, in
-  which a `<!--` inside a `script` element's content lets a nested
-  `<script>` pass without the first `</script>` ending the outer element. So
-  `<script><!--<script></script><p id="ghost">` resumes the walk at that
-  first end tag and counts `ghost`, though a browser is still inside the
-  script and the page carries no element with that name. — M080 review F4
-
-- **KI259.** No fixture case writes an `id=` on a raw-text element's own
-  opening tag (`<style id="x">`), which the census must still claim. So
-  moving the census's `claim` call inside its skip guard reddens no check. —
-  M080 review F8
-
 - **KI261.** The id census steps over a `style` or `script` element's
   content wherever it is written, including inside `svg` or `math`, where an
   HTML breakout tag is reported to produce a real element of the page.
@@ -946,17 +931,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   reading of the tokenizer's foreign-content rules and is not checked
   against a browser here, so the size of this gap is unconfirmed. — M080
   review round 2, F5
-
-- **KI262.** Two facts the id-census documentation rests on are pinned by
-  nothing. `site/html.qmd` no longer says that a name written after a
-  `script` or `style` element in one raw block goes unseen, and no check
-  forbids that sentence coming back — `tests/sitecheck.py phrase-absent` is
-  run over a phrase list of its own for the retired bogus-comment sentence
-  and over the back-end-count list, and over no list naming this one
-  (corrected M081). And the M079-AC5
-  claim rows quote "those seven elements' content" without quoting the seven
-  names, so the page's enumeration can drift from `RAW_TEXT_ELEMENTS` with
-  every row still green. — M080 review round 2, F7
 
 - **KI263.** The id census ends a `<![CDATA[…]]>` at its first `>` wherever it
   is written, including inside `svg` or `math`. In HTML content that is what a

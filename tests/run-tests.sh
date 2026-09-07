@@ -4389,23 +4389,30 @@ python3 "$WORK/id-collision-ids.py" \
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M081 T4 — a planted defect per repair, the first plants over the id census.
+  # M081 T4 and M082 T4 — a planted defect per repair, the first plants over
+  # the id census.
   #
   # One substitution per repair, each undoing that repair alone: the census
-  # reads a construct a browser makes a comment as markup again, or it ends a
-  # comment at `-->` and nowhere else. Each mutated copy renders the fixture
+  # reads a construct a browser makes a comment as markup again, it ends a
+  # comment at `-->` and nowhere else, it counts an `id=` inside a `template`
+  # element's content, it lets any `</template>` close every open one, or it
+  # ends a `script` at its first `</script>` whatever its escape states say.
+  # Each mutated copy renders the fixture
   # into a directory of its own and is held to the SAME check the unplanted
   # run above passes, read from the file that run wrote, so what goes red is
   # the check that guards this behavior on every run and not a stand-in
   # written for the plant.
   #
-  # Two plants and not one over the census, because the two repairs fail in
-  # opposite directions and each expects its own report: without the first a
-  # name no element carries is counted and the mark written with it is moved
-  # off it; without the second the walk abandons the rest of a raw string and
-  # a real element's name goes uncounted, leaving it on two elements. One
-  # plant over the census as a whole would leave either repair free to be
-  # undone in silence (M32 review: a plant per clause, not per feature).
+  # Five plants and not one over the census, because the repairs fail in
+  # different directions and each expects its own report: without the comment
+  # openings a name no element carries is counted and the mark written with it
+  # is moved off it; without the comment closes the walk abandons the rest of a
+  # raw string and a real element's name goes uncounted, leaving it on two
+  # elements; and the three that follow each lose one name to a carrier the
+  # page does not have — a `template`'s content, a `template` nested in
+  # another, or a `script` held open by a doubled escaped run. One plant over
+  # the census as a whole would leave every repair but one free to be undone in
+  # silence (M32 review: a plant per clause, not per feature).
   # -------------------------------------------------------------------------
   M081W="$WORK/m081census"
   rm -rf "$M081W"
@@ -4470,6 +4477,21 @@ if [ "${1:-}" = "--self-test" ]; then
     'M081 T4 self-test: the census ending a comment at `-->` and nowhere else' \
     "the author-written id 'beyond-empty-comment' is on 2 element(s), want 1" \
     's{        local data = lt \+ 4\n.*?\n        end\n}{        local close = text:find("-->", lt + 4, true)\n        if close == nil then\n          break\n        end\n        pos = close + 3\n}s'
+
+  m081_census_plant template-content-counted \
+    'M082 T4 self-test: the census counting an `id=` written inside a template element' \
+    "the author-written id 'buried-template' is on 0 element(s), want 1" \
+    's{and not is_end and template_depth == 0 then}{and not is_end then}'
+
+  m081_census_plant template-nesting-flattened \
+    'M082 T4 self-test: the census letting any `</template>` close every open one' \
+    "the author-written id 'buried-between-closes' is on 0 element(s), want 1" \
+    's{template_depth = template_depth - 1}{template_depth = 0}'
+
+  m081_census_plant script-escape-unmodelled \
+    'M082 T4 self-test: the census ending a script at its first `</script>`' \
+    "the author-written id 'buried-after-first-close' is on 0 element(s), want 1" \
+    's{if lowered == "script" then\n            closing = script_end\(lower_text, pos\)\n          else\n}{if false then\n            closing = nil\n          else\n}s'
 fi
 
 # ---------------------------------------------------------------------------
@@ -4511,14 +4533,19 @@ python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.
 # comment openings besides `<!--` and the three comment closes besides `-->`,
 # and the markup past any of those closes still read.
 #
+# The template and script rows hold the page to the reading M082 gave the two
+# shapes whose content the page does not render as markup: a `template`'s
+# content stepped over, its own opening tag counted all the same, and a
+# `script` held open past the first `</script>` of a doubled escaped run.
+#
 # The rows after those hold it to what the census still gets wrong, which is
 # where an author loses a name in silence. The residue is pinned as a RULE and
 # not a list — an element read as text that the skip list does not name, with
 # `title` given as one and no count claimed — because a list written from
-# recall is what M080's review returned (the corrected KI254). Two more pin the
-# shapes the walk itself still misreads, the script double-escape and a
-# `template` element's content (KI258, KI256), and the last pins the name
-# Quarto's writer makes up after this filter has run (KI255). A page that drops
+# recall is what M080's review returned (the corrected KI254). One more pins
+# the shape the walk still misreads, a `<![CDATA[…]]>` inside `svg` or `math`
+# (KI263), and the last pins the name Quarto's writer makes up after this
+# filter has run (KI255). A page that drops
 # one of these sentences is
 # promising more than the code does; a page that reinstates a count of the
 # residue is promising what no procedure here decides.
@@ -4533,7 +4560,7 @@ two of a kind	between two of a kind the first in the document keeps it and the r
 cross-reference	A mark that only points at another entry has no locator to move, but it carries an id like any other span and gives a contested one up the same way
 reported	Each yield is reported as the render runs, naming the id given up and what the mark files under
 unrendered names	An id counts where it is an attribute of an opening tag, and nowhere else
-skipped elements	a browser reads those seven elements' content as text rather than as markup, and so does this reading, which steps over that text and goes on with the markup after it
+skipped elements	text content of `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or `textarea`: a browser reads those seven elements' content as text rather than as markup, and so does this reading, which steps over that text and goes on with the markup after it
 name after a skipped element	A name on a real element standing after one of the seven, in that same raw HTML block, is counted like any other
 name on a closing tag	So is one written on a closing tag, whose attributes a browser reads and drops
 census misses a name outside the skip list	An element whose content a browser reads as text rather than as markup, but which this reading does not step over, is not covered by that
@@ -4543,8 +4570,11 @@ comment openings	A `<!` opening anything else, a `<?`, and a `</` before anythin
 comment opening ends at its first `>`	the `>` after the `a` closes the construct, so `mine` is on a real element and is counted like any other name
 comment closes	A `<!--` ends at a `-->`, and at an immediate `>`, an immediate `->` and a `--!>` besides
 name past a comment close	Past any of those closes, in that same raw HTML block, the markup is markup again: a name on a real element there is counted like any other
-script double-escape unmodelled	Inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
-template content counted	a `template` element's content is counted, though a browser parses it into a fragment of its own that the page carries no element of
+template content stepped over	a browser parses it into a document fragment of its own, so the page carries no element for a name written in there, however deeply the templates nest
+template's own tag counted	the `template` on the page carries whatever id you wrote on it
+script escape run doubled	a `<!--` starts an escaped run and a `<script>` opened inside that run doubles it
+script element held open	the first `</script>` after that returns the run to merely escaped rather than ending the element
+foreign content residue	runs to its `]]>`, while this reading ends it at the first `>` and counts `mine`, which the page then carries no element of
 no count of the misread shapes	How many such shapes there are is not stated here either
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
 numbering may mint an unrendered one	a name written where the page renders no element — inside a comment of any of the spellings above, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
@@ -4619,6 +4649,77 @@ if [ "${1:-}" = "--self-test" ]; then
   printf '%s' "$M081_OUT" | grep -qF -- 'site/html.qmd (bogus comment misread)' \
     || { printf '%s\n' "$M081_OUT" >&2; fail "M081-AC4 self-test: the sweep failed on the planted page, but without naming site/html.qmd and the bogus-comment row — that failure is not this sweep catching this defect"; }
   pass "M081-AC4 self-test: the sweep is red naming site/html.qmd and its row on an overlay page carrying the retired sentence, and green on an overlay holding that page unmodified"
+fi
+
+# ---------------------------------------------------------------------------
+# M082-AC5 — the changelog states the two unrendered shapes too
+#
+# `phrase-absent` sweeps site pages and the README, and the claim rows above
+# are read against `site/html.qmd` alone, so the changelog is held to a
+# criterion only by rows of its own — the lesson M081 review F1 left. Its own
+# section rather than rows under the comment list above, whose FAIL message
+# names comment spellings by hand: a row about a `template` under that message
+# would be reported as a sentence about comments.
+# ---------------------------------------------------------------------------
+section 'M082-AC5 — the changelog states the two unrendered shapes too'
+cat > "$WORK/changelog-unrendered-claims.txt" <<'M082CLAIMS'
+template content stepped over	a browser parsing it into a document fragment of its own that the page carries no element of, however deeply the templates nest
+template's own tag counted	the element's own opening tag carries its id like any other, as a `script`'s or a `style`'s does
+script escape run doubled	a `<!--` starts an escaped run which a `<script>` opened inside it doubles
+script element held open	the first `</script>` after that returns the run to merely escaped rather than ending the element
+foreign content residue	a `<![CDATA[…]]>` runs to its `]]>` there, while this reading ends it at the first `>`
+M082CLAIMS
+python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/changelog-unrendered-claims.txt" \
+  || fail "M082-AC5: CHANGELOG.md no longer states that a template's content is stepped over, that its own opening tag is counted all the same, what doubles a script's escaped run, that the first close of a doubled run leaves the element open, or which shape inside svg or math the reading may still get wrong (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# M082-AC5 — the retired sentences are gone from every page a reader meets
+#
+# The claim rows above hold the page to what the census now does; this holds it
+# to no longer saying the census counts a `template`'s content or resumes at a
+# doubled run's first `</script>`. A rewrite that added the new sentences and
+# left the old ones standing would satisfy every claim row and still tell a
+# reader the opposite of what the code does.
+#
+# The third row is M080's own retired sentence, which no list named until now:
+# the page stopped saying a name after a `script` or `style` in one raw block
+# goes unseen, and nothing forbade it coming back.
+# ---------------------------------------------------------------------------
+section 'M082-AC5 — the retired sentences are gone from every page a reader meets'
+cat > "$WORK/html-unrendered-retired.txt" <<'M082RETIRED'
+template content counted	And a `template` element's content is counted, though a browser parses it into a fragment of its own that the page carries no element of
+script double-escape unmodelled	Inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes, so a name written after that point is counted
+name after a skipped element unseen	A name written in a raw HTML block after a `script` or `style` element in that same block is not seen — put the two in blocks of their own if you need the name counted
+M082RETIRED
+python3 tests/sitecheck.py phrase-absent "$WORK/html-unrendered-retired.txt" \
+  || fail "M082-AC5: a page a reader meets still says the id census counts a template's content, that it resumes at the first close of a doubled script run, or that a name after a script or style in one raw block goes unseen (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # Every row is shown red on an OVERLAY page carrying all three retired
+  # sentences, behind a passing control on an overlay holding an unmodified
+  # copy of the same page — so a red below is the planted sentences and not the
+  # overlay. Each label is required in the failure, or a dead row could ride
+  # along on another's red.
+  M082D="$WORK/m082docs"
+  rm -rf "$M082D"
+  mkdir -p "$M082D/clean/site" "$M082D/overlay/site"
+  cp site/html.qmd "$M082D/clean/site/html.qmd"
+  python3 tests/sitecheck.py phrase-absent "$WORK/html-unrendered-retired.txt" \
+      "$M082D/clean" \
+    || fail "M082-AC5 self-test: the sweep is red on an overlay holding an unmodified copy of site/html.qmd, so a red below would be the overlay and not the sentences planted in it"
+  { cat site/html.qmd
+    cut -f2- "$WORK/html-unrendered-retired.txt" | sed 's/$/./'
+  } > "$M082D/overlay/site/html.qmd"
+  M082_OUT=$(python3 tests/sitecheck.py phrase-absent \
+    "$WORK/html-unrendered-retired.txt" "$M082D/overlay" 2>&1) && M082_RC=0 || M082_RC=$?
+  [ "$M082_RC" -ne 0 ] \
+    || { printf '%s\n' "$M082_OUT" >&2; fail "M082-AC5 self-test: the sweep passed a page carrying every retired sentence, so its green says nothing"; }
+  for row in 'template content counted' 'script double-escape unmodelled' \
+             'name after a skipped element unseen'; do
+    printf '%s' "$M082_OUT" | grep -qF -- "site/html.qmd ($row)" \
+      || { printf '%s\n' "$M082_OUT" >&2; fail "M082-AC5 self-test: the sweep failed on the planted page without naming site/html.qmd and the <<$row>> row — that failure is not this row catching its sentence"; }
+  done
+  pass "M082-AC5 self-test: the sweep is red naming site/html.qmd and every retired row on an overlay carrying all three sentences, and green on an overlay holding that page unmodified"
 fi
 
 # ---------------------------------------------------------------------------

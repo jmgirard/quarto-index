@@ -47,3 +47,7 @@ site/_site/
 /.gallery-build/
 site/gallery/
 tests/.work/
+
+# Python bytecode from the test helpers
+__pycache__/
+*.pyc

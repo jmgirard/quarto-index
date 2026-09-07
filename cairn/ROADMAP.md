@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-06 (M081 merged as PR #81 and archived; ROADMAP row done, M078's row aged out under the 3-row retention. Review found eight: four author-facing prose defects fixed on the branch at the gate — `CHANGELOG.md` gained its own `sitecheck.py claims` sweep, the numbering paragraph's enumeration widened past `<!--`, a doctype no longer called a comment, and the hides-a-name-inside over-claim replaced by what the walk does — plus two cosmetic cleanups; KI263 added to DESIGN.md Known issues for the foreign-content CDATA divergence and the fixture's non-discriminating CDATA case absorbed into the standing M079-instruments candidate row rather than adding one. M080's count lesson sharpened to cover enumerations, which is the shape M081 repeated. cairn_validate all sixteen PASS, no advisory. Suite green: 775 checks plain, 1421 with --self-test, both exit 0. ROADMAP 57 lines / 13,976 bytes; LESSONS.md 49 lines / 19,997 bytes, 3 bytes of headroom, so the next line there needs a retirement. Two unreleased CHANGELOG entries stand behind 0.3.0, M081 having folded its prose into the first rather than adding one. check-design.md unchanged at 38 lines / 17,994 bytes, 6 bytes under its own budget.)_
+_Last hygiene check: 2026-09-07 (M082 merged as PR #82 and archived; ROADMAP row done, M079's row aged out under the 3-row retention. Review found ten, all from the diff-bug lens — the blame and prior-review lenses reported none. Nine fixed on the branch at the gate: a script's escaped run was entered four characters in, so a `<!-->` left the walk escaped and a `<!--->` abandoned the rest of the raw block (fixture case `after-collapsed-escape` and a fourth plant added with the repair); the suite's reader took `<template/>` as self-closing and `</ script>` as an end tag, and now reads every `</script` shape as a browser does; the numbering's mint list and its claim row gained a template's content and a script's escaped run; a residue count contradicting the sentence after it was dropped on both pages; the reader's own divergence count became a pointer; three cosmetic. One rejected. CI then went red after approval on Python 3.12 — the reader's `set_cdata_mode` override took the 3.9 signature — fixed, re-verified under 3.9.6 and 3.14.7, and captured as this pass's lesson, which displaced M34's control-flip line (its family lives in check-design.md, which has 6 bytes of headroom). cairn_validate all sixteen PASS, no advisory. Suite green: 777 checks plain, 1429 with --self-test, both exit 0, and the PR's own checks green. ROADMAP 56 lines / 14,273 bytes; LESSONS.md 49 lines / 19,968 bytes. Two unreleased CHANGELOG entries stand behind 0.3.0, M082 having folded its prose into the first. check-design.md unchanged at 38 lines / 17,994 bytes. A stray `tests/__pycache__` .pyc rode in on the squash and is removed here, with an ignore entry.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,10 +10,9 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M082 | The id census stays out of content the page does not render as markup | review | M081 | normal | milestones/M082-census-unrendered-content.md |
+| M082 | The id census stays out of content the page does not render as markup | done | M081 | normal | milestones/archive/M082-census-unrendered-content.md |
 | M081 | The id census reads a comment where a browser reads one | done | — | normal | milestones/archive/M081-census-comment-reading.md |
 | M080 | The id census reads a page's raw HTML the way a browser does | done | — | normal | milestones/archive/M080-id-census-raw-html-walk.md |
-| M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

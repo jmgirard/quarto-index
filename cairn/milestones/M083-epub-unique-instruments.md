@@ -90,6 +90,7 @@ CDATA divergence → its own Known issues entry, unchanged here.
 - 2026-09-07: `tests/run-tests.sh --self-test` green, 1435 checks; the six new legs are checks 90-95. Before T1 both outside-href plants were red, reported as naming a manifest item the publication does not list, so the two green legs bind that repair.
 - 2026-09-07: reduced criteria audit ([O], fresh context) returned two findings — AC3's two href shapes were promised without a leg for each, fixed here by naming three legs; and the backtick-escaping rider bound a property of how the suite reports rather than of this milestone's deliverable, taken to the gate and settled as a direct commit outside both milestones.
 - 2026-09-07: review — the four criteria met on fresh evidence from a green `--self-test` run (exit 0, 1435 checks); the cairn gate passed with no advisory firing; the three-lens fan-out returned fourteen findings, eight taken to the gate as fix-now, four as follow-ups and two rejected, none reaching the return floor.
+- 2026-09-07: gate — the eight fix-now findings applied on the branch and the suite re-run green (exit 0, 1434 checks); the verdict-wording leg and a new pin on the skipped-link count moved onto the captured publication and out of `--self-test`, so an ordinary run now catches an index locator the check would skip.
 
 ## Decisions
 
@@ -228,3 +229,46 @@ No finding demonstrates an acceptance criterion failing and none is a
 load-bearing defect in what this repo's deliverables do for their readers, so
 none reaches the return floor; the eight fix-now items are gate-directed work
 on the branch.
+
+### Gate-directed fixes and re-verification
+
+The gate chose to fix the eight fix-now findings before merging. What changed,
+finding by finding:
+
+- [O]1, [O]6 The verdict-wording assertion and a new pin on the skipped-link
+  count both moved out of `--self-test` and onto the captured publication
+  itself (`tests/run-tests.sh:4523-4541`), so an ordinary run now fails on a
+  filter emitting an absolute or protocol-relative index locator, and AC2's
+  leg reads the captured file rather than a repack of it. One `pass` covers
+  both.
+- [O]2 All three count assertions now carry the `; ` separator, so
+  `; 1 fragment-carrying …` no longer matches a verdict reading `11 …`.
+- [P]1 `cmd_unique` builds one `domain` sentence — documents swept, sections
+  read, links resolved, links left unresolved as leaving the publication — and
+  prints it on every FAIL path as well as inside the `ok` line; the docstring
+  now claims that rather than the green-only shape.
+- [B]1 A publication whose index-section links all leave it now fails on
+  `every one of the N fragment-carrying link(s) … leaves the publication, so
+  this check resolved none of them` rather than on the false
+  `no link … carries a fragment`. Exercised directly here on a copy with all
+  68 hrefs rewritten to a scheme: that message, with `0 … resolved` and
+  `68 left unresolved` in the domain line.
+- [O]5 `plant.py` counts its matches with `re.findall` and dies unless there
+  is exactly one, so an anchor gone ambiguous is a failure rather than a plant
+  in the first hit. All three live plant patterns match once in
+  `EPUB/text/ch002.xhtml`, checked before the run.
+- [O]7 The verdict drops "the first" for `the one index section this check
+  reads in each document that carries one, the heading match `index_section`
+  returns and never a second in the same document`, which does not claim the
+  ordering KI51 says may not hold.
+- [O]10 The candidate row names KI264 and describes what the verdict now says.
+
+**Re-run after the fixes:** `tests/run-tests.sh --self-test` exit 0,
+`All checks passed (1434 checks)`, no FAIL line. The six M083 legs are checks
+89-94: the verdict-and-pin leg over the captured publication, then the clean
+repack, the duplicate id, the dangling relative href, the scheme href and the
+`//` href, each on its anchored report. The count reads 1434 against the
+previous run's 1435 because the run counts `ok` lines in its own log and this
+check's `ok` verdict is now captured into a variable rather than printed; the
+`ok`-line sets of the two runs differ by exactly that line and by the reworded
+legs, no check lost. `cairn_validate.py` re-run: all checks passed.

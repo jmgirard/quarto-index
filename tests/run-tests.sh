@@ -4520,13 +4520,36 @@ quarto render examples/id-collision.qmd --to epub \
   > "$WORK/id-collision-epub.log" 2>&1 \
   || { tail -20 "$WORK/id-collision-epub.log" >&2; fail "M079-AC2: id-collision.qmd failed to render to EPUB"; }
 capture examples/id-collision.qmd epub "id-collision-epub"
-python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" \
-  || fail "M079-AC2: the publication carries an id twice, or an index link names one"
+M083_UNPLANTED=$(python3 tests/epubcheck.py unique \
+  "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" 2>&1) \
+  || { printf '%s\n' "$M083_UNPLANTED" >&2; fail "M079-AC2: the publication carries an id twice, or an index link names one"; }
+# M083: the count is pinned HERE and not only under `--self-test`, because the
+# skip this milestone added is what an ordinary run would otherwise stay green
+# through: a filter emitting an absolute or protocol-relative index locator
+# would be skipped rather than resolved, and exit status alone cannot see it.
+# The `; ` is part of the assertion — `0 fragment-carrying` on its own also
+# matches a verdict reading `10 fragment-carrying`.
+printf '%s' "$M083_UNPLANTED" \
+  | grep -qF -- '; 0 fragment-carrying link(s) leave the publication' \
+  || { printf '%s\n' "$M083_UNPLANTED" >&2; fail "M079-AC2: the check passed this publication with a link it skipped as leaving the publication, so its green covers fewer index locators than the ones this fixture writes"; }
+# T5's verdict wording, over the CAPTURED publication rather than a copy of
+# it: `unique` reads one generated index section per document, and its own
+# line must say so rather than reading as a sweep of every section a document
+# carries. Asserted against that clause and not a substring of the whole
+# report, so a rewrite keeping the counts and dropping the qualification
+# fails here.
+printf '%s' "$M083_UNPLANTED" \
+  | grep -qF -- 'the one index section this check reads in each document that carries one' \
+  || { printf '%s\n' "$M083_UNPLANTED" >&2; fail "M083 T5: the verdict does not say that the section it read is the only one it reads in each document, so it still reads as a sweep of every section a document carries"; }
+pass "M083 T5: the verdict names the one index section per document it read, and no link of this publication was skipped as leaving it"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M083 T4/T5 — a planted defect per clause of `unique`, planted in the
-  # PUBLICATION rather than in the extension that wrote it. The M081 plants
+  # M083 T4 — a planted defect per clause of `unique`, planted in the
+  # PUBLICATION rather than in the extension that wrote it. (T5's verdict
+  # wording, and the pin on the count of links skipped as leaving the
+  # publication, run above over the captured publication itself, on every
+  # run and not only this one.) The M081 plants
   # above undo a repair inside the filter and re-render; the repairs under
   # test here are in the CHECK, so the artifact is what must vary. Each plant
   # copies the captured `.epub` member for member, rewriting one run of text
@@ -4565,9 +4588,11 @@ plant aimed. With no member/pattern/replacement it is a straight repack — the
 control that says a red in a planted copy is the plant and not this script.
 
 Dies rather than writing a copy the plant did not reach: a member the archive
-does not hold, a pattern matching nothing, or a substitution leaving the text
-as it was would each produce a publication the check passes for a reason that
-is not the one the plant claims.
+does not hold, a pattern matching nothing, a pattern matching more than once
+(the plant would land in the first hit only, and the anchor no longer names
+one place), or a substitution leaving the text as it was would each produce a
+publication the check passes for a reason that is not the one the plant
+claims.
 """
 
 import re
@@ -4594,6 +4619,13 @@ def main(argv):
                 data = archive.read(info.filename)
                 if info.filename == member:
                     text = data.decode('utf-8')
+                    found = len(re.findall(pattern, text))
+                    if found != 1:
+                        print(f'FAIL: {member} carries {found} run(s) matching '
+                              f'{pattern!r}, not the one this plant aims at, '
+                              f'so what it planted is not what it claims',
+                              file=sys.stderr)
+                        return 1
                     planted, hits = re.subn(pattern, replacement, text,
                                             count=1)
                     if not hits:
@@ -4639,20 +4671,7 @@ PY
   # publication, or a red below would be this script and not the plant.
   m083_epub_plant clean \
     'M083 T4 self-test: a repacked copy of the captured publication, rewritten nowhere' \
-    green '0 fragment-carrying link(s) leave the publication'
-
-  # T5's verdict wording, read off that same green run: `unique` reads ONE
-  # generated index section per document — the first `htmlindex.index_section`
-  # finds — and its own line must say so rather than reading as a sweep of
-  # every section a document carries. Asserted against that sentence and not a
-  # substring of the whole report, so a rewrite keeping the counts and dropping
-  # the qualification fails here.
-  M083_VERDICT=$(python3 tests/epubcheck.py unique "$M083W/clean.epub" 2>&1) \
-    || { printf '%s\n' "$M083_VERDICT" >&2; fail "M083 T5 self-test: the repacked publication is red, so its verdict says nothing"; }
-  printf '%s' "$M083_VERDICT" \
-    | grep -qF -- 'the only index section this check reads in each' \
-    || { printf '%s\n' "$M083_VERDICT" >&2; fail "M083 T5 self-test: the verdict does not say that the section it read is the only one it reads in each document, so it still reads as a sweep of every section a document carries"; }
-  pass "M083 T5 self-test: the verdict names the one index section per document it read"
+    green '; 0 fragment-carrying link(s) leave the publication'
 
   m083_epub_plant duplicate-id \
     'M083 T4 self-test: a second element of one document given an id that document already carries' \
@@ -4666,12 +4685,12 @@ PY
 
   m083_epub_plant scheme-href \
     'M083 T4 self-test: an index link whose href carries a scheme, so it leaves the publication' \
-    green '1 fragment-carrying link(s) leave the publication' \
+    green '; 1 fragment-carrying link(s) leave the publication' \
     "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="https://example.invalid/ch018.xhtml#qi-mark-39"'
 
   m083_epub_plant network-path-href \
     'M083 T4 self-test: an index link whose href opens `//`, so it leaves the publication' \
-    green '1 fragment-carrying link(s) leave the publication' \
+    green '; 1 fragment-carrying link(s) leave the publication' \
     "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="//example.invalid/ch018.xhtml#qi-mark-39"'
 fi
 

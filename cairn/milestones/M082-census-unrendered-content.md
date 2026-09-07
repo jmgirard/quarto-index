@@ -262,3 +262,7 @@ diff-bug lens reported ten, ranked; each is logged below with its disposition.
 **Observed, not a finding.** A green run still prints two shell syntax errors
 from a bare backtick pair in one `pass` message (`tests/run-tests.sh:4816`,
 written by M11). Pre-existing, already KI252 and already on a candidate row.
+
+**PR conversation.** Read once before the merge gate: PR #82 carries no
+reviews, no conversation comments and no review threads, resolved or otherwise.
+Nothing to triage.

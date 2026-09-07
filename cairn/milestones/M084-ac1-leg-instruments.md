@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M084: The id-census AC1 leg tells apart what it claims to
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M083
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — every deliverable is a check, a reader, a fixture case or a plant inside `tests/` and `examples/`, read by no consumer of this repo
-- **Branch/PR:** —
+- **Branch/PR:** `m084-ac1-leg-instruments`
 
 ## Goal
 

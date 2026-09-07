@@ -7,7 +7,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** user-facing — the census decides which id an author's mark keeps on the rendered page, and two author-facing pages state the rule.
-- **Branch/PR:** m082-census-unrendered-content
+- **Branch/PR:** m082-census-unrendered-content / https://github.com/jmgirard/quarto-index/pull/82
 
 ## Goal
 

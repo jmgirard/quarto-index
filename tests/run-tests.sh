@@ -3992,10 +3992,10 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Fifty-four marks are hand-derived here from examples/id-collision.qmd, never
+# Sixty-five marks are hand-derived here from examples/id-collision.qmd, never
 # read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from. Twenty-two are M079's, twenty M080's and
-# twelve M081's.
+# in the dimension it is taken from. Twenty-two are M079's, twenty M080's,
+# twelve M081's and eleven M082's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4031,6 +4031,20 @@ PY
 # in that same raw block. Five keep, none of their names being on any element
 # the page renders: four written inside one of those four constructs and one
 # written inside the `--!>`-closed comment.
+#
+# M082 adds eleven over the two shapes whose content the page does not render
+# as markup. Six yield: two whose name is on a real element standing after a
+# `template` element's own close — one of those templates holding a
+# `</template>` inside a comment, which closes nothing — two written on an
+# element's own opening tag, a `template`'s and a `style`'s, which the page
+# carries whatever their content is read as, and two on real elements standing
+# after the `</script>` that ends a script run, one doubled and one merely
+# escaped. Five keep, none of their names being on any element the page
+# renders: four written inside a `template`'s content — one directly, one in a
+# `template` nested in it, one between the two closes and one in a `template`
+# whose content holds a `</template>` inside a comment — and one written after
+# the first `</script>` of a doubled run, which returns that run to escaped
+# rather than ending the element.
 #
 # Rendered and captured by the M08-AC1 section above, whose log carries the
 # refusal reports read at the end of this one.
@@ -4127,6 +4141,27 @@ KEPT_COMMENT = {'in-bang': 'bogus-bang',
                 'in-cdata': 'bogus-cdata',
                 'in-slash': 'bogus-slash',
                 'in-bang-close': 'hidden-bang-close'}
+# The two shapes whose content the page does not render as markup (M082). A
+# browser parses a `template`'s content into a fragment of its own, so a name
+# written in there is on no element of the page however deeply the templates
+# nest, and a `</template>` inside a comment closes nothing; the element's own
+# opening tag carries its id like any other, and so does a `style`'s. Inside a
+# `script`, a `<!--` starts an escaped run and a `<script>` opened in that run
+# doubles it, so the first `</script>` after that returns the run to escaped
+# rather than ending the element and a name written past it is still script
+# text; an escaped run with no nested `<script>` ends at its first `</script>`
+# as usual.
+CONTESTED_UNRENDERED = {'after-template': 'beyond-template',
+                        'after-comment-template': 'beyond-comment-template',
+                        'on-template-tag': 'bearing-template',
+                        'on-style-tag': 'bearing-style',
+                        'after-second-script-close': 'beyond-second-close',
+                        'after-escaped-script': 'beyond-escaped-script'}
+KEPT_UNRENDERED = {'inside-template': 'buried-template',
+                   'inside-nested-template': 'buried-nested-template',
+                   'between-template-closes': 'buried-between-closes',
+                   'inside-comment-template': 'buried-in-comment-template',
+                   'after-first-script-close': 'buried-after-first-close'}
 # A mark the Span pass never tags: its content yields no text and it carries no
 # entry=, so the mark indexes nothing and the filter returns it untouched —
 # `.index` class and the author's id still on the span it was written on. It
@@ -4141,8 +4176,9 @@ UNTAGGED = {'untagged-in-heading'}
 # this shape — checked below rather than exempted (M079 T14).
 RELOCATED = {'tau', 'after-textarea'}
 REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW,
-               **CONTESTED_COMMENT)
-KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT)
+               **CONTESTED_COMMENT, **CONTESTED_UNRENDERED)
+KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT,
+                **KEPT_UNRENDERED)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain

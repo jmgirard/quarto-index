@@ -4852,6 +4852,37 @@ def main(argv):
 sys.exit(main(sys.argv[1:]))
 PY
 
+  # The locator the three plants below rewrite, derived from the member rather
+  # than written down. A minted anchor's number moves whenever the fixture
+  # gains a mark — M084's did — and a hardcoded one stops matching without
+  # saying why. Taken as the first relative index locator whose whole `href="…"`
+  # the member carries exactly once, which is what plant.py requires of a
+  # pattern; a member carrying none is a loud failure here rather than three
+  # plants quietly aimed at nothing.
+  M083_LOCATOR=$(python3 - "$M083_SRC" "$M083_MEMBER" <<'M083LOCPY'
+import re
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    if sys.argv[2] not in archive.namelist():
+        print('FAIL: %s lists no member %r' % (sys.argv[1], sys.argv[2]),
+              file=sys.stderr)
+        raise SystemExit(1)
+    text = archive.read(sys.argv[2]).decode('utf-8')
+hrefs = re.findall(r'href="([^":/?#]+\.xhtml#[^"]+)"', text)
+once = [h for h in hrefs if text.count('href="%s"' % h) == 1]
+if not once:
+    print('FAIL: %s carries %d relative index locator(s) and none of them '
+          'exactly once, so the plants below would aim at nothing'
+          % (sys.argv[2], len(hrefs)), file=sys.stderr)
+    raise SystemExit(1)
+print(once[0])
+M083LOCPY
+  ) || fail "M083 T4 self-test: no locator could be derived from $M083_MEMBER, so the three plants below have nothing to aim at (the derivation's own message is above)"
+  M083_LOCATOR_DOC=${M083_LOCATOR%%#*}
+  M083_LOCATOR_RE=$(printf '%s' "$M083_LOCATOR" | sed 's/[.[*^$\\]/\\&/g')
+
   # <slug> <label> <red|green> <expected substring> [<member> <pattern> <replacement>]
   m083_epub_plant() {
     local slug="$1" label="$2" want_status="$3" want="$4"
@@ -4886,18 +4917,18 @@ PY
 
   m083_epub_plant dangling-fragment \
     'M083 T4 self-test: an index link whose relative href names a fragment its document does not carry' \
-    red 'ch018.xhtml#qi-mark-no-such names an id EPUB/text/ch018.xhtml carries 0 time(s)' \
-    "$M083_MEMBER" 'ch018\.xhtml#qi-mark-39' 'ch018.xhtml#qi-mark-no-such'
+    red "$M083_LOCATOR_DOC#qi-mark-no-such names an id EPUB/text/$M083_LOCATOR_DOC carries 0 time(s)" \
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"$M083_LOCATOR_DOC#qi-mark-no-such\""
 
   m083_epub_plant scheme-href \
     'M083 T4 self-test: an index link whose href carries a scheme, so it leaves the publication' \
     green '; 1 fragment-carrying link(s) leave the publication' \
-    "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="https://example.invalid/ch018.xhtml#qi-mark-39"'
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"https://example.invalid/$M083_LOCATOR\""
 
   m083_epub_plant network-path-href \
     'M083 T4 self-test: an index link whose href opens `//`, so it leaves the publication' \
     green '; 1 fragment-carrying link(s) leave the publication' \
-    "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="//example.invalid/ch018.xhtml#qi-mark-39"'
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"//example.invalid/$M083_LOCATOR\""
 fi
 
 # ---------------------------------------------------------------------------

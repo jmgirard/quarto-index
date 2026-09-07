@@ -4397,8 +4397,10 @@ if [ "${1:-}" = "--self-test" ]; then
     ( cd "$dir" && quarto render id-collision.qmd --to html ) \
       > "$WORK/m081-$slug.log" 2>&1 \
       || { tail -20 "$WORK/m081-$slug.log" >&2; fail "$label: the fixture failed to render with the repair undone; IP2 forbids any of this taking a render down"; }
+    capture "$dir/id-collision.qmd" html "m081-$slug"
     local out rc
-    out=$(python3 "$WORK/id-collision-ids.py" "$dir/id-collision.html" \
+    out=$(python3 "$WORK/id-collision-ids.py" \
+      "$CAPTURE_ROOT/m081-$slug/id-collision.html" \
       "$HTML_ANCHOR_PREFIX" "$WORK/m081-$slug.log" 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "$label: the check passed a page rendered with the repair undone, so its green says nothing about that repair"; }
@@ -4416,7 +4418,9 @@ if [ "${1:-}" = "--self-test" ]; then
   ( cd "$M081W/clean" && quarto render id-collision.qmd --to html ) \
     > "$WORK/m081-clean.log" 2>&1 \
     || { tail -20 "$WORK/m081-clean.log" >&2; fail "M081 T4 self-test: the unmutated copy failed to render"; }
-  python3 "$WORK/id-collision-ids.py" "$M081W/clean/id-collision.html" \
+  capture "$M081W/clean/id-collision.qmd" html "m081-clean"
+  python3 "$WORK/id-collision-ids.py" \
+    "$CAPTURE_ROOT/m081-clean/id-collision.html" \
     "$HTML_ANCHOR_PREFIX" "$WORK/m081-clean.log" \
     || fail "M081 T4 self-test: the check is red on an unmutated copy of this repository's own extension and fixture, so a red below would be the copy and not the mutation planted in it"
   pass "M081 T4 self-test: an unmutated copy of the extension and the fixture leaves the check green"

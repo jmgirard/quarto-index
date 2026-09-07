@@ -1,6 +1,6 @@
 # M081: The id census reads a comment where a browser reads one
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -70,7 +70,7 @@ after the filter runs (KI255) → their existing candidate rows.
 
 ## Tasks
 
-- [ ] T1: Write the fixture cases into `examples/id-collision.qmd` — for each
+- [x] T1: Write the fixture cases into `examples/id-collision.qmd` — for each
       of the four bogus-comment spellings, a quoted `id=` inside the construct
       and a second name on a rendered element after its first `>`, both in one
       raw block; for each of the three comment-end spellings, a name on a
@@ -79,22 +79,22 @@ after the filter runs (KI255) → their existing candidate rows.
       M079-AC1 expectation dicts and rewrite the derivation comment's
       arithmetic whole rather than patching one count (the M080 lesson). Run
       the leg first and record which new rows are red before any repair.
-- [ ] T2: Repair the comment-open reading in `note_raw`: a `<` beginning `<!`
+- [x] T2: Repair the comment-open reading in `note_raw`: a `<` beginning `<!`
       other than `<!--`, a `<?`, or a `</` followed by a non-letter ends at the
       next `>`, and the walk resumes after it.
-- [ ] T3: Repair the comment-close reading: a comment opened by `<!--` also
+- [x] T3: Repair the comment-close reading: a comment opened by `<!--` also
       ends at an immediate `>`, at an immediate `->`, and at a `--!>`.
-- [ ] T4: Add one `--self-test` plant per repair — one substitution each into
+- [x] T4: Add one `--self-test` plant per repair — one substitution each into
       `note_raw`, re-rendering the fixture and requiring the M079-AC1 leg red
       with a named string. These are the repo's first plants over the census;
       one per repair, not one for the census (M32's granularity rule).
-- [ ] T5: Rewrite the comment paragraphs of `site/html.qmd` and `CHANGELOG.md`,
+- [x] T5: Rewrite the comment paragraphs of `site/html.qmd` and `CHANGELOG.md`,
       replace the M079-AC5 claim rows that pin the retired reading
       (`tests/run-tests.sh:4380-4385`), extend the forbidden-phrase list with
       each retired `site/html.qmd` sentence and plant it. `phrase-absent`
       sweeps `site/*.qmd` and `README.md` only, so `CHANGELOG.md` is held by
       its claim row, not by that list.
-- [ ] T6: Strike KI257 and KI260 from `DESIGN.md`, rewrite the census paragraph
+- [x] T6: Strike KI257 and KI260 from `DESIGN.md`, rewrite the census paragraph
       there (`cairn/DESIGN.md:379-390`), and rewrite the two candidate rows
       pointing at them.
 
@@ -110,6 +110,8 @@ after the filter runs (KI255) → their existing candidate rows.
 - 2026-09-06: T4 — two `--self-test` plants over the census, one per repair (bogus-comment opening read as markup; comment ended at `-->` only), each rendering the fixture from a mutated copy of the extension and requiring the same M079-AC1 check red with its own named string, behind a green control on an unmutated copy. Both verified red by hand against a scratch render before being written in.
 - 2026-09-06: T5, T6 — comment prose rewritten in `site/html.qmd` and folded into the unreleased `CHANGELOG.md` entry (question gate chose editing that entry over adding a fourth); the retired M079-AC5 claim row replaced by three pinning the new reading; a new M081-AC4 `phrase-absent` sweep with its own list and plant, given its own list rather than a row under the back-end-count list whose FAIL message names that count by hand (minor deviation from T5's wording); KI257 and KI260 struck from `DESIGN.md`, the census paragraph rewritten, KI262's `phrase-absent` clause corrected, and the M079-instruments candidate row narrowed — no candidate row cited KI257 or KI260, so none needed rewriting.
 - 2026-09-06: checkpoint with every task box still unticked: the full `tests/run-tests.sh --self-test` run that has to be clean before any of them is ticked was still in flight when this commit was made.
+- 2026-09-06: the M24-AC3 pairing check found the two plant renders and the control render uncaptured; each now calls `capture` on the line after its render and the check reads the captured copy. Two suite runs launched back to back both died on a Quarto/Deno segmentation fault in an unrelated LaTeX render; run one at a time both went green, so the crash was the environment and not this branch.
+- 2026-09-06: T1-T6 all done, boxes ticked. `tests/run-tests.sh` 774 checks exit 0; `--self-test` 1420 checks exit 0 (773 and 1413 on the default branch). Status set to review.
 
 ## Decisions
 

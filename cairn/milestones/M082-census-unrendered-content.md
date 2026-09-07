@@ -139,6 +139,7 @@ and KI255 → their existing candidate rows.
 - 2026-09-07: both runs green after the section-name fix — `tests/run-tests.sh` 777 checks, `--self-test` 1428 checks, each exit 0. T1-T6 ticked against that run; status to review.
 - 2026-09-07: review — gate fixes from the diff-bug lens, committed before the verifying runs finish. `script_end` and `tests/htmlindex.py` enter an escaped run two characters in rather than four, a `<!-->` or `<!--->` ending the run it opens; the fixture gains `after-collapsed-escape` with a plant of its own and the arithmetic goes to 66. The reader also stops ending a `script` at `</ script>` and starts ending one at `</script id=zz>`, reading every `</script` the way a browser does, and treats `<template/>` as opening a template. Prose: the numbering's mint list gains a template's content and a script's escaped run (page and claim row), the residue sentence drops the count that its next sentence refuses, and the reader's divergence count becomes a pointer.
 - 2026-09-07: step-7 approval: PR #82 approved for merge.
+- 2026-09-07: CI red after approval on `render (pinned, 1.10.18)`: the reader's `set_cdata_mode` override took the 3.9 signature, and Python 3.12 onward passes `escapable=` — a TypeError on every page the reader parses. The override now takes `**kwargs`. Local Python is 3.9.6 and CI's is 3.12, so both runs could be green here and red there; re-verified by running the reader's script, template and raw-text probes under 3.9.6 and 3.14.7 with identical results.
 
 ## Decisions
 

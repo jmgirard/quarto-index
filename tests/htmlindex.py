@@ -148,8 +148,11 @@ class _Builder(HTMLParser):
                 del self.stack[i:]
                 return
 
-    def set_cdata_mode(self, elem):
-        super().set_cdata_mode(elem)
+    def set_cdata_mode(self, elem, **kwargs):
+        # `**kwargs` because the signature moved: Python 3.12 onward passes
+        # `escapable=` to say whether the element's text takes character
+        # references, and this override must reach both.
+        super().set_cdata_mode(elem, **kwargs)
         self.script_state = SCRIPT_DATA
         if elem == SCRIPT_ELEMENT:
             # `HTMLParser` scans a `script`'s text for `</script\s*>` alone, so

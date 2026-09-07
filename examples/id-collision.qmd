@@ -363,3 +363,92 @@ keeps it: [in-bang-close]{#hidden-bang-close .index}.
 
 The links an author writes to the marks that keep their names still resolve:
 [to in-cdata](#bogus-cdata) and [to in-bang-close](#hidden-bang-close).
+
+# Names a template element's content carries
+
+A browser parses a `template` element's content into a document fragment of
+its own, so the rendered page carries no element for anything written in
+there: a name inside a `template` is on nothing a link can reach, and a mark
+written with it keeps it. The element's own opening tag is a different matter
+— the `template` is on the page and carries whatever id its author wrote — and
+so is the markup after its matching close. Nesting counts: a `template` inside
+a `template` ends at its own close and the outer one runs on past it, so a
+name written between the two closes is still inside the outer one. A
+`</template>` written inside a comment closes nothing at all.
+
+Four names are written where the page renders no element, so their marks keep
+them: [inside-template]{#buried-template .index},
+[inside-nested-template]{#buried-nested-template .index},
+[between-template-closes]{#buried-between-closes .index} and
+[inside-comment-template]{#buried-in-comment-template .index}. Three are on
+elements of the page, so their marks yield:
+[after-template]{#beyond-template .index},
+[on-template-tag]{#bearing-template .index} and
+[after-comment-template]{#beyond-comment-template .index}.
+
+```{=html}
+<template>
+<p id="buried-template">gone</p>
+<template><p id="buried-nested-template">gone</p></template>
+<p id="buried-between-closes">gone</p>
+</template>
+<p id="beyond-template">Raw HTML after a template element's own close, in that same block.</p>
+```
+
+```{=html}
+<template id="bearing-template"><p>A template carrying a name on its own opening tag.</p></template>
+```
+
+```{=html}
+<template><!-- </template> --><p id="buried-in-comment-template">gone</p></template>
+<p id="beyond-comment-template">Raw HTML after the real close of a template whose content holds one inside a comment.</p>
+```
+
+# Names a script element's escape states hide
+
+A `script` element's content is text, and a browser tracks how far inside it a
+`</script>` still reaches. A `<!--` there starts an escaped run; a `<script>`
+opened inside that run doubles it, and the first `</script>` after that returns
+the run to merely escaped rather than ending the element. The element ends at
+the second one, so a name written between the two is still inside the script's
+own text. An escaped run with no nested `<script>` is not doubled, and its
+first `</script>` ends the element as usual. A run a `<!-->` opens is over at
+that same `>`, the `-->` overlapping the `<!--` that started it, so a
+`<script>` written after one of those doubles nothing.
+
+One name is written after the first close of a doubled run, where the page
+renders no element for it, so its mark keeps it:
+[after-first-script-close]{#buried-after-first-close .index}. Three are on real
+elements standing after the close that does end the element, in that same raw
+block, so their marks yield:
+[after-second-script-close]{#beyond-second-close .index},
+[after-escaped-script]{#beyond-escaped-script .index} and
+[after-collapsed-escape]{#beyond-collapsed-escape .index}.
+
+```{=html}
+<script>var d = "<!--<script>"; var e = "</script> <p id='buried-after-first-close'>gone</p>";</script>
+<p id="beyond-second-close">Raw HTML after the second close of a doubled escaped run, in that same block.</p>
+```
+
+```{=html}
+<script>var d = "<!-- no nested script here";</script>
+<p id="beyond-escaped-script">Raw HTML after the close of a merely escaped run, in that same block.</p>
+```
+
+```{=html}
+<script>var f = "<!-->"; var g = "<script>";</script>
+<p id="beyond-collapsed-escape">Raw HTML after the close of a run the same `&lt;!--&gt;` opened and closed, in that same block.</p>
+```
+
+An `id=` written on one of these elements' own opening tags is an attribute
+like any other, and the element carries it on the page whatever its content is
+read as. One mark yields to a `style` element's own name:
+[on-style-tag]{#bearing-style .index}.
+
+```{=html}
+<style id="bearing-style">.qi-nothing-named { color: blue }</style>
+```
+
+The links an author writes to the marks that keep their names still resolve:
+[to inside-template](#buried-template) and
+[to after-first-script-close](#buried-after-first-close).

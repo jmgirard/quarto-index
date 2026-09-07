@@ -539,16 +539,68 @@ local function taken_identifiers(doc)
   -- So is the text content of each RAW_TEXT_ELEMENTS element, which is
   -- character data and not markup; the walk resumes at that element's own end
   -- tag and reads the markup after it, a name written there being on a real
-  -- element like any other. Only an OPENING tag carries attributes: an `id=`
-  -- written on a closing tag is read and dropped by a browser, so it names
-  -- nothing on the page. And a quoted attribute value is read as a value, so
-  -- neither a `>` nor a `<!--` inside one ends the tag or opens a comment, and
-  -- an `id=` inside one is text rather than a second attribute.
+  -- element like any other. And so is a `template` element's content, which is
+  -- markup a browser parses into a document fragment of its own: the page
+  -- carries no element of it, so the walk keeps reading the markup in there
+  -- and claims nothing from it until the matching `</template>`. Templates
+  -- nest, so that is a depth and not the first close; a `</template>` written
+  -- inside a comment is never seen as a tag at all, the comment being stepped
+  -- over above; and a `template` nothing closes leaves the rest of this raw
+  -- string unclaimed, as an unclosed comment leaves it unread. The element's
+  -- own opening tag is markup like any other and its `id=` is claimed. So is
+  -- a `style`'s or a `script`'s, whatever their content is read as. Only an
+  -- OPENING tag carries attributes: an `id=` written on a closing tag is read
+  -- and dropped by a browser, so it names nothing on the page. And a quoted
+  -- attribute value is read as a value, so neither a `>` nor a `<!--` inside
+  -- one ends the tag or opens a comment, and an `id=` inside one is text
+  -- rather than a second attribute.
+
+  -- Where a `script` element's text ends, which is not always its first
+  -- `</script>`. A browser tracks how far inside that text a close still
+  -- reaches: a `<!--` starts an escaped run, a `<script>` opened inside that
+  -- run doubles it, and the first `</script>` after that returns the run to
+  -- merely escaped rather than ending the element; a `-->` in either run
+  -- returns the text to plain script data. Returns the position of the
+  -- `</script` that does end the element, or nil where nothing does.
+  local function script_end(lower_text, from)
+    local state, at = "data", from
+    while true do
+      local lt = lower_text:find("<", at, true)
+      local arrow = state ~= "data" and lower_text:find("-->", at, true) or nil
+      if lt == nil and arrow == nil then
+        return nil
+      end
+      if arrow ~= nil and (lt == nil or arrow < lt) then
+        state, at = "data", arrow + 3
+      elseif state == "data" and lower_text:sub(lt, lt + 3) == "<!--" then
+        -- Two characters in, not four: the `-->` that ends this run may
+        -- overlap the `<!--` that opened it, an escaped run being over at the
+        -- `>` of a `<!-->` or a `<!--->` as it is for a browser.
+        state, at = "escaped", lt + 2
+      elseif lower_text:sub(lt, lt + 7) == "</script"
+        and lower_text:sub(lt + 8, lt + 8):match("[%s/>]") then
+        if state == "double" then
+          state, at = "escaped", lt + 8
+        else
+          return lt
+        end
+      elseif state == "escaped" and lower_text:sub(lt, lt + 6) == "<script"
+        and lower_text:sub(lt + 7, lt + 7):match("[%s/>]") then
+        state, at = "double", lt + 7
+      else
+        at = lt + 1
+      end
+    end
+  end
+
   local function note_raw(raw)
     if not raw.format:match("^html") then
       return nil
     end
     local text, pos = raw.text, 1
+    -- How many `template` elements the walk is inside. Above zero, an `id=` is
+    -- inside a fragment the page renders no element of.
+    local template_depth = 0
     while true do
       local lt = text:find("<", pos, true)
       if lt == nil then
@@ -637,30 +689,44 @@ local function taken_identifiers(doc)
           -- No `>` closes this tag, so no element of the page comes of it.
           break
         end
-        if identifier ~= nil and not is_end then
+        if identifier ~= nil and not is_end and template_depth == 0 then
           claim(identifier)
         end
         pos = at + 1
         local lowered = tag_name ~= nil and tag_name:lower() or nil
+        if lowered == "template" then
+          if not is_end then
+            template_depth = template_depth + 1
+          elseif template_depth > 0 then
+            template_depth = template_depth - 1
+          end
+        end
         if not is_end and lowered ~= nil and RAW_TEXT_ELEMENTS[lowered] then
           -- Step to this element's own end tag: everything between is
           -- character data, where a `<` starts no tag at all. The end tag is
           -- the element's name followed by whitespace, `/` or `>` and nothing
           -- else, so `</scriptx>` is text inside a `script` as it is for a
-          -- browser, while `</script >` ends one.
+          -- browser, while `</script >` ends one. A `script` is read by
+          -- `script_end` above rather than by the scan below, its escape
+          -- states deciding which of its closes is the one that ends it.
           local lower_text, needle = text:lower(), "</" .. lowered
-          local from, closing = pos, nil
-          while true do
-            local found = lower_text:find(needle, from, true)
-            if found == nil then
-              break
+          local closing = nil
+          if lowered == "script" then
+            closing = script_end(lower_text, pos)
+          else
+            local from = pos
+            while true do
+              local found = lower_text:find(needle, from, true)
+              if found == nil then
+                break
+              end
+              local after = lower_text:sub(found + #needle, found + #needle)
+              if after:match("[%s/>]") then
+                closing = found
+                break
+              end
+              from = found + 1
             end
-            local after = lower_text:sub(found + #needle, found + #needle)
-            if after:match("[%s/>]") then
-              closing = found
-              break
-            end
-            from = found + 1
           end
           if closing == nil then
             -- No end tag closes this element, so its text runs to the end of

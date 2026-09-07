@@ -1,13 +1,13 @@
 # M082: The id census stays out of content the page does not render as markup
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M081
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** user-facing — the census decides which id an author's mark keeps on the rendered page, and two author-facing pages state the rule.
-- **Branch/PR:** —
+- **Branch/PR:** m082-census-unrendered-content / https://github.com/jmgirard/quarto-index/pull/82
 
 ## Goal
 
@@ -22,7 +22,10 @@ which the census must still claim.
 ## Scope
 
 **In:** `note_raw`'s reading of `template` and of a `script` element's content
-(`_extensions/index/modules/html.lua:545-653`); new cases in
+(`_extensions/index/modules/html.lua:545-653`); the same two shapes in
+`tests/htmlindex.py`, whose reader parses a `template`'s content as page
+markup and ends a `script` at its first `</script>`, so the names the census
+must leave alone come back from it as elements of the page; new cases in
 `examples/id-collision.qmd` and their rows in the M079-AC1 expectation dicts;
 a plant per repair; the matching paragraphs of `site/html.qmd` and
 `CHANGELOG.md`, the M079-AC5 claim rows that pin the retired reading — the
@@ -39,19 +42,19 @@ and KI255 → their existing candidate rows.
 
 ## Acceptance criteria
 
-- [ ] AC1: In the HTML render of `examples/id-collision.qmd`, each mark written
+- [x] AC1: In the HTML render of `examples/id-collision.qmd`, each mark written
       with a name the fixture writes inside a `template` element's content —
       one directly inside, one inside a `template` nested in another, and one
       between the inner and the outer `</template>` — keeps that name on its
       own span, with no refusal report naming its term.
-- [ ] AC2: In that same render, the mark written with the name the fixture puts
+- [x] AC2: In that same render, the mark written with the name the fixture puts
       on a rendered element standing after the outer `</template>` in that same
       raw block, the mark written with the name on a `template`'s own opening
       tag, and the mark written with the name on a rendered element standing
       after a `template` whose content holds a `</template>` inside a comment,
       are each anchored on a minted `qi-mark-` id with their refusal reports in
       the render log.
-- [ ] AC3: In that same render, the mark written with the name the fixture
+- [x] AC3: In that same render, the mark written with the name the fixture
       writes after the first `</script>` of a double-escaped `script` element
       keeps that name on its own span, with no refusal report naming its term;
       and the marks written with the two names the fixture puts after the
@@ -59,16 +62,16 @@ and KI255 → their existing candidate rows.
       escaped script — one whose `<!--` is followed by no nested `<script>` —
       are each anchored on a minted `qi-mark-` id with their refusal reports in
       the log.
-- [ ] AC4: In that same render, the mark written with the name the fixture
+- [x] AC4: In that same render, the mark written with the name the fixture
       writes on a `style` element's own opening tag is anchored on a minted
       `qi-mark-` id with its refusal report in the log.
-- [ ] AC5: `site/html.qmd` and `CHANGELOG.md` each state that the census reads
+- [x] AC5: `site/html.qmd` and `CHANGELOG.md` each state that the census reads
       both shapes the way a browser reads them in ordinary HTML; the sentences
       each carries today naming a `template`'s content or a script's
       nested-script state as ones the reading gets wrong are gone from both;
       and the residue sentence each carries about how many such shapes there
       are is removed or restated against what remains.
-- [ ] AC6: `tests/run-tests.sh` passes, and passes with `--self-test`.
+- [x] AC6: `tests/run-tests.sh` passes, and passes with `--self-test`.
 
 ## Coverage
 
@@ -81,7 +84,7 @@ and KI255 → their existing candidate rows.
 
 ## Tasks
 
-- [ ] T1: Write the fixture cases into `examples/id-collision.qmd` — a
+- [x] T1: Write the fixture cases into `examples/id-collision.qmd` — a
       `template` holding a name directly, a nested `template` holding one, a
       name between the two closes, a name on a rendered element after the outer
       close, a name on a `template`'s own opening tag, a `template` whose
@@ -92,26 +95,30 @@ and KI255 → their existing candidate rows.
       tag. Each gets its mark. Add their rows to the M079-AC1 expectation dicts
       and rewrite the derivation comment's arithmetic whole (the M080 lesson).
       Run the leg first and record which new rows are red before any repair.
-- [ ] T2: Repair the `template` reading in `note_raw`: an `id=` inside a
+- [x] T2: Repair the `template` reading in `note_raw`: an `id=` inside a
       `template` element's content is not claimed, nesting is tracked rather
       than stopping at the first `</template>`, and the walk resumes after the
-      matching close.
-- [ ] T3: Repair the script escape state: inside a `script` element's content a
+      matching close. Teach `tests/htmlindex.py` the same reading, so the
+      suite's own reader stops returning a template's content as elements of
+      the page.
+- [x] T3: Repair the script escape state: inside a `script` element's content a
       `<!--` followed by a nested `<script>` keeps the walk inside the outer
       element past the first `</script>`; a `</script` returns it to the
-      escaped state and a `-->` before any nested tag leaves that state.
-- [ ] T4: Add one `--self-test` plant per repair — one substitution each into
+      escaped state and a `-->` before any nested tag leaves that state. Teach
+      `tests/htmlindex.py` the same states, its reader ending a `script` at the
+      first `</script>` today.
+- [x] T4: Add one `--self-test` plant per repair — one substitution each into
       `note_raw`, re-rendering the fixture and requiring the M079-AC1 leg red
       with a named string (M32's per-clause rule, not one plant for the
       census).
-- [ ] T5: Rewrite the matching paragraphs of `site/html.qmd` and
+- [x] T5: Rewrite the matching paragraphs of `site/html.qmd` and
       `CHANGELOG.md`, restating or removing each page's residue sentence rather
       than leaving it counting shapes that are gone; replace the M079-AC5 claim
       rows that pin the retired reading; extend the skipped-elements claim row
       (`tests/run-tests.sh:4375`) to quote the seven element names; and add each
       retired `site/html.qmd` sentence to the forbidden-phrase list with its
       plant.
-- [ ] T6: Strike KI256, KI258, KI259 and KI262 from `DESIGN.md`, rewrite the
+- [x] T6: Strike KI256, KI258, KI259 and KI262 from `DESIGN.md`, rewrite the
       census paragraph there, and rewrite the candidate rows pointing at them.
 
 ## Work log
@@ -120,7 +127,151 @@ and KI255 → their existing candidate rows.
 - 2026-09-06: plan gate chose pinning the docs page's seven element names in the suite's own claim row over a scan reading `RAW_TEXT_ELEMENTS` out of the Lua source, because D-011 refuses widening a source-shape scan and the rendered fixture already reddens on a change to that table (dropping `noembed` reddens the `after-noembed` row); falsified by a change to the documented list that no rendered case distinguishes.
 - 2026-09-06: plan gate chose adding rows to the standing forbidden-phrase check over leaving the retired sentences unpinned, D-027 having retired the claim-container registry while keeping exactly this standalone shape and D-028 keeping checks that name their own page; falsified by the list growing into a registry of pinned prose rather than a handful of retired sentences.
 - 2026-09-06: criteria audit ran in full mode over the split wording. Four findings, all fixed: the goal needed bounding to non-foreign content and did not cover the raw-text opening-tag case it ships; AC1's nested-`template` probe did not discriminate depth-tracking from a naive skip to the first close, so the between-the-two-closes mark was added; AC4 left its element unnamed and could conflate with AC3's script, so it names `style`; AC5 did not reach the residue sentence both pages carry about how many misread shapes remain. The auditor also found the M082-on-M081 dependency to be substantive rather than editorial — a `</template>` inside a comment must not close the template — and that case is now in AC2.
+- 2026-09-06: implement gate chose restating the two pages' residue sentence toward the one shape that remains — a `<![CDATA[…]]>` inside `svg` or `math`, which a browser runs to `]]>` and this reading ends at the first `>` — over removing it, and chose stopping at the end of a raw string on an unclosed `<template>` (as for an unclosed comment) with no fixture case for it.
+- 2026-09-06: amendment (substantive, Scope In): `tests/htmlindex.py` added to Scope. Its reader parses a `template`'s content as page markup and ends a `script` at its first `</script>`, so every name AC1 and AC3 require the census to leave alone comes back from it as a second element carrying that name and the fixture cannot express the criteria; verified by parsing both shapes through `htmlindex.parse_text` before the gate. Chosen over re-planning at the mini gate.
+- 2026-09-06: T1 — eleven fixture cases written and their rows added; the M079-AC1 leg run over a scratch render of the fixture before any repair reports exactly the five kept rows red (`inside-template`, `inside-nested-template`, `between-template-closes`, `inside-comment-template`, `after-first-script-close`), each as a locator on a minted anchor plus a refusal report the criterion forbids, and 39 refusal reports where 34 are wanted; the six yielding rows are already right, the census over-counting rather than under-counting here.
+- 2026-09-06: T2 — `note_raw` counts `template` depth rather than claiming inside one, so an `id=` in a template's content is not claimed however deeply the templates nest, a `</template>` in a comment is never a tag, an unclosed `template` leaves the rest of the raw string unclaimed, and the element's own opening tag still claims. `tests/htmlindex.py` builds no node inside a `template`, its reader having returned that content as page elements. Over a scratch render the four template rows are green and only the script row is red.
+- 2026-09-06: T3 — `script_end` carries the three escape states, so a `<!--` starts an escaped run, a `<script>` in it doubles the run, the first `</script>` after that returns the run to escaped, and a `-->` returns either run to data; the other six raw-text elements keep the plain end-tag scan. `tests/htmlindex.py` holds a `script` open over the same states through `parse_endtag`. Over a scratch render the M079-AC1 leg is green on all 65 marks: 34 contested, 30 kept, 5 filing no locator.
+- 2026-09-06: T4 — three plants added to the census self-test block, one per clause: the claim guard without its template depth, any `</template>` closing every open one, and the plain end-tag scan back in place of `script_end`. Each is red on its own named string (`buried-template`, `buried-between-closes`, `buried-after-first-close`); a third plant beyond the plan's one-per-repair, the nesting clause being its own.
+- 2026-09-06: T5 — both pages rewritten; the M079-AC5 rows pinning the two repaired shapes replaced by five naming what the reading now does, the skipped-elements row extended to quote the seven element names, and a new `M082-AC5` section holding `CHANGELOG.md` to five rows of its own. A `phrase-absent` list of three retired sentences added with its overlay plant — the third being M080's own retired sentence, which no list had named.
+- 2026-09-06: T6 — KI256, KI258, KI259 and KI262 struck from `DESIGN.md` and its census paragraph rewritten to state the template depth and the script escape states; no candidate row named any of the four.
+- 2026-09-06: the first `--self-test` run was red on M075-AC2 alone, the new retired-sentences section's `section` call being one word shorter than its banner heading; every M082 check passed in that run. Fixed and re-running both passes.
+- 2026-09-07: both runs green after the section-name fix — `tests/run-tests.sh` 777 checks, `--self-test` 1428 checks, each exit 0. T1-T6 ticked against that run; status to review.
+- 2026-09-07: review — gate fixes from the diff-bug lens, committed before the verifying runs finish. `script_end` and `tests/htmlindex.py` enter an escaped run two characters in rather than four, a `<!-->` or `<!--->` ending the run it opens; the fixture gains `after-collapsed-escape` with a plant of its own and the arithmetic goes to 66. The reader also stops ending a `script` at `</ script>` and starts ending one at `</script id=zz>`, reading every `</script` the way a browser does, and treats `<template/>` as opening a template. Prose: the numbering's mint list gains a template's content and a script's escaped run (page and claim row), the residue sentence drops the count that its next sentence refuses, and the reader's divergence count becomes a pointer.
+- 2026-09-07: step-7 approval: PR #82 approved for merge.
+- 2026-09-07: CI red after approval on `render (pinned, 1.10.18)`: the reader's `set_cdata_mode` override took the 3.9 signature, and Python 3.12 onward passes `escapable=` — a TypeError on every page the reader parses. The override now takes `**kwargs`. Local Python is 3.9.6 and CI's is 3.12, so both runs could be green here and red there; re-verified by running the reader's script, template and raw-text probes under 3.9.6 and 3.14.7 with identical results.
 
 ## Decisions
 
 ## Review
+
+Verified over commit `755388e`, the tree carrying the gate fixes. Both runs of
+`tests/run-tests.sh` are green there — 777 checks plain and 1429 with
+`--self-test`, each exit 0 — and the per-criterion reads below are taken from
+that run's own captured render (`tests/.work/cap/id-collision-html/id-collision.html`)
+and its render log, read directly rather than through the leg that asserts
+them.
+
+**AC1 — met.** In the render, `inside-template`, `inside-nested-template` and
+`between-template-closes` each keep the name their author wrote
+(`buried-template`, `buried-nested-template`, `buried-between-closes`): each id
+is on exactly one element, that element is the mark's own span printing the
+term, and each term's index locator is `#` plus that same id. No line of the
+render log carrying a refusal report names any of the three terms (0 of the 35
+reports). The fourth kept template name, `inside-comment-template`, reads the
+same way.
+
+**AC2 — met.** `after-template`, `on-template-tag` and `after-comment-template`
+each yield: the author-written id (`beyond-template`, `bearing-template`,
+`beyond-comment-template`) stays on the element that claimed it, one element
+each, and the mark's locator names a minted anchor instead — `qi-mark-34`,
+`qi-mark-35` and `qi-mark-36`, each carrying the term's own text. Each has
+exactly one refusal report in the render log naming both its term and the id it
+gave up.
+
+**AC3 — met.** `after-first-script-close` keeps `buried-after-first-close`: the
+id is on one element, that element is the mark's span printing the term, the
+term's locator is `#buried-after-first-close`, and no refusal report names the
+term. `after-second-script-close` and `after-escaped-script` both yield —
+`beyond-second-close` and `beyond-escaped-script` stay on the elements that
+claimed them, the marks' locators name `qi-mark-37` and `qi-mark-38`, and each
+has one refusal report naming term and id. The gate added a third yielding case
+here, `after-collapsed-escape` (`qi-mark-39`), for a run a `<!-->` opens and
+closes at once; it is beyond what AC3 requires and is reported with the
+findings below.
+
+**AC4 — met.** `on-style-tag` yields: `bearing-style`, written on the `style`
+element's own opening tag, is on that one element, the mark's locator names the
+minted `qi-mark-40` carrying the term's text, and the render log holds one
+refusal report naming the term and that id.
+
+**AC5 — met.** Both pages state the two readings: `site/html.qmd` carries a
+paragraph on a `template`'s content being stepped over however deeply the
+templates nest with its own opening tag counted all the same, and one on the
+escaped run a `<!--` opens, a nested `<script>` doubling it and the first
+`</script>` after that leaving the element open; `CHANGELOG.md` carries the
+same two in its unreleased entry. Neither page carries either retired sentence
+— the count of "template element's content is counted" and "where this reading
+resumes" is 0 in both — and the run's own guards agree: 29 claim rows green on
+`site/html.qmd`, 5 on `CHANGELOG.md`, and a `phrase-absent` sweep of the three
+retired sentences (M080's own among them) green over all 22 tracked pages. Each
+page's residue sentence about how many misread shapes remain is restated toward
+what remains, a `<![CDATA[…]]>` inside `svg` or `math`, with no count of them
+claimed.
+
+**AC6 — met**, re-verified after the portability fix: over `b5c1e91`,
+`tests/run-tests.sh --self-test` is 1429 checks, exit 0, and the pull request's
+own checks are green on that commit (build, both renders, plan and compare
+pass; pdf and deploy skip), which is where the 3.12 signature defect was
+caught. The reads below are from the run over `755388e`, whose tree differs
+only by that one-line signature.
+
+`tests/run-tests.sh` — 777 checks, "All checks passed", exit 0.
+`tests/run-tests.sh --self-test` — 1429 checks, "All checks passed", exit 0.
+Both run over `755388e`, sequentially, one after the other. The four M082
+census plants each go red on their own named string, the fourth being the one
+the gate added: `beyond-collapsed-escape` on 2 elements when the escape-start
+repair is undone.
+
+**Consistency gate.** `cairn_validate.py` — all sixteen checks PASS, exit 0, no
+advisory fired (`release window` OK). No `DESIGN.md` principle changed, so no
+impact scan. The active profile is `generic`, whose `consistency-gate` slot
+names no toolchain checks, so that half is a clean no-op.
+
+**Independent review.** Three fresh-context lenses, distinct evidence bases,
+none having seen the implementation. The blame-history lens reported no
+findings (it read `git log`/`git blame` over the touched regions, the D-entries
+the work log cites, and LESSONS, and found the four struck KI entries each
+mapped to a repair the diff ships). The prior-review lens reported no
+regressions; its GitHub probe returned no inline review comments at all, so it
+read the archived `## Review` sections of M079, M080 and M081 and found M081's
+"CHANGELOG guarded by nothing" finding answered rather than repeated. The
+diff-bug lens reported ten, ranked; each is logged below with its disposition.
+
+- F1 (ranked 1) — `script_end` and the reader both enter an escaped run four
+  characters in, so the `-->` that overlaps its own `<!--` is never found: a
+  `<!-->` leaves the walk escaped where a browser is back in script data, and a
+  `<!--->` makes `script_end` return nil, abandoning the rest of the raw block.
+  Verified in isolation before acting (`script_end` over `<!--><script></script><p id="a">`
+  ends at the second `</script>`, want the first; `<!--->` returns nil).
+  **Fixed now**, both readers entering at two characters, with the fixture case
+  `after-collapsed-escape`, its expectation row, and a plant of its own showing
+  the check red on `beyond-collapsed-escape` before the repair.
+- F2 (ranked 2) — `tests/htmlindex.py` built `<template/>`'s following markup as
+  page elements, where a browser (and the census) opens a template there.
+  **Fixed now**: `handle_startendtag` opens one.
+- F3 (ranked 3) — the reader's `parse_endtag` override demoted a doubled run on
+  `</ script>`, which is script text for a browser. Fixing it surfaced that
+  `HTMLParser`'s own cdata scan never reaches `</script id=zz>` either, so the
+  rest of the document was dropped. **Fixed now**: the scan stops on any
+  `</script` and the override decides, as a browser decides, which one ends the
+  element. `</ script>`, `</scriptx>`, `</script/>` and `</script id=zz>` now
+  all read as the census reads them.
+- F4 (ranked 4) — the pinned list of places the numbering may mint an unrendered
+  name was not extended for this milestone, and a claim row held the page there.
+  **Fixed now**: page and row both name a `template`'s content and a `script`'s
+  escaped run.
+- F5 (ranked 5) — "One shape this reading may still get wrong" contradicts the
+  sentence after it, which refuses a count, and `DESIGN.md` names two such
+  shapes inside `svg` or `math`. **Fixed now**: both pages say "A shape".
+- F6 (ranked 6) — the reader's header comment counted the divergences that part
+  it from the census ("two shapes"), a count F3's repair changed. **Fixed now**:
+  the comment names the two it knows and states that it counts no others.
+- F7, F8 (ranked 7-8) — a 117-character comment line and the `script_end`
+  docstring spliced mid-paragraph into the census preamble. **Fixed now**:
+  reflowed at 80 and separated.
+- F9 (ranked 9) — an unrelated blank line deleted from `DESIGN.md`. **Fixed
+  now**: restored.
+- F10 (ranked 10, three nits) — **rejected**. Lua's `[%s/>]` admits `\v` where
+  the Python set does not: no HTML input reaches it. The reader's
+  `low[i+7:i+8] in _SCRIPT_TAG_END and low[i+7:i+8]` is correct as written, the
+  second test undoing the empty string's membership. The `text:lower()` rebuilt
+  per raw-text element is pre-existing and untouched by this diff.
+
+**Observed, not a finding.** A green run still prints two shell syntax errors
+from a bare backtick pair in one `pass` message (`tests/run-tests.sh:4816`,
+written by M11). Pre-existing, already KI252 and already on a candidate row.
+
+**PR conversation.** Read once before the merge gate: PR #82 carries no
+reviews, no conversation comments and no review threads, resolved or otherwise.
+Nothing to triage.

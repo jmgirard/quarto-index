@@ -7,7 +7,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** user-facing — the census decides which id an author's mark keeps on the rendered page, and two author-facing pages state the rule.
-- **Branch/PR:** m081-census-comment-reading
+- **Branch/PR:** m081-census-comment-reading · https://github.com/jmgirard/quarto-index/pull/81
 
 ## Goal
 
@@ -37,24 +37,24 @@ after the filter runs (KI255) → their existing candidate rows.
 
 ## Acceptance criteria
 
-- [ ] AC1: In the HTML render of `examples/id-collision.qmd`, for each of the
+- [x] AC1: In the HTML render of `examples/id-collision.qmd`, for each of the
       four bogus-comment spellings the fixture writes — `<!ok>`, `<?ok>`,
       `<![CDATA[…]]>`, `</ ok>` — the mark written with the name today's walk
       claims from a quoted `id=` inside that construct keeps that name on its
       own span, and the render log carries no refusal report naming that
       mark's term.
-- [ ] AC2: In that same render, for each of those four spellings, the mark
+- [x] AC2: In that same render, for each of those four spellings, the mark
       written with the name the fixture puts on a rendered element standing
       after that construct's first `>`, in that same raw block, is anchored on
       a minted `qi-mark-` id and its refusal report is in the render log.
-- [ ] AC3: In that same render, for each of the three comment-end spellings the
+- [x] AC3: In that same render, for each of the three comment-end spellings the
       fixture writes — `<!-->`, `<!--->`, and a `--!>` close — the mark written
       with the name the fixture puts on a rendered element standing after that
       comment, in that same raw block, is anchored on a minted `qi-mark-` id
       and its refusal report is in the render log; and the mark written with
       the name the fixture writes inside a `--!>`-closed comment keeps that
       name on its own span, with no refusal report naming its term.
-- [ ] AC4: `site/html.qmd` and `CHANGELOG.md` each state that the census reads
+- [x] AC4: `site/html.qmd` and `CHANGELOG.md` each state that the census reads
       both comment shapes the way a browser reads them in ordinary HTML, and
       the sentence each carries today naming a comment not spelled `<!--` as
       one the reading gets wrong is gone from both.
@@ -113,6 +113,43 @@ after the filter runs (KI255) → their existing candidate rows.
 - 2026-09-06: the M24-AC3 pairing check found the two plant renders and the control render uncaptured; each now calls `capture` on the line after its render and the check reads the captured copy. Two suite runs launched back to back both died on a Quarto/Deno segmentation fault in an unrelated LaTeX render; run one at a time both went green, so the crash was the environment and not this branch.
 - 2026-09-06: T1-T6 all done, boxes ticked. `tests/run-tests.sh` 774 checks exit 0; `--self-test` 1420 checks exit 0 (773 and 1413 on the default branch). Status set to review.
 
+- 2026-09-06: review — PR #81 opened as a draft; branch level with the default branch, no merge needed. AC1-AC4 verified against a fresh scratch render of the fixture and direct `sitecheck.py` runs, evidence recorded and those four boxes ticked. `cairn_validate` sixteen PASS, no advisory fired; the `generic` profile names no toolchain checks. AC5's two suite runs and the three review lenses were still in flight when this checkpoint was made.
+
 ## Decisions
 
 ## Review
+
+PR #81 (draft). Branch level with the default branch at review start — `git
+rev-list --count origin/main ^HEAD` was 0 — so no merge and no re-run.
+
+**AC1 — a name inside a bogus-comment construct stays on its mark, unreported.**
+Fresh render of `examples/id-collision.qmd` into a scratch copy of the
+extension, checked with a criterion-specific script over the page and the
+render log. All four spellings pass: `bogus-bang` (`<!ok>`), `bogus-question`
+(`<?ok>`), `bogus-cdata` (`<![CDATA[…]]>`) and `bogus-slash` (`</ ok>`) are each
+on exactly one element, that element is the mark's own span printing the term,
+each locator is the author's own `#`-id, and no refusal report names any of the
+four terms.
+
+**AC2 — a name on a rendered element after the construct's first `>` contests.**
+Same render. All four pass: `beyond-bang`, `beyond-question`, `beyond-cdata` and
+`beyond-slash` are each on one element that is not the mark; each mark is
+anchored on a minted id (`qi-mark-27` … `qi-mark-30`), the locator naming that
+minted anchor and the anchor sitting on the span printing the term; each has
+exactly one refusal report in the render log naming both the term and the id
+given up.
+
+**AC3 — the three comment ends, and the name inside a `--!>`-closed comment.**
+Same render. All three contested halves pass: `beyond-empty-comment` (`<!-->`),
+`beyond-dash-comment` (`<!--->`) and `beyond-bang-close` (a `--!>` close) are
+each on one element that is not the mark, each mark anchored on a minted id
+(`qi-mark-31` … `qi-mark-33`) named by its locator, each with one refusal report
+naming term and id. The kept half passes too: `hidden-bang-close` is on one
+element, the mark's own span, its locator is `#hidden-bang-close`, and no
+refusal report names `in-bang-close`.
+
+**AC4 — the prose.** `tests/sitecheck.py claims site/html.qmd` run over the
+three new comment claims: all three stated. `tests/sitecheck.py phrase-absent`
+over the retired sentence: absent from all 22 swept pages. `CHANGELOG.md` read
+directly with whitespace flattened: the three new statements present, the
+retired sentence gone.

@@ -1190,14 +1190,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing changed. The suite reports the crash as a render failure, so a red
   run whose ONLY failure is a segfault is toolchain noise and is re-run rather
   than investigated. CI has not shown it. Accepted. — M078 review
-- **KI252.** One `pass` line in `tests/run-tests.sh` (the M08-AC2/M10-AC4/
-  M11-AC5 line) carries an unescaped backtick pair inside its double-quoted
-  message, which the shell reads as an unterminated command substitution: every
-  run prints two `command substitution: ... syntax error` lines beside it and
-  then the `pass` line with the backticked word gone. The check has already
-  decided by then, so nothing is asserted wrongly; what is lost is a word of
-  the message and a clean log. The repo's other backticked message escapes
-  them, which is the fix. — M079 implement
 
 ### The acceptance suite: coverage gaps
 
@@ -1473,14 +1465,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   ends "and a book has a single index". It is drawn only for a book declaring
   nothing or one index, where it is true, but it is now the only sentence in
   the extension still stating it as a general fact. — M55 review F7
-- **KI172.** M40's self-test summary `pass` message in `tests/run-tests.sh`
-  writes backtick-quoted tokens inside a double-quoted string, so the shell
-  runs one as a command substitution: the run log carries
-  `line 13996: ..: command not found` and the tokens vanish from the message a
-  reader sees. The check itself is unaffected — the substitution is in the
-  message, not in the comparison. Found while adding M56's own, which is
-  written with single quotes for this reason. — M56 T4
-
 - **KI177.** No check binds the ordering `read` deliberately has: reading
   `index-labels:` before the `indexes:` early returns, so a document that
   declares no index can still set the words. All three M56 fixtures declare

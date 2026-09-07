@@ -1,6 +1,6 @@
 # M082: The id census stays out of content the page does not render as markup
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M081
 - **Driving RR:** —
@@ -107,18 +107,18 @@ and KI255 → their existing candidate rows.
       escaped state and a `-->` before any nested tag leaves that state. Teach
       `tests/htmlindex.py` the same states, its reader ending a `script` at the
       first `</script>` today.
-- [ ] T4: Add one `--self-test` plant per repair — one substitution each into
+- [x] T4: Add one `--self-test` plant per repair — one substitution each into
       `note_raw`, re-rendering the fixture and requiring the M079-AC1 leg red
       with a named string (M32's per-clause rule, not one plant for the
       census).
-- [ ] T5: Rewrite the matching paragraphs of `site/html.qmd` and
+- [x] T5: Rewrite the matching paragraphs of `site/html.qmd` and
       `CHANGELOG.md`, restating or removing each page's residue sentence rather
       than leaving it counting shapes that are gone; replace the M079-AC5 claim
       rows that pin the retired reading; extend the skipped-elements claim row
       (`tests/run-tests.sh:4375`) to quote the seven element names; and add each
       retired `site/html.qmd` sentence to the forbidden-phrase list with its
       plant.
-- [ ] T6: Strike KI256, KI258, KI259 and KI262 from `DESIGN.md`, rewrite the
+- [x] T6: Strike KI256, KI258, KI259 and KI262 from `DESIGN.md`, rewrite the
       census paragraph there, and rewrite the candidate rows pointing at them.
 
 ## Work log
@@ -136,6 +136,7 @@ and KI255 → their existing candidate rows.
 - 2026-09-06: T5 — both pages rewritten; the M079-AC5 rows pinning the two repaired shapes replaced by five naming what the reading now does, the skipped-elements row extended to quote the seven element names, and a new `M082-AC5` section holding `CHANGELOG.md` to five rows of its own. A `phrase-absent` list of three retired sentences added with its overlay plant — the third being M080's own retired sentence, which no list had named.
 - 2026-09-06: T6 — KI256, KI258, KI259 and KI262 struck from `DESIGN.md` and its census paragraph rewritten to state the template depth and the script escape states; no candidate row named any of the four.
 - 2026-09-06: the first `--self-test` run was red on M075-AC2 alone, the new retired-sentences section's `section` call being one word shorter than its banner heading; every M082 check passed in that run. Fixed and re-running both passes.
+- 2026-09-07: both runs green after the section-name fix — `tests/run-tests.sh` 777 checks, `--self-test` 1428 checks, each exit 0. T1-T6 ticked against that run; status to review.
 
 ## Decisions
 

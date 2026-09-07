@@ -364,6 +364,18 @@ keeps it: [in-bang-close]{#hidden-bang-close .index}.
 The links an author writes to the marks that keep their names still resolve:
 [to in-cdata](#bogus-cdata) and [to in-bang-close](#hidden-bang-close).
 
+# A name between a `<![CDATA[`'s first `>` and its `]]>`
+
+The `<![CDATA[` above ends where every other construct in that group ends: at
+the next `>`. It does NOT end at the `]]>`, which is where a reader of XML
+marked sections would run to. So a name written between those two is on a real
+element of the page, contesting a mark that carries it like any other name:
+[mid-cdata]{#between-cdata .index}. The `]]>` itself is text on the page.
+
+```{=html}
+<![CDATA[ok> <p id="between-cdata">Raw HTML between a bogus comment's close and the marked-section close after it.</p> ]]>
+```
+
 # Names a template element's content carries
 
 A browser parses a `template` element's content into a document fragment of

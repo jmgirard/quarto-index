@@ -4044,10 +4044,10 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Sixty-six marks are hand-derived here from examples/id-collision.qmd, never
-# read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from. Twenty-two are M079's, twenty M080's,
-# twelve M081's and twelve M082's.
+# Sixty-seven marks are hand-derived here from examples/id-collision.qmd,
+# never read back out of the render: an expectation taken from the artifact is
+# blind in the dimension it is taken from. Twenty-two are M079's, twenty
+# M080's, twelve M081's, twelve M082's and one M084's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4182,13 +4182,19 @@ KEPT_RAW = {'inside-script': 'buried-script',
 # construct's close, in that same raw block, is contested like any other; one
 # written inside the construct is on nothing the page renders and its mark
 # keeps it.
+# `mid-cdata` is the one of these the two readings of `<![CDATA[…]]>` disagree
+# about (M084): its `id=` stands between the construct's first `>`, where a
+# browser and the census end it, and the `]]>` a reader of XML marked sections
+# would run to. A reader taking the second reading counts no element for that
+# name, so the mark would keep it and the page would carry it twice.
 CONTESTED_COMMENT = {'past-bang': 'beyond-bang',
                      'past-question': 'beyond-question',
                      'past-cdata': 'beyond-cdata',
                      'past-slash': 'beyond-slash',
                      'past-empty-comment': 'beyond-empty-comment',
                      'past-dash-comment': 'beyond-dash-comment',
-                     'past-bang-close': 'beyond-bang-close'}
+                     'past-bang-close': 'beyond-bang-close',
+                     'mid-cdata': 'between-cdata'}
 KEPT_COMMENT = {'in-bang': 'bogus-bang',
                 'in-question': 'bogus-question',
                 'in-cdata': 'bogus-cdata',
@@ -4685,6 +4691,21 @@ if [ "${1:-}" = "--self-test" ]; then
     'M082 T4 self-test: the census stepping past the two dashes an escaped run opens with, so the `-->` that overlaps them is never found' \
     "the author-written id 'beyond-collapsed-escape' is on 2 element(s), want 1" \
     's{state, at = "escaped", lt \+ 2}{state, at = "escaped", lt + 4}'
+
+  # M084 T6. The census ends a `<![CDATA[` where it ends every other construct
+  # of that group: at the next `>`. This plant makes it run to the `]]>`
+  # instead — the reading of an XML marked section, and the one Python's own
+  # HTML parser takes until `tests/htmlindex.py` overrides it. The fixture's
+  # `mid-cdata` mark is the case that tells the two apart: its `id=` stands
+  # between those two closes, so under the plant the census counts no element
+  # for that name, the mark keeps it, and the page carries it twice. The other
+  # three constructs of the group take the `else` branch untouched, and the
+  # fixture's older CDATA case reads the same under both — an `id=` before the
+  # first `>` is inside the construct either way.
+  m081_census_plant cdata-to-marked-close \
+    'M084 T6 self-test: the census running a `<![CDATA[` to its `]]>` rather than to its first `>`' \
+    'ids carried by more than one element: between-cdata' \
+    's{        local close = text:find\(">", lt \+ 2, true\)\n}{        local close\n        if text:sub(lt, lt + 8) == "<![CDATA[" then\n          local marked = text:find("]]>", lt + 9, true)\n          close = marked ~= nil and (marked + 2) or nil\n        else\n          close = text:find(">", lt + 2, true)\n        end\n}'
 fi
 
 # ---------------------------------------------------------------------------
@@ -27366,8 +27387,13 @@ if [ "${1:-}" = "--self-test" ]; then
   rm -rf "$M075_PLANT"
   mkdir -p "$M075_PLANT/tests"
 
-  m075_plant_source() {
-    python3 - tests/run-tests.sh "$M075_PLANT/tests/run-tests.sh" "$1" "$2" <<'M075PLANTPY'
+  # The plant is written out as a file rather than fed on stdin, because M084
+  # T7 below runs it a second time over sources written for that purpose, and
+  # a third time as two copies each carrying one of its repairs undone. A copy
+  # made from these very bytes cannot drift from the plant they run beside,
+  # which a second heredoc spelling the pre-repair form out again could.
+  M075_PLANT_PY="$WORK/m075plant.py"
+  cat > "$M075_PLANT_PY" <<'M075PLANTPY'
 import sys
 
 # The rule a banner is drawn with, imported from the scanner whose reading of
@@ -27433,6 +27459,10 @@ else:
     raise SystemExit('M075 T5: unknown plant mode ' + mode)
 open(dst, 'w', encoding='utf-8').write('\n'.join(lines))
 M075PLANTPY
+
+  m075_plant_source() {   # <mode> <text> [source] [destination]
+    python3 "$M075_PLANT_PY" "${3:-tests/run-tests.sh}" \
+      "${4:-$M075_PLANT/tests/run-tests.sh}" "$1" "$2"
   }
 
   m075_red() {
@@ -27550,6 +27580,168 @@ M075PLANTPY
   if grep -q "^unattributed$(printf '\t')" "$WORK/m077-probe-closed.tsv"; then
     fail "M077-AC1 self-test: the refused call still left an <<unattributed>> row behind, which is exactly the row M077 stops being written"
   fi
+
+
+  # -------------------------------------------------------------------------
+  # M084 T7 — the plant above, shown to depend on each of the two repairs it
+  # carries. Both were made in M077, both after the plant had passed for a
+  # season with them missing, and until now nothing here was red without them.
+  #
+  # Repair one: the banner rule is IMPORTED from the scanner. The rule the
+  # plant used to carry read any dash-only comment as a rule, where the scan
+  # reads one drawn with ten dashes or more — so a bare `# ---` inside a
+  # comment was a block boundary to the plant and ordinary prose to the scan,
+  # and the two disagreed about which block the drop mode had removed.
+  #
+  # Repair two: the drop scans the wrapper's body, `[lo, hi)`, and says so
+  # when the first block in it is never closed. The plant used to scan to the
+  # end of the FILE, so an unclosed block swallowed everything after it —
+  # including the wrapper's own close — instead of being reported.
+  #
+  # Each repair gets a source written for it and a copy of the plant with that
+  # one repair undone, made from the plant's own bytes by one substitution, so
+  # the two differ in that repair and nothing else. The sources are written
+  # here rather than being the suite's own: what each plant does to a source
+  # this small is exact and stays exact, where over this file it would turn on
+  # where a stray comment happened to sit.
+  # -------------------------------------------------------------------------
+  M084_W="$WORK/m084-plant"
+  rm -rf "$M084_W"
+  mkdir -p "$M084_W"
+  M084_RULE="# $(printf -- '-%.0s' $(seq 74))"
+
+  # The source for repair one. The `# ---` sits in a comment run of its own
+  # BEFORE the first banner block, closed by a second `# ---`: three lines the
+  # imported rule reads as prose and the rule it replaced reads as a whole
+  # block. Alpha is the first block either rule can see after that.
+  {
+    printf '%s\n' "run_all_checks() {"
+    printf '%s\n' "# ---"
+    printf '%s\n' "# a note about the run, fenced by two short rules"
+    printf '%s\n' "# ---"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# Alpha"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "  section 'Alpha'"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# Beta"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "  section 'Beta'"
+    printf '%s\n' "}"
+    printf '%s\n' 'run_all_checks "$@"'
+  } > "$M084_W/short-rule.sh"
+
+  # The source for repair two. The first banner block inside the wrapper's
+  # body is opened and never closed; the only second rule in the file is
+  # outside the body altogether, which is what the bound exists to refuse.
+  {
+    printf '%s\n' "run_all_checks() {"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# Alpha"
+    printf '%s\n' "# more prose about Alpha, and no closing rule in this body"
+    printf '%s\n' "}"
+    printf '%s\n' 'run_all_checks "$@"'
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# a trailing banner outside the wrapper"
+    printf '%s\n' "$M084_RULE"
+  } > "$M084_W/unclosed.sh"
+
+  # The two pre-repair copies. One substitution each, against the plant's own
+  # bytes: the first puts back the dash-only rule the plant carried, the
+  # second puts back the unbounded, unchecked drop loop. Both are taken from
+  # the plant as it stood before M077 (a2652f7c^).
+  m084_prerepair() {   # <slug> <perl substitution>
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$2" < "$M075_PLANT_PY" > "$M084_W/plant-$1.py" \
+      || fail "M084 T7: the substitution making the <<$1>> pre-repair copy could not be applied (its own message is above)"
+    if cmp -s "$M075_PLANT_PY" "$M084_W/plant-$1.py"; then
+      fail "M084 T7: the <<$1>> substitution reported a match and left the plant unchanged, so the copy below is the plant itself and would prove nothing"
+    fi
+  }
+
+  m084_prerepair short-rule \
+    's{from suitescan import BANNER_RULE, run_all_span}{from suitescan import run_all_span\n\n\nclass BANNER_RULE:\n    @staticmethod\n    def match(line):\n        return line.startswith("# -") and set(line[2:].strip()) == {"-"}\n}'
+
+  m084_prerepair unclosed \
+    's{    for i in range\(lo, hi\):\n.*?\n    else:\n        raise SystemExit\(.M075 T5: no banner block was found to drop.\)\n}{    for i in range(lo, len(lines)):\n        if not BANNER_RULE.match(lines[i]):\n            continue\n        j = i + 1\n        while lines[j].startswith("#") and not BANNER_RULE.match(lines[j]):\n            j += 1\n        del lines[i:j + 1]\n        break\n    else:\n        raise SystemExit("M075 T5: no banner block was found to drop")\n}s'
+
+  # What the scan's own reader says a source declares, so the two outputs are
+  # compared in the terms the check downstream reads them in and not in bytes.
+  m084_headings() {   # <source file>
+    python3 - "$1" <<'M084HEADPY'
+import sys
+sys.path.insert(0, 'tests')
+from suitescan import banner_headings, run_all_span
+
+lines = open(sys.argv[1], encoding='utf-8').read().split('\n')
+span = run_all_span(lines)
+if span is None:
+    print('NO-WRAPPER')
+    raise SystemExit(0)
+blocks = banner_headings(lines, *span)
+if not isinstance(blocks, list):
+    print('UNREADABLE: ' + blocks)
+    raise SystemExit(0)
+for _, heading in blocks:
+    print(heading)
+M084HEADPY
+  }
+
+  # 1. The `# ---` source. Both the plant and its pre-repair copy drop
+  #    something; what the scan can see afterwards is what differs.
+  M084_BEFORE=$(m084_headings "$M084_W/short-rule.sh")
+  [ "$M084_BEFORE" = "$(printf 'Alpha\nBeta')" ] \
+    || fail "M084 T7: the source written for the short-rule case declares <<$M084_BEFORE>> rather than Alpha and Beta, so neither drop below is about what this case says it is"
+
+  m075_plant_source drop unused "$M084_W/short-rule.sh" "$M084_W/short-rule-plant.sh" \
+    || fail "M084 T7: the plant failed over the short-rule source"
+  M084_AFTER=$(m084_headings "$M084_W/short-rule-plant.sh")
+  [ "$M084_AFTER" = "Beta" ] \
+    || fail "M084 T7: with the imported banner rule the plant left <<$M084_AFTER>> standing; it must drop Alpha, the first block that rule names, and leave Beta"
+
+  python3 "$M084_W/plant-short-rule.py" "$M084_W/short-rule.sh" \
+    "$M084_W/short-rule-old.sh" drop unused \
+    || fail "M084 T7: the pre-repair copy failed over the short-rule source"
+  M084_OLD=$(m084_headings "$M084_W/short-rule-old.sh")
+  if [ "$M084_OLD" = "$M084_AFTER" ]; then
+    fail "M084 T7: the copy carrying the rule that read any dash-only comment as a rule left the same <<$M084_OLD>> standing, so the import of the scan's own rule buys this plant nothing"
+  fi
+  [ "$M084_OLD" = "$M084_BEFORE" ] \
+    || fail "M084 T7: the pre-repair copy left <<$M084_OLD>>; it drops the three short-ruled lines, which the scan reads as no block at all, so the section domain must come back unchanged as <<$M084_BEFORE>>"
+  if cmp -s "$M084_W/short-rule.sh" "$M084_W/short-rule-old.sh"; then
+    fail "M084 T7: the pre-repair copy changed nothing at all, so its agreement with the source above is that it did not run rather than that it dropped a different block"
+  fi
+  pass "M084 T7 self-test: over a source carrying a bare short rule inside a comment, the plant drops Alpha — the first block the scan's own rule names — while the copy carrying the rule it replaced drops three lines the scan reads as no block, leaving the section domain unchanged"
+
+  # 2. The unclosed source. The plant refuses it in its own words; the copy
+  #    scanning past the wrapper's body does not, and takes the wrapper's
+  #    close with it.
+  set +e
+  M084_OUT=$( python3 "$M075_PLANT_PY" "$M084_W/unclosed.sh" \
+                "$M084_W/unclosed-plant.sh" drop unused 2>&1 )
+  M084_RC=$?
+  set -e
+  [ "$M084_RC" -ne 0 ] \
+    || { printf '%s\n' "$M084_OUT" >&2; fail "M084 T7: the plant accepted a source whose first banner block inside the wrapper's body is never closed, so its bound says nothing"; }
+  case "$M084_OUT" in
+    *"is never closed by a second rule"*) : ;;
+    *) printf '%s\n' "$M084_OUT" >&2
+       fail "M084 T7: the plant refused the unclosed source, but not by naming the block as never closed (<<$M084_OUT>>), so the refusal is not the one this case is about" ;;
+  esac
+
+  python3 "$M084_W/plant-unclosed.py" "$M084_W/unclosed.sh" \
+    "$M084_W/unclosed-old.sh" drop unused \
+    || fail "M084 T7: the copy scanning past the wrapper's body refused the unclosed source too, so the bound and the report the plant carries buy it nothing"
+  M084_OLD_SPAN=$(m084_headings "$M084_W/unclosed-old.sh")
+  [ "$M084_OLD_SPAN" = "NO-WRAPPER" ] \
+    || fail "M084 T7: the copy scanning past the wrapper's body left <<$M084_OLD_SPAN>>; it must delete past the body's end and take the wrapper's close with it, leaving a source the scan can find no wrapper in"
+  pass "M084 T7 self-test: over a source whose first banner block inside the wrapper's body is never closed, the plant exits naming that block, while the copy scanning past that bound exits 0 and deletes the wrapper's own close"
 
   pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row and on a timing row no section declares, naming the section in each case; and the timer refuses a section opened after the close, naming that call, while the same call goes through with the run still open and writes one ordinary row, and goes through with nothing open at all and writes the one setup row"
 fi

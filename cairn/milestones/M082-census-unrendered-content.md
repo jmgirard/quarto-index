@@ -199,7 +199,14 @@ page's residue sentence about how many misread shapes remain is restated toward
 what remains, a `<![CDATA[…]]>` inside `svg` or `math`, with no count of them
 claimed.
 
-**AC6 — met.** `tests/run-tests.sh` — 777 checks, "All checks passed", exit 0.
+**AC6 — met**, re-verified after the portability fix: over `b5c1e91`,
+`tests/run-tests.sh --self-test` is 1429 checks, exit 0, and the pull request's
+own checks are green on that commit (build, both renders, plan and compare
+pass; pdf and deploy skip), which is where the 3.12 signature defect was
+caught. The reads below are from the run over `755388e`, whose tree differs
+only by that one-line signature.
+
+`tests/run-tests.sh` — 777 checks, "All checks passed", exit 0.
 `tests/run-tests.sh --self-test` — 1429 checks, "All checks passed", exit 0.
 Both run over `755388e`, sequentially, one after the other. The four M082
 census plants each go red on their own named string, the fourth being the one

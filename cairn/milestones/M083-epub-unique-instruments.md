@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M083: The EPUB id-uniqueness sweep goes red on what it claims to catch
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -66,15 +66,15 @@ CDATA divergence → its own Known issues entry, unchanged here.
 - [x] T2: Narrow `cmd_unique`'s docstring and verdict (`tests/epubcheck.py:235-262`,
       `:310-316`) to the one index section per document its heading search reads,
       and write the unread sections into `cairn/DESIGN.md`'s Known issues.
-- [ ] T3: Build the EPUB plant harness beside the M079-AC2 leg
+- [x] T3: Build the EPUB plant harness beside the M079-AC2 leg
       (`tests/run-tests.sh:4506-4525`), on `m081_census_plant`'s shape
       (`tests/run-tests.sh:4423`): rewrite one XHTML member of a copy of the
       captured publication, re-run `unique`, and fail unless both the exit
       status and the named substring of the report are what the plant claims.
-- [ ] T4: Plant five cases through it — a duplicate id and a dangling relative
+- [x] T4: Plant five cases through it — a duplicate id and a dangling relative
       href, each asserted red on its own report; a scheme href, a `//` href and
       a copy that changes nothing, each asserted green.
-- [ ] T5: Add the verdict-wording leg over the unplanted publication, asserting
+- [x] T5: Add the verdict-wording leg over the unplanted publication, asserting
       the section-count sentence T2 writes rather than a substring of the whole
       report.
 
@@ -86,6 +86,8 @@ CDATA divergence → its own Known issues entry, unchanged here.
 - 2026-09-07: T1 — `cmd_unique` skips an href whose file part leaves the publication (a `//` opening or a `scheme:` opening) instead of joining it to the linking member's directory, and the verdict counts those separately. Both shapes were red before the change, reported as naming a manifest item the publication does not list; both are green after. Checkpoint: the verify suite is still running, so T1 is not ticked.
 - 2026-09-07: T1 ticked — `tests/run-tests.sh` green, 777 checks, the `unique` leg's verdict reading `0 fragment-carrying link(s) leave the publication and were not resolved`.
 - 2026-09-07: T2 — `cmd_unique`'s docstring and verdict now name the one index section per document the heading search reads; `cairn/DESIGN.md` records the unread ones as KI264, cross-referencing KI51. `tests/run-tests.sh` green, 777 checks.
+- 2026-09-07: T3/T4/T5 — the EPUB plant harness sits beside the M079-AC2 leg: a Python rewriter repacks the captured `.epub` member for member, substituting one run of text in one XHTML member, and dies on a member it does not hold, a pattern matching nothing, or a substitution leaving the text unchanged. Five plants run through it (duplicate id and dangling relative href red on their own reports; scheme href and `//` href green with one link counted as leaving the publication; a rewrite-nothing repack green with none), plus the verdict-wording leg. Question gate chose the Python rewriter over unzip/rezip, a counted rather than silent skip for outside links, and asserting the count on the two green plants so a plant that deleted the link could not pass as one that rewrote it.
+- 2026-09-07: `tests/run-tests.sh --self-test` green, 1435 checks; the six new legs are checks 90-95. Before T1 both outside-href plants were red, reported as naming a manifest item the publication does not list, so the two green legs bind that repair.
 - 2026-09-07: reduced criteria audit ([O], fresh context) returned two findings — AC3's two href shapes were promised without a leg for each, fixed here by naming three legs; and the backtick-escaping rider bound a property of how the suite reports rather than of this milestone's deliverable, taken to the gate and settled as a direct commit outside both milestones.
 
 ## Decisions

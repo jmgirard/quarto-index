@@ -4523,6 +4523,158 @@ capture examples/id-collision.qmd epub "id-collision-epub"
 python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" \
   || fail "M079-AC2: the publication carries an id twice, or an index link names one"
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M083 T4/T5 — a planted defect per clause of `unique`, planted in the
+  # PUBLICATION rather than in the extension that wrote it. The M081 plants
+  # above undo a repair inside the filter and re-render; the repairs under
+  # test here are in the CHECK, so the artifact is what must vary. Each plant
+  # copies the captured `.epub` member for member, rewriting one run of text
+  # in one XHTML member on the way, and re-runs the same command the leg above
+  # passes over the copy — so what goes red is the check that guards this
+  # publication on every run and not a stand-in written for the plant.
+  #
+  # Five plants, because the clauses fail in different directions and each
+  # expects its own report: the repeated-id clause on a second element given
+  # an id the document already carries, and the link-resolving clause on a
+  # relative href whose fragment names nothing, each red on a report naming
+  # what it caught; the two hrefs that leave the publication — one carrying a
+  # scheme, one opening `//` — green AND counted, a green on exit status alone
+  # being what a plant that deleted the link would also produce; and the copy
+  # that rewrites nothing green with none counted, or a red above would be the
+  # repacking and not the plant inside it.
+  #
+  # The two outside hrefs are the shapes this milestone repaired: before it,
+  # each was joined to the linking member's directory and reported as naming
+  # a manifest item the publication does not list.
+  # -------------------------------------------------------------------------
+  M083W="$WORK/m083epub"
+  rm -rf "$M083W"
+  mkdir -p "$M083W"
+  M083_SRC="$CAPTURE_ROOT/id-collision-epub/id-collision.epub"
+  M083_MEMBER='EPUB/text/ch002.xhtml'
+
+  # Written to a file rather than fed on stdin because each plant below runs
+  # it again, the way the census plants re-run their own reader.
+  cat > "$M083W/plant.py" <<'PY'
+"""Copy an EPUB, rewriting one run of text in one of its XHTML members.
+
+The copy is member for member, each member's own compression kept, so the
+publication the check reads back differs from the captured one only where the
+plant aimed. With no member/pattern/replacement it is a straight repack — the
+control that says a red in a planted copy is the plant and not this script.
+
+Dies rather than writing a copy the plant did not reach: a member the archive
+does not hold, a pattern matching nothing, or a substitution leaving the text
+as it was would each produce a publication the check passes for a reason that
+is not the one the plant claims.
+"""
+
+import re
+import sys
+import zipfile
+
+
+def main(argv):
+    if len(argv) not in (2, 5):
+        print('usage: plant.py <src.epub> <dest.epub> '
+              '[<member> <pattern> <replacement>]', file=sys.stderr)
+        return 2
+    src, dest = argv[0], argv[1]
+    member = pattern = replacement = None
+    if len(argv) == 5:
+        member, pattern, replacement = argv[2], argv[3], argv[4]
+    with zipfile.ZipFile(src) as archive:
+        if member is not None and member not in archive.namelist():
+            print(f'FAIL: {src} lists no member {member!r}, so this plant '
+                  f'aimed at nothing', file=sys.stderr)
+            return 1
+        with zipfile.ZipFile(dest, 'w') as out:
+            for info in archive.infolist():
+                data = archive.read(info.filename)
+                if info.filename == member:
+                    text = data.decode('utf-8')
+                    planted, hits = re.subn(pattern, replacement, text,
+                                            count=1)
+                    if not hits:
+                        print(f'FAIL: {member} carries no run matching '
+                              f'{pattern!r}, so this plant changed nothing',
+                              file=sys.stderr)
+                        return 1
+                    if planted == text:
+                        print(f'FAIL: the plant matched in {member} and left '
+                              f'it as it was, so a green below would be the '
+                              f'unplanted publication', file=sys.stderr)
+                        return 1
+                    data = planted.encode('utf-8')
+                out.writestr(info, data)
+    return 0
+
+
+sys.exit(main(sys.argv[1:]))
+PY
+
+  # <slug> <label> <red|green> <expected substring> [<member> <pattern> <replacement>]
+  m083_epub_plant() {
+    local slug="$1" label="$2" want_status="$3" want="$4"
+    shift 4
+    local dest="$M083W/$slug.epub" out rc
+    python3 "$M083W/plant.py" "$M083_SRC" "$dest" "$@" \
+      || fail "$label: the publication could not be rewritten (the plant's own message is above)"
+    out=$(python3 tests/epubcheck.py unique "$dest" 2>&1) && rc=0 || rc=$?
+    if [ "$want_status" = "red" ]; then
+      [ "$rc" -ne 0 ] \
+        || { printf '%s\n' "$out" >&2; fail "$label: the check passed a publication carrying the planted defect, so its green says nothing about that defect"; }
+    else
+      [ "$rc" -eq 0 ] \
+        || { printf '%s\n' "$out" >&2; fail "$label: the check failed a publication this plant leaves valid, so it is red for something that is not a defect"; }
+    fi
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check is $want_status on this plant, but its report does not carry <<$want>> — that result is not this clause reading this plant"; }
+    pass "$label: the check is $want_status on <<$want>>"
+  }
+
+  # The passing CONTROL first: the same repacking with no substitution at all
+  # must leave the check green with nothing counted as leaving the
+  # publication, or a red below would be this script and not the plant.
+  m083_epub_plant clean \
+    'M083 T4 self-test: a repacked copy of the captured publication, rewritten nowhere' \
+    green '0 fragment-carrying link(s) leave the publication'
+
+  # T5's verdict wording, read off that same green run: `unique` reads ONE
+  # generated index section per document — the first `htmlindex.index_section`
+  # finds — and its own line must say so rather than reading as a sweep of
+  # every section a document carries. Asserted against that sentence and not a
+  # substring of the whole report, so a rewrite keeping the counts and dropping
+  # the qualification fails here.
+  M083_VERDICT=$(python3 tests/epubcheck.py unique "$M083W/clean.epub" 2>&1) \
+    || { printf '%s\n' "$M083_VERDICT" >&2; fail "M083 T5 self-test: the repacked publication is red, so its verdict says nothing"; }
+  printf '%s' "$M083_VERDICT" \
+    | grep -qF -- 'the only index section this check reads in each' \
+    || { printf '%s\n' "$M083_VERDICT" >&2; fail "M083 T5 self-test: the verdict does not say that the section it read is the only one it reads in each document, so it still reads as a sweep of every section a document carries"; }
+  pass "M083 T5 self-test: the verdict names the one index section per document it read"
+
+  m083_epub_plant duplicate-id \
+    'M083 T4 self-test: a second element of one document given an id that document already carries' \
+    red "EPUB/text/ch002.xhtml carries the id 'qi-entry-1' more than once" \
+    "$M083_MEMBER" 'id="qi-entry-2"' 'id="qi-entry-1"'
+
+  m083_epub_plant dangling-fragment \
+    'M083 T4 self-test: an index link whose relative href names a fragment its document does not carry' \
+    red 'ch018.xhtml#qi-mark-no-such names an id EPUB/text/ch018.xhtml carries 0 time(s)' \
+    "$M083_MEMBER" 'ch018\.xhtml#qi-mark-39' 'ch018.xhtml#qi-mark-no-such'
+
+  m083_epub_plant scheme-href \
+    'M083 T4 self-test: an index link whose href carries a scheme, so it leaves the publication' \
+    green '1 fragment-carrying link(s) leave the publication' \
+    "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="https://example.invalid/ch018.xhtml#qi-mark-39"'
+
+  m083_epub_plant network-path-href \
+    'M083 T4 self-test: an index link whose href opens `//`, so it leaves the publication' \
+    green '1 fragment-carrying link(s) leave the publication' \
+    "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="//example.invalid/ch018.xhtml#qi-mark-39"'
+fi
+
 # ---------------------------------------------------------------------------
 # M079-AC5 — the HTML page states the rule an author now meets: which element
 # keeps a contested id, what the mark that gives it up is anchored on instead,

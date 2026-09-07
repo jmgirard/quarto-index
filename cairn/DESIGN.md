@@ -435,6 +435,7 @@ exist is open (ROADMAP). The mention attribute is spelled `mention` rather than
 know but emits `role` literally, so `role=` would ship an invalid ARIA role on
 every marked term (added M20). Corrected M06 — this paragraph previously said "untouched".
 
+
 **Per-locator styling leaves the encapsulation channel** (added M20, D-007).
 An `\index` command cannot say that one of a term's locators is its principal
 one: makeindex's conflict predicate is same key, same page, any byte difference

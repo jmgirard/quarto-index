@@ -93,7 +93,7 @@ returns the run to merely escaped rather than ending the element, and this
 reading holds the element open there as a browser does, so a name written
 between the two closes is script text and is not counted.
 
-One shape this reading may still get wrong sits inside `svg` or `math`, where a
+A shape this reading may still get wrong sits inside `svg` or `math`, where a
 browser reads markup by rules of its own: there a `<![CDATA[a > <p id="mine">]]>`
 runs to its `]]>`, while this reading ends it at the first `>` and counts
 `mine`, which the page then carries no element of. That difference is taken
@@ -125,8 +125,9 @@ free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it.
 Two kinds of name sit outside that promise. An id injected around the document
 at render time is never seen by the filter (`include-in-header` and its
 relatives). And a name written where the page renders no element — inside a
-comment of any of the spellings above, on a closing tag, or in the text content
-of one of the seven elements above — is a name the numbering may mint: nothing of yours is
+comment of any of the spellings above, on a closing tag, in the text content of
+one of the seven elements above, inside a `template` element's content or in a
+`script`'s escaped run — is a name the numbering may mint: nothing of yours is
 displaced by that, there being no element of yours to displace.
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the

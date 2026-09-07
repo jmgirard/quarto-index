@@ -137,6 +137,7 @@ and KI255 → their existing candidate rows.
 - 2026-09-06: T6 — KI256, KI258, KI259 and KI262 struck from `DESIGN.md` and its census paragraph rewritten to state the template depth and the script escape states; no candidate row named any of the four.
 - 2026-09-06: the first `--self-test` run was red on M075-AC2 alone, the new retired-sentences section's `section` call being one word shorter than its banner heading; every M082 check passed in that run. Fixed and re-running both passes.
 - 2026-09-07: both runs green after the section-name fix — `tests/run-tests.sh` 777 checks, `--self-test` 1428 checks, each exit 0. T1-T6 ticked against that run; status to review.
+- 2026-09-07: review — gate fixes from the diff-bug lens, committed before the verifying runs finish. `script_end` and `tests/htmlindex.py` enter an escaped run two characters in rather than four, a `<!-->` or `<!--->` ending the run it opens; the fixture gains `after-collapsed-escape` with a plant of its own and the arithmetic goes to 66. The reader also stops ending a `script` at `</ script>` and starts ending one at `</script id=zz>`, reading every `</script` the way a browser does, and treats `<template/>` as opening a template. Prose: the numbering's mint list gains a template's content and a script's escaped run (page and claim row), the residue sentence drops the count that its next sentence refuses, and the reader's divergence count becomes a pointer.
 
 ## Decisions
 

@@ -548,11 +548,13 @@ local function taken_identifiers(doc)
   -- over above; and a `template` nothing closes leaves the rest of this raw
   -- string unclaimed, as an unclosed comment leaves it unread. The element's
   -- own opening tag is markup like any other and its `id=` is claimed. So is
-  -- a `style`'s or a `script`'s, whatever their content is read as. Only an OPENING tag carries attributes: an `id=`
-  -- written on a closing tag is read and dropped by a browser, so it names
-  -- nothing on the page. And a quoted attribute value is read as a value, so
-  -- neither a `>` nor a `<!--` inside one ends the tag or opens a comment, and
-  -- an `id=` inside one is text rather than a second attribute.
+  -- a `style`'s or a `script`'s, whatever their content is read as. Only an
+  -- OPENING tag carries attributes: an `id=` written on a closing tag is read
+  -- and dropped by a browser, so it names nothing on the page. And a quoted
+  -- attribute value is read as a value, so neither a `>` nor a `<!--` inside
+  -- one ends the tag or opens a comment, and an `id=` inside one is text
+  -- rather than a second attribute.
+
   -- Where a `script` element's text ends, which is not always its first
   -- `</script>`. A browser tracks how far inside that text a close still
   -- reaches: a `<!--` starts an escaped run, a `<script>` opened inside that
@@ -571,7 +573,10 @@ local function taken_identifiers(doc)
       if arrow ~= nil and (lt == nil or arrow < lt) then
         state, at = "data", arrow + 3
       elseif state == "data" and lower_text:sub(lt, lt + 3) == "<!--" then
-        state, at = "escaped", lt + 4
+        -- Two characters in, not four: the `-->` that ends this run may
+        -- overlap the `<!--` that opened it, an escaped run being over at the
+        -- `>` of a `<!-->` or a `<!--->` as it is for a browser.
+        state, at = "escaped", lt + 2
       elseif lower_text:sub(lt, lt + 7) == "</script"
         and lower_text:sub(lt + 8, lt + 8):match("[%s/>]") then
         if state == "double" then

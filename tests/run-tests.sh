@@ -3992,10 +3992,10 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Sixty-five marks are hand-derived here from examples/id-collision.qmd, never
+# Sixty-six marks are hand-derived here from examples/id-collision.qmd, never
 # read back out of the render: an expectation taken from the artifact is blind
 # in the dimension it is taken from. Twenty-two are M079's, twenty M080's,
-# twelve M081's and eleven M082's.
+# twelve M081's and twelve M082's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4032,14 +4032,15 @@ PY
 # the page renders: four written inside one of those four constructs and one
 # written inside the `--!>`-closed comment.
 #
-# M082 adds eleven over the two shapes whose content the page does not render
-# as markup. Six yield: two whose name is on a real element standing after a
+# M082 adds twelve over the two shapes whose content the page does not render
+# as markup. Seven yield: two whose name is on a real element standing after a
 # `template` element's own close — one of those templates holding a
 # `</template>` inside a comment, which closes nothing — two written on an
 # element's own opening tag, a `template`'s and a `style`'s, which the page
-# carries whatever their content is read as, and two on real elements standing
-# after the `</script>` that ends a script run, one doubled and one merely
-# escaped. Five keep, none of their names being on any element the page
+# carries whatever their content is read as, and three on real elements
+# standing after the `</script>` that ends a script run: one doubled, one
+# merely escaped, and one whose escaped run the same `<!-->` opened and closed,
+# the `-->` overlapping the `<!--`. Five keep, none of their names being on any element the page
 # renders: four written inside a `template`'s content — one directly, one in a
 # `template` nested in it, one between the two closes and one in a `template`
 # whose content holds a `</template>` inside a comment — and one written after
@@ -4156,7 +4157,8 @@ CONTESTED_UNRENDERED = {'after-template': 'beyond-template',
                         'on-template-tag': 'bearing-template',
                         'on-style-tag': 'bearing-style',
                         'after-second-script-close': 'beyond-second-close',
-                        'after-escaped-script': 'beyond-escaped-script'}
+                        'after-escaped-script': 'beyond-escaped-script',
+                        'after-collapsed-escape': 'beyond-collapsed-escape'}
 KEPT_UNRENDERED = {'inside-template': 'buried-template',
                    'inside-nested-template': 'buried-nested-template',
                    'between-template-closes': 'buried-between-closes',
@@ -4403,16 +4405,17 @@ if [ "${1:-}" = "--self-test" ]; then
   # the check that guards this behavior on every run and not a stand-in
   # written for the plant.
   #
-  # Five plants and not one over the census, because the repairs fail in
+  # Six plants and not one over the census, because the repairs fail in
   # different directions and each expects its own report: without the comment
   # openings a name no element carries is counted and the mark written with it
   # is moved off it; without the comment closes the walk abandons the rest of a
   # raw string and a real element's name goes uncounted, leaving it on two
   # elements; and the three that follow each lose one name to a carrier the
   # page does not have — a `template`'s content, a `template` nested in
-  # another, or a `script` held open by a doubled escaped run. One plant over
-  # the census as a whole would leave every repair but one free to be undone in
-  # silence (M32 review: a plant per clause, not per feature).
+  # another, or a `script` held open by a doubled escaped run — while the last
+  # loses a real element's name to a script the walk never finds the end of.
+  # One plant over the census as a whole would leave every repair but one free
+  # to be undone in silence (M32 review: a plant per clause, not per feature).
   # -------------------------------------------------------------------------
   M081W="$WORK/m081census"
   rm -rf "$M081W"
@@ -4492,6 +4495,11 @@ if [ "${1:-}" = "--self-test" ]; then
     'M082 T4 self-test: the census ending a script at its first `</script>`' \
     "the author-written id 'buried-after-first-close' is on 0 element(s), want 1" \
     's{if lowered == "script" then\n            closing = script_end\(lower_text, pos\)\n          else\n}{if false then\n            closing = nil\n          else\n}s'
+
+  m081_census_plant script-escape-start-overlapped \
+    'M082 T4 self-test: the census stepping past the two dashes an escaped run opens with, so the `-->` that overlaps them is never found' \
+    "the author-written id 'beyond-collapsed-escape' is on 2 element(s), want 1" \
+    's{state, at = "escaped", lt \+ 2}{state, at = "escaped", lt + 4}'
 fi
 
 # ---------------------------------------------------------------------------
@@ -4577,7 +4585,7 @@ script element held open	the first `</script>` after that returns the run to mer
 foreign content residue	runs to its `]]>`, while this reading ends it at the first `>` and counts `mine`, which the page then carries no element of
 no count of the misread shapes	How many such shapes there are is not stated here either
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
-numbering may mint an unrendered one	a name written where the page renders no element — inside a comment of any of the spellings above, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
+numbering may mint an unrendered one	a name written where the page renders no element — inside a comment of any of the spellings above, on a closing tag, in the text content of one of the seven elements above, inside a `template` element's content or in a `script`'s escaped run — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported
 unindexable exception	Such a mark keeps a contested name, so the name stays on two elements and nothing further is said about it
 census misses a writer-generated name	a name Quarto's own writer makes up after this extension has run

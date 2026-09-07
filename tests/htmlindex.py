@@ -12,6 +12,7 @@ the ORACLE RULE there). Nothing here may be used to write a manifest.
 """
 
 import os
+import re
 from html.parser import HTMLParser
 
 # Elements that never have an end tag, so the builder must not push them.
@@ -27,13 +28,15 @@ VOID_ELEMENTS = {
 # node carrying a real id. The same seven the extension's id census steps over
 # (`_extensions/index/modules/html.lua`), so on the pages the fixtures write
 # the reader and the code under test read the same elements. They are not the
-# same parser, and two shapes part them, the census reading each the way a
-# browser does and this reader not: `</textarea/>` ends the element for the
-# census and not here, so the rest of the string is swallowed as text; and
-# `<iframe/>` opens a raw-text element for the census and is self-closing
-# here, so the census reads its content as text where this reader reads it as
-# markup. Neither shape is written in any fixture. `title`, `noscript` and `plaintext` are text content
-# too and are deliberately absent from both: no case renders them here.
+# same parser, and shapes part them, the census reading each the way a browser
+# does and this reader not: `</textarea/>` ends the element for the census and
+# not here, so the rest of the string is swallowed as text; and `<iframe/>`
+# opens a raw-text element for the census and is self-closing here, so the
+# census reads its content as text where this reader reads it as markup. How
+# many others there are is not counted here — the ones written down are the
+# ones a case has reached. Neither shape is written in any fixture. `title`,
+# `noscript` and `plaintext` are text content too and are deliberately absent
+# from both: no case renders them here.
 RAW_TEXT_ELEMENTS = (
     'script', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'textarea',
 )
@@ -122,8 +125,15 @@ class _Builder(HTMLParser):
 
     def handle_startendtag(self, tag, attrs):
         if self.template_depth:
+            if tag == TEMPLATE_ELEMENT:
+                self.template_depth += 1
             return
         self.stack[-1].children.append(Node(tag, dict(attrs)))
+        if tag == TEMPLATE_ELEMENT:
+            # A `template` has no self-closing form: `<template/>` opens one
+            # for a browser and for the census, so the markup after it is
+            # content of the fragment and no element of the page.
+            self.template_depth = 1
 
     def handle_endtag(self, tag):
         if self.template_depth:
@@ -141,17 +151,41 @@ class _Builder(HTMLParser):
     def set_cdata_mode(self, elem):
         super().set_cdata_mode(elem)
         self.script_state = SCRIPT_DATA
+        if elem == SCRIPT_ELEMENT:
+            # `HTMLParser` scans a `script`'s text for `</script\s*>` alone, so
+            # `</script id=zz>` — an end tag a browser reads, whose attributes
+            # it drops — is never reached at all and the rest of the document
+            # is dropped with it. Stop on any `</script` and let `parse_endtag`
+            # below decide, as a browser decides, which of them ends the
+            # element.
+            self.interesting = re.compile(r'</\s*script', re.IGNORECASE)
 
     def parse_endtag(self, i):
-        # A `</script>` reached inside a doubled run returns that run to merely
-        # escaped and leaves the element open, exactly as it does for a
-        # browser; the text of the tag itself is script text like the rest.
-        if self.cdata_elem == SCRIPT_ELEMENT and self.script_state == SCRIPT_DOUBLE:
-            gtpos = self.rawdata.find('>', i)
+        # Inside a `script`, which `</script` ends the element is a browser's
+        # question and not this parser's: `HTMLParser` ends one at `</ script>`
+        # (which a browser reads as script text) and never ends one at
+        # `</script id=zz>` (which a browser does end, reading the attributes
+        # and dropping them), and a `</script>` reached inside a doubled run
+        # returns that run to merely escaped and leaves the element open. All
+        # three are read here the way a browser reads them, the tag's own text
+        # being script text like the rest wherever it does not end the element.
+        if self.cdata_elem == SCRIPT_ELEMENT:
+            raw = self.rawdata
+            ends = (raw[i:i + 8].lower() == '</' + SCRIPT_ELEMENT
+                    and raw[i + 8:i + 9] in _SCRIPT_TAG_END
+                    and raw[i + 8:i + 9] != '')
+            if not ends:
+                self.handle_data(raw[i:i + 2])
+                return i + 2
+            gtpos = raw.find('>', i)
             if gtpos < 0:
                 return -1
-            self.handle_data(self.rawdata[i:gtpos + 1])
-            self.script_state = SCRIPT_ESCAPED
+            if self.script_state == SCRIPT_DOUBLE:
+                self.handle_data(raw[i:gtpos + 1])
+                self.script_state = SCRIPT_ESCAPED
+                return gtpos + 1
+            self.handle_endtag(SCRIPT_ELEMENT)
+            self.clear_cdata_mode()
             return gtpos + 1
         return super().parse_endtag(i)
 
@@ -161,7 +195,9 @@ class _Builder(HTMLParser):
             if state != SCRIPT_DATA and low.startswith('-->', i):
                 state, i = SCRIPT_DATA, i + 3
             elif state == SCRIPT_DATA and low.startswith('<!--', i):
-                state, i = SCRIPT_ESCAPED, i + 4
+                # Two characters in, not four: a `<!-->` or a `<!--->` ends the
+                # run it opens, its `-->` overlapping the `<!--`.
+                state, i = SCRIPT_ESCAPED, i + 2
             elif (state == SCRIPT_ESCAPED and low.startswith('<script', i)
                   and low[i + 7:i + 8] in _SCRIPT_TAG_END and low[i + 7:i + 8]):
                 state, i = SCRIPT_DOUBLE, i + 7

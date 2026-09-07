@@ -43,7 +43,7 @@
   or a `style`'s does. And inside a `script` element's text a `<!--` starts an
   escaped run which a `<script>` opened inside it doubles, so the first
   `</script>` after that returns the run to merely escaped rather than ending
-  the element and a name written past it is script text. One shape the reading
+  the element and a name written past it is script text. A shape the reading
   may still get wrong sits inside `svg` or `math`, where a browser reads markup
   by rules of its own: a `<![CDATA[…]]>` runs to its `]]>` there, while this
   reading ends it at the first `>`, so a name written between the two is

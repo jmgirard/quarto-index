@@ -58,7 +58,7 @@ after the filter runs (KI255) → their existing candidate rows.
       both comment shapes the way a browser reads them in ordinary HTML, and
       the sentence each carries today naming a comment not spelled `<!--` as
       one the reading gets wrong is gone from both.
-- [ ] AC5: `tests/run-tests.sh` passes, and passes with `--self-test`.
+- [x] AC5: `tests/run-tests.sh` passes, and passes with `--self-test`.
 
 ## Coverage
 
@@ -117,6 +117,8 @@ after the filter runs (KI255) → their existing candidate rows.
 
 - 2026-09-06: review — plain suite run green, 774 checks, exit 0; the `--self-test` run was still in flight at this checkpoint, so AC5 stays unticked. All three review lenses reported: the prior-review lens none, the blame lens one note, the diff-bug lens seven findings. All eight are recorded in the Review section with no disposition yet — they go to the maintainer at the merge gate.
 
+- 2026-09-06: review — AC5 verified and ticked: 774 checks plain, 1420 with `--self-test`, both exit 0, the two new census plants and the M081-AC4 overlay plant green in the second. Consistency gate clean. Pre-gate checkpoint; the eight findings go to the maintainer at the merge gate undisposed.
+
 ## Decisions
 
 ## Review
@@ -155,6 +157,21 @@ three new comment claims: all three stated. `tests/sitecheck.py phrase-absent`
 over the retired sentence: absent from all 22 swept pages. `CHANGELOG.md` read
 directly with whitespace flattened: the three new statements present, the
 retired sentence gone.
+
+**AC5 — the suite.** `tests/run-tests.sh` run to completion: "All checks passed
+(774 checks)", exit 0. `tests/run-tests.sh --self-test` run to completion: "All
+checks passed (1420 checks)", exit 0. The two new census plants are green in
+that run — the unmutated control leaves the M079-AC1 check green; the
+bogus-comment-as-markup plant reddens it on `the author-written id
+'bogus-bang' is on 0 element(s), want 1`; the close-at-`-->`-only plant reddens
+it on `the author-written id 'beyond-empty-comment' is on 2 element(s), want
+1` — as is the new M081-AC4 overlay plant. Run sequentially, one at a time, per
+the profile.
+
+**Consistency gate.** `cairn_validate.py`: sixteen PASS, seven advisories OK,
+exit 0 — the `release window` advisory did not fire. No `DESIGN.md` principle
+changed, so no `cairn_impact` run. The `generic` profile's `consistency-gate`
+slot names no toolchain checks, so that half is a clean no-op.
 
 ### Review findings (three fresh-context lenses)
 

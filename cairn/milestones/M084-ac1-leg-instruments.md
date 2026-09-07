@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M084: The id-census AC1 leg tells apart what it claims to
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M083
 - **Driving RR:** —
@@ -78,17 +78,17 @@ The foreign-content CDATA divergence, where a browser ends the construct at
       either green — M082's lesson, where a 3.9-shaped override raised on CI.
 - [x] T4: Extend the M080-AC2 reader leg (`tests/run-tests.sh:3944-3986`) with
       the hand-written CDATA case and a plant that reverts T3's repair.
-- [ ] T5: Write the discriminating CDATA case into `examples/id-collision.qmd:333`
+- [x] T5: Write the discriminating CDATA case into `examples/id-collision.qmd:333`
       and its rows into the AC1 expectation dicts (`tests/run-tests.sh:4133-4143`),
       carrying the leg's own hand-derived counts and prose with them.
-- [ ] T6: Plant the `]]>` reading through `m081_census_plant`
+- [x] T6: Plant the `]]>` reading through `m081_census_plant`
       (`tests/run-tests.sh:4423`) and hold the leg red on it, its report naming
       the planted id.
-- [ ] T7: Put the M075 plant helper (`tests/run-tests.sh:27013-27085`) under its
+- [x] T7: Put the M075 plant helper (`tests/run-tests.sh:27013-27085`) under its
       own plants: a source with `# ---` inside a comment, and one whose first
       banner block in the wrapper's body is unclosed, each run against the
       helper as it stands and against a copy carrying the pre-repair form.
-- [ ] T8: Re-read `cairn/DESIGN.md`'s foreign-content CDATA entry against the
+- [x] T8: Re-read `cairn/DESIGN.md`'s foreign-content CDATA entry against the
       fixture case T5 adds — the new case pins the HTML-content reading and
       leaves the foreign-content one where it was — and correct it where the
       addition has made its text false.
@@ -105,6 +105,12 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 
 - 2026-09-07: T3: `_Builder.parse_html_declaration` ends a `<![CDATA[` at the first `>` after the `<!`, the reading the census takes; the reader's probes run clean under 3.9.6 and under 3.14.7. The plan asked for a 3.12 second interpreter — this machine has 3.9.6 and 3.14.7 only, and 3.14.7 covers the `escapable=` signature change that lesson is about.
 - 2026-09-07: T4: the M080-AC2 reader leg gains a CDATA case whose `id=` stands between the construct's first `>` and its `]]>`; the leg is red naming that id under both interpreters when the override is removed, and the stock marked-section reading is shown to lose that id and no other.
+
+- 2026-09-07: T5: `examples/id-collision.qmd` writes `mid-cdata`/`between-cdata`, an `id=` standing between a CDATA construct's first `>` and its `]]>`; the census contests it and the mark yields to `qi-mark-34`. Row added to CONTESTED_COMMENT, the leg's hand-derived count raised from sixty-six to sixty-seven.
+- 2026-09-07: T6: the `cdata-to-marked-close` census plant runs a `<![CDATA[` to its `]]>`; the AC1 leg is red on `ids carried by more than one element: between-cdata`.
+- 2026-09-07: T5 minor amendment (discovered sub-task): the new mark shifted the minted-anchor numbering, so M083's three EPUB plants stopped matching the `ch018.xhtml#qi-mark-39` they named. The locator is now derived from the member — the first relative index locator whose whole `href="…"` it carries exactly once — and a member carrying none fails loudly.
+- 2026-09-07: T7: the M075 plant's python is written to the run's work directory and takes a source and destination; two purpose-written sources and two pre-repair copies (one substitution each, against the plant's own bytes) show it depends on both of its M077 repairs.
+- 2026-09-07: T8: KI263 re-read against T5's case. Nothing in it was made false; extended to name `tests/htmlindex.py` as a second artifact carrying the same reading and to say the HTML half is now fenced while the foreign-content half is exercised on neither side.
 
 ## Decisions
 

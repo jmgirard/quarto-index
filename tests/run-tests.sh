@@ -4369,7 +4369,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # off it; without the second the walk abandons the rest of a raw string and
   # a real element's name goes uncounted, leaving it on two elements. One
   # plant over the census as a whole would leave either repair free to be
-  # undone in silence (M32's granularity rule).
+  # undone in silence (M32 review: a plant per clause, not per feature).
   # -------------------------------------------------------------------------
   M081W="$WORK/m081census"
   rm -rf "$M081W"
@@ -4482,7 +4482,8 @@ python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.
 # recall is what M080's review returned (the corrected KI254). Two more pin the
 # shapes the walk itself still misreads, the script double-escape and a
 # `template` element's content (KI258, KI256), and the last pins the name
-# Quarto's writer makes up after this filter has run (KI255). A page that drops one of these sentences is
+# Quarto's writer makes up after this filter has run (KI255). A page that drops
+# one of these sentences is
 # promising more than the code does; a page that reinstates a count of the
 # residue is promising what no procedure here decides.
 # ---------------------------------------------------------------------------
@@ -4502,20 +4503,43 @@ name on a closing tag	So is one written on a closing tag, whose attributes a bro
 census misses a name outside the skip list	An element whose content a browser reads as text rather than as markup, but which this reading does not step over, is not covered by that
 the residue is a rule and not a list	`title` is one such element
 no count of the residue	how many others there are is not stated here
-comment openings	A `<!` opening anything else, a `<?`, and a `</` before anything but a letter each begin a comment that runs to the next `>`
+comment openings	A `<!` opening anything else, a `<?`, and a `</` before anything but a letter each run to the next `>` and put no element on the page
+comment opening ends at its first `>`	the `>` after the `a` closes the construct, so `mine` is on a real element and is counted like any other name
 comment closes	A `<!--` ends at a `-->`, and at an immediate `>`, an immediate `->` and a `--!>` besides
 name past a comment close	Past any of those closes, in that same raw HTML block, the markup is markup again: a name on a real element there is counted like any other
 script double-escape unmodelled	Inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
 template content counted	a `template` element's content is counted, though a browser parses it into a fragment of its own that the page carries no element of
 no count of the misread shapes	How many such shapes there are is not stated here either
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
-numbering may mint an unrendered one	a name written where the page renders no element — inside a comment spelled `<!--`, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
+numbering may mint an unrendered one	a name written where the page renders no element — inside a comment of any of the spellings above, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported
 unindexable exception	Such a mark keeps a contested name, so the name stays on two elements and nothing further is said about it
 census misses a writer-generated name	a name Quarto's own writer makes up after this extension has run
 M079CLAIMS
 python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \
   || fail "M079-AC5: site/html.qmd no longer states who keeps a contested id, what the yielding mark is given instead, how two marks written with one name are settled, that a cross-reference mark yields the same way, or that each yield is reported (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# M081-AC4 — the changelog states the comment reading too
+#
+# `phrase-absent` sweeps `git ls-files 'site/*.qmd'` and `README.md`, and the
+# claim rows above are read against `site/html.qmd` alone, so nothing held
+# `CHANGELOG.md` to either half of the criterion: deleting its comment
+# paragraph, or restoring the retired sentence to it, left both runs green
+# (M081 review F1, which also corrects a T5 work-log line claiming a row that
+# did not exist). The rows are the changelog's own sentences and not the site
+# page's, the two being written for different readers.
+# ---------------------------------------------------------------------------
+section 'M081-AC4 — the changelog states the comment reading too'
+cat > "$WORK/changelog-comment-claims.txt" <<'M081CLAIMS'
+comment ends where a browser ends it	A comment ends here where it ends for a browser, and a comment is more than a `<!--`
+comment openings	a `<!` opening anything else, a `<?`, and a `</` before anything but a letter each run to the next `>` and put no element on the page
+comment openings end at the first `>`	are stepped over, up to that first `>` and no further
+comment closes	a `<!--` ends at a `-->`, at an immediate `>`, at an immediate `->` and at a `--!>`
+name past a comment close	Past any of those closes a name on a real element in that same raw HTML block is counted again
+M081CLAIMS
+python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/changelog-comment-claims.txt" \
+  || fail "M081-AC4: CHANGELOG.md no longer states that the id census ends a comment where a browser ends one, which openings besides a bang-dash-dash begin one, that such an opening ends at its first close bracket, which spellings end one, or that a name past a close is counted again (its own FAIL line is above)"
 
 # ---------------------------------------------------------------------------
 # M081-AC4 — the retired sentence is gone from every page a reader meets

@@ -381,8 +381,7 @@ Three back-ends ship:
   comment, on a closing tag, or in the text content of `script`, `style`,
   `xmp`, `iframe`, `noembed`, `noframes` or `textarea` carries nothing on the
   rendered page and contests nothing, the walk resuming at such an element's
-  own end tag and reading the markup after it (added
-  M079, corrected M080). A comment is every construct a browser makes one of
+  own end tag and reading the markup after it (added M079, corrected M080). A comment is every construct a browser makes one of
   and not only a `<!--`: a `<!` opening anything else, a `<?`, and a `</`
   before a non-letter each open one that runs to the next `>`, and a `<!--`
   closes at an immediate `>`, an immediate `->`, a `-->` or a `--!>`, past any
@@ -390,10 +389,10 @@ Three back-ends ship:
   the skip list does not name still has its text read as markup, and a name
   the HTML writer generates after the filter runs is outside the census
   altogether (KI254, KI255); the shapes the walk itself reads wrongly are
-  KI256, KI258 and KI261. Two marks of one rendered page are outside all of
+  KI256, KI258, KI261 and KI263. Two marks of one rendered page are outside all of
   this; a third case, a chapter recovered from its own source, is a second
-  page's reading of this one and is stated with them in the shipped pages. A front-matter mark of an
-  HTML book chapter stays anchorless per D-048, this filter not being able to
+  page's reading of this one and is stated with them in the shipped pages. A
+  front-matter mark of an HTML book chapter stays anchorless per D-048, this filter not being able to
   see which title-block fields Quarto prints; and
   a mark the Span pass never tags — one that indexes nothing — is returned
   untouched, so it keeps a contested name unreported (KI253). The index
@@ -958,6 +957,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   claim rows quote "those seven elements' content" without quoting the seven
   names, so the page's enumeration can drift from `RAW_TEXT_ELEMENTS` with
   every row still green. — M080 review round 2, F7
+
+- **KI263.** The id census ends a `<![CDATA[…]]>` at its first `>` wherever it
+  is written, including inside `svg` or `math`. In HTML content that is what a
+  browser does — the construct is a bogus comment there — but in foreign
+  content a browser ends it at `]]>`, so an `id=` written between the first
+  `>` and the `]]>` is counted here and carries nothing on the page: the mark
+  written with that name yields it and the author's own link points at
+  nothing. `<svg><![CDATA[a > <p id="mine">]]></svg>` is the shape. Not a
+  regression — the walk counted the whole construct before M081 — and not
+  confirmable without a browser this repo does not run, which is why M081
+  scoped foreign content out. — M081 review F3
 
 ### Reports and messages
 

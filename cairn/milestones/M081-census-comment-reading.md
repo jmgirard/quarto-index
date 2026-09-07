@@ -119,6 +119,8 @@ after the filter runs (KI255) → their existing candidate rows.
 
 - 2026-09-06: review — AC5 verified and ticked: 774 checks plain, 1420 with `--self-test`, both exit 0, the two new census plants and the M081-AC4 overlay plant green in the second. Consistency gate clean. Pre-gate checkpoint; the eight findings go to the maintainer at the merge gate undisposed.
 
+- 2026-09-06: review gate — the maintainer chose fix-then-merge. F1, F2, F5, F6 fixed on the branch (a `claims` sweep over `CHANGELOG.md`, the numbering enumeration widened, the doctype no longer called a comment, the hides-a-name-inside over-claim replaced by what the walk does), F7 and F8 with them; F3 recorded as KI263 and F4 absorbed into the standing M079-instruments candidate row. This supersedes the T5 work-log line's claim that `CHANGELOG.md` is held by its claim row: no such row existed until this commit.
+
 ## Decisions
 
 ## Review
@@ -233,3 +235,37 @@ The [O] lens also recorded two non-findings: the `close-at-arrow-only` plant's
 pattern depends on the first eight-space `end` after `local data = lt + 4`, but
 its own guards turn a mis-splice into a loud failure; and no dangling KI257 or
 KI260 reference remains outside the M080 archive and a dated hygiene stamp.
+
+### Triage (maintainer, at the gate)
+
+The maintainer chose to fix the four prose defects on the branch before
+merging, the two CDATA gaps becoming records. F7 and F8 were cosmetic
+one-liners in files already being edited and went into the same pass.
+
+- **F1 — fixed now.** A new `M081-AC4 — the changelog states the comment
+  reading too` section runs `sitecheck.py claims` over `CHANGELOG.md` with
+  five rows quoting its own comment sentences. Its `fail` message is written
+  without backticks, which a double-quoted shell string would run as a
+  command (KI252). The T5 work-log line is superseded by a work-log line here,
+  history being append-only.
+- **F2 — fixed now.** `site/html.qmd`'s numbering paragraph and its
+  `numbering may mint an unrendered one` claim row now say "inside a comment
+  of any of the spellings above" rather than naming `<!--` alone; the earlier
+  sentence at the top of that section is generalized the same way.
+- **F5 — fixed now.** `site/html.qmd`, `CHANGELOG.md` and the `comment
+  openings` claim row now say those openings "run to the next `>` and put no
+  element on the page — a comment to a browser, or in the `<!` case a
+  doctype", rather than calling a doctype a comment.
+- **F6 — fixed now.** The over-claim is gone from both pages, replaced by
+  what the code does: the construct ends at its first `>` and no further,
+  with `<![CDATA[a > <p id="mine">]]>` given as the case where `mine` is
+  counted. A new claim row pins that sentence on `site/html.qmd`.
+- **F3 — follow-up, recorded.** `DESIGN.md` gains KI263 for the foreign-content
+  CDATA divergence, and the census paragraph's list of misread shapes reopens
+  to name it.
+- **F4 — follow-up, recorded.** Absorbed into the standing "Harden M079's
+  id-uniqueness instruments" candidate row rather than adding a row
+  (search-first).
+- **F7 — fixed now.** The three reflow artifacts rewrapped.
+- **F8 — fixed now.** The T4 comment now cites M32's review by what it said
+  rather than by a phrase M32 never used.

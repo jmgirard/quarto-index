@@ -65,10 +65,10 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 
 ## Tasks
 
-- [ ] T1: Factor the AC1 leg's minted-anchor read (`tests/run-tests.sh:4286-4300`)
+- [x] T1: Factor the AC1 leg's minted-anchor read (`tests/run-tests.sh:4286-4300`)
       into a named function over a parsed page, keyed on each mark's own element
       rather than on `H.text(el).strip()`.
-- [ ] T2: Add the hand-written two-anchor page and its leg, keeping the
+- [x] T2: Add the hand-written two-anchor page and its leg, keeping the
       text-keyed read beside the repaired one as the case that must fail — the
       M080-AC2 shape, where the reader under test gets its input in markup by
       hand rather than off a render.
@@ -99,6 +99,8 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 - 2026-09-07: plan gate chose leaving the "bind M079's cross-reference id shapes to criteria" row standing over absorbing it here, though its own trigger — any pass over the id-collision fixture — fires with T5; falsified by a later pass over that fixture finding the unbound shapes already deleted.
 - 2026-09-07: plan chose a hand-written page for AC1's discrimination over a second fixture mark, because two minted anchors on spans printing one string need a printed text that differs from the mark's own term, which the fixture cannot carry without a second `entry=` shape the leg does not read; falsified by a fixture mark reaching that state without one.
 - 2026-09-07: reduced criteria audit ([O], fresh context) ran over this milestone's five criteria and returned no finding against them.
+- 2026-09-07: gate chose purpose-written sources for T7's plants over the suite's own source, a plant file written to the run's work directory over a tracked `tests/` file, and an exactly-one minted-anchor assertion in the AC1 leg over today's at-least-one.
+- 2026-09-07: T1: `H.minted_anchors` returns one (printed text, id) pair per element carrying a minted id; the AC1 leg groups those by printed text and requires exactly one anchor per cross-reference term.
 
 ## Decisions
 

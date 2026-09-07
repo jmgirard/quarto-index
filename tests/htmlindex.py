@@ -472,6 +472,20 @@ def all_ids(root):
     return [n.attrs['id'] for n in walk(root) if n.attrs.get('id')]
 
 
+def minted_anchors(root, prefix):
+    """Every anchor this extension minted, as (printed text, id) pairs.
+
+    In document order, one pair per ELEMENT carrying such an id. Keyed on the
+    element and not on the string it prints: two marks printing one string are
+    two anchors, and a read that keys a map by the printed text reports
+    whichever it met first and loses the other. A caller that wants the
+    anchors on the marks printing one term groups these pairs by their first
+    member and reads the whole group (M084 T1).
+    """
+    return [(text(n).strip(), n.attrs['id']) for n in walk(root)
+            if n.attrs.get('id', '').startswith(prefix)]
+
+
 def text(node, sep=''):
     """Concatenated text of a subtree, entities already decoded.
 

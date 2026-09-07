@@ -4296,20 +4296,26 @@ else:
 # is not the mark, and the span printing the term carries a minted id instead.
 # `tau` is written inside a heading, whose anchor is relocated onto an empty
 # span, so only the first half is read for it.
+# Read off each mark's own element rather than off a map keyed by the string
+# the mark prints: `minted_anchors` returns one pair per element, so two marks
+# printing one string are two entries here and not one. Grouped by the printed
+# string, and the group read whole — a term whose marks carry two minted
+# anchors is two destinations for one name, which a first-wins map reported as
+# one and this counts as the two it is (M084 T1).
 minted = {}
-for name in H.all_ids(doc):
-    if name.startswith(prefix):
-        el = H.find_id(doc, name)
-        if el is not None:
-            minted.setdefault(H.text(el).strip(), name)
+for printed, name in H.minted_anchors(doc, prefix):
+    minted.setdefault(printed, []).append(name)
 for term, wrote in sorted(CONTESTED_XREF.items()):
     landed = H.find_id(doc, wrote)
     if landed is not None and H.text(landed).strip() == term:
         errs.append('the contested id %r is still on the span printing %r'
                     % (wrote, term))
-    if term not in RELOCATED and term not in minted:
-        errs.append('no minted anchor is on the span printing %r, which gave '
-                    'up %r' % (term, wrote))
+    if term not in RELOCATED:
+        got = minted.get(term, [])
+        if len(got) != 1:
+            errs.append('%d minted anchor(s) are on the span(s) printing %r, '
+                        'which gave up %r; want exactly 1 (%s)'
+                        % (len(got), term, wrote, ', '.join(got) or 'none'))
 # And where a refused mark is written inside a heading, the minted anchor is on
 # the empty span the extension emits after that heading, with nothing left on
 # the mark's own span for the table of contents to copy.
@@ -4388,6 +4394,133 @@ PY
 python3 "$WORK/id-collision-ids.py" \
   "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
   "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M084 T2 — the minted-anchor read, shown to tell apart what the read it
+  # replaces could not.
+  #
+  # The check above asks, of each cross-reference mark that gives up its
+  # author's id, whether the span printing that mark's term carries a minted
+  # anchor instead. It used to ask that of a map built as
+  # `minted.setdefault(H.text(el).strip(), name)` — keyed by the string a
+  # minted anchor's element prints, first one winning. Two marks printing one
+  # string are two anchors and one entry in such a map, so a page where one of
+  # them kept a contested id and the other did not read as a page where both
+  # were fine.
+  #
+  # `H.minted_anchors` returns a pair per ELEMENT, so the same page reads as
+  # the two anchors it is. Both reads are run here over one hand-written page:
+  # what is under test is a READER, and an input taken from the artifact it
+  # reads is blind in the dimension it is taken from, so the markup is written
+  # out by hand rather than taken off a render (the M080-AC2 shape). The
+  # replaced read is spelled out below rather than imported: this milestone
+  # deletes it, so there is nothing left to import it from.
+  #
+  # Two pages, not one. The second prints a different string on each mark —
+  # the shape every mark of the fixture has — and the two reads must agree
+  # about it, or the difference on the first page would be the two reads
+  # simply being different rather than this one case telling them apart.
+  # -------------------------------------------------------------------------
+  python3 - "$HTML_ANCHOR_PREFIX" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+prefix = sys.argv[1]
+errs = []
+
+
+def text_keyed(doc):
+    """The read `minted_anchors` replaces, as it stood at M083."""
+    minted = {}
+    for name in H.all_ids(doc):
+        if name.startswith(prefix):
+            el = H.find_id(doc, name)
+            if el is not None:
+                minted.setdefault(H.text(el).strip(), name)
+    return minted
+
+
+def grouped(doc):
+    """The repaired read, grouped by the string each anchor's element prints."""
+    out = {}
+    for printed, name in H.minted_anchors(doc, prefix):
+        out.setdefault(printed, []).append(name)
+    return out
+
+
+FIRST, SECOND = prefix + 'a', prefix + 'b'
+PAGE = ('<body><p><span id="%s" class="index">%s</span> and '
+        '<span id="%s" class="index">%s</span> and '
+        '<span id="author-kept" class="index">solo</span></p></body>')
+shared = H.parse_text(PAGE % (FIRST, 'shared', SECOND, 'shared'))
+apart = H.parse_text(PAGE % (FIRST, 'first', SECOND, 'second'))
+
+# 1. The repaired read names both marks.
+got = grouped(shared).get('shared', [])
+if sorted(got) != sorted([FIRST, SECOND]):
+    errs.append('over a page carrying two minted anchors on spans printing '
+                'one string, the repaired read names %r; want both %r and %r'
+                % (got, FIRST, SECOND))
+
+# 2. The read it replaces loses one of them, which is the defect: a map keyed
+#    by the printed string holds one name for that string, whichever it met
+#    first, and the other anchor is nowhere in what it returns.
+kept = text_keyed(shared)
+name = kept.get('shared')
+if name is None:
+    errs.append('the replaced read found no minted anchor at all on that '
+                'page, so it fails there for a reason that is not the one '
+                'this case is about')
+elif name not in (FIRST, SECOND):
+    errs.append('the replaced read names %r for that string, which is neither '
+                'of the two anchors the page carries' % name)
+elif len(got) < 2:
+    errs.append('the page as written carries %d minted anchor(s) on spans '
+                'printing that string, so the replaced read lost nothing and '
+                'this case tells the two reads apart in nothing' % len(got))
+else:
+    lost = [n for n in (FIRST, SECOND) if n != name]
+    if [n for n in lost if n in kept.values()]:
+        errs.append('the replaced read still reports %r somewhere in its '
+                    'result, so it lost no anchor here' % lost)
+
+# 3. Neither read may see a name this extension did not mint.
+for label, read in (('repaired', grouped(shared)), ('replaced', kept)):
+    if 'solo' in read:
+        errs.append('the %s read reports %r for the span carrying an '
+                    "author's own id, which this extension did not mint"
+                    % (label, read['solo']))
+
+# 4. The control: with a string of its own on each mark, the two reads agree,
+#    so the difference above is this case and not the two reads at large.
+control_new = grouped(apart)
+control_old = text_keyed(apart)
+if sorted(control_new) != sorted(control_old):
+    errs.append('over a page printing a different string on each mark the two '
+                'reads report different terms (%r against %r), so the '
+                'difference on the shared-string page is not about that page'
+                % (sorted(control_new), sorted(control_old)))
+for term in sorted(control_new):
+    if control_new[term] != [control_old.get(term)]:
+        errs.append('over that page the two reads disagree about %r: the '
+                    'repaired one names %r and the replaced one %r'
+                    % (term, control_new[term], control_old.get(term)))
+if len(control_new) != 2:
+    errs.append('the control page yields %d term(s) under the repaired read, '
+                'want the 2 its two marks print' % len(control_new))
+
+if errs:
+    print('FAIL: M084 T2 self-test: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M084 T2 self-test: over a page carrying two minted anchors on '
+      'spans printing one string the repaired read names both (%s and %s) and '
+      'the read it replaces names one; over a page printing a different string '
+      'on each mark the two agree on both terms'
+      % (FIRST, SECOND))
+PY
+fi
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------

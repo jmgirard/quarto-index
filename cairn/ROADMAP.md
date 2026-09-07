@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M082 | The id census stays out of content the page does not render as markup | planned | M081 | normal | milestones/M082-census-unrendered-content.md |
+| M082 | The id census stays out of content the page does not render as markup | in-progress | M081 | normal | milestones/M082-census-unrendered-content.md |
 | M081 | The id census reads a comment where a browser reads one | done | — | normal | milestones/archive/M081-census-comment-reading.md |
 | M080 | The id census reads a page's raw HTML the way a browser does | done | — | normal | milestones/archive/M080-id-census-raw-html-walk.md |
 | M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |

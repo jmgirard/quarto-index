@@ -115,6 +115,8 @@ after the filter runs (KI255) → their existing candidate rows.
 
 - 2026-09-06: review — PR #81 opened as a draft; branch level with the default branch, no merge needed. AC1-AC4 verified against a fresh scratch render of the fixture and direct `sitecheck.py` runs, evidence recorded and those four boxes ticked. `cairn_validate` sixteen PASS, no advisory fired; the `generic` profile names no toolchain checks. AC5's two suite runs and the three review lenses were still in flight when this checkpoint was made.
 
+- 2026-09-06: review — plain suite run green, 774 checks, exit 0; the `--self-test` run was still in flight at this checkpoint, so AC5 stays unticked. All three review lenses reported: the prior-review lens none, the blame lens one note, the diff-bug lens seven findings. All eight are recorded in the Review section with no disposition yet — they go to the maintainer at the merge gate.
+
 ## Decisions
 
 ## Review
@@ -153,3 +155,60 @@ three new comment claims: all three stated. `tests/sitecheck.py phrase-absent`
 over the retired sentence: absent from all 22 swept pages. `CHANGELOG.md` read
 directly with whitespace flattened: the three new statements present, the
 retired sentence gone.
+
+### Review findings (three fresh-context lenses)
+
+Full three-lens fan-out, the milestone's surface tier being user-facing. The
+[S] prior-review lens reported no findings: the GitHub inline-comment probe
+returned empty, and the diff is consistent with the M079 and M080 archived
+review records. The [S] blame-history lens reported no defects and one note
+(F8 below). The [O] diff-bug lens exercised `note_raw` in its own `pandoc lua`
+harness over 24 shapes, replayed both plant substitutions, and reported seven.
+
+Ranked as the lenses ranked them, most severe first:
+
+- **F1 — `CHANGELOG.md`'s half of AC4 is guarded by nothing, and a work-log
+  line says otherwise.** `phrase-absent` sweeps `git ls-files 'site/*.qmd'`
+  plus `README.md`; `sitecheck.py claims` is never invoked on `CHANGELOG.md`.
+  The T5 work-log line's "`CHANGELOG.md` is held by its claim row" names a row
+  that does not exist. Restoring the retired sentence to `CHANGELOG.md`, or
+  deleting its new comment paragraph, leaves both suite runs green. Verified:
+  `grep -n CHANGELOG tests/run-tests.sh` returns one unrelated comment.
+- **F2 — the numbering paragraph still enumerates only `<!--`.**
+  `site/html.qmd:114` and the `numbering may mint an unrendered one` claim row
+  say the mintable unrendered names are those "inside a comment spelled
+  `<!--`, on a closing tag, or in the text content of one of the seven
+  elements above". `number_entries` mints from the same `taken` table the
+  census fills, so that set now also includes names inside `<!ok …>`,
+  `<?ok …>`, `<![CDATA[…]]>` and `</ ok …>`. The claim row keeps the stale
+  enumeration green.
+- **F3 — `DESIGN.md` asserts a closed list of misread shapes that omits CDATA
+  in foreign content.** In `svg` or `math` a browser ends `<![CDATA[…]]>` at
+  `]]>`; the new branch ends it at the first `>`. Not a regression — the old
+  walk counted it too — but the shortened list "KI256, KI258 and KI261"
+  records it nowhere.
+- **F4 — the CDATA fixture case cannot discriminate the reading it pins.**
+  `tests/htmlindex.py` builds on Python's `html.parser`, which consumes
+  `<![CDATA[…]]>` whole to `]]>`; the fixture writes no `id=` between the
+  first `>` and `]]>`, so the leg passes whether `note_raw` stops at the first
+  `>` or at `]]>`. Raised independently by the blame lens.
+- **F5 — `<!DOCTYPE …>` is not a comment, and three places now say it is.**
+  `site/html.qmd`, `CHANGELOG.md` and the `comment openings` claim row all say
+  a `<!` opening anything else begins a comment. The census behavior is
+  identical either way, so this is prose accuracy — now pinned by a claim row.
+- **F6 — "hide a name inside them" over-claims.** `<![CDATA[a > <p id="x">]]>`
+  ends the bogus comment at the `>` after `a`, so `x` is counted and is not
+  hidden. `CHANGELOG.md` and `site/html.qmd` ("a name written inside one is on
+  nothing") both carry the over-claim.
+- **F7 — reflow artifacts.** `cairn/DESIGN.md:395` at 100 columns with an
+  orphaned "(added" line before it, `tests/run-tests.sh:4485` at 105 columns
+  inside a block wrapped at ~76, and a short ragged line in `CHANGELOG.md`,
+  all in prose otherwise wrapped near 76.
+- **F8 — [S] blame lens: an imprecise citation.** The T4 comment cites "M32's
+  granularity rule"; the M32 archive uses no such phrase, though its review
+  notes do prefer clause-level plants to one plant per feature.
+
+The [O] lens also recorded two non-findings: the `close-at-arrow-only` plant's
+pattern depends on the first eight-space `end` after `local data = lt + 4`, but
+its own guards turn a mis-splice into a loud failure; and no dangling KI257 or
+KI260 reference remains outside the M080 archive and a dated hygiene stamp.

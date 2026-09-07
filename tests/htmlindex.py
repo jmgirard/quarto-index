@@ -48,6 +48,20 @@ RAW_TEXT_ELEMENTS = (
 # write the reader and the code under test read the same elements.
 TEMPLATE_ELEMENT = 'template'
 
+# Inside a `script` element's text a browser tracks how far a `</script>` still
+# reaches: a `<!--` starts an escaped run, a `<script>` opened inside that run
+# doubles it, and the first `</script>` after that returns the run to merely
+# escaped instead of ending the element; a `-->` in either run returns the text
+# to plain script data. Python's parser ends the element at the first
+# `</script>` whatever came before it, so the markup a fixture writes past that
+# point would come back as real elements of the page. `_Builder` below carries
+# the three states and holds the element open where a browser holds it open —
+# the same reading the extension's id census takes
+# (`_extensions/index/modules/html.lua`).
+SCRIPT_ELEMENT = 'script'
+SCRIPT_DATA, SCRIPT_ESCAPED, SCRIPT_DOUBLE = 'data', 'escaped', 'double'
+_SCRIPT_TAG_END = ' \t\n\r\f/>'
+
 LIST_TAGS = ('ul', 'ol')
 
 
@@ -77,6 +91,9 @@ class _Builder(HTMLParser):
         # nothing read belongs to the page. Templates nest, so it is a depth
         # and not a flag, and one nothing closes swallows the rest.
         self.template_depth = 0
+        # Where inside a `script` element's text the reader is, once one is
+        # open: plain data, an escaped run, or a doubled one.
+        self.script_state = SCRIPT_DATA
         # Two layers, two manifests. The index-entry manifests are stated in
         # what a READER sees, so `&amp;` must come back as `&` (M03-AC5 asks
         # for the character itself as an exact element). The visible-terms
@@ -121,7 +138,40 @@ class _Builder(HTMLParser):
                 del self.stack[i:]
                 return
 
+    def set_cdata_mode(self, elem):
+        super().set_cdata_mode(elem)
+        self.script_state = SCRIPT_DATA
+
+    def parse_endtag(self, i):
+        # A `</script>` reached inside a doubled run returns that run to merely
+        # escaped and leaves the element open, exactly as it does for a
+        # browser; the text of the tag itself is script text like the rest.
+        if self.cdata_elem == SCRIPT_ELEMENT and self.script_state == SCRIPT_DOUBLE:
+            gtpos = self.rawdata.find('>', i)
+            if gtpos < 0:
+                return -1
+            self.handle_data(self.rawdata[i:gtpos + 1])
+            self.script_state = SCRIPT_ESCAPED
+            return gtpos + 1
+        return super().parse_endtag(i)
+
+    def _read_script_states(self, data):
+        state, low, i, n = self.script_state, data.lower(), 0, len(data)
+        while i < n:
+            if state != SCRIPT_DATA and low.startswith('-->', i):
+                state, i = SCRIPT_DATA, i + 3
+            elif state == SCRIPT_DATA and low.startswith('<!--', i):
+                state, i = SCRIPT_ESCAPED, i + 4
+            elif (state == SCRIPT_ESCAPED and low.startswith('<script', i)
+                  and low[i + 7:i + 8] in _SCRIPT_TAG_END and low[i + 7:i + 8]):
+                state, i = SCRIPT_DOUBLE, i + 7
+            else:
+                i += 1
+        self.script_state = state
+
     def handle_data(self, data):
+        if self.cdata_elem == SCRIPT_ELEMENT:
+            self._read_script_states(data)
         if self.template_depth:
             return
         self.stack[-1].children.append(data)

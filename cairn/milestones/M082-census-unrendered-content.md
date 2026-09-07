@@ -84,7 +84,7 @@ and KI255 → their existing candidate rows.
 
 ## Tasks
 
-- [ ] T1: Write the fixture cases into `examples/id-collision.qmd` — a
+- [x] T1: Write the fixture cases into `examples/id-collision.qmd` — a
       `template` holding a name directly, a nested `template` holding one, a
       name between the two closes, a name on a rendered element after the outer
       close, a name on a `template`'s own opening tag, a `template` whose
@@ -95,13 +95,13 @@ and KI255 → their existing candidate rows.
       tag. Each gets its mark. Add their rows to the M079-AC1 expectation dicts
       and rewrite the derivation comment's arithmetic whole (the M080 lesson).
       Run the leg first and record which new rows are red before any repair.
-- [ ] T2: Repair the `template` reading in `note_raw`: an `id=` inside a
+- [x] T2: Repair the `template` reading in `note_raw`: an `id=` inside a
       `template` element's content is not claimed, nesting is tracked rather
       than stopping at the first `</template>`, and the walk resumes after the
       matching close. Teach `tests/htmlindex.py` the same reading, so the
       suite's own reader stops returning a template's content as elements of
       the page.
-- [ ] T3: Repair the script escape state: inside a `script` element's content a
+- [x] T3: Repair the script escape state: inside a `script` element's content a
       `<!--` followed by a nested `<script>` keeps the walk inside the outer
       element past the first `</script>`; a `</script` returns it to the
       escaped state and a `-->` before any nested tag leaves that state. Teach
@@ -131,6 +131,7 @@ and KI255 → their existing candidate rows.
 - 2026-09-06: amendment (substantive, Scope In): `tests/htmlindex.py` added to Scope. Its reader parses a `template`'s content as page markup and ends a `script` at its first `</script>`, so every name AC1 and AC3 require the census to leave alone comes back from it as a second element carrying that name and the fixture cannot express the criteria; verified by parsing both shapes through `htmlindex.parse_text` before the gate. Chosen over re-planning at the mini gate.
 - 2026-09-06: T1 — eleven fixture cases written and their rows added; the M079-AC1 leg run over a scratch render of the fixture before any repair reports exactly the five kept rows red (`inside-template`, `inside-nested-template`, `between-template-closes`, `inside-comment-template`, `after-first-script-close`), each as a locator on a minted anchor plus a refusal report the criterion forbids, and 39 refusal reports where 34 are wanted; the six yielding rows are already right, the census over-counting rather than under-counting here.
 - 2026-09-06: T2 — `note_raw` counts `template` depth rather than claiming inside one, so an `id=` in a template's content is not claimed however deeply the templates nest, a `</template>` in a comment is never a tag, an unclosed `template` leaves the rest of the raw string unclaimed, and the element's own opening tag still claims. `tests/htmlindex.py` builds no node inside a `template`, its reader having returned that content as page elements. Over a scratch render the four template rows are green and only the script row is red.
+- 2026-09-06: T3 — `script_end` carries the three escape states, so a `<!--` starts an escaped run, a `<script>` in it doubles the run, the first `</script>` after that returns the run to escaped, and a `-->` returns either run to data; the other six raw-text elements keep the plain end-tag scan. `tests/htmlindex.py` holds a `script` open over the same states through `parse_endtag`. Over a scratch render the M079-AC1 leg is green on all 65 marks: 34 contested, 30 kept, 5 filing no locator.
 
 ## Decisions
 

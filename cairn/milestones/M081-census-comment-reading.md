@@ -121,6 +121,10 @@ after the filter runs (KI255) → their existing candidate rows.
 
 - 2026-09-06: review gate — the maintainer chose fix-then-merge. F1, F2, F5, F6 fixed on the branch (a `claims` sweep over `CHANGELOG.md`, the numbering enumeration widened, the doctype no longer called a comment, the hides-a-name-inside over-claim replaced by what the walk does), F7 and F8 with them; F3 recorded as KI263 and F4 absorbed into the standing M079-instruments candidate row. This supersedes the T5 work-log line's claim that `CHANGELOG.md` is held by its claim row: no such row existed until this commit.
 
+- 2026-09-06: review — suite re-run after the fix-now work: 775 checks plain, 1421 with `--self-test`, both exit 0; AC5's evidence line rewritten to the post-fix figures. `cairn_validate` still sixteen PASS.
+
+- 2026-09-06: step-7 approval: PR #81 approved for merge — the maintainer chose fix-the-four-then-merge at the gate chip, which authorizes the merge once the fixes are in and the suite is green; both now hold.
+
 ## Decisions
 
 ## Review
@@ -160,9 +164,11 @@ over the retired sentence: absent from all 22 swept pages. `CHANGELOG.md` read
 directly with whitespace flattened: the three new statements present, the
 retired sentence gone.
 
-**AC5 — the suite.** `tests/run-tests.sh` run to completion: "All checks passed
-(774 checks)", exit 0. `tests/run-tests.sh --self-test` run to completion: "All
-checks passed (1420 checks)", exit 0. The two new census plants are green in
+**AC5 — the suite.** Re-run after the gate's fix-now work, which is what this
+evidence line records: `tests/run-tests.sh` "All checks passed (775 checks)",
+exit 0; `tests/run-tests.sh --self-test` "All checks passed (1421 checks)",
+exit 0 — one more than the pre-fix runs' 774 and 1420, the new `CHANGELOG.md`
+claims sweep. (The pre-fix runs were 774 and 1420, both exit 0.) The two new census plants are green in
 that run — the unmutated control leaves the M079-AC1 check green; the
 bogus-comment-as-markup plant reddens it on `the author-written id
 'bogus-bang' is on 0 element(s), want 1`; the close-at-`-->`-only plant reddens

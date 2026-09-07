@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-06 (M080 merged as PR #80 and archived; ROADMAP row done; M077 and M076 rows aged out under the retention the validator enforces, which is 3 where this file's own comment and the rulebook both said 5 — comment corrected. Review round 2 recorded ten findings: seven fixed on the branch, one rejected, KI260-KI262 added to DESIGN.md Known issues for the comment-end and foreign-content gaps and the unpinned documentation facts. The two M080 candidate rows absorbed them rather than adding rows, and the three M075 suite-run-shape rows were clustered into one to hold the line cap. M079's fixture-isolation lesson trimmed to its transferable half and M080's count-sweep lesson added. cairn_validate all sixteen PASS, no advisory. Suite green: 773 checks plain, 1413 with --self-test, both exit 0. ROADMAP 57 lines / 13,865 bytes; LESSONS.md 49 lines / 19,922 bytes, 78 bytes of headroom; check-design.md 38 lines / 17,994 bytes, 6 bytes under its own budget, so the next line there needs a compression. Three unreleased CHANGELOG entries, M079's two and M080's, stand behind 0.3.0.)_
+_Last hygiene check: 2026-09-06 (M081 merged as PR #81 and archived; ROADMAP row done, M078's row aged out under the 3-row retention. Review found eight: four author-facing prose defects fixed on the branch at the gate — `CHANGELOG.md` gained its own `sitecheck.py claims` sweep, the numbering paragraph's enumeration widened past `<!--`, a doctype no longer called a comment, and the hides-a-name-inside over-claim replaced by what the walk does — plus two cosmetic cleanups; KI263 added to DESIGN.md Known issues for the foreign-content CDATA divergence and the fixture's non-discriminating CDATA case absorbed into the standing M079-instruments candidate row rather than adding one. M080's count lesson sharpened to cover enumerations, which is the shape M081 repeated. cairn_validate all sixteen PASS, no advisory. Suite green: 775 checks plain, 1421 with --self-test, both exit 0. ROADMAP 57 lines / 13,976 bytes; LESSONS.md 49 lines / 19,997 bytes, 3 bytes of headroom, so the next line there needs a retirement. Two unreleased CHANGELOG entries stand behind 0.3.0, M081 having folded its prose into the first rather than adding one. check-design.md unchanged at 38 lines / 17,994 bytes, 6 bytes under its own budget.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,11 +10,10 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M081 | The id census reads a comment where a browser reads one | review | — | normal | milestones/M081-census-comment-reading.md |
 | M082 | The id census stays out of content the page does not render as markup | planned | M081 | normal | milestones/M082-census-unrendered-content.md |
+| M081 | The id census reads a comment where a browser reads one | done | — | normal | milestones/archive/M081-census-comment-reading.md |
 | M080 | The id census reads a page's raw HTML the way a browser does | done | — | normal | milestones/archive/M080-id-census-raw-html-walk.md |
 | M079 | An author-written mark id never leaves two elements sharing it | done | — | normal | milestones/archive/M079-author-id-collision.md |
-| M078 | A recovered locator lands on the id its author wrote | done | — | normal | milestones/archive/M078-recovered-locator-author-id.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

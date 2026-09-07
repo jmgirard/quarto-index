@@ -101,6 +101,7 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 - 2026-09-07: reduced criteria audit ([O], fresh context) ran over this milestone's five criteria and returned no finding against them.
 - 2026-09-07: gate chose purpose-written sources for T7's plants over the suite's own source, a plant file written to the run's work directory over a tracked `tests/` file, and an exactly-one minted-anchor assertion in the AC1 leg over today's at-least-one.
 - 2026-09-07: T1: `H.minted_anchors` returns one (printed text, id) pair per element carrying a minted id; the AC1 leg groups those by printed text and requires exactly one anchor per cross-reference term.
+- 2026-09-07: T2: a `--self-test` leg runs both reads over two hand-written pages; over two minted anchors on spans printing one string the repaired read names both and the replaced text-keyed read names one, and over a page printing a different string on each mark the two agree. Shown red by a planted first-wins `minted_anchors`. T1 and T2 were checked off against one clean `tests/run-tests.sh --self-test` run (1435 checks, exit 0).
 
 ## Decisions
 

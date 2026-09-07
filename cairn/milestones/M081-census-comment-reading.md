@@ -173,6 +173,10 @@ exit 0 — the `release window` advisory did not fire. No `DESIGN.md` principle
 changed, so no `cairn_impact` run. The `generic` profile's `consistency-gate`
 slot names no toolchain checks, so that half is a clean no-op.
 
+**PR-conversation read (PR #81).** No reviews, no conversation comments, no
+unresolved review threads — an empty read, so nothing to triage from that
+surface and no blocking review.
+
 ### Review findings (three fresh-context lenses)
 
 Full three-lens fan-out, the milestone's surface tier being user-facing. The

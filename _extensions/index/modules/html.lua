@@ -539,7 +539,15 @@ local function taken_identifiers(doc)
   -- So is the text content of each RAW_TEXT_ELEMENTS element, which is
   -- character data and not markup; the walk resumes at that element's own end
   -- tag and reads the markup after it, a name written there being on a real
-  -- element like any other. Only an OPENING tag carries attributes: an `id=`
+  -- element like any other. And so is a `template` element's content, which is
+  -- markup a browser parses into a document fragment of its own: the page
+  -- carries no element of it, so the walk keeps reading the markup in there
+  -- and claims nothing from it until the matching `</template>`. Templates
+  -- nest, so that is a depth and not the first close; a `</template>` written
+  -- inside a comment is never seen as a tag at all, the comment being stepped
+  -- over above; and a `template` nothing closes leaves the rest of this raw
+  -- string unclaimed, as an unclosed comment leaves it unread. The element's
+  -- own opening tag is markup like any other and its `id=` is claimed. Only an OPENING tag carries attributes: an `id=`
   -- written on a closing tag is read and dropped by a browser, so it names
   -- nothing on the page. And a quoted attribute value is read as a value, so
   -- neither a `>` nor a `<!--` inside one ends the tag or opens a comment, and
@@ -549,6 +557,9 @@ local function taken_identifiers(doc)
       return nil
     end
     local text, pos = raw.text, 1
+    -- How many `template` elements the walk is inside. Above zero, an `id=` is
+    -- inside a fragment the page renders no element of.
+    local template_depth = 0
     while true do
       local lt = text:find("<", pos, true)
       if lt == nil then
@@ -637,11 +648,18 @@ local function taken_identifiers(doc)
           -- No `>` closes this tag, so no element of the page comes of it.
           break
         end
-        if identifier ~= nil and not is_end then
+        if identifier ~= nil and not is_end and template_depth == 0 then
           claim(identifier)
         end
         pos = at + 1
         local lowered = tag_name ~= nil and tag_name:lower() or nil
+        if lowered == "template" then
+          if not is_end then
+            template_depth = template_depth + 1
+          elseif template_depth > 0 then
+            template_depth = template_depth - 1
+          end
+        end
         if not is_end and lowered ~= nil and RAW_TEXT_ELEMENTS[lowered] then
           -- Step to this element's own end tag: everything between is
           -- character data, where a `<` starts no tag at all. The end tag is

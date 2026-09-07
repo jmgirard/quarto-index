@@ -38,6 +38,16 @@ RAW_TEXT_ELEMENTS = (
     'script', 'style', 'xmp', 'iframe', 'noembed', 'noframes', 'textarea',
 )
 
+# A `template` element's content is markup, but a browser parses it into a
+# document fragment of its own: no element of the page carries a name written
+# in there, and `getElementById` does not reach one. Python's parser builds it
+# as ordinary children, so a planted `<p id=...>` inside a `template` would
+# come back as a real node carrying a real id — the same divergence the five
+# elements above were named for. The extension's id census steps over the same
+# content (`_extensions/index/modules/html.lua`), so on the pages the fixtures
+# write the reader and the code under test read the same elements.
+TEMPLATE_ELEMENT = 'template'
+
 LIST_TAGS = ('ul', 'ol')
 
 
@@ -63,6 +73,10 @@ class _Builder(HTMLParser):
     CDATA_CONTENT_ELEMENTS = RAW_TEXT_ELEMENTS
 
     def __init__(self, decode=True):
+        # How many `template` elements the reader is inside; above zero,
+        # nothing read belongs to the page. Templates nest, so it is a depth
+        # and not a flag, and one nothing closes swallows the rest.
+        self.template_depth = 0
         # Two layers, two manifests. The index-entry manifests are stated in
         # what a READER sees, so `&amp;` must come back as `&` (M03-AC5 asks
         # for the character itself as an exact element). The visible-terms
@@ -74,15 +88,31 @@ class _Builder(HTMLParser):
         self.stack = [self.root]
 
     def handle_starttag(self, tag, attrs):
+        if self.template_depth:
+            if tag == TEMPLATE_ELEMENT:
+                self.template_depth += 1
+            return
         node = Node(tag, dict(attrs))
         self.stack[-1].children.append(node)
+        if tag == TEMPLATE_ELEMENT:
+            # The element itself is on the page and carries its own id; its
+            # content is not, so it is never pushed and nothing inside it is
+            # built.
+            self.template_depth = 1
+            return
         if tag not in VOID_ELEMENTS:
             self.stack.append(node)
 
     def handle_startendtag(self, tag, attrs):
+        if self.template_depth:
+            return
         self.stack[-1].children.append(Node(tag, dict(attrs)))
 
     def handle_endtag(self, tag):
+        if self.template_depth:
+            if tag == TEMPLATE_ELEMENT:
+                self.template_depth -= 1
+            return
         # Close the nearest matching open element, discarding anything left
         # open inside it. A close tag matching nothing open is ignored rather
         # than allowed to unwind the whole document.
@@ -92,13 +122,19 @@ class _Builder(HTMLParser):
                 return
 
     def handle_data(self, data):
+        if self.template_depth:
+            return
         self.stack[-1].children.append(data)
 
     # Only reached with decode=False, where an entity stays as written.
     def handle_entityref(self, name):
+        if self.template_depth:
+            return
         self.stack[-1].children.append(f'&{name};')
 
     def handle_charref(self, name):
+        if self.template_depth:
+            return
         self.stack[-1].children.append(f'&#{name};')
 
 

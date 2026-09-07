@@ -1639,8 +1639,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   A book whose only marker sits in its last chapter, rendered after a version
   bump that makes every record stale, therefore reports each stale record once
   per chapter that read it: 3 reports over 3 chapters, 780 over 40, where the
-  pre-M062 gate drew 0 (KI200). Observed 2026-08-30 on a scratch three-chapter
-  book built from `examples/book-nomarker/` with a marker added to `two.qmd`.
+  pre-M062 gate, which drew these reports from inside `fold_undeclared`, drew
+  0. Observed 2026-08-30 on a scratch three-chapter book built from
+  `examples/book-nomarker/` with a marker added to `two.qmd`.
   — M062 review F1
 - **KI209.** `DESIGN.md`'s store paragraph enumerates the cases a book reports
   without stating the counting rule for the two store reports, which is now the

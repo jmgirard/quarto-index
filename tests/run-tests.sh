@@ -3943,6 +3943,7 @@ section 'M080-AC2 (reader) — the suite'\''s own HTML reader treats the same se
 python3 - <<'PY'
 import sys
 sys.path.insert(0, 'tests')
+from html.parser import HTMLParser
 import htmlindex as H
 
 SEVEN = H.RAW_TEXT_ELEMENTS
@@ -3975,13 +3976,64 @@ for name in (['buried-%s' % tag for tag in SEVEN]
         errs.append('%r is on an element of the reader tree, but a browser '
                     'renders no element carrying it' % name)
 
+# M084 T4. A `<![CDATA[…]]>` written in HTML content is a bogus comment for a
+# browser, ending at the first `>` after the `<!` — not at the `]]>`. So an
+# `id=` standing between those two is on a real element of the page, and one
+# written before that `>` is on nothing. Python's own parser reads the whole
+# construct as a marked section running to the `]]>` and swallows the first,
+# which is why the reader carries an override; this case is what holds it
+# there, and the id census reads the construct the same way.
+CDATA = ('<body><![CDATA[ok> <p id="between-cdata">real</p> ]]>'
+         ' <p id="past-cdata-close">real</p>'
+         '<![CDATA[<p id="inside-cdata">gone</p>]]>'
+         ' <p id="past-cdata-section">real</p></body>')
+cdata_ids = H.all_ids(H.parse_text(CDATA))
+CDATA_REAL = ('between-cdata', 'past-cdata-close', 'past-cdata-section')
+for name in CDATA_REAL:
+    if cdata_ids.count(name) != 1:
+        errs.append('%r is on %d element(s) of the reader tree, want 1: a '
+                    'browser ends a CDATA construct written in HTML content '
+                    'at its first `>`, so this element is on the page'
+                    % (name, cdata_ids.count(name)))
+if 'inside-cdata' in cdata_ids:
+    errs.append("'inside-cdata' is on an element of the reader tree, but it "
+                "stands before its construct's first `>` and a browser "
+                'renders no element carrying it')
+
+# The same markup without that override — Python's own marked-section reading,
+# reached by putting the stdlib method back on a builder of its own and
+# changing nothing else. Without this the case above would read the same on a
+# reader that had never been repaired, `between-cdata` being an id the stock
+# parser could as easily have kept.
+
+
+class _Unrepaired(H._Builder):
+    parse_html_declaration = HTMLParser.parse_html_declaration
+
+
+_stock = _Unrepaired()
+_stock.feed(CDATA)
+_stock.close()
+stock_ids = H.all_ids(_stock.root)
+if 'between-cdata' in stock_ids:
+    errs.append("the stock marked-section reading still carries "
+                "'between-cdata', so this case says nothing about the "
+                'override the reader carries')
+for name in ('past-cdata-close', 'past-cdata-section'):
+    if stock_ids.count(name) != 1:
+        errs.append('the stock reading lost %r as well, so what it loses is '
+                    'not the one id between a construct\'s first `>` and its '
+                    '`]]>`' % name)
+
 if errs:
     print('FAIL: M080-AC2 (reader): ' + '; '.join(errs), file=sys.stderr)
     sys.exit(1)
 print('ok   M080-AC2 (reader): the reader reads the text content of all %d '
       'element(s) as text and an attribute on a closing tag as nothing, while '
-      'still seeing the %d id(s) an element really carries'
-      % (len(SEVEN), len(want)))
+      'still seeing the %d id(s) an element really carries; it ends a CDATA '
+      'construct in HTML content at its first `>`, keeping the %d id(s) on '
+      'the page there, where the stock marked-section reading keeps %d'
+      % (len(SEVEN), len(want), len(CDATA_REAL), len(stock_ids)))
 PY
 
 # ---------------------------------------------------------------------------

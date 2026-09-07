@@ -72,11 +72,11 @@ The foreign-content CDATA divergence, where a browser ends the construct at
       text-keyed read beside the repaired one as the case that must fail — the
       M080-AC2 shape, where the reader under test gets its input in markup by
       hand rather than off a render.
-- [ ] T3: Repair `tests/htmlindex.py`'s reading of `<![CDATA[…]]>` in HTML
+- [x] T3: Repair `tests/htmlindex.py`'s reading of `<![CDATA[…]]>` in HTML
       content to end at the first `>` (`tests/htmlindex.py:90-215`), and run the
       reader's own probes under the local 3.9 and under a 3.12 before trusting
       either green — M082's lesson, where a 3.9-shaped override raised on CI.
-- [ ] T4: Extend the M080-AC2 reader leg (`tests/run-tests.sh:3944-3986`) with
+- [x] T4: Extend the M080-AC2 reader leg (`tests/run-tests.sh:3944-3986`) with
       the hand-written CDATA case and a plant that reverts T3's repair.
 - [ ] T5: Write the discriminating CDATA case into `examples/id-collision.qmd:333`
       and its rows into the AC1 expectation dicts (`tests/run-tests.sh:4133-4143`),
@@ -102,6 +102,9 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 - 2026-09-07: gate chose purpose-written sources for T7's plants over the suite's own source, a plant file written to the run's work directory over a tracked `tests/` file, and an exactly-one minted-anchor assertion in the AC1 leg over today's at-least-one.
 - 2026-09-07: T1: `H.minted_anchors` returns one (printed text, id) pair per element carrying a minted id; the AC1 leg groups those by printed text and requires exactly one anchor per cross-reference term.
 - 2026-09-07: T2: a `--self-test` leg runs both reads over two hand-written pages; over two minted anchors on spans printing one string the repaired read names both and the replaced text-keyed read names one, and over a page printing a different string on each mark the two agree. Shown red by a planted first-wins `minted_anchors`. T1 and T2 were checked off against one clean `tests/run-tests.sh --self-test` run (1435 checks, exit 0).
+
+- 2026-09-07: T3: `_Builder.parse_html_declaration` ends a `<![CDATA[` at the first `>` after the `<!`, the reading the census takes; the reader's probes run clean under 3.9.6 and under 3.14.7. The plan asked for a 3.12 second interpreter — this machine has 3.9.6 and 3.14.7 only, and 3.14.7 covers the `escapable=` signature change that lesson is about.
+- 2026-09-07: T4: the M080-AC2 reader leg gains a CDATA case whose `id=` stands between the construct's first `>` and its `]]>`; the leg is red naming that id under both interpreters when the override is removed, and the stock marked-section reading is shown to lose that id and no other.
 
 ## Decisions
 

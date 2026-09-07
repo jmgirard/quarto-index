@@ -1088,7 +1088,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   engine log; no capture whose rejection is the log's last `! ` line exists to
   exercise it. — M36
 - **KI120.** `%2F%2Fevil.com` is skipped by neither the `//` nor the scheme
-  guard and is resolved as a local path, a false report only. — M46 review
+  guard and is resolved as a local path, a false report only. `epubcheck`'s
+  own `leaves_publication` answers the same shape the same way, and its
+  docstring's enumeration of what it does not catch omits it. — M46 review,
+  M083 review
 - **KI127.** Both sides of the version matrix's fixture-set comparison are
   sets, so two render targets written to one extraction name read as agreement
   while one extraction is silently overwritten. — M48 review

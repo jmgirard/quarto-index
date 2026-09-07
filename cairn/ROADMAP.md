@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-07 (M083 and M084 planned, splitting the promoted id-uniqueness-instruments row by instrument: M083 takes the three EPUB `unique` gaps, M084 the two in the M079-AC1 leg plus the M075 plant-helper rider, both rows absorbed. The plan gate narrowed `unique`'s verdict to the one index section it reads rather than widening the sweep, leaving a row for the widening. The backtick-escaping row shipped as a direct commit ahead of the plan, striking KI252 and KI172. Earlier today: a triage re-rating of the ten outside-evidence rows to `[low]`, and a pass over 256 items before it.)_
+_Last hygiene check: 2026-09-07 (M083 done and archived: `tests/epubcheck.py unique` now skips and counts an index href that leaves the publication, states its domain on every failing path, and names the one index section per document it reads, with five EPUB plants plus a leg pinning the wording and the skipped-link count on every run. Review found fourteen items; eight were fixed before merge, four routed to a new href-handling row and to KI120, two rejected. M080's row pruned under terminal-row retention. LESSONS.md is at both its caps, so no line was added.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,11 +10,10 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | review | — | normal | milestones/M083-epub-unique-instruments.md |
+| M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | done | — | normal | milestones/archive/M083-epub-unique-instruments.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | planned | M083 | normal | milestones/M084-ac1-leg-instruments.md |
 | M082 | The id census stays out of content the page does not render as markup | done | M081 | normal | milestones/archive/M082-census-unrendered-content.md |
 | M081 | The id census reads a comment where a browser reads one | done | — | normal | milestones/archive/M081-census-comment-reading.md |
-| M080 | The id census reads a page's raw HTML the way a browser does | done | — | normal | milestones/archive/M080-id-census-raw-html-walk.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -22,6 +21,7 @@ _Released 0.3.0 2026-09-05._
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
+- Give one answer to whether an href leaves the publication: `epubcheck`, `htmlindex` and `sitecheck` each test differently and `epubindex.links` still joins an external href to the member's directory, so `unique` and `links` disagree about one link; a root-relative `/ch1.xhtml#frag` is caught by none. Promote on a fixture writing either shape — added 2026-09-07 — M083 review — KI98
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11
 - Bind M079's cross-reference id shapes to criteria: the fixture's four collision cases, its uncontested control, and the rule that a locator mark outranks a cross-reference for a shared name are held by tasks and one suite leg alone, so deleting them leaves every criterion green. Promote with any other pass over the id-collision fixture — added 2026-09-05 — M079 amendment gate
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248

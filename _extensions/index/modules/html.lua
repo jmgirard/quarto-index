@@ -532,8 +532,10 @@ local function taken_identifiers(doc)
   -- name uncounted, and the mark written with it then keeps a contested id in
   -- silence. So the census walks the markup rather than pattern-matching the
   -- whole string: an `id=` counts when it is an attribute of an opening tag,
-  -- and only then. A comment spelled `<!--` is stepped over — it is not part
-  -- of the rendered page, so an id inside one is on nothing a link can reach.
+  -- and only then. A comment is stepped over — it is not part of the rendered
+  -- page, so an id inside one is on nothing a link can reach — and a comment
+  -- is every construct a browser makes one of, not only a `<!--`: the three
+  -- other openings and the three other closes are read below.
   -- So is the text content of each RAW_TEXT_ELEMENTS element, which is
   -- character data and not markup; the walk resumes at that element's own end
   -- tag and reads the markup after it, a name written there being on a real
@@ -553,16 +555,39 @@ local function taken_identifiers(doc)
         break
       end
       if text:sub(lt, lt + 3) == "<!--" then
-        -- Where no `-->` closes it, the walk gives up the rest of this
-        -- raw string. A browser ends a comment in places this does not —
-        -- `<!-->`, `<!--->` and a `--!>` close all end one for a browser
-        -- and none of them here — so those three shapes cost the markup
-        -- written after them (KI260).
-        local close = text:find("-->", lt + 4, true)
+        -- Four spellings end a comment for a browser and so end one here: an
+        -- immediate `>`, an immediate `->`, a `-->` and a `--!>`. Where none
+        -- of them closes it the comment runs to the end of this raw string,
+        -- and the walk gives up the rest of it as a browser gives up the rest
+        -- of the document.
+        local data = lt + 4
+        if text:sub(data, data) == ">" then
+          pos = data + 1
+        elseif text:sub(data, data + 1) == "->" then
+          pos = data + 2
+        else
+          local close = text:find("-->", data, true)
+          local bang = text:find("--!>", data, true)
+          if bang ~= nil and (close == nil or bang < close) then
+            pos = bang + 4
+          elseif close ~= nil then
+            pos = close + 3
+          else
+            break
+          end
+        end
+      elseif text:find("^<[!?]", lt) or text:find("^</[^%a]", lt) then
+        -- A browser makes a comment of each of these too, running to the next
+        -- `>`: a `<!` opening something other than `<!--`, a `<?`, and a `</`
+        -- before anything but a letter. So `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`
+        -- and `</ ok>` are comments, an `id=` written inside one is on no
+        -- element of the page, and the markup after the `>` is read as markup.
+        local close = text:find(">", lt + 2, true)
         if close == nil then
+          -- Nothing closes it, so it runs to the end of this raw string.
           break
         end
-        pos = close + 3
+        pos = close + 1
       elseif text:find("^</?%a", lt) then
         local at = lt + 1
         local is_end = text:sub(at, at) == "/"

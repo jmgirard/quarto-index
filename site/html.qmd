@@ -51,8 +51,8 @@ term it prints, or the entry you wrote for it — so nothing moves out from unde
 a link of your own in silence.
 
 An id counts where it is an attribute of an opening tag, and nowhere else. One
-written inside a comment spelled `<!--` is on nothing the rendered page
-carries, so it contests nothing: a mark written with that name keeps it. So is
+written inside a comment is on nothing the rendered page carries, so it
+contests nothing: a mark written with that name keeps it. So is
 one written on a closing tag, whose attributes a browser reads and drops —
 `</p id="mine">` puts `mine` on nothing at all. And so is one written in the
 text content of `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or
@@ -60,6 +60,18 @@ text content of `script`, `style`, `xmp`, `iframe`, `noembed`, `noframes` or
 as markup, and so does this reading, which steps over that text and goes on
 with the markup after it. A name on a real element standing after one of the
 seven, in that same raw HTML block, is counted like any other.
+
+A comment is more than a `<!--`, and this reading ends one where a browser ends
+one. A `<!` opening anything else, a `<?`, and a `</` before anything but a
+letter each run to the next `>` and put no element on the page — a comment to a
+browser, or in the `<!` case a doctype — so `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`
+and `</ ok>` are stepped over here as well. That first `>` is where each of
+them ends, whatever comes after it inside: in `<![CDATA[a > <p id="mine">]]>`
+the `>` after the `a` closes the construct, so `mine` is on a real element and
+is counted like any other name. A `<!--` ends at a `-->`, and at an immediate
+`>`, an immediate `->` and a `--!>` besides. Past any of those closes, in that
+same raw HTML block, the markup is markup again: a name on a real element there
+is counted like any other.
 
 An element whose content a browser reads as text rather than as markup, but
 which this reading does not step over, is not covered by that: an `id=` written
@@ -70,12 +82,10 @@ author's link to it pointing at nothing. The seven above are the ones this
 reading steps over; how many others there are is not stated here.
 
 Some shapes this reading gets wrong today, each of them counting a name no
-element of the page carries. A comment not spelled `<!--` — `<!ok>`, `<?ok>`,
-`<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this
-reading, so a name inside one is counted. Inside a `script` element, a `<!--`
+element of the page carries. Inside a `script` element, a `<!--`
 followed by a nested `<script>` keeps a browser inside the outer element past
 the first `</script>`, where this reading resumes, so a name written after that
-point is counted too. And a `template` element's content is counted, though a
+point is counted. And a `template` element's content is counted, though a
 browser parses it into a fragment of its own that the page carries no element
 of. How many such shapes there are is not stated here either.
 
@@ -104,8 +114,8 @@ free, and `qi-index-1`, `qi-index-2` and so on where the document has taken it.
 Two kinds of name sit outside that promise. An id injected around the document
 at render time is never seen by the filter (`include-in-header` and its
 relatives). And a name written where the page renders no element — inside a
-comment spelled `<!--`, on a closing tag, or in the text content of one of the
-seven elements above — is a name the numbering may mint: nothing of yours is
+comment of any of the spellings above, on a closing tag, or in the text content
+of one of the seven elements above — is a name the numbering may mint: nothing of yours is
 displaced by that, there being no element of yours to displace.
 
 An entry's locators are numbered links to those anchors: `1`, `2`, `3` for the

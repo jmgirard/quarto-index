@@ -3992,9 +3992,10 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Forty-two marks are hand-derived here from examples/id-collision.qmd, never
+# Fifty-four marks are hand-derived here from examples/id-collision.qmd, never
 # read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from. Twenty-two are M079's and twenty M080's.
+# in the dimension it is taken from. Twenty-two are M079's, twenty M080's and
+# twelve M081's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4022,12 +4023,24 @@ PY
 # past an end tag the element only looks like, and two written on a closing
 # tag, where a browser reads the name and drops it.
 #
+# M081 adds twelve over the two comment shapes the census used to read wrongly.
+# Seven yield: four whose name is on a real element standing after the first
+# `>` of a construct a browser makes a comment — `<!ok>`, `<?ok>`,
+# `<![CDATA[ok]]>`, `</ ok>` — and three whose name is on one standing after a
+# comment ended by an immediate `>`, by an immediate `->`, or by a `--!>`, each
+# in that same raw block. Five keep, none of their names being on any element
+# the page renders: four written inside one of those four constructs and one
+# written inside the `--!>`-closed comment.
+#
 # Rendered and captured by the M08-AC1 section above, whose log carries the
 # refusal reports read at the end of this one.
 # ---------------------------------------------------------------------------
 section 'M079-AC1 — an author-written id never leaves two elements of one page'
-python3 - "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
-         "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log" <<'PY'
+# Written to a file rather than fed on stdin because the self-test below runs
+# THIS check a second time, over a render made with a mutated filter: a plant
+# that reddened a smaller stand-in would say nothing about the check that
+# guards this behavior on every run.
+cat > "$WORK/id-collision-ids.py" <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -4094,6 +4107,26 @@ KEPT_RAW = {'inside-script': 'buried-script',
             'false-end-textarea': 'veiled-textarea',
             'on-closing-p': 'closing-p',
             'on-closing-em': 'closing-em'}
+# The two comment shapes the census used to read wrongly (M081). A browser
+# makes a comment of a `<!` opening anything but `<!--`, of a `<?`, and of a
+# `</` before anything but a letter, each running to the next `>`; and it ends
+# a `<!--` comment at an immediate `>`, at an immediate `->` and at a `--!>` as
+# well as at a `-->`. A name on a real element standing after such a
+# construct's close, in that same raw block, is contested like any other; one
+# written inside the construct is on nothing the page renders and its mark
+# keeps it.
+CONTESTED_COMMENT = {'past-bang': 'beyond-bang',
+                     'past-question': 'beyond-question',
+                     'past-cdata': 'beyond-cdata',
+                     'past-slash': 'beyond-slash',
+                     'past-empty-comment': 'beyond-empty-comment',
+                     'past-dash-comment': 'beyond-dash-comment',
+                     'past-bang-close': 'beyond-bang-close'}
+KEPT_COMMENT = {'in-bang': 'bogus-bang',
+                'in-question': 'bogus-question',
+                'in-cdata': 'bogus-cdata',
+                'in-slash': 'bogus-slash',
+                'in-bang-close': 'hidden-bang-close'}
 # A mark the Span pass never tags: its content yields no text and it carries no
 # entry=, so the mark indexes nothing and the filter returns it untouched —
 # `.index` class and the author's id still on the span it was written on. It
@@ -4107,8 +4140,9 @@ UNTAGGED = {'untagged-in-heading'}
 # span rather than off the mark's own, which is what the criterion promises for
 # this shape — checked below rather than exempted (M079 T14).
 RELOCATED = {'tau', 'after-textarea'}
-REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW)
-KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW)
+REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW,
+               **CONTESTED_COMMENT)
+KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
@@ -4313,6 +4347,94 @@ print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
       'and id; the %d cross-reference mark(s) among them file no locator'
       % (len(ids), len(REFUSED), len(KEPT_ALL), len(NO_LOCATOR)))
 PY
+python3 "$WORK/id-collision-ids.py" \
+  "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
+  "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M081 T4 — a planted defect per repair, the first plants over the id census.
+  #
+  # One substitution per repair, each undoing that repair alone: the census
+  # reads a construct a browser makes a comment as markup again, or it ends a
+  # comment at `-->` and nowhere else. Each mutated copy renders the fixture
+  # into a directory of its own and is held to the SAME check the unplanted
+  # run above passes, read from the file that run wrote, so what goes red is
+  # the check that guards this behavior on every run and not a stand-in
+  # written for the plant.
+  #
+  # Two plants and not one over the census, because the two repairs fail in
+  # opposite directions and each expects its own report: without the first a
+  # name no element carries is counted and the mark written with it is moved
+  # off it; without the second the walk abandons the rest of a raw string and
+  # a real element's name goes uncounted, leaving it on two elements. One
+  # plant over the census as a whole would leave either repair free to be
+  # undone in silence (M32 review: a plant per clause, not per feature).
+  # -------------------------------------------------------------------------
+  M081W="$WORK/m081census"
+  rm -rf "$M081W"
+
+  m081_census_plant() {   # <slug> <label> <expected substring> <perl substitution>
+    local slug="$1" label="$2" want="$3" sub="$4"
+    local dir="$M081W/$slug"
+    mkdir -p "$dir"
+    cp examples/id-collision.qmd examples/dot.png "$dir/"
+    cp -R _extensions "$dir/_extensions"
+    local filter="$dir/_extensions/index/modules/html.lua"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied (a compile error, or a death inside it): $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$sub" < "$filter" > "$dir/html-spliced" \
+      || fail "$label: the substitution aimed at the census could not be applied (its own message is above)"
+    if cmp -s "$filter" "$dir/html-spliced"; then
+      fail "$label: the substitution reported a match and the census is unchanged, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+    fi
+    mv "$dir/html-spliced" "$filter"
+    ( cd "$dir" && quarto render id-collision.qmd --to html ) \
+      > "$WORK/m081-$slug.log" 2>&1 \
+      || { tail -20 "$WORK/m081-$slug.log" >&2; fail "$label: the fixture failed to render with the repair undone; IP2 forbids any of this taking a render down"; }
+    capture "$dir/id-collision.qmd" html "m081-$slug"
+    local out rc
+    out=$(python3 "$WORK/id-collision-ids.py" \
+      "$CAPTURE_ROOT/m081-$slug/id-collision.html" \
+      "$HTML_ANCHOR_PREFIX" "$WORK/m081-$slug.log" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check passed a page rendered with the repair undone, so its green says nothing about that repair"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the mutated census, but not with <<$want>> — that failure is not this check catching this defect"; }
+    pass "$label: the check is red on <<$want>>"
+  }
+
+  # The passing CONTROL first: the same copy machinery with no substitution at
+  # all must leave the check green, or a red above would be the copied tree and
+  # not the mutation planted in it.
+  mkdir -p "$M081W/clean"
+  cp examples/id-collision.qmd examples/dot.png "$M081W/clean/"
+  cp -R _extensions "$M081W/clean/_extensions"
+  ( cd "$M081W/clean" && quarto render id-collision.qmd --to html ) \
+    > "$WORK/m081-clean.log" 2>&1 \
+    || { tail -20 "$WORK/m081-clean.log" >&2; fail "M081 T4 self-test: the unmutated copy failed to render"; }
+  capture "$M081W/clean/id-collision.qmd" html "m081-clean"
+  python3 "$WORK/id-collision-ids.py" \
+    "$CAPTURE_ROOT/m081-clean/id-collision.html" \
+    "$HTML_ANCHOR_PREFIX" "$WORK/m081-clean.log" \
+    || fail "M081 T4 self-test: the check is red on an unmutated copy of this repository's own extension and fixture, so a red below would be the copy and not the mutation planted in it"
+  pass "M081 T4 self-test: an unmutated copy of the extension and the fixture leaves the check green"
+
+  m081_census_plant bogus-as-markup \
+    'M081 T4 self-test: the census reading a construct a browser makes a comment as markup' \
+    "the author-written id 'bogus-bang' is on 0 element(s), want 1" \
+    's{elseif text:find\("\^<\[!\?\]", lt\) or text:find\("\^</\[\^%a\]", lt\) then}{elseif false then}'
+
+  m081_census_plant close-at-arrow-only \
+    'M081 T4 self-test: the census ending a comment at `-->` and nowhere else' \
+    "the author-written id 'beyond-empty-comment' is on 2 element(s), want 1" \
+    's{        local data = lt \+ 4\n.*?\n        end\n}{        local close = text:find("-->", lt + 4, true)\n        if close == nil then\n          break\n        end\n        pos = close + 3\n}s'
+fi
 
 # ---------------------------------------------------------------------------
 # M079-AC2 — the same fixture as a publication: no XHTML document the package
@@ -4347,18 +4469,21 @@ python3 tests/epubcheck.py unique "$CAPTURE_ROOT/id-collision-epub/id-collision.
 # telling a reader their id is kept whatever else carries it is the failure
 # this row exists to catch.
 #
-# The middle rows hold the page to the reading M080 gave the census: seven
-# elements whose text content is text and not markup, the markup after one of
-# them still read, and a closing tag's attributes on nothing.
+# The middle rows hold the page to the reading M080 and M081 gave the census:
+# seven elements whose text content is text and not markup, the markup after
+# one of them still read, a closing tag's attributes on nothing, the three
+# comment openings besides `<!--` and the three comment closes besides `-->`,
+# and the markup past any of those closes still read.
 #
 # The rows after those hold it to what the census still gets wrong, which is
 # where an author loses a name in silence. The residue is pinned as a RULE and
 # not a list — an element read as text that the skip list does not name, with
 # `title` given as one and no count claimed — because a list written from
 # recall is what M080's review returned (the corrected KI254). Two more pin the
-# shapes the walk itself misreads, a bogus comment and the script double-escape
-# (KI257, KI258), and the last pins the name Quarto's writer makes up after
-# this filter has run (KI255). A page that drops one of these sentences is
+# shapes the walk itself still misreads, the script double-escape and a
+# `template` element's content (KI258, KI256), and the last pins the name
+# Quarto's writer makes up after this filter has run (KI255). A page that drops
+# one of these sentences is
 # promising more than the code does; a page that reinstates a count of the
 # residue is promising what no procedure here decides.
 # ---------------------------------------------------------------------------
@@ -4378,18 +4503,87 @@ name on a closing tag	So is one written on a closing tag, whose attributes a bro
 census misses a name outside the skip list	An element whose content a browser reads as text rather than as markup, but which this reading does not step over, is not covered by that
 the residue is a rule and not a list	`title` is one such element
 no count of the residue	how many others there are is not stated here
-bogus comment read as markup	A comment not spelled `<!--` — `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this reading, so a name inside one is counted
+comment openings	A `<!` opening anything else, a `<?`, and a `</` before anything but a letter each run to the next `>` and put no element on the page
+comment opening ends at its first `>`	the `>` after the `a` closes the construct, so `mine` is on a real element and is counted like any other name
+comment closes	A `<!--` ends at a `-->`, and at an immediate `>`, an immediate `->` and a `--!>` besides
+name past a comment close	Past any of those closes, in that same raw HTML block, the markup is markup again: a name on a real element there is counted like any other
 script double-escape unmodelled	Inside a `script` element, a `<!--` followed by a nested `<script>` keeps a browser inside the outer element past the first `</script>`, where this reading resumes
 template content counted	a `template` element's content is counted, though a browser parses it into a fragment of its own that the page carries no element of
 no count of the misread shapes	How many such shapes there are is not stated here either
 numbering steps over rendered names	Both kinds of generated id skip any name an element of the rendered page carries
-numbering may mint an unrendered one	a name written where the page renders no element — inside a comment spelled `<!--`, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
+numbering may mint an unrendered one	a name written where the page renders no element — inside a comment of any of the spellings above, on a closing tag, or in the text content of one of the seven elements above — is a name the numbering may mint
 front-matter exception	it keeps whatever id you wrote on it, contested or not, with nothing reported
 unindexable exception	Such a mark keeps a contested name, so the name stays on two elements and nothing further is said about it
 census misses a writer-generated name	a name Quarto's own writer makes up after this extension has run
 M079CLAIMS
 python3 tests/sitecheck.py claims site/html.qmd "$WORK/html-id-claims.txt" \
   || fail "M079-AC5: site/html.qmd no longer states who keeps a contested id, what the yielding mark is given instead, how two marks written with one name are settled, that a cross-reference mark yields the same way, or that each yield is reported (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# M081-AC4 — the changelog states the comment reading too
+#
+# `phrase-absent` sweeps `git ls-files 'site/*.qmd'` and `README.md`, and the
+# claim rows above are read against `site/html.qmd` alone, so nothing held
+# `CHANGELOG.md` to either half of the criterion: deleting its comment
+# paragraph, or restoring the retired sentence to it, left both runs green
+# (M081 review F1, which also corrects a T5 work-log line claiming a row that
+# did not exist). The rows are the changelog's own sentences and not the site
+# page's, the two being written for different readers.
+# ---------------------------------------------------------------------------
+section 'M081-AC4 — the changelog states the comment reading too'
+cat > "$WORK/changelog-comment-claims.txt" <<'M081CLAIMS'
+comment ends where a browser ends it	A comment ends here where it ends for a browser, and a comment is more than a `<!--`
+comment openings	a `<!` opening anything else, a `<?`, and a `</` before anything but a letter each run to the next `>` and put no element on the page
+comment openings end at the first `>`	are stepped over, up to that first `>` and no further
+comment closes	a `<!--` ends at a `-->`, at an immediate `>`, at an immediate `->` and at a `--!>`
+name past a comment close	Past any of those closes a name on a real element in that same raw HTML block is counted again
+M081CLAIMS
+python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/changelog-comment-claims.txt" \
+  || fail "M081-AC4: CHANGELOG.md no longer states that the id census ends a comment where a browser ends one, which openings besides a bang-dash-dash begin one, that such an opening ends at its first close bracket, which spellings end one, or that a name past a close is counted again (its own FAIL line is above)"
+
+# ---------------------------------------------------------------------------
+# M081-AC4 — the retired sentence is gone from every page a reader meets
+#
+# The claim rows above hold the page to what the census now does; this holds it
+# to no longer saying the census reads a bogus comment as markup. A rewrite
+# that added the new sentences and left the old one standing would satisfy
+# every claim row and still tell a reader the opposite of what the code does,
+# which is the defect this sweep exists to catch.
+#
+# Its own phrase list rather than a row added to the back-end-count list
+# below, whose own FAIL message names the back-end count by hand: a second row
+# under that message would be reported as a sentence about back-ends.
+# ---------------------------------------------------------------------------
+section 'M081-AC4 — the retired sentence is gone from every page a reader meets'
+M081_RETIRED='A comment not spelled `<!--` — `<!ok>`, `<?ok>`, `<![CDATA[ok]]>`, `</ ok>` — is a comment to a browser and markup to this reading, so a name inside one is counted'
+printf 'bogus comment misread\t%s\n' "$M081_RETIRED" \
+  > "$WORK/html-comment-retired.txt"
+python3 tests/sitecheck.py phrase-absent "$WORK/html-comment-retired.txt" \
+  || fail "M081-AC4: a page a reader meets still says the id census reads a comment not spelled <!-- as markup (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # The sweep is shown red on an OVERLAY page carrying the retired sentence —
+  # the sitecheck handle, which supplies the bytes for a tracked path while git
+  # still supplies the file list — behind a passing control on an overlay
+  # holding an unmodified copy of the same page, so a red below is the planted
+  # sentence and not the overlay mechanism.
+  M081D="$WORK/m081docs"
+  rm -rf "$M081D"
+  mkdir -p "$M081D/clean/site" "$M081D/overlay/site"
+  cp site/html.qmd "$M081D/clean/site/html.qmd"
+  python3 tests/sitecheck.py phrase-absent "$WORK/html-comment-retired.txt" \
+      "$M081D/clean" \
+    || fail "M081-AC4 self-test: the sweep is red on an overlay holding an unmodified copy of site/html.qmd, so a red below would be the overlay and not the sentence planted in it"
+  { cat site/html.qmd; printf '\n%s.\n' "$M081_RETIRED"; } \
+    > "$M081D/overlay/site/html.qmd"
+  M081_OUT=$(python3 tests/sitecheck.py phrase-absent \
+    "$WORK/html-comment-retired.txt" "$M081D/overlay" 2>&1) && M081_RC=0 || M081_RC=$?
+  [ "$M081_RC" -ne 0 ] \
+    || { printf '%s\n' "$M081_OUT" >&2; fail "M081-AC4 self-test: the sweep passed a page carrying the retired sentence, so its green says nothing"; }
+  printf '%s' "$M081_OUT" | grep -qF -- 'site/html.qmd (bogus comment misread)' \
+    || { printf '%s\n' "$M081_OUT" >&2; fail "M081-AC4 self-test: the sweep failed on the planted page, but without naming site/html.qmd and the bogus-comment row — that failure is not this sweep catching this defect"; }
+  pass "M081-AC4 self-test: the sweep is red naming site/html.qmd and its row on an overlay page carrying the retired sentence, and green on an overlay holding that page unmodified"
+fi
 
 # ---------------------------------------------------------------------------
 # M08-AC2 — a cross-reference target naming its own entry. Reported and

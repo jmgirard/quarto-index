@@ -91,6 +91,7 @@ CDATA divergence → its own Known issues entry, unchanged here.
 - 2026-09-07: reduced criteria audit ([O], fresh context) returned two findings — AC3's two href shapes were promised without a leg for each, fixed here by naming three legs; and the backtick-escaping rider bound a property of how the suite reports rather than of this milestone's deliverable, taken to the gate and settled as a direct commit outside both milestones.
 - 2026-09-07: review — the four criteria met on fresh evidence from a green `--self-test` run (exit 0, 1435 checks); the cairn gate passed with no advisory firing; the three-lens fan-out returned fourteen findings, eight taken to the gate as fix-now, four as follow-ups and two rejected, none reaching the return floor.
 - 2026-09-07: gate — the eight fix-now findings applied on the branch and the suite re-run green (exit 0, 1434 checks); the verdict-wording leg and a new pin on the skipped-link count moved onto the captured publication and out of `--self-test`, so an ordinary run now catches an index locator the check would skip.
+- 2026-09-07: step-7 approval: PR #83 approved for merge.
 
 ## Decisions
 

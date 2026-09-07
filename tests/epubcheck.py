@@ -32,6 +32,7 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
 """
 
 import posixpath
+import re
 import sys
 
 import epubindex
@@ -232,6 +233,22 @@ def cmd_absent(argv):
     return 0
 
 
+SCHEME = re.compile(r'[A-Za-z][A-Za-z0-9+.\-]*:')
+
+
+def leaves_publication(target):
+    """True where the file part of an href names something outside the EPUB.
+
+    A `//` opening is a protocol-relative reference and a `scheme:` opening an
+    absolute one; either names a resource the publication does not contain.
+    Joining one against the linking member's directory builds a zip name no
+    manifest can list, so a link that is not broken would be reported as one
+    that is. An empty file part is the linking document itself, and a relative
+    reference's first segment cannot carry a colon, so neither is caught here.
+    """
+    return target.startswith('//') or SCHEME.match(target) is not None
+
+
 def cmd_unique(argv):
     """No document repeats an id, and every index link lands on a unique one.
 
@@ -248,10 +265,22 @@ def cmd_unique(argv):
     a section of ours. The publication, its manifest and its documents are
     `epubindex`'s to read, here as everywhere.
 
-    The domain is stated with the verdict — documents swept, sections found,
-    fragment-carrying links resolved, each required non-zero — so a
-    publication whose index lost its links cannot pass here as one whose
-    links are all unique.
+    ONE section per document is read. `htmlindex.index_section` returns the
+    first heading it matches and the section around it, so a document carrying
+    a second generated index section has that section's links resolved by
+    nothing here — its ids are still swept, the repeated-id clause reading
+    whole documents. The verdict says which section it read rather than
+    letting a count read as a sweep of every section, and `cairn/DESIGN.md`'s
+    Known issues records the gap.
+
+    The domain is stated on every path — documents swept, sections found,
+    fragment-carrying links resolved, each required non-zero, and beside them
+    the links left unresolved as leaving the publication — so a publication
+    whose index lost its links cannot pass here as one whose links are all
+    unique, and a reader meeting a red run can still see whether the sweep
+    behind it was empty. A link whose file part leaves the publication is
+    resolved by nothing here and counted separately, so the count of links
+    this check followed stays the count it could have caught something in.
     """
     if len(argv) != 1:
         print('usage: epubcheck.py unique <epub>', file=sys.stderr)
@@ -262,7 +291,7 @@ def cmd_unique(argv):
     for name, root in book.documents:
         for identifier in htmlindex.duplicate_ids(root):
             bad.append(f'{name} carries the id {identifier!r} more than once')
-    sections = fragments = 0
+    sections = fragments = outside = 0
     for name, root in book.documents:
         section = htmlindex.index_section(root)
         if section is None:
@@ -276,6 +305,9 @@ def cmd_unique(argv):
                 continue
             target, _, fragment = href.partition('#')
             if not fragment:
+                continue
+            if leaves_publication(target):
+                outside += 1
                 continue
             fragments += 1
             member = name
@@ -295,26 +327,47 @@ def cmd_unique(argv):
             if count != 1:
                 bad.append(f'{name}: {href} names an id {member} carries '
                            f'{count} time(s)')
+    # The domain, on EVERY path and not only the green one: a reader meeting a
+    # red run needs to know whether the sweep behind it was empty, and a size
+    # line printed only where every clause passed goes silent exactly there
+    # (M45 review; LESSONS.md).
+    domain = (f'{len(book.documents)} document(s) swept for repeated ids, '
+              f'{sections} of them carrying an index section this check read, '
+              f'{fragments} fragment-carrying link(s) resolved inside those '
+              f'sections and {outside} left unresolved as leaving the '
+              f'publication')
+
+    def red(reason):
+        print(f'FAIL: {path}: {reason}', file=sys.stderr)
+        print(f'  domain: {domain}', file=sys.stderr)
+        return 1
+
     if not sections:
-        print(f'FAIL: {path}: no document of this publication carries a '
-              f'generated index section, so this check read nothing',
-              file=sys.stderr)
-        return 1
+        return red('no document of this publication carries a generated index '
+                   'section, so this check read nothing')
     if not fragments:
-        print(f'FAIL: {path}: no link inside a generated index section '
-              f'carries a fragment, so this check resolved nothing',
-              file=sys.stderr)
-        return 1
+        if outside:
+            return red(f'every one of the {outside} fragment-carrying link(s) '
+                       f'inside a generated index section leaves the '
+                       f'publication, so this check resolved none of them')
+        return red('no link inside a generated index section carries a '
+                   'fragment, so this check resolved nothing')
     if bad:
         print(f'FAIL: {path}: {len(bad)} id(s) or link(s) name other than one '
               f'element', file=sys.stderr)
         for line in bad:
             print(f'  {line}', file=sys.stderr)
+        print(f'  domain: {domain}', file=sys.stderr)
         return 1
     print(f'ok   {path}: none of the {len(book.documents)} manifest-listed '
           f'document(s) carries an id twice, and each of the {fragments} '
           f'fragment(s) linked from the {sections} generated index section(s) '
-          f'names an id its document carries exactly once')
+          f'— the one index section this check reads in each document that '
+          f'carries one, the heading match `index_section` returns and never '
+          f'a second in the same document — names an id its document carries '
+          f'exactly once; {outside} '
+          f'fragment-carrying link(s) leave the publication and were not '
+          f'resolved')
     return 0
 
 

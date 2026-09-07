@@ -1432,6 +1432,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   back, so a claim rewritten rather than added carries no row and a reword back
   to the old wording is green. The sentence M073 review F1 failed on
   (`site/books.qmd:171`) is such a claim. — M074 review N4
+- **KI264.** `tests/epubcheck.py unique` reads one generated index section per
+  document — the first `htmlindex.index_section` matches — so a second such
+  section in one document has its links resolved by nothing. The ids inside it
+  are still swept, the repeated-id clause reading whole documents, and the
+  verdict names the section it read. KI51 records the neighbouring risk that
+  the first heading matched may not be a generated section at all. — M079
+  review F9, M083 T2
 
 ### The repo and its packaging
 

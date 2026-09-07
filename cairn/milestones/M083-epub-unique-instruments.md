@@ -63,7 +63,7 @@ CDATA divergence → its own Known issues entry, unchanged here.
       an href carrying a scheme or opening with `//` leaves the publication, so
       it is skipped rather than normalized against the member's directory, and
       the verdict counts it as a link the check did not resolve.
-- [ ] T2: Narrow `cmd_unique`'s docstring and verdict (`tests/epubcheck.py:235-262`,
+- [x] T2: Narrow `cmd_unique`'s docstring and verdict (`tests/epubcheck.py:235-262`,
       `:310-316`) to the one index section per document its heading search reads,
       and write the unread sections into `cairn/DESIGN.md`'s Known issues.
 - [ ] T3: Build the EPUB plant harness beside the M079-AC2 leg
@@ -85,6 +85,7 @@ CDATA divergence → its own Known issues entry, unchanged here.
 - 2026-09-07: plan gate chose two milestones split by instrument over one of five, because the five landed at about ten tasks and the two halves read different artifacts (an EPUB, a rendered HTML page); falsified by the M084 work turning out to need M083's plant harness rather than its own.
 - 2026-09-07: T1 — `cmd_unique` skips an href whose file part leaves the publication (a `//` opening or a `scheme:` opening) instead of joining it to the linking member's directory, and the verdict counts those separately. Both shapes were red before the change, reported as naming a manifest item the publication does not list; both are green after. Checkpoint: the verify suite is still running, so T1 is not ticked.
 - 2026-09-07: T1 ticked — `tests/run-tests.sh` green, 777 checks, the `unique` leg's verdict reading `0 fragment-carrying link(s) leave the publication and were not resolved`.
+- 2026-09-07: T2 — `cmd_unique`'s docstring and verdict now name the one index section per document the heading search reads; `cairn/DESIGN.md` records the unread ones as KI264, cross-referencing KI51. `tests/run-tests.sh` green, 777 checks.
 - 2026-09-07: reduced criteria audit ([O], fresh context) returned two findings — AC3's two href shapes were promised without a leg for each, fixed here by naming three legs; and the backtick-escaping rider bound a property of how the suite reports rather than of this milestone's deliverable, taken to the gate and settled as a direct commit outside both milestones.
 
 ## Decisions

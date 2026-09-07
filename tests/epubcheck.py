@@ -265,6 +265,14 @@ def cmd_unique(argv):
     a section of ours. The publication, its manifest and its documents are
     `epubindex`'s to read, here as everywhere.
 
+    ONE section per document is read. `htmlindex.index_section` returns the
+    first heading it matches and the section around it, so a document carrying
+    a second generated index section has that section's links resolved by
+    nothing here — its ids are still swept, the repeated-id clause reading
+    whole documents. The verdict says which section it read rather than
+    letting a count read as a sweep of every section, and `cairn/DESIGN.md`'s
+    Known issues records the gap.
+
     The domain is stated with the verdict — documents swept, sections found,
     fragment-carrying links resolved, each required non-zero — so a
     publication whose index lost its links cannot pass here as one whose
@@ -336,7 +344,9 @@ def cmd_unique(argv):
     print(f'ok   {path}: none of the {len(book.documents)} manifest-listed '
           f'document(s) carries an id twice, and each of the {fragments} '
           f'fragment(s) linked from the {sections} generated index section(s) '
-          f'names an id its document carries exactly once; {outside} '
+          f'— the first, and the only index section this check reads in each '
+          f'document that carries one — names an id its document carries '
+          f'exactly once; {outside} '
           f'fragment-carrying link(s) leave the publication and were not '
           f'resolved')
     return 0

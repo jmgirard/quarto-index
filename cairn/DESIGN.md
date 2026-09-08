@@ -952,6 +952,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   all. Nothing exercises the foreign-content half on either side.
   — M081 review F3, extended M084
 
+- **KI265.** `tests/htmlindex.py`'s first-`>` reading of a `<![CDATA[…]]>` is
+  applied to XHTML as well. `parse_text` is the reader `tests/epubindex.py`
+  uses for an EPUB XHTML member, and in XHTML the construct IS a marked
+  section whose content is character data — so on that side the override is
+  wrong where the stock reading was right, and an `id=` written between the
+  construct's first `>` and its `]]>` would be read as an element the member
+  does not carry. No captured EPUB member carries a literal `<![CDATA[`, so
+  nothing is red today; separating the two readings would take a builder that
+  knows which of the two it is parsing. — M084 review F3
+
 ### Reports and messages
 
 - **KI21.** No fixture exercises a reported block position where Quarto injects

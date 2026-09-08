@@ -507,7 +507,7 @@ def minted_anchors(root, prefix):
     member and reads the whole group (M084 T1).
     """
     return [(text(n).strip(), n.attrs['id']) for n in walk(root)
-            if n.attrs.get('id', '').startswith(prefix)]
+            if (n.attrs.get('id') or '').startswith(prefix)]
 
 
 def text(node, sep=''):

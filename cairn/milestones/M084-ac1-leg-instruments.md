@@ -113,6 +113,7 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 - 2026-09-07: T8: KI263 re-read against T5's case. Nothing in it was made false; extended to name `tests/htmlindex.py` as a second artifact carrying the same reading and to say the HTML half is now fenced while the foreign-content half is exercised on neither side.
 - 2026-09-08: review opened draft PR #84 and started the AC evidence run; suite self-test and the three fresh-context review lenses in flight.
 - 2026-09-08: review recorded fresh evidence for AC1-AC5 from one `--self-test` run (1438 checks, exit 0), ticked the five criteria, and ran the consistency gate clean; three review lenses returned seven findings, all from the diff-bug lens.
+- 2026-09-08: gate approved fixing three findings before merge (the design-notes overclaim, the false pre-repair-copy comment, the valueless-`id=` crash); the other four take follow-up or rejection as logged in the Review section.
 
 ## Decisions
 
@@ -162,3 +163,42 @@ lenses ran fresh-context. [S] blame-history: no findings. [S] prior-review: no
 findings (no inline PR review comments exist on this repo; the archived review
 sections' still-open code findings are all in `html.lua`, untouched here).
 [O] diff-bug: seven findings, listed with their dispositions below.
+
+**Findings and dispositions.** The [O] diff-bug lens reported seven; the other
+two lenses none. Six were verified against the implementation before triage.
+
+- F1 `tests/run-tests.sh:4503-4508` — the T2 self-test's `grouped()` re-implements
+  the leg's read (`:4363-4365`) rather than exercising it, so reverting the leg
+  to first-wins, or its `len(got) != 1` to `if not got:`, leaves both the leg and
+  the self-test green. Confirmed. AC1 as written asks for a self-test over the
+  repaired read, which this is, so no criterion fails. **Follow-up** — the
+  fixture cannot carry two anchors on one printed string, which is why the plan
+  gate chose a hand-written page, so fencing the leg's own predicate is its own
+  work.
+- F2 `tests/run-tests.sh:4862-4881` — the derived M083 locator takes any
+  `href="X.xhtml#Y"` in the member, where the sweep counts only anchors inside
+  `htmlindex.index_section`. Confirmed as fragility: all 69 hrefs in
+  `EPUB/text/ch002.xhtml` are inside that section today, and the derivation fails
+  loudly rather than aiming the plants at nothing. **Follow-up.**
+- F3 `tests/htmlindex.py:151-172` — `parse_text` also reads EPUB XHTML members
+  (`tests/epubindex.py:127`), where a CDATA marked section is genuine, so the
+  override is wrong on that side. Confirmed; no captured member carries a literal
+  `<![CDATA[`. **Follow-up**, as a Known issues entry beside KI263.
+- F4 `cairn/DESIGN.md` — the entry read as if the fixture fenced both readers.
+  Confirmed: Quarto rewrites the raw block, so `id-collision.html:441` carries
+  `<!--[CDATA[ok-->` and no CDATA construct. **Fixed** — the entry now says which
+  case fences which reader and that the fixture does not reach the reader's
+  branch.
+- F5 `tests/run-tests.sh:27680-27683` — "Both are taken from the plant as it
+  stood before M077" is false of the `short-rule` copy, which is the current
+  plant with one predicate reverted. Confirmed. **Fixed.**
+- F6 `tests/run-tests.sh:27745-27747` — AC4's "drops a different one" against a
+  check asserting the domain is unchanged. **Rejected**: the check asserts the
+  two plants drop demonstrably different regions (the headings differ and `cmp`
+  shows the copy changed the file), which is what the criterion promises.
+- F7 `tests/htmlindex.py:509-510` — `minted_anchors` raised on a valueless `id=`
+  where `all_ids` filters it. Confirmed by probe. **Fixed** — the filter now
+  reads `(n.attrs.get('id') or '')`.
+
+**PR conversation** — PR #84 carries no reviews, no conversation comments and no
+unresolved threads.

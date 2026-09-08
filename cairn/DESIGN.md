@@ -943,10 +943,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   regression — the walk counted the whole construct before M081 — and not
   confirmable without a browser this repo does not run, which is why M081
   scoped foreign content out. The gap is now two artifacts wide and its HTML
-  half is fenced: M084 gave `tests/htmlindex.py` the same first-`>` reading,
-  so the suite's own reader carries it too, and `examples/id-collision.qmd`
-  writes an HTML-content `id=` between the two closes that the M079-AC1 leg
-  holds. Nothing exercises the foreign-content half on either side.
+  half is fenced on both, by separate cases: M084 gave `tests/htmlindex.py`
+  the same first-`>` reading, held by a hand-written case in the M080-AC2
+  reader leg, and `examples/id-collision.qmd` writes an HTML-content `id=`
+  between the two closes that the M079-AC1 leg holds against the census. The
+  fixture does not reach the reader's branch — Quarto rewrites the raw block,
+  so the rendered page carries `<!--[CDATA[ok-->` and no CDATA construct at
+  all. Nothing exercises the foreign-content half on either side.
   — M081 review F3, extended M084
 
 ### Reports and messages

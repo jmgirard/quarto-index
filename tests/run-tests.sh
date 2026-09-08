@@ -27679,8 +27679,11 @@ M075PLANTPY
 
   # The two pre-repair copies. One substitution each, against the plant's own
   # bytes: the first puts back the dash-only rule the plant carried, the
-  # second puts back the unbounded, unchecked drop loop. Both are taken from
-  # the plant as it stood before M077 (a2652f7c^).
+  # second puts back the unbounded, unchecked drop loop. Each copy is the
+  # plant as it stands with ONE repair undone, not the whole pre-M077 plant:
+  # the reverted predicate is the one M077 replaced (a2652f7c^), and the rest
+  # of the plant is the current bytes, so the copy and the plant differ in
+  # that repair and nothing else.
   m084_prerepair() {   # <slug> <perl substitution>
     perl -0777 -e '
       my ($sub) = @ARGV;

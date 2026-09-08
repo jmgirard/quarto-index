@@ -114,13 +114,18 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 - 2026-09-08: review opened draft PR #84 and started the AC evidence run; suite self-test and the three fresh-context review lenses in flight.
 - 2026-09-08: review recorded fresh evidence for AC1-AC5 from one `--self-test` run (1438 checks, exit 0), ticked the five criteria, and ran the consistency gate clean; three review lenses returned seven findings, all from the diff-bug lens.
 - 2026-09-08: gate approved fixing three findings before merge (the design-notes overclaim, the false pre-repair-copy comment, the valueless-`id=` crash); the other four take follow-up or rejection as logged in the Review section.
+- 2026-09-08: step-7 approval: PR #84 approved for merge.
 
 ## Decisions
 
 ## Review
 
-Evidence from one `tests/run-tests.sh --self-test` run at 71300dc on 2026-09-08:
-1438 checks, exit 0. The branch carries origin/main; no merge was needed.
+Evidence from `tests/run-tests.sh --self-test` on 2026-09-08: 1438 checks, exit
+0 at 71300dc, and 1438 checks, exit 0 again at 7059e1f, after the three
+gate-directed corrections below. The branch carries origin/main; no merge was
+needed. One run between the two died in `M062-AC2` on a Quarto Deno
+segmentation fault, a crash in the renderer rather than a check verdict; the
+clean run at the same tree is the evidence recorded here.
 
 **AC1** — the M079-AC1 leg reads `H.minted_anchors(doc, prefix)` and groups the
 pairs it returns by the printed string (`tests/run-tests.sh:4363-4365`), one pair
@@ -151,7 +156,8 @@ with `is never closed by a second rule`; the copy scanning past the wrapper's
 body exits 0 and deletes the wrapper's own close, leaving a source the scan finds
 no wrapper in.
 
-**AC5** — `tests/run-tests.sh --self-test`: 1438 checks, exit 0.
+**AC5** — `tests/run-tests.sh --self-test`: 1438 checks, exit 0, at the tree
+carrying the three corrections.
 
 **Consistency gate** — `cairn_validate.py` exit 0, all checks passed, no advisory
 fired. `Principles touched:` is `—` and the DESIGN.md edit is a Known issues

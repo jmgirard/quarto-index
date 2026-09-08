@@ -3943,6 +3943,7 @@ section 'M080-AC2 (reader) — the suite'\''s own HTML reader treats the same se
 python3 - <<'PY'
 import sys
 sys.path.insert(0, 'tests')
+from html.parser import HTMLParser
 import htmlindex as H
 
 SEVEN = H.RAW_TEXT_ELEMENTS
@@ -3975,13 +3976,64 @@ for name in (['buried-%s' % tag for tag in SEVEN]
         errs.append('%r is on an element of the reader tree, but a browser '
                     'renders no element carrying it' % name)
 
+# M084 T4. A `<![CDATA[…]]>` written in HTML content is a bogus comment for a
+# browser, ending at the first `>` after the `<!` — not at the `]]>`. So an
+# `id=` standing between those two is on a real element of the page, and one
+# written before that `>` is on nothing. Python's own parser reads the whole
+# construct as a marked section running to the `]]>` and swallows the first,
+# which is why the reader carries an override; this case is what holds it
+# there, and the id census reads the construct the same way.
+CDATA = ('<body><![CDATA[ok> <p id="between-cdata">real</p> ]]>'
+         ' <p id="past-cdata-close">real</p>'
+         '<![CDATA[<p id="inside-cdata">gone</p>]]>'
+         ' <p id="past-cdata-section">real</p></body>')
+cdata_ids = H.all_ids(H.parse_text(CDATA))
+CDATA_REAL = ('between-cdata', 'past-cdata-close', 'past-cdata-section')
+for name in CDATA_REAL:
+    if cdata_ids.count(name) != 1:
+        errs.append('%r is on %d element(s) of the reader tree, want 1: a '
+                    'browser ends a CDATA construct written in HTML content '
+                    'at its first `>`, so this element is on the page'
+                    % (name, cdata_ids.count(name)))
+if 'inside-cdata' in cdata_ids:
+    errs.append("'inside-cdata' is on an element of the reader tree, but it "
+                "stands before its construct's first `>` and a browser "
+                'renders no element carrying it')
+
+# The same markup without that override — Python's own marked-section reading,
+# reached by putting the stdlib method back on a builder of its own and
+# changing nothing else. Without this the case above would read the same on a
+# reader that had never been repaired, `between-cdata` being an id the stock
+# parser could as easily have kept.
+
+
+class _Unrepaired(H._Builder):
+    parse_html_declaration = HTMLParser.parse_html_declaration
+
+
+_stock = _Unrepaired()
+_stock.feed(CDATA)
+_stock.close()
+stock_ids = H.all_ids(_stock.root)
+if 'between-cdata' in stock_ids:
+    errs.append("the stock marked-section reading still carries "
+                "'between-cdata', so this case says nothing about the "
+                'override the reader carries')
+for name in ('past-cdata-close', 'past-cdata-section'):
+    if stock_ids.count(name) != 1:
+        errs.append('the stock reading lost %r as well, so what it loses is '
+                    'not the one id between a construct\'s first `>` and its '
+                    '`]]>`' % name)
+
 if errs:
     print('FAIL: M080-AC2 (reader): ' + '; '.join(errs), file=sys.stderr)
     sys.exit(1)
 print('ok   M080-AC2 (reader): the reader reads the text content of all %d '
       'element(s) as text and an attribute on a closing tag as nothing, while '
-      'still seeing the %d id(s) an element really carries'
-      % (len(SEVEN), len(want)))
+      'still seeing the %d id(s) an element really carries; it ends a CDATA '
+      'construct in HTML content at its first `>`, keeping the %d id(s) on '
+      'the page there, where the stock marked-section reading keeps %d'
+      % (len(SEVEN), len(want), len(CDATA_REAL), len(stock_ids)))
 PY
 
 # ---------------------------------------------------------------------------
@@ -3992,10 +4044,10 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Sixty-six marks are hand-derived here from examples/id-collision.qmd, never
-# read back out of the render: an expectation taken from the artifact is blind
-# in the dimension it is taken from. Twenty-two are M079's, twenty M080's,
-# twelve M081's and twelve M082's.
+# Sixty-seven marks are hand-derived here from examples/id-collision.qmd,
+# never read back out of the render: an expectation taken from the artifact is
+# blind in the dimension it is taken from. Twenty-two are M079's, twenty
+# M080's, twelve M081's, twelve M082's and one M084's.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4130,13 +4182,19 @@ KEPT_RAW = {'inside-script': 'buried-script',
 # construct's close, in that same raw block, is contested like any other; one
 # written inside the construct is on nothing the page renders and its mark
 # keeps it.
+# `mid-cdata` is the one of these the two readings of `<![CDATA[…]]>` disagree
+# about (M084): its `id=` stands between the construct's first `>`, where a
+# browser and the census end it, and the `]]>` a reader of XML marked sections
+# would run to. A reader taking the second reading counts no element for that
+# name, so the mark would keep it and the page would carry it twice.
 CONTESTED_COMMENT = {'past-bang': 'beyond-bang',
                      'past-question': 'beyond-question',
                      'past-cdata': 'beyond-cdata',
                      'past-slash': 'beyond-slash',
                      'past-empty-comment': 'beyond-empty-comment',
                      'past-dash-comment': 'beyond-dash-comment',
-                     'past-bang-close': 'beyond-bang-close'}
+                     'past-bang-close': 'beyond-bang-close',
+                     'mid-cdata': 'between-cdata'}
 KEPT_COMMENT = {'in-bang': 'bogus-bang',
                 'in-question': 'bogus-question',
                 'in-cdata': 'bogus-cdata',
@@ -4296,20 +4354,26 @@ else:
 # is not the mark, and the span printing the term carries a minted id instead.
 # `tau` is written inside a heading, whose anchor is relocated onto an empty
 # span, so only the first half is read for it.
+# Read off each mark's own element rather than off a map keyed by the string
+# the mark prints: `minted_anchors` returns one pair per element, so two marks
+# printing one string are two entries here and not one. Grouped by the printed
+# string, and the group read whole — a term whose marks carry two minted
+# anchors is two destinations for one name, which a first-wins map reported as
+# one and this counts as the two it is (M084 T1).
 minted = {}
-for name in H.all_ids(doc):
-    if name.startswith(prefix):
-        el = H.find_id(doc, name)
-        if el is not None:
-            minted.setdefault(H.text(el).strip(), name)
+for printed, name in H.minted_anchors(doc, prefix):
+    minted.setdefault(printed, []).append(name)
 for term, wrote in sorted(CONTESTED_XREF.items()):
     landed = H.find_id(doc, wrote)
     if landed is not None and H.text(landed).strip() == term:
         errs.append('the contested id %r is still on the span printing %r'
                     % (wrote, term))
-    if term not in RELOCATED and term not in minted:
-        errs.append('no minted anchor is on the span printing %r, which gave '
-                    'up %r' % (term, wrote))
+    if term not in RELOCATED:
+        got = minted.get(term, [])
+        if len(got) != 1:
+            errs.append('%d minted anchor(s) are on the span(s) printing %r, '
+                        'which gave up %r; want exactly 1 (%s)'
+                        % (len(got), term, wrote, ', '.join(got) or 'none'))
 # And where a refused mark is written inside a heading, the minted anchor is on
 # the empty span the extension emits after that heading, with nothing left on
 # the mark's own span for the table of contents to copy.
@@ -4388,6 +4452,133 @@ PY
 python3 "$WORK/id-collision-ids.py" \
   "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
   "$HTML_ANCHOR_PREFIX" "$WORK/id-collision-html.log"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M084 T2 — the minted-anchor read, shown to tell apart what the read it
+  # replaces could not.
+  #
+  # The check above asks, of each cross-reference mark that gives up its
+  # author's id, whether the span printing that mark's term carries a minted
+  # anchor instead. It used to ask that of a map built as
+  # `minted.setdefault(H.text(el).strip(), name)` — keyed by the string a
+  # minted anchor's element prints, first one winning. Two marks printing one
+  # string are two anchors and one entry in such a map, so a page where one of
+  # them kept a contested id and the other did not read as a page where both
+  # were fine.
+  #
+  # `H.minted_anchors` returns a pair per ELEMENT, so the same page reads as
+  # the two anchors it is. Both reads are run here over one hand-written page:
+  # what is under test is a READER, and an input taken from the artifact it
+  # reads is blind in the dimension it is taken from, so the markup is written
+  # out by hand rather than taken off a render (the M080-AC2 shape). The
+  # replaced read is spelled out below rather than imported: this milestone
+  # deletes it, so there is nothing left to import it from.
+  #
+  # Two pages, not one. The second prints a different string on each mark —
+  # the shape every mark of the fixture has — and the two reads must agree
+  # about it, or the difference on the first page would be the two reads
+  # simply being different rather than this one case telling them apart.
+  # -------------------------------------------------------------------------
+  python3 - "$HTML_ANCHOR_PREFIX" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+prefix = sys.argv[1]
+errs = []
+
+
+def text_keyed(doc):
+    """The read `minted_anchors` replaces, as it stood at M083."""
+    minted = {}
+    for name in H.all_ids(doc):
+        if name.startswith(prefix):
+            el = H.find_id(doc, name)
+            if el is not None:
+                minted.setdefault(H.text(el).strip(), name)
+    return minted
+
+
+def grouped(doc):
+    """The repaired read, grouped by the string each anchor's element prints."""
+    out = {}
+    for printed, name in H.minted_anchors(doc, prefix):
+        out.setdefault(printed, []).append(name)
+    return out
+
+
+FIRST, SECOND = prefix + 'a', prefix + 'b'
+PAGE = ('<body><p><span id="%s" class="index">%s</span> and '
+        '<span id="%s" class="index">%s</span> and '
+        '<span id="author-kept" class="index">solo</span></p></body>')
+shared = H.parse_text(PAGE % (FIRST, 'shared', SECOND, 'shared'))
+apart = H.parse_text(PAGE % (FIRST, 'first', SECOND, 'second'))
+
+# 1. The repaired read names both marks.
+got = grouped(shared).get('shared', [])
+if sorted(got) != sorted([FIRST, SECOND]):
+    errs.append('over a page carrying two minted anchors on spans printing '
+                'one string, the repaired read names %r; want both %r and %r'
+                % (got, FIRST, SECOND))
+
+# 2. The read it replaces loses one of them, which is the defect: a map keyed
+#    by the printed string holds one name for that string, whichever it met
+#    first, and the other anchor is nowhere in what it returns.
+kept = text_keyed(shared)
+name = kept.get('shared')
+if name is None:
+    errs.append('the replaced read found no minted anchor at all on that '
+                'page, so it fails there for a reason that is not the one '
+                'this case is about')
+elif name not in (FIRST, SECOND):
+    errs.append('the replaced read names %r for that string, which is neither '
+                'of the two anchors the page carries' % name)
+elif len(got) < 2:
+    errs.append('the page as written carries %d minted anchor(s) on spans '
+                'printing that string, so the replaced read lost nothing and '
+                'this case tells the two reads apart in nothing' % len(got))
+else:
+    lost = [n for n in (FIRST, SECOND) if n != name]
+    if [n for n in lost if n in kept.values()]:
+        errs.append('the replaced read still reports %r somewhere in its '
+                    'result, so it lost no anchor here' % lost)
+
+# 3. Neither read may see a name this extension did not mint.
+for label, read in (('repaired', grouped(shared)), ('replaced', kept)):
+    if 'solo' in read:
+        errs.append('the %s read reports %r for the span carrying an '
+                    "author's own id, which this extension did not mint"
+                    % (label, read['solo']))
+
+# 4. The control: with a string of its own on each mark, the two reads agree,
+#    so the difference above is this case and not the two reads at large.
+control_new = grouped(apart)
+control_old = text_keyed(apart)
+if sorted(control_new) != sorted(control_old):
+    errs.append('over a page printing a different string on each mark the two '
+                'reads report different terms (%r against %r), so the '
+                'difference on the shared-string page is not about that page'
+                % (sorted(control_new), sorted(control_old)))
+for term in sorted(control_new):
+    if control_new[term] != [control_old.get(term)]:
+        errs.append('over that page the two reads disagree about %r: the '
+                    'repaired one names %r and the replaced one %r'
+                    % (term, control_new[term], control_old.get(term)))
+if len(control_new) != 2:
+    errs.append('the control page yields %d term(s) under the repaired read, '
+                'want the 2 its two marks print' % len(control_new))
+
+if errs:
+    print('FAIL: M084 T2 self-test: ' + '; '.join(errs), file=sys.stderr)
+    sys.exit(1)
+print('ok   M084 T2 self-test: over a page carrying two minted anchors on '
+      'spans printing one string the repaired read names both (%s and %s) and '
+      'the read it replaces names one; over a page printing a different string '
+      'on each mark the two agree on both terms'
+      % (FIRST, SECOND))
+PY
+fi
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -4500,6 +4691,21 @@ if [ "${1:-}" = "--self-test" ]; then
     'M082 T4 self-test: the census stepping past the two dashes an escaped run opens with, so the `-->` that overlaps them is never found' \
     "the author-written id 'beyond-collapsed-escape' is on 2 element(s), want 1" \
     's{state, at = "escaped", lt \+ 2}{state, at = "escaped", lt + 4}'
+
+  # M084 T6. The census ends a `<![CDATA[` where it ends every other construct
+  # of that group: at the next `>`. This plant makes it run to the `]]>`
+  # instead — the reading of an XML marked section, and the one Python's own
+  # HTML parser takes until `tests/htmlindex.py` overrides it. The fixture's
+  # `mid-cdata` mark is the case that tells the two apart: its `id=` stands
+  # between those two closes, so under the plant the census counts no element
+  # for that name, the mark keeps it, and the page carries it twice. The other
+  # three constructs of the group take the `else` branch untouched, and the
+  # fixture's older CDATA case reads the same under both — an `id=` before the
+  # first `>` is inside the construct either way.
+  m081_census_plant cdata-to-marked-close \
+    'M084 T6 self-test: the census running a `<![CDATA[` to its `]]>` rather than to its first `>`' \
+    'ids carried by more than one element: between-cdata' \
+    's{        local close = text:find\(">", lt \+ 2, true\)\n}{        local close\n        if text:sub(lt, lt + 8) == "<![CDATA[" then\n          local marked = text:find("]]>", lt + 9, true)\n          close = marked ~= nil and (marked + 2) or nil\n        else\n          close = text:find(">", lt + 2, true)\n        end\n}'
 fi
 
 # ---------------------------------------------------------------------------
@@ -4646,6 +4852,37 @@ def main(argv):
 sys.exit(main(sys.argv[1:]))
 PY
 
+  # The locator the three plants below rewrite, derived from the member rather
+  # than written down. A minted anchor's number moves whenever the fixture
+  # gains a mark — M084's did — and a hardcoded one stops matching without
+  # saying why. Taken as the first relative index locator whose whole `href="…"`
+  # the member carries exactly once, which is what plant.py requires of a
+  # pattern; a member carrying none is a loud failure here rather than three
+  # plants quietly aimed at nothing.
+  M083_LOCATOR=$(python3 - "$M083_SRC" "$M083_MEMBER" <<'M083LOCPY'
+import re
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    if sys.argv[2] not in archive.namelist():
+        print('FAIL: %s lists no member %r' % (sys.argv[1], sys.argv[2]),
+              file=sys.stderr)
+        raise SystemExit(1)
+    text = archive.read(sys.argv[2]).decode('utf-8')
+hrefs = re.findall(r'href="([^":/?#]+\.xhtml#[^"]+)"', text)
+once = [h for h in hrefs if text.count('href="%s"' % h) == 1]
+if not once:
+    print('FAIL: %s carries %d relative index locator(s) and none of them '
+          'exactly once, so the plants below would aim at nothing'
+          % (sys.argv[2], len(hrefs)), file=sys.stderr)
+    raise SystemExit(1)
+print(once[0])
+M083LOCPY
+  ) || fail "M083 T4 self-test: no locator could be derived from $M083_MEMBER, so the three plants below have nothing to aim at (the derivation's own message is above)"
+  M083_LOCATOR_DOC=${M083_LOCATOR%%#*}
+  M083_LOCATOR_RE=$(printf '%s' "$M083_LOCATOR" | sed 's/[.[*^$\\]/\\&/g')
+
   # <slug> <label> <red|green> <expected substring> [<member> <pattern> <replacement>]
   m083_epub_plant() {
     local slug="$1" label="$2" want_status="$3" want="$4"
@@ -4680,18 +4917,18 @@ PY
 
   m083_epub_plant dangling-fragment \
     'M083 T4 self-test: an index link whose relative href names a fragment its document does not carry' \
-    red 'ch018.xhtml#qi-mark-no-such names an id EPUB/text/ch018.xhtml carries 0 time(s)' \
-    "$M083_MEMBER" 'ch018\.xhtml#qi-mark-39' 'ch018.xhtml#qi-mark-no-such'
+    red "$M083_LOCATOR_DOC#qi-mark-no-such names an id EPUB/text/$M083_LOCATOR_DOC carries 0 time(s)" \
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"$M083_LOCATOR_DOC#qi-mark-no-such\""
 
   m083_epub_plant scheme-href \
     'M083 T4 self-test: an index link whose href carries a scheme, so it leaves the publication' \
     green '; 1 fragment-carrying link(s) leave the publication' \
-    "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="https://example.invalid/ch018.xhtml#qi-mark-39"'
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"https://example.invalid/$M083_LOCATOR\""
 
   m083_epub_plant network-path-href \
     'M083 T4 self-test: an index link whose href opens `//`, so it leaves the publication' \
     green '; 1 fragment-carrying link(s) leave the publication' \
-    "$M083_MEMBER" 'href="ch018\.xhtml#qi-mark-39"' 'href="//example.invalid/ch018.xhtml#qi-mark-39"'
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"//example.invalid/$M083_LOCATOR\""
 fi
 
 # ---------------------------------------------------------------------------
@@ -27181,8 +27418,13 @@ if [ "${1:-}" = "--self-test" ]; then
   rm -rf "$M075_PLANT"
   mkdir -p "$M075_PLANT/tests"
 
-  m075_plant_source() {
-    python3 - tests/run-tests.sh "$M075_PLANT/tests/run-tests.sh" "$1" "$2" <<'M075PLANTPY'
+  # The plant is written out as a file rather than fed on stdin, because M084
+  # T7 below runs it a second time over sources written for that purpose, and
+  # a third time as two copies each carrying one of its repairs undone. A copy
+  # made from these very bytes cannot drift from the plant they run beside,
+  # which a second heredoc spelling the pre-repair form out again could.
+  M075_PLANT_PY="$WORK/m075plant.py"
+  cat > "$M075_PLANT_PY" <<'M075PLANTPY'
 import sys
 
 # The rule a banner is drawn with, imported from the scanner whose reading of
@@ -27248,6 +27490,10 @@ else:
     raise SystemExit('M075 T5: unknown plant mode ' + mode)
 open(dst, 'w', encoding='utf-8').write('\n'.join(lines))
 M075PLANTPY
+
+  m075_plant_source() {   # <mode> <text> [source] [destination]
+    python3 "$M075_PLANT_PY" "${3:-tests/run-tests.sh}" \
+      "${4:-$M075_PLANT/tests/run-tests.sh}" "$1" "$2"
   }
 
   m075_red() {
@@ -27365,6 +27611,171 @@ M075PLANTPY
   if grep -q "^unattributed$(printf '\t')" "$WORK/m077-probe-closed.tsv"; then
     fail "M077-AC1 self-test: the refused call still left an <<unattributed>> row behind, which is exactly the row M077 stops being written"
   fi
+
+
+  # -------------------------------------------------------------------------
+  # M084 T7 — the plant above, shown to depend on each of the two repairs it
+  # carries. Both were made in M077, both after the plant had passed for a
+  # season with them missing, and until now nothing here was red without them.
+  #
+  # Repair one: the banner rule is IMPORTED from the scanner. The rule the
+  # plant used to carry read any dash-only comment as a rule, where the scan
+  # reads one drawn with ten dashes or more — so a bare `# ---` inside a
+  # comment was a block boundary to the plant and ordinary prose to the scan,
+  # and the two disagreed about which block the drop mode had removed.
+  #
+  # Repair two: the drop scans the wrapper's body, `[lo, hi)`, and says so
+  # when the first block in it is never closed. The plant used to scan to the
+  # end of the FILE, so an unclosed block swallowed everything after it —
+  # including the wrapper's own close — instead of being reported.
+  #
+  # Each repair gets a source written for it and a copy of the plant with that
+  # one repair undone, made from the plant's own bytes by one substitution, so
+  # the two differ in that repair and nothing else. The sources are written
+  # here rather than being the suite's own: what each plant does to a source
+  # this small is exact and stays exact, where over this file it would turn on
+  # where a stray comment happened to sit.
+  # -------------------------------------------------------------------------
+  M084_W="$WORK/m084-plant"
+  rm -rf "$M084_W"
+  mkdir -p "$M084_W"
+  M084_RULE="# $(printf -- '-%.0s' $(seq 74))"
+
+  # The source for repair one. The `# ---` sits in a comment run of its own
+  # BEFORE the first banner block, closed by a second `# ---`: three lines the
+  # imported rule reads as prose and the rule it replaced reads as a whole
+  # block. Alpha is the first block either rule can see after that.
+  {
+    printf '%s\n' "run_all_checks() {"
+    printf '%s\n' "# ---"
+    printf '%s\n' "# a note about the run, fenced by two short rules"
+    printf '%s\n' "# ---"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# Alpha"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "  section 'Alpha'"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# Beta"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "  section 'Beta'"
+    printf '%s\n' "}"
+    printf '%s\n' 'run_all_checks "$@"'
+  } > "$M084_W/short-rule.sh"
+
+  # The source for repair two. The first banner block inside the wrapper's
+  # body is opened and never closed; the only second rule in the file is
+  # outside the body altogether, which is what the bound exists to refuse.
+  {
+    printf '%s\n' "run_all_checks() {"
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# Alpha"
+    printf '%s\n' "# more prose about Alpha, and no closing rule in this body"
+    printf '%s\n' "}"
+    printf '%s\n' 'run_all_checks "$@"'
+    printf '%s\n' "$M084_RULE"
+    printf '%s\n' "# a trailing banner outside the wrapper"
+    printf '%s\n' "$M084_RULE"
+  } > "$M084_W/unclosed.sh"
+
+  # The two pre-repair copies. One substitution each, against the plant's own
+  # bytes: the first puts back the dash-only rule the plant carried, the
+  # second puts back the unbounded, unchecked drop loop. Each copy is the
+  # plant as it stands with ONE repair undone, not the whole pre-M077 plant:
+  # the reverted predicate is the one M077 replaced (a2652f7c^), and the rest
+  # of the plant is the current bytes, so the copy and the plant differ in
+  # that repair and nothing else.
+  m084_prerepair() {   # <slug> <perl substitution>
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$2" < "$M075_PLANT_PY" > "$M084_W/plant-$1.py" \
+      || fail "M084 T7: the substitution making the <<$1>> pre-repair copy could not be applied (its own message is above)"
+    if cmp -s "$M075_PLANT_PY" "$M084_W/plant-$1.py"; then
+      fail "M084 T7: the <<$1>> substitution reported a match and left the plant unchanged, so the copy below is the plant itself and would prove nothing"
+    fi
+  }
+
+  m084_prerepair short-rule \
+    's{from suitescan import BANNER_RULE, run_all_span}{from suitescan import run_all_span\n\n\nclass BANNER_RULE:\n    @staticmethod\n    def match(line):\n        return line.startswith("# -") and set(line[2:].strip()) == {"-"}\n}'
+
+  m084_prerepair unclosed \
+    's{    for i in range\(lo, hi\):\n.*?\n    else:\n        raise SystemExit\(.M075 T5: no banner block was found to drop.\)\n}{    for i in range(lo, len(lines)):\n        if not BANNER_RULE.match(lines[i]):\n            continue\n        j = i + 1\n        while lines[j].startswith("#") and not BANNER_RULE.match(lines[j]):\n            j += 1\n        del lines[i:j + 1]\n        break\n    else:\n        raise SystemExit("M075 T5: no banner block was found to drop")\n}s'
+
+  # What the scan's own reader says a source declares, so the two outputs are
+  # compared in the terms the check downstream reads them in and not in bytes.
+  m084_headings() {   # <source file>
+    python3 - "$1" <<'M084HEADPY'
+import sys
+sys.path.insert(0, 'tests')
+from suitescan import banner_headings, run_all_span
+
+lines = open(sys.argv[1], encoding='utf-8').read().split('\n')
+span = run_all_span(lines)
+if span is None:
+    print('NO-WRAPPER')
+    raise SystemExit(0)
+blocks = banner_headings(lines, *span)
+if not isinstance(blocks, list):
+    print('UNREADABLE: ' + blocks)
+    raise SystemExit(0)
+for _, heading in blocks:
+    print(heading)
+M084HEADPY
+  }
+
+  # 1. The `# ---` source. Both the plant and its pre-repair copy drop
+  #    something; what the scan can see afterwards is what differs.
+  M084_BEFORE=$(m084_headings "$M084_W/short-rule.sh")
+  [ "$M084_BEFORE" = "$(printf 'Alpha\nBeta')" ] \
+    || fail "M084 T7: the source written for the short-rule case declares <<$M084_BEFORE>> rather than Alpha and Beta, so neither drop below is about what this case says it is"
+
+  m075_plant_source drop unused "$M084_W/short-rule.sh" "$M084_W/short-rule-plant.sh" \
+    || fail "M084 T7: the plant failed over the short-rule source"
+  M084_AFTER=$(m084_headings "$M084_W/short-rule-plant.sh")
+  [ "$M084_AFTER" = "Beta" ] \
+    || fail "M084 T7: with the imported banner rule the plant left <<$M084_AFTER>> standing; it must drop Alpha, the first block that rule names, and leave Beta"
+
+  python3 "$M084_W/plant-short-rule.py" "$M084_W/short-rule.sh" \
+    "$M084_W/short-rule-old.sh" drop unused \
+    || fail "M084 T7: the pre-repair copy failed over the short-rule source"
+  M084_OLD=$(m084_headings "$M084_W/short-rule-old.sh")
+  if [ "$M084_OLD" = "$M084_AFTER" ]; then
+    fail "M084 T7: the copy carrying the rule that read any dash-only comment as a rule left the same <<$M084_OLD>> standing, so the import of the scan's own rule buys this plant nothing"
+  fi
+  [ "$M084_OLD" = "$M084_BEFORE" ] \
+    || fail "M084 T7: the pre-repair copy left <<$M084_OLD>>; it drops the three short-ruled lines, which the scan reads as no block at all, so the section domain must come back unchanged as <<$M084_BEFORE>>"
+  if cmp -s "$M084_W/short-rule.sh" "$M084_W/short-rule-old.sh"; then
+    fail "M084 T7: the pre-repair copy changed nothing at all, so its agreement with the source above is that it did not run rather than that it dropped a different block"
+  fi
+  pass "M084 T7 self-test: over a source carrying a bare short rule inside a comment, the plant drops Alpha — the first block the scan's own rule names — while the copy carrying the rule it replaced drops three lines the scan reads as no block, leaving the section domain unchanged"
+
+  # 2. The unclosed source. The plant refuses it in its own words; the copy
+  #    scanning past the wrapper's body does not, and takes the wrapper's
+  #    close with it.
+  set +e
+  M084_OUT=$( python3 "$M075_PLANT_PY" "$M084_W/unclosed.sh" \
+                "$M084_W/unclosed-plant.sh" drop unused 2>&1 )
+  M084_RC=$?
+  set -e
+  [ "$M084_RC" -ne 0 ] \
+    || { printf '%s\n' "$M084_OUT" >&2; fail "M084 T7: the plant accepted a source whose first banner block inside the wrapper's body is never closed, so its bound says nothing"; }
+  case "$M084_OUT" in
+    *"is never closed by a second rule"*) : ;;
+    *) printf '%s\n' "$M084_OUT" >&2
+       fail "M084 T7: the plant refused the unclosed source, but not by naming the block as never closed (<<$M084_OUT>>), so the refusal is not the one this case is about" ;;
+  esac
+
+  python3 "$M084_W/plant-unclosed.py" "$M084_W/unclosed.sh" \
+    "$M084_W/unclosed-old.sh" drop unused \
+    || fail "M084 T7: the copy scanning past the wrapper's body refused the unclosed source too, so the bound and the report the plant carries buy it nothing"
+  M084_OLD_SPAN=$(m084_headings "$M084_W/unclosed-old.sh")
+  [ "$M084_OLD_SPAN" = "NO-WRAPPER" ] \
+    || fail "M084 T7: the copy scanning past the wrapper's body left <<$M084_OLD_SPAN>>; it must delete past the body's end and take the wrapper's close with it, leaving a source the scan can find no wrapper in"
+  pass "M084 T7 self-test: over a source whose first banner block inside the wrapper's body is never closed, the plant exits naming that block, while the copy scanning past that bound exits 0 and deletes the wrapper's own close"
 
   pass "M075 T5 self-test: the accounting is red on a section the source declares with no timing row and on a timing row no section declares, naming the section in each case; and the timer refuses a section opened after the close, naming that call, while the same call goes through with the run still open and writes one ordinary row, and goes through with nothing open at all and writes the one setup row"
 fi

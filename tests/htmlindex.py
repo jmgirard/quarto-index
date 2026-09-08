@@ -148,6 +148,30 @@ class _Builder(HTMLParser):
                 del self.stack[i:]
                 return
 
+    def parse_html_declaration(self, i):
+        # `<![CDATA[…]]>` written in HTML content is a bogus comment for a
+        # browser: it ends at the first `>` after the `<!`, and the markup
+        # after that `>` is markup. `HTMLParser` reads it as a marked section
+        # instead, running it to the `]]>`, so an `id=` standing between the
+        # two is swallowed and this reader reported a page one element short
+        # of the page a reader meets. The id census ends it at the first `>`
+        # (`_extensions/index/modules/html.lua`), so until this the suite's
+        # own reader and the census disagreed about that id.
+        #
+        # Narrowed to `<![` on purpose: `<!--` and `<!DOCTYPE` are the other
+        # two things a `<!` opens here and neither reaches this branch. In
+        # foreign content — inside `svg` or `math` — a browser DOES end the
+        # construct at `]]>`; neither this reader nor the census tracks
+        # foreign content, which is the gap DESIGN.md's Known issues record.
+        raw = self.rawdata
+        if raw[i:i + 3] == '<![':
+            gtpos = raw.find('>', i + 3)
+            if gtpos < 0:
+                return -1
+            self.unknown_decl(raw[i + 3:gtpos])
+            return gtpos + 1
+        return super().parse_html_declaration(i)
+
     def set_cdata_mode(self, elem, **kwargs):
         # `**kwargs` because the signature moved: Python 3.12 onward passes
         # `escapable=` to say whether the element's text takes character
@@ -470,6 +494,20 @@ def count_id(root, identifier):
 def all_ids(root):
     """Every id in the document, as a list (so duplicates are visible)."""
     return [n.attrs['id'] for n in walk(root) if n.attrs.get('id')]
+
+
+def minted_anchors(root, prefix):
+    """Every anchor this extension minted, as (printed text, id) pairs.
+
+    In document order, one pair per ELEMENT carrying such an id. Keyed on the
+    element and not on the string it prints: two marks printing one string are
+    two anchors, and a read that keys a map by the printed text reports
+    whichever it met first and loses the other. A caller that wants the
+    anchors on the marks printing one term groups these pairs by their first
+    member and reads the whole group (M084 T1).
+    """
+    return [(text(n).strip(), n.attrs['id']) for n in walk(root)
+            if (n.attrs.get('id') or '').startswith(prefix)]
 
 
 def text(node, sep=''):

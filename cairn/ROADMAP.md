@@ -11,7 +11,7 @@ _Released 0.3.0 2026-09-05._
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
 | M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | done | — | normal | milestones/archive/M083-epub-unique-instruments.md |
-| M084 | The id-census AC1 leg tells apart what it claims to | planned | M083 | normal | milestones/M084-ac1-leg-instruments.md |
+| M084 | The id-census AC1 leg tells apart what it claims to | review | M083 | normal | milestones/M084-ac1-leg-instruments.md |
 | M082 | The id census stays out of content the page does not render as markup | done | M081 | normal | milestones/archive/M082-census-unrendered-content.md |
 | M081 | The id census reads a comment where a browser reads one | done | — | normal | milestones/archive/M081-census-comment-reading.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent

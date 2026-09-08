@@ -11,7 +11,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — every deliverable is a check, a reader, a fixture case or a plant inside `tests/` and `examples/`, read by no consumer of this repo
-- **Branch/PR:** `m084-ac1-leg-instruments`
+- **Branch/PR:** `m084-ac1-leg-instruments` — https://github.com/jmgirard/quarto-index/pull/84
 
 ## Goal
 
@@ -111,6 +111,7 @@ The foreign-content CDATA divergence, where a browser ends the construct at
 - 2026-09-07: T5 minor amendment (discovered sub-task): the new mark shifted the minted-anchor numbering, so M083's three EPUB plants stopped matching the `ch018.xhtml#qi-mark-39` they named. The locator is now derived from the member — the first relative index locator whose whole `href="…"` it carries exactly once — and a member carrying none fails loudly.
 - 2026-09-07: T7: the M075 plant's python is written to the run's work directory and takes a source and destination; two purpose-written sources and two pre-repair copies (one substitution each, against the plant's own bytes) show it depends on both of its M077 repairs.
 - 2026-09-07: T8: KI263 re-read against T5's case. Nothing in it was made false; extended to name `tests/htmlindex.py` as a second artifact carrying the same reading and to say the HTML half is now fenced while the foreign-content half is exercised on neither side.
+- 2026-09-08: review opened draft PR #84 and started the AC evidence run; suite self-test and the three fresh-context review lenses in flight.
 
 ## Decisions
 

@@ -1,6 +1,6 @@
 # M085: One answer to whether a link leaves the publication
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -95,19 +95,19 @@ section per document → its own row (KI264).
       (`tests/sitecheck.py:254-257`) through T1 and delete `NON_LOCAL_SCHEMES`
       (`:106-107`); the root-relative branch (`:274-287`) and the containment
       clauses (`:299-314`) are not touched.
-- [ ] T6: Write `M085_HREF_SHAPES` and the AC1 leg — leaving shapes
+- [x] T6: Write `M085_HREF_SHAPES` and the AC1 leg — leaving shapes
       (`https://`, `//host/x`, `mailto:`, `MAILTO:`, `tel:`, `data:`, `ftp://`,
       a leading-whitespace ` mailto:`, `notes:draft.xhtml#x`) and staying
       controls (`ch1.xhtml#frag`, `#frag`, `sub/two.html#frag`,
       `/ch1.xhtml#frag`), each row's expected verdict held in one place and
       expanded at every reader's call site.
-- [ ] T7: Plant one leaving and one staying href against each of the four
+- [x] T7: Plant one leaving and one staying href against each of the four
       readers, and show each plant red against the pre-change reader before
       trusting its green — a plant per reader is not a plant per clause, so the
       `//` clause and the scheme clause are planted separately.
-- [ ] T8: Build the AC2/AC3 repack rows through M083's `plant.py` and the AC4
+- [x] T8: Build the AC2/AC3 repack rows through M083's `plant.py` and the AC4
       `m40_plant_link` rows.
-- [ ] T9: Strike KI98, correct KI120's sentence naming `leaves_publication`'s
+- [x] T9: Strike KI98, correct KI120's sentence naming `leaves_publication`'s
       docstring enumeration to name where it now lives and KI266's clause on
       the four readers' separate answers, rewrite the root-relative candidate
       row, and run `--self-test`.
@@ -137,6 +137,10 @@ section per document → its own row (KI264).
 - 2026-09-10: T6/T7/T8 code landed (checkpoint, unticked): the M085 section carries `M085_HREF_SHAPES`, the four-reader agreement leg and the AC2/AC3 repack legs, and it sits after the M52 EPUB checks whose demo capture it reads; M083's repack script and a shared locator reader are hoisted out of that milestone's self-test block; the plants are four EPUB repacks, four HTML-page plants and three site-capture plants. Its `--self-test` run was still in flight at this commit.
 - 2026-09-10: T7 pre-change reds recorded, each run against the readers as `main` carries them. `epubcheck.py links` over the two-leaving-locator repack: `FAIL: 2 of 25 link(s) … name nothing in the publication`, naming `EPUB/text/https:/example.invalid/…` and `//example.invalid/…` as manifest items; `unique` over the same file: green, counting the same two as leaving — the disagreement AC3 is about. `sitecheck.py links` over the `ftp:`/`irc:` plant: `FAIL: 2 of 2026 link(s) … looked for ftp:/example.invalid/syntax.html`; over the staying plant: green at 2025 swept. `fragments.py resolve` over the `tel:` plant: GREEN, the locator counted and never judged; over the `//` plant: red as `//example.invalid/seven.html is no page of the capture`, not as leaving; over the `https:` plant: red as leaving; over the `./` plant: green.
 - 2026-09-10: T9 record edits landed (checkpoint, unticked): KI98 struck, KI120 and KI266 corrected in place, the root-relative candidate row rewritten, and KI267 added for `epubcheck.py links` being unable to read `id-collision.epub` at all. Still owed on T9: two `epubindex.py` docstrings still cite KI98, and `--self-test` has to run over the finished tree.
+- 2026-09-10: T9 finished: two `epubindex.py` docstrings stopped citing the struck KI98 and name the closed report instead. `tests/run-tests.sh --self-test` clean — 1451 checks.
+- 2026-09-10: the AC1 leg shown able to fail: over a scratch copy whose `sitecheck.leaves_publication` is reverted to the old six-scheme list, it goes red naming both rows and the reader that parted — `'ftp://example.invalid/ch1.xhtml': the readers part — … sitecheck.leaves_publication says stays`.
+- 2026-09-10: claim audit: not owed — internal tier.
+- 2026-09-10: T6-T9 ticked, `cairn_validate` all-pass, status to review.
 
 ## Decisions
 

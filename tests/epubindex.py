@@ -190,9 +190,9 @@ def links(book, prefix, minted=()):
     `file` is None for a same-document fragment and for a link that leaves:
     joining a host or a scheme onto the linking member's directory builds a zip
     name no manifest can list, and a reader downstream handed that name reported
-    a link that is not broken as one that is (KI98). What a caller does with a
-    leaving row is its own policy — `unresolved` below skips it, and
-    `epubcheck.py links` counts what was skipped.
+    a link that is not broken as one that is. What a caller does with a leaving
+    row is its own policy — `unresolved` below skips it, and `epubcheck.py
+    links` counts what was skipped.
     """
     out = []
     for found in index_sections(book, prefix, minted):
@@ -234,8 +234,9 @@ def unresolved(book, prefix, minted=()):
     A link that LEAVES the publication is none of those three and is skipped:
     it names a host or a scheme, so no manifest can list it, and reporting it
     as naming nothing in the publication reported a link that is not broken
-    (KI98, D-057). The caller counts what was skipped, so a publication whose
-    index links all left cannot read as one whose links all resolved.
+    (D-057, which closed that report). The caller counts what was skipped, so a
+    publication whose index links all left cannot read as one whose links all
+    resolved.
     """
     bad = []
     for link in links(book, prefix, minted):

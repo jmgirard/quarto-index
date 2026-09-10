@@ -34,7 +34,7 @@ moves only how the probe exercises it.
 
 ## Acceptance criteria
 
-- [ ] AC1: The probe plants each residue into every page `find
+- [x] AC1: The probe plants each residue into every page `find
       "$CAPTURE_ROOT" -name '*.html'` lists, in one pass per residue, and
       requires the sweep to go red naming every one of those pages; the
       three residues are `data-qi-pending`, `data-qi-meta` and the marker
@@ -42,7 +42,7 @@ moves only how the probe exercises it.
 - [x] AC2: For each of the three residues the probe also plants into a
       single page of an otherwise unplanted mirror, and requires the sweep
       to go red naming that page and no other page the same `find` lists.
-- [ ] AC3: The probe counts the pages it planted and fails when that count
+- [x] AC3: The probe counts the pages it planted and fails when that count
       is not the page count the same `find` returns, so a plant that
       substituted nothing is reported as the plant it is rather than as the
       sweep failing to discriminate.
@@ -53,7 +53,7 @@ moves only how the probe exercises it.
 - [x] AC5: The unplanted-mirror precheck still runs ahead of every plant and
       both sweeps pass on it, so a red leg below it is evidence about the
       plant.
-- [x] AC6: `tests/run-tests.sh --self-test` is clean (the `verify` slot's
+- [ ] AC6: `tests/run-tests.sh --self-test` is clean (the `verify` slot's
       pre-review form).
 
 ## Coverage
@@ -125,6 +125,7 @@ moves only how the probe exercises it.
 - 2026-09-10: T8 — KI33 drops its pointer to the suite-run shape row (that row is at its 400-byte cap and does not list KI33) and says its 23 s row covers the whole section, M33 plant matrix and empty-div half included; `plantdefect.py`'s two residue-plant comments describe the pages named on the command line; `--html` with no page now exits with the usage text (exit 1) instead of falling into the source-scan path. The T7 extraction runs above used this `plantdefect.py`.
 - 2026-09-10: T9 — `tests/run-tests.sh --self-test` clean at 0a1de5f, 1451 checks, exit 0, 9 min 41 s wall. The M24 section's `find` listed 497 pages and its timing row is 23 s, the figures KI33 already states, so KI33 is unchanged.
 - 2026-09-10: claim audit: not owed — internal tier.
+- 2026-09-10: review pass 2 checkpoint (in progress) — AC1-AC5 evidence recorded and the consistency gate clean; AC6 unticked while the fresh `--self-test` run is going, and the diff-bug reviewer has not reported.
 
 ## Decisions
 
@@ -153,3 +154,13 @@ moves only how the probe exercises it.
 8. A filename containing a newline would break the domain file and the `wc -l` count (20662, 20722).
 9. All three single-page legs use the same page, `SWEEP_RELS[0]` — the implement gate's recorded choice.
 10. `$WORK/sweepprobe-unplanted` is left in place, a second copy of the captured HTML until the next run.
+
+**Pass 2 — 2026-09-10, at ea5ec63.** Branch base abe17d1 is still `origin/main`'s head and local `main` has no unpushed commits, so no sync merge was needed; no PR exists. Mutation evidence comes from the M24 residue half (`tests/run-tests.sh` 20644-20794) extracted into a scratch script over a copy of the 771-page capture root the T9 run left, one mutated copy per check. Control: exit 0, 8 sweeps, 24 s.
+
+- AC1 — pass. The all-pages legs loop over `pending`, `meta` (judged by the pending sweep) and `marker`; each plants every page the mirror holds in one `plantdefect.py` call, the plant-count leg (AC3) holds that set equal to the capture root's `find` count, and the sweep output is read for every name in the domain file built from `find "$CAPTURE_ROOT" -name '*.html'`. Restoring `book-html/_book/index.html` after the count and before the marker sweep → red naming that page (pass 1's escaping case, now through the marker sweep's `; `-joined output). Adding a page named `book-html/_book/index.html tail.html` → the name guard red, naming both names.
+- AC2 — pass. The three single-page legs plant `book-badxref/_book/index.html` (`SWEEP_RELS[0]`) in a freshly re-copied unplanted mirror, one per residue. Planting `book-corrupt/_book/last.html` beside it → red naming that page beside the planted one. Aiming the plant at `book-corrupt/_book/last.html` instead → red: the sweep did not name `book-badxref/_book/index.html`.
+- AC3 — pass. After each all-pages plant the leg counts the `Files … differ` lines of `diff -rq` between the unplanted and planted mirrors and requires that count to equal a fresh `find "$CAPTURE_ROOT" -name '*.html' | wc -l`, failing with a message naming the plant as at fault, before the sweep runs. Removing `book-corrupt/_book/last.html` from the unplanted mirror itself (the case pass 1's check missed) → red, "the pending plant changed 770 page(s) where the captured set holds 771". Restoring that page right after the plant → the same red at 770 of 771.
+- AC4 — pass. A `python3` shim on the control run's PATH, logging each `tests/htmlsweep.py` call apart from the probe's own counter, recorded 8 calls in the order pending, marker (precheck), pending, pending, marker (all-pages), pending, pending, marker (single-page); the probe printed `SWEEP_RUNS=8`. A ninth `sweep_run` → red at 9.
+- AC5 — pass. Read at `tests/run-tests.sh` 20718-20724: `sweep_mirror`, then the pending and marker sweeps each required to exit 0, ahead of every plant; every later leg re-copies from that same `$SWEEP_ORIG`. The shim's call order above shows the two precheck sweeps first. Planting `pending` into one page of the precheck mirror → red, "the pending sweep fails on the unplanted mirror".
+
+**Consistency gate (pass 2).** `cairn_validate.py` exit 0, all checks passed. No principle text changed in `cairn/DESIGN.md`, so `cairn_impact.py` was skipped. The `generic` profile names no toolchain checks.

@@ -4749,43 +4749,22 @@ printf '%s' "$M083_UNPLANTED" \
   || { printf '%s\n' "$M083_UNPLANTED" >&2; fail "M083 T5: the verdict does not say that the section it read is the only one it reads in each document, so it still reads as a sweep of every section a document carries"; }
 pass "M083 T5: the verdict names the one index section per document it read, and no link of this publication was skipped as leaving it"
 
-if [ "${1:-}" = "--self-test" ]; then
-  # -------------------------------------------------------------------------
-  # M083 T4 — a planted defect per clause of `unique`, planted in the
-  # PUBLICATION rather than in the extension that wrote it. (T5's verdict
-  # wording, and the pin on the count of links skipped as leaving the
-  # publication, run above over the captured publication itself, on every
-  # run and not only this one.) The M081 plants
-  # above undo a repair inside the filter and re-render; the repairs under
-  # test here are in the CHECK, so the artifact is what must vary. Each plant
-  # copies the captured `.epub` member for member, rewriting one run of text
-  # in one XHTML member on the way, and re-runs the same command the leg above
-  # passes over the copy — so what goes red is the check that guards this
-  # publication on every run and not a stand-in written for the plant.
-  #
-  # Five plants, because the clauses fail in different directions and each
-  # expects its own report: the repeated-id clause on a second element given
-  # an id the document already carries, and the link-resolving clause on a
-  # relative href whose fragment names nothing, each red on a report naming
-  # what it caught; the two hrefs that leave the publication — one carrying a
-  # scheme, one opening `//` — green AND counted, a green on exit status alone
-  # being what a plant that deleted the link would also produce; and the copy
-  # that rewrites nothing green with none counted, or a red above would be the
-  # repacking and not the plant inside it.
-  #
-  # The two outside hrefs are the shapes this milestone repaired: before it,
-  # each was joined to the linking member's directory and reported as naming
-  # a manifest item the publication does not list.
-  # -------------------------------------------------------------------------
-  M083W="$WORK/m083epub"
-  rm -rf "$M083W"
-  mkdir -p "$M083W"
-  M083_SRC="$CAPTURE_ROOT/id-collision-epub/id-collision.epub"
-  M083_MEMBER='EPUB/text/ch002.xhtml'
+# The repack machinery this milestone's plants and the M085 section further down
+# both drive: a script that copies a publication rewriting one run of text in one
+# of its members. Outside the self-test block because M085's own legs read a
+# repack on EVERY run — two commands agreeing over one publication is what that
+# milestone is about, and a check that ran only under `--self-test` would leave
+# an ordinary run blind to it. The directory is named for the milestone that
+# wrote the script.
+M083W="$WORK/m083epub"
+rm -rf "$M083W"
+mkdir -p "$M083W"
+M083_SRC="$CAPTURE_ROOT/id-collision-epub/id-collision.epub"
+M083_MEMBER='EPUB/text/ch002.xhtml'
 
-  # Written to a file rather than fed on stdin because each plant below runs
-  # it again, the way the census plants re-run their own reader.
-  cat > "$M083W/plant.py" <<'PY'
+# Written to a file rather than fed on stdin because each plant below runs
+# it again, the way the census plants re-run their own reader.
+cat > "$M083W/plant.py" <<'PY'
 """Copy an EPUB, rewriting one run of text in one of its XHTML members.
 
 The copy is member for member, each member's own compression kept, so the
@@ -4852,34 +4831,82 @@ def main(argv):
 sys.exit(main(sys.argv[1:]))
 PY
 
-  # The locator the three plants below rewrite, derived from the member rather
-  # than written down. A minted anchor's number moves whenever the fixture
-  # gains a mark — M084's did — and a hardcoded one stops matching without
-  # saying why. Taken as the first relative index locator whose whole `href="…"`
-  # the member carries exactly once, which is what plant.py requires of a
-  # pattern; a member carrying none is a loud failure here rather than three
-  # plants quietly aimed at nothing.
-  M083_LOCATOR=$(python3 - "$M083_SRC" "$M083_MEMBER" <<'M083LOCPY'
+
+# And the reader that says WHICH locators a plant may aim at, beside it and read
+# by both milestones' plants for the same reason: a minted anchor's number moves
+# whenever a fixture gains a mark — M084's did — and a hardcoded one stops
+# matching without saying why.
+cat > "$M083W/locators.py" <<'PY'
+"""The first N index locators of one EPUB member, each carried exactly once.
+
+A locator is offered only where the member carries its whole `href="…"` exactly
+once, which is what plant.py requires of a pattern. A member carrying fewer than
+N is a loud failure here rather than plants quietly aimed at nothing.
+"""
+
 import re
 import sys
 import zipfile
 
-with zipfile.ZipFile(sys.argv[1]) as archive:
-    if sys.argv[2] not in archive.namelist():
-        print('FAIL: %s lists no member %r' % (sys.argv[1], sys.argv[2]),
+
+def main(argv):
+    if len(argv) != 3:
+        print('usage: locators.py <src.epub> <member> <count>',
               file=sys.stderr)
-        raise SystemExit(1)
-    text = archive.read(sys.argv[2]).decode('utf-8')
-hrefs = re.findall(r'href="([^":/?#]+\.xhtml#[^"]+)"', text)
-once = [h for h in hrefs if text.count('href="%s"' % h) == 1]
-if not once:
-    print('FAIL: %s carries %d relative index locator(s) and none of them '
-          'exactly once, so the plants below would aim at nothing'
-          % (sys.argv[2], len(hrefs)), file=sys.stderr)
-    raise SystemExit(1)
-print(once[0])
-M083LOCPY
-  ) || fail "M083 T4 self-test: no locator could be derived from $M083_MEMBER, so the three plants below have nothing to aim at (the derivation's own message is above)"
+        return 2
+    src, member, count = argv[0], argv[1], int(argv[2])
+    with zipfile.ZipFile(src) as archive:
+        if member not in archive.namelist():
+            print(f'FAIL: {src} lists no member {member!r}, so this plant '
+                  f'aimed at nothing', file=sys.stderr)
+            return 1
+        text = archive.read(member).decode('utf-8')
+    hrefs = re.findall(r'href="([^":/?#]+\.xhtml#[^"]+)"', text)
+    once = [href for href in hrefs if text.count(f'href="{href}"') == 1]
+    if len(once) < count:
+        print(f'FAIL: {member} carries {len(hrefs)} relative index locator(s) '
+              f'and {len(once)} of them exactly once, fewer than the {count} '
+              f'asked for', file=sys.stderr)
+        return 1
+    print(' '.join(once[:count]))
+    return 0
+
+
+sys.exit(main(sys.argv[1:]))
+PY
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M083 T4 — a planted defect per clause of `unique`, planted in the
+  # PUBLICATION rather than in the extension that wrote it. (T5's verdict
+  # wording, and the pin on the count of links skipped as leaving the
+  # publication, run above over the captured publication itself, on every
+  # run and not only this one.) The M081 plants
+  # above undo a repair inside the filter and re-render; the repairs under
+  # test here are in the CHECK, so the artifact is what must vary. Each plant
+  # copies the captured `.epub` member for member, rewriting one run of text
+  # in one XHTML member on the way, and re-runs the same command the leg above
+  # passes over the copy — so what goes red is the check that guards this
+  # publication on every run and not a stand-in written for the plant.
+  #
+  # Five plants, because the clauses fail in different directions and each
+  # expects its own report: the repeated-id clause on a second element given
+  # an id the document already carries, and the link-resolving clause on a
+  # relative href whose fragment names nothing, each red on a report naming
+  # what it caught; the two hrefs that leave the publication — one carrying a
+  # scheme, one opening `//` — green AND counted, a green on exit status alone
+  # being what a plant that deleted the link would also produce; and the copy
+  # that rewrites nothing green with none counted, or a red above would be the
+  # repacking and not the plant inside it.
+  #
+  # The two outside hrefs are the shapes this milestone repaired: before it,
+  # each was joined to the linking member's directory and reported as naming
+  # a manifest item the publication does not list.
+  # -------------------------------------------------------------------------
+  # The locator the three plants below rewrite, read off the member by the
+  # shared reader above rather than written down here.
+  M083_LOCATOR=$(python3 "$M083W/locators.py" "$M083_SRC" "$M083_MEMBER" 1) \
+    || fail "M083 T4 self-test: no locator could be derived from $M083_MEMBER, so the three plants below have nothing to aim at (the derivation's own message is above)"
   M083_LOCATOR_DOC=${M083_LOCATOR%%#*}
   M083_LOCATOR_RE=$(printf '%s' "$M083_LOCATOR" | sed 's/[.[*^$\\]/\\&/g')
 
@@ -19498,6 +19525,66 @@ if [ "${1:-}" = "--self-test" ]; then
   m40_planted 'a percent-encoded absolute href, which decoding turns into a path outside the capture' \
     'looked for etc/passwd' \
     python3 tests/sitecheck.py links "$M40W/linkencodedabs" ""
+
+  # --- M085: the skip clause, which decides whether an href leaves the site.
+  # M085 put that decision on the one test every link reader of this suite
+  # shares, in place of a list of six named schemes that made every scheme
+  # nobody wrote down a false report. The plants are read by the SWEPT COUNT
+  # and not by exit status alone: an href the check skipped and one whose
+  # anchor never landed leave the same green behind.
+  #
+  # The baseline is the same check over the UNPLANTED capture, so both numbers
+  # come out of the deliverable's own ok line rather than from one written down
+  # here. Both runs resolve root-relative links against the base path the
+  # published site is served under, which is what the standing check above
+  # does; the plants below write relative and leaving hrefs only.
+  m085_swept() {   # <capture directory> — the swept count on the check's ok line
+    python3 tests/sitecheck.py links "$1" "$SITE_BASE_PATH" 2>&1 \
+      | sed -n 's/^ok   M40-AC2: all \([0-9]*\) link(s).*/\1/p'
+  }
+  m085_hrefs() {   # <page> — the number of hrefs it carries
+    python3 -c 'import sys; print(open(sys.argv[1], encoding="utf-8", errors="replace").read().count("href=\""))' "$1"
+  }
+  M085_SWEPT_BASE=$(m085_swept "$SITE_OUT")
+  [ -n "$M085_SWEPT_BASE" ] \
+    || fail "M085-AC4: the link check over the unplanted capture printed no swept count, so the plants below have no baseline to be compared against"
+  M085_HREFS_BASE=$(m085_hrefs "$SITE_OUT/index.html")
+  [ "$M085_HREFS_BASE" -gt 0 ] \
+    || fail "M085-AC4: the captured home page carries no href at all, so a plant adding one could not be told from one that never landed"
+
+  m085_plant_link() {   # <slug> <hrefs added> <swept added> <label> <snippet>
+    local slug="$1" hrefs="$2" delta="$3" label="$4" snippet="$5"
+    m40_plant_link "$slug" "$snippet"
+    local planted out rc swept want
+    planted=$(m085_hrefs "$M40W/$slug/index.html")
+    [ "$planted" -eq "$((M085_HREFS_BASE + hrefs))" ] \
+      || fail "M085-AC4 ($label): the planted page carries $planted href(s) where the captured one carries $M085_HREFS_BASE, so this plant did not add the $hrefs it claims to"
+    out=$(python3 tests/sitecheck.py links "$M40W/$slug" "$SITE_BASE_PATH" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -eq 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M085-AC4 ($label): the check failed over a copy this plant leaves valid, so it is red for something that is not a defect"; }
+    swept=$(printf '%s' "$out" | sed -n 's/^ok   M40-AC2: all \([0-9]*\) link(s).*/\1/p')
+    want=$((M085_SWEPT_BASE + delta))
+    [ "$swept" = "$want" ] \
+      || { printf '%s\n' "$out" >&2; fail "M085-AC4 ($label): the check swept $swept link(s) over the planted copy, wanting $want — the $M085_SWEPT_BASE it sweeps over the capture plus $delta"; }
+    pass "M085-AC4 ($label): the check passes and sweeps $swept link(s), $delta more than the $M085_SWEPT_BASE it sweeps over the capture, over a page carrying $hrefs href(s) more"
+  }
+
+  # The two schemes the list never named. Before M085 each was resolved as a
+  # relative path and reported as naming no file of the site.
+  m085_plant_link linkleaving 2 0 \
+    'one `ftp://` href and one `irc:` href, neither of them a scheme the check used to name' \
+    '<a href="ftp://example.invalid/syntax.html">x</a><a href="irc:example.invalid">y</a>'
+  # The `//` clause, planted on its own: a plant per reader is not a plant per
+  # clause, and this one was already skipped before M085.
+  m085_plant_link linkleavingnetwork 1 0 \
+    'an href opening `//`' \
+    '<a href="//example.invalid/syntax.html">x</a>'
+  # And the direction the clause must stay silent in: a planted href that STAYS
+  # in the site is swept and resolved. Without it a green above would also be
+  # what a check that swept nothing at all produced.
+  m085_plant_link linkstaying 1 1 \
+    'an href that stays in the site' \
+    '<a href="syntax.html">x</a>'
   m40_planted 'the same encoded absolute href under a base path, which it carries no segment of' \
     'carries no `docs` base segment' \
     python3 tests/sitecheck.py links "$M40W/linkencodedabs" "docs"
@@ -23706,6 +23793,217 @@ M52GFMPY
 fi
 
 # ---------------------------------------------------------------------------
+# M085 — the link readers give one answer to whether an href leaves
+#
+# AC1. Four readers of this suite decide that question, and each is asked here
+# at its OWN name — `htmlindex.resolve_href`, and the `leaves_publication` that
+# `epubcheck.py unique`, `epubindex.links` and `sitecheck.py links` each call.
+# Asking them at their own names is the point of the leg: one that called the
+# shared definition four times would agree with itself whatever the readers do,
+# where a reader that reintroduced a test of its own shows up here as a verdict
+# disagreeing with the other three.
+#
+# The expected verdict is written once per row of `M085_HREF_SHAPES` and
+# expanded at all four call sites, so a row cannot be right about one reader
+# and wrong about another. Both verdicts are required present: a table that lost
+# its staying rows would pass a reader calling every href external, and one that
+# lost its leaving rows a reader calling none of them.
+#
+# AC2/AC3. Then the two EPUB commands over ONE publication carrying two index
+# locators that leave it — one `https:`, one `//`. Before this milestone `links`
+# failed on exactly the hrefs `unique` counted as outside, two commands
+# returning opposite verdicts over one artifact; both now pass, and both are
+# read by the COUNT they print rather than by exit status, a green on status
+# alone being what a plant that deleted the links would also produce.
+#
+# The publication is the demo capture the M52 checks above read, not the
+# id-collision one M083's plants use: `links` finds its sections by the minted
+# id prefix, and the id-collision fixture plants an element claiming that name
+# with no heading inside it, on which the section reader raises (DESIGN.md
+# Known issues).
+# ---------------------------------------------------------------------------
+section 'M085 — the link readers give one answer to whether an href leaves'
+
+# `<verdict><TAB><href>`, the verdict `leaves` or `stays`. Written down rather
+# than derived: an expectation taken from the predicate under test is blind in
+# the dimension it derives. The leading-space row is deliberate — an href is
+# stripped before it is judged.
+M085_HREF_SHAPES=$(cat <<'M085ROWS'
+leaves	https://example.invalid/ch1.xhtml#frag
+leaves	//example.invalid/ch1.xhtml#frag
+leaves	mailto:someone@example.invalid
+leaves	MAILTO:someone@example.invalid
+leaves	tel:+15550100
+leaves	data:text/plain,x
+leaves	ftp://example.invalid/ch1.xhtml
+leaves	 mailto:someone@example.invalid
+leaves	notes:draft.xhtml#x
+stays	ch1.xhtml#frag
+stays	#frag
+stays	sub/two.html#frag
+stays	/ch1.xhtml#frag
+stays	./notes:draft.xhtml#x
+M085ROWS
+)
+python3 - "$M085_HREF_SHAPES" <<'M085PY'
+import sys
+
+sys.path.insert(0, 'tests')
+
+import epubcheck  # noqa: E402
+import epubindex  # noqa: E402
+import htmlindex  # noqa: E402
+import sitecheck  # noqa: E402
+
+# Each reader at the name its OWN code calls, never the one definition they now
+# share: what this leg is about is whether all four still route there.
+# `resolve_href` answers by returning nothing for an href that leaves, which is
+# how its own callers read its verdict.
+READERS = (
+    ('htmlindex.resolve_href',
+     lambda href: htmlindex.resolve_href('index.html', href) is None),
+    ('epubcheck.leaves_publication', epubcheck.leaves_publication),
+    ('epubindex.leaves_publication', epubindex.leaves_publication),
+    ('sitecheck.leaves_publication', sitecheck.leaves_publication),
+)
+
+
+def word(leaves):
+    return 'leaves' if leaves else 'stays'
+
+
+rows = []
+for n, line in enumerate(sys.argv[1].split('\n'), 1):
+    if not line.strip():
+        continue
+    parts = line.split('\t')
+    if len(parts) != 2 or parts[0] not in ('leaves', 'stays'):
+        print(f'FAIL: M085-AC1: row {n} of M085_HREF_SHAPES is {line!r}, where '
+              f'a row is a `leaves` or `stays` verdict, a tab, and an href',
+              file=sys.stderr)
+        sys.exit(1)
+    rows.append((parts[0] == 'leaves', parts[1]))
+
+if len({want for want, _href in rows}) != 2:
+    print(f'FAIL: M085-AC1: the {len(rows)} row(s) of M085_HREF_SHAPES carry '
+          f'one of the two verdicts, so this leg cannot tell a reader that '
+          f'answers every href alike from one that reads the href',
+          file=sys.stderr)
+    sys.exit(1)
+
+bad = []
+for want, href in rows:
+    got = [(name, bool(read(href))) for name, read in READERS]
+    verdicts = {verdict for _name, verdict in got}
+    if len(verdicts) != 1:
+        parted = ', '.join(f'{name} says {word(verdict)}'
+                           for name, verdict in got)
+        bad.append(f'  {href!r}: the readers part — {parted}')
+    elif verdicts != {want}:
+        bad.append(f'  {href!r}: all four readers say {word(not want)}, and '
+                   f'the table says {word(want)}')
+if bad:
+    print(f'FAIL: M085-AC1: {len(bad)} of the {len(rows)} href shape(s) '
+          f'M085_HREF_SHAPES names:', file=sys.stderr)
+    print('\n'.join(bad), file=sys.stderr)
+    sys.exit(1)
+
+print(f'ok   M085-AC1: each of the {len(rows)} href shape(s) M085_HREF_SHAPES '
+      f'names — {sum(1 for want, _href in rows if want)} that leave the '
+      f'publication and {sum(1 for want, _href in rows if not want)} that stay '
+      f'in it — gets the table\'s verdict from all four readers, each asked at '
+      f'the name its own code calls: '
+      + ', '.join(name for name, _read in READERS))
+M085PY
+
+# The publication the two EPUB commands read here, and the two locators the
+# plants aim at, read off the member by the shared reader rather than written
+# down.
+M085_SRC="$M52_DEMO_EPUB"
+M085_MEMBER='EPUB/text/ch005.xhtml'
+M085_LOCATOR_PAIR=$(python3 "$M083W/locators.py" "$M085_SRC" "$M085_MEMBER" 2) \
+  || fail "M085-AC2: no pair of index locators could be derived from $M085_MEMBER, so the plants below have nothing to aim at (the reader's own message is above)"
+read -r M085_LOCATOR1 M085_LOCATOR2 <<< "$M085_LOCATOR_PAIR"
+M085_LOCATOR1_RE=$(printf '%s' "$M085_LOCATOR1" | sed 's/[.[*^$\\]/\\&/g')
+M085_LOCATOR2_RE=$(printf '%s' "$M085_LOCATOR2" | sed 's/[.[*^$\\]/\\&/g')
+
+# AC2/AC3 — one publication, two leaving locators, both commands. Two plants,
+# because each rewrites one run of text.
+M085W="$WORK/m085epub"
+rm -rf "$M085W"
+mkdir -p "$M085W"
+python3 "$M083W/plant.py" "$M085_SRC" "$M085W/one.epub" \
+  "$M085_MEMBER" "href=\"$M085_LOCATOR1_RE\"" \
+  "href=\"https://example.invalid/$M085_LOCATOR1\"" \
+  || fail "M085-AC2: the publication could not be rewritten to carry an \`https:\` index locator (the plant's own message is above)"
+python3 "$M083W/plant.py" "$M085W/one.epub" "$M085W/two.epub" \
+  "$M085_MEMBER" "href=\"$M085_LOCATOR2_RE\"" \
+  "href=\"//example.invalid/$M085_LOCATOR2\"" \
+  || fail "M085-AC2: the publication could not be rewritten to carry an index locator opening \`//\` beside the \`https:\` one (the plant's own message is above)"
+M085_LINKS_OUT=$(python3 tests/epubcheck.py links "$M085W/two.epub" \
+  "$HTML_SECTION_ID" 2>&1) \
+  || { printf '%s\n' "$M085_LINKS_OUT" >&2; fail "M085-AC2: the link check reports an index link that leaves the publication as naming nothing in it"; }
+printf '%s' "$M085_LINKS_OUT" \
+  | grep -qF -- '; 2 link(s) skipped as leaving the publication' \
+  || { printf '%s\n' "$M085_LINKS_OUT" >&2; fail "M085-AC2: the link check passed this publication without stating that it skipped the two links that leave it, so its green cannot tell two skipped links from none"; }
+M085_UNIQUE_OUT=$(python3 tests/epubcheck.py unique "$M085W/two.epub" 2>&1) \
+  || { printf '%s\n' "$M085_UNIQUE_OUT" >&2; fail "M085-AC3: the id-uniqueness check fails over the publication the link check just passed, so the two commands still give one artifact two answers"; }
+printf '%s' "$M085_UNIQUE_OUT" \
+  | grep -qF -- '; 2 fragment-carrying link(s) leave the publication' \
+  || { printf '%s\n' "$M085_UNIQUE_OUT" >&2; fail "M085-AC3: the id-uniqueness check did not count the two leaving locators, so the two commands are not reading this publication alike"; }
+pass "M085-AC2/AC3: over one publication whose index section carries an \`https:\` locator and one opening \`//\`, the link check and the id-uniqueness check both pass and both count the same two links as leaving it"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M085 T7 — a plant per clause against the two EPUB readers, in the
+  # PUBLICATION rather than in the check that reads it, the way M083's plants
+  # are. Each copy rewrites ONE index locator and is read by BOTH commands, so
+  # a repair that reached one reader and not the other goes red here.
+  #
+  # Four copies, because the clauses answer in different directions: the scheme
+  # clause and the `//` clause planted separately, each expected green with one
+  # link counted as leaving; a locator rewritten to the same target through
+  # `./`, green with none, which is the staying href the same rule has to keep
+  # in the publication; and the straight repack green with none, or a count
+  # above would be the repacking and not the plant inside it.
+  # -------------------------------------------------------------------------
+  m085_epub_plant() {   # <slug> <label> <expected count> [<pattern> <replacement>]
+    local slug="$1" label="$2" count="$3"
+    shift 3
+    local dest="$M085W/$slug.epub" out
+    if [ "$#" -eq 2 ]; then
+      python3 "$M083W/plant.py" "$M085_SRC" "$dest" "$M085_MEMBER" "$1" "$2" \
+        || fail "$label: the publication could not be rewritten (the plant's own message is above)"
+    else
+      python3 "$M083W/plant.py" "$M085_SRC" "$dest" \
+        || fail "$label: the publication could not be repacked (the plant's own message is above)"
+    fi
+    out=$(python3 tests/epubcheck.py links "$dest" "$HTML_SECTION_ID" 2>&1) \
+      || { printf '%s\n' "$out" >&2; fail "$label: the link check failed a publication this plant leaves valid, so it is red for something that is not a defect"; }
+    printf '%s' "$out" | grep -qF -- "; $count link(s) skipped as leaving the publication" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the link check passed this plant without skipping $count link(s) as leaving the publication, so its green is not this clause reading this plant"; }
+    out=$(python3 tests/epubcheck.py unique "$dest" 2>&1) \
+      || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check failed a publication the link check just passed"; }
+    printf '%s' "$out" | grep -qF -- "; $count fragment-carrying link(s) leave the publication" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check did not count $count link(s) as leaving the publication, so the two readers are not reading this plant alike"; }
+    pass "$label: both EPUB commands pass and both count $count link(s) as leaving the publication"
+  }
+
+  m085_epub_plant clean \
+    'M085 T7 self-test: a repacked copy of the captured publication, rewritten nowhere' \
+    0
+  m085_epub_plant staying \
+    'M085 T7 self-test: an index locator rewritten to the same target through `./`' \
+    0 "href=\"$M085_LOCATOR1_RE\"" "href=\"./$M085_LOCATOR1\""
+  m085_epub_plant scheme \
+    'M085 T7 self-test: an index locator rewritten to an `https:` href' \
+    1 "href=\"$M085_LOCATOR1_RE\"" "href=\"https://example.invalid/$M085_LOCATOR1\""
+  m085_epub_plant network-path \
+    'M085 T7 self-test: an index locator rewritten to an href opening `//`' \
+    1 "href=\"$M085_LOCATOR1_RE\"" "href=\"//example.invalid/$M085_LOCATOR1\""
+fi
+
+# ---------------------------------------------------------------------------
 # M52 T7 — the documentation clause. Two hand-written lists, both read through
 # tests/sitecheck.py so the plants below can run the same clause against a
 # page that has lost a claim and a domain that has gained a forbidden phrase.
@@ -26376,6 +26674,59 @@ if [ "${1:-}" = "--self-test" ]; then
     's{<span id="qi-mark-1" class="index">Aardvark</span>}{<span id="qi-mark-1" class="index">Aardvark</span> <span id="qi-mark-1" class="index">Aardvark</span>}' \
     "index.html carries the id 'qi-mark-1' on 2 elements" \
     "a second mark carrying the id a same-page locator names"
+  # M085: the same reader, against index locators that LEAVE the site. Its
+  # policy is unchanged — a locator out of the site is a defect wherever it
+  # appears — and what M085 changed is which hrefs it recognizes as leaving.
+  # Each plant is required to fail NAMING the href as leaving, which is what
+  # separates this clause from the page-lacking one: before M085 a `tel:` href
+  # carried no fragment for this reader and was counted and passed in silence,
+  # and one opening `//` was joined to the index page's directory and reported
+  # as naming no page of the capture. The scheme and `//` clauses are planted
+  # separately.
+  m085_frag_plant() {   # <slug> <substitution> <expected fragment of the FAIL line> <what was planted>
+    local slug="$1" sub="$2" expect="$3" what="$4"
+    local dir="$M071_FRAG/$slug"
+    rm -rf "$dir"
+    cp -R "$CAPTURE_ROOT/m070-record/_book" "$dir"
+    spliced_copy "M085 T7 self-test ($what)" "the captured index page" \
+      "$CAPTURE_ROOT/m070-record/_book/index.html" "$dir/index.html" "$sub"
+    local out rc
+    out=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+      HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+      python3 tests/fragments.py resolve "$dir" index.html 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M085 T7 self-test: the fragment reader passed over a capture with $what"; }
+    printf '%s' "$out" | grep -qF -- "$expect" \
+      || { printf '%s\n' "$out" >&2; fail "M085 T7 self-test: the fragment reader failed over a capture with $what, but not with <<$expect>> — that failure is not this clause catching this href"; }
+    pass "M085 T7 self-test: the fragment reader names <<$expect>> on $what"
+  }
+  m085_frag_plant leavingscheme \
+    's{href="seven\.html#qi-mark-1"}{href="https://example.invalid/seven.html#qi-mark-1"}' \
+    "links out of the site, to 'https://example.invalid/seven.html#qi-mark-1'" \
+    "one href rewritten to an https: URL"
+  m085_frag_plant leavingtel \
+    's{href="seven\.html#qi-mark-1"}{href="tel:+15550100"}' \
+    "links out of the site, to 'tel:+15550100'" \
+    "one href rewritten to a tel: URL, which this reader passed over in silence before M085"
+  m085_frag_plant leavingnetwork \
+    's{href="seven\.html#qi-mark-1"}{href="//example.invalid/seven.html#qi-mark-1"}' \
+    "links out of the site, to '//example.invalid/seven.html#qi-mark-1'" \
+    "one href rewritten to an href opening //"
+  # And the direction the rule must stay silent in: the same target written
+  # through `./`, which is how an author writes a real filename carrying a
+  # colon and which still resolves.
+  M085_DOT="$M071_FRAG/stayingdot"
+  rm -rf "$M085_DOT"
+  cp -R "$CAPTURE_ROOT/m070-record/_book" "$M085_DOT"
+  spliced_copy "M085 T7 self-test (a staying href written through ./)" \
+    "the captured index page" \
+    "$CAPTURE_ROOT/m070-record/_book/index.html" "$M085_DOT/index.html" \
+    's{href="seven\.html#qi-mark-1"}{href="./seven.html#qi-mark-1"}'
+  HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+    HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+    python3 tests/fragments.py resolve "$M085_DOT" index.html > /dev/null \
+    || fail "M085 T7 self-test: an index locator rewritten to the same target through \`./\` is refused, so the leaving test refuses a relative href rather than one that leaves"
+  printf 'ok   self-test: an index locator rewritten to the same target through `./` still resolves, so the leaving test refuses what leaves the site and not the relative href\n'
   # An index whose locators carry no fragment at all is an empty domain, not a
   # pass: six.html prints no index section, and the reader says so.
   M071_EMPTY_OUT=$(HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \

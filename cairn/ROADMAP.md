@@ -10,6 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M087 | The link readers call the one link test and use the href it judged | planned | — | normal | milestones/M087-one-link-test-call.md |
 | M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
 | M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |
@@ -19,7 +20,6 @@ _Released 0.3.0 2026-09-05._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Close the gaps M085's link-reader instruments leave: the agreement leg reads each reader's verdict function, so a divergence added downstream of that call stays green; the EPUB plant helper equates two counts over different domains (`unique` skips a fragment-less href before its leaves test); the new all-links-leave refusal in `epubcheck.py links` has no plant, nor does `unique`'s counterpart; and no leg pins the site sweep across the broadened skip. Promote with any other pass over the M085 legs — added 2026-09-10 — M085 review F2/F3/F4/F5 — KI268, KI269
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Resolve a root-relative index href in the EPUB and HTML readers, which join it to the linking page's directory and then report it as naming nothing, and the percent-encoded shape that slips past `htmlindex.leaves_publication`, the one test M085 gave all four readers; promote on a fixture or an author writing either — added 2026-09-07, narrowed 2026-09-10 — M083 review, M085 — KI120, KI266
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11

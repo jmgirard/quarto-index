@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M086: The sweep-discrimination probe stops re-sweeping the set once per page
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -84,7 +84,7 @@ moves only how the probe exercises it.
 - [x] T4: Rewrite the section's banner comment to state what the probe now
       does; correct KI33 in `cairn/DESIGN.md` (marked corrected, its 14,000
       figure superseded by the count this milestone leaves).
-- [ ] T5: Run `tests/run-tests.sh --self-test` whole and record the M24
+- [x] T5: Run `tests/run-tests.sh --self-test` whole and record the M24
       section's new row from `tests/.work/timing.tsv` beside the 3080 s the
       2026-09-10 run recorded.
 
@@ -99,6 +99,9 @@ moves only how the probe exercises it.
 - 2026-09-10: the sweep's named pages are read with awk's `index` rather than `grep -oFf` — the shim answering `grep` on this machine (ugrep 7.8.4) reported 146 of 771 named pages where the sweep named every one, which would have made the all-pages leg red for a reason that is not the sweep.
 - 2026-09-10: T4 — the section banner now states what the probe does, read from `htmlsweep.py`'s two accumulating sweeps; KI33's cost clause corrected, its 14,000-parse figure replaced by eight sweeps over the captured set (6,168 parses at the 771 pages the 2026-09-10 capture root held) and what is left of the entry pointed at the suite-run shape row.
 - 2026-09-10: deviation from the per-task verify slot — the M24 residue half runs only under `--self-test`, whose whole run the 2026-09-10 timing recorded at 3080 s, and the profile's own slot forbids concurrent runs. T1-T3 were verified against an extraction of the section over a prior run's 771-page capture root (24 s); the whole `--self-test` run is T5, and stands as the verify for every task.
+- 2026-09-10: T5 — `tests/run-tests.sh --self-test` clean, 1451 checks, exit 0. The M24 section's timing row is 23 s against the 3080 s the run before it recorded. The section's own `find` listed 497 pages, the capture root still filling at that point in the run (771 by the end), so the half's cost is 8 x 497 = 3,976 parses.
+- 2026-09-10: corrects the T4 line above and the KI33 text it landed — the 771 pages it cited came from a leftover capture root accumulated across runs, not from the 2026-09-10 run's own root at the section's point in it. KI33 fixed in place to 497 pages and 3,976 parses; the mutation and extraction evidence recorded above stands, having been run over that 771-page root.
+- 2026-09-10: claim audit: not owed — internal tier.
 
 ## Decisions
 

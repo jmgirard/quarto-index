@@ -146,6 +146,8 @@ section per document → its own row (KI264).
 - 2026-09-10: evidence run clean — `--self-test` exit 0, 1451 checks, no `FAIL:` line — and all six criteria ticked against the evidence recorded in the Review section.
 - 2026-09-10: three review lenses ran; blame-history found nothing, prior-PR-comments probed `pulls/comments` empty and read the archive instead, diff-bug found eleven. Two fixed before the gate (both stale module docstrings stating the pre-M085 contract, `tests/sitecheck.py` and `tests/epubcheck.py`); five routed to follow-ups, three rejected with reasons, all logged in the Review section. The two fixes are docstring text only — nothing in the suite reads the removed wording (checked by grep) and both modules still import — so the 1451-check run above was not repeated for them.
 
+- 2026-09-10: step-7 approval: PR #85 approved for merge.
+
 ## Decisions
 
 ## Review

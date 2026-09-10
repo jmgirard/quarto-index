@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-08 (M084 done and archived: the M079-AC1 leg reads a minted anchor off the mark's own element, `tests/htmlindex.py` ends a CDATA construct in HTML content at its first `>` as the census does, the fixture carries the case that tells the two readings apart, and the M075 plant helper is under a plant per repair; M083's EPUB plants now derive their locator from the member. Review found seven items; three were fixed before merge, three routed to two new rows and to KI265, one rejected. M081's row pruned under terminal-row retention. LESSONS.md is at both caps, so no line was added.)_
+_Last hygiene check: 2026-09-10 (M085 done and archived: one shared test in `tests/htmlindex.py` decides whether an href leaves the publication, and all four link readers route through it, their own tests deleted — an `ftp://` site link is no longer reported as a missing file, and the two EPUB commands stop giving one publication opposite verdicts. Review found eleven items; two stale module docstrings were fixed before merge, five routed to one new row and to KI268/KI269, three rejected. M082's row pruned under terminal-row retention. LESSONS.md is at both caps and check-design.md is 6 bytes under its own, so neither gained a line.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,16 +10,16 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M085 | One answer to whether a link leaves the publication | review | — | normal | milestones/M085-one-href-answer.md |
+| M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
 | M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | done | — | normal | milestones/archive/M083-epub-unique-instruments.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |
-| M082 | The id census stays out of content the page does not render as markup | done | M081 | normal | milestones/archive/M082-census-unrendered-content.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Close the gaps M085's link-reader instruments leave: the agreement leg reads each reader's verdict function, so a divergence added downstream of that call stays green; the EPUB plant helper equates two counts over different domains (`unique` skips a fragment-less href before its leaves test); the new all-links-leave refusal in `epubcheck.py links` has no plant, nor does `unique`'s counterpart; and no leg pins the site sweep across the broadened skip. Promote with any other pass over the M085 legs — added 2026-09-10 — M085 review F2/F3/F4/F5 — KI268, KI269
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Resolve a root-relative index href in the EPUB and HTML readers, which join it to the linking page's directory and then report it as naming nothing, and the percent-encoded shape that slips past `htmlindex.leaves_publication`, the one test M085 gave all four readers; promote on a fixture or an author writing either — added 2026-09-07, narrowed 2026-09-10 — M083 review, M085 — KI120, KI266
 - Pin the two recovered-locator assertions M078's legs leave to overlap: the record route's own `Quoin` href (held there by page/section/term only, so the two routes could diverge green) and `fragments.py outside` on the recovered heading mark (`mullion-passage` resolving to a copy inside the heading would pass `resolve`). Promote with any other pass over the m061/m065 legs — added 2026-09-05 — M078 review F3/F11

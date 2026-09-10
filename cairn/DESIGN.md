@@ -1034,8 +1034,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   silence either. — M24 review D5/D11
 - **KI32.** Five book captures copy a whole `_book` tree an earlier render
   mostly wrote. — M24 review D7
-- **KI33.** The sweep self-test is quadratic in captured pages, about 14,000
-  parses. — M24 review D8
+- **KI33.** The sweep self-test was quadratic in captured pages, about 14,000
+  parses at the set size it was written over. M086 made the residue half
+  linear: each residue is planted into every page in one pass and read by one
+  sweep, with three single-page legs beside them — eight sweeps over the
+  captured set in all, so 8 × the page count in parses, 6,168 at the 771 pages
+  `find "$CAPTURE_ROOT" -name '*.html'` listed on 2026-09-10. What is left of
+  this entry is the whole `--self-test` run's cost, which belongs to the
+  suite-run shape candidate row and not to this half. — M24 review D8; cost
+  clause corrected M086
 - **KI34.** `capture` copies every extension for the render's stem rather than
   what the render produced. — M24 review D9
 - **KI35.** The emission sweep's domain includes `.tex` from deliberately-broken

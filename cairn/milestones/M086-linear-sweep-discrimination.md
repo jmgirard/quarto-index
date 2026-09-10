@@ -81,7 +81,7 @@ moves only how the probe exercises it.
 - [x] T3: Add the three single-page legs on a freshly re-copied unplanted
       mirror — one per residue — each requiring the sweep red, naming its
       page, and naming no other page in the mirror.
-- [ ] T4: Rewrite the section's banner comment to state what the probe now
+- [x] T4: Rewrite the section's banner comment to state what the probe now
       does; correct KI33 in `cairn/DESIGN.md` (marked corrected, its 14,000
       figure superseded by the count this milestone leaves).
 - [ ] T5: Run `tests/run-tests.sh --self-test` whole and record the M24
@@ -97,6 +97,7 @@ moves only how the probe exercises it.
 - 2026-09-10: implement gate chose the plant call's shape as kind-first with a variadic page list (both existing callers rewritten), a run-counted sweep total over a reading of the call sites, and one page for all three single-page legs.
 - 2026-09-10: T1-T3 landed together — the plant tool's new call shape and its two callers must move in one commit for the suite to stay runnable. Each new leg proved able to fail by mutating the probe: restoring one planted page silently → the all-pages leg red naming it; planting a second page in a single-page leg → the no-other-page leg red naming it; a ninth sweep → the count leg red at 9; a mirror one page short → the plant-count leg red at 770 of 771.
 - 2026-09-10: the sweep's named pages are read with awk's `index` rather than `grep -oFf` — the shim answering `grep` on this machine (ugrep 7.8.4) reported 146 of 771 named pages where the sweep named every one, which would have made the all-pages leg red for a reason that is not the sweep.
+- 2026-09-10: T4 — the section banner now states what the probe does, read from `htmlsweep.py`'s two accumulating sweeps; KI33's cost clause corrected, its 14,000-parse figure replaced by eight sweeps over the captured set (6,168 parses at the 771 pages the 2026-09-10 capture root held) and what is left of the entry pointed at the suite-run shape row.
 - 2026-09-10: deviation from the per-task verify slot — the M24 residue half runs only under `--self-test`, whose whole run the 2026-09-10 timing recorded at 3080 s, and the profile's own slot forbids concurrent runs. T1-T3 were verified against an extraction of the section over a prior run's 771-page capture root (24 s); the whole `--self-test` run is T5, and stands as the verify for every task.
 
 ## Decisions

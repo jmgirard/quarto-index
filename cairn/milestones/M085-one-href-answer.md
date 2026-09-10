@@ -40,30 +40,30 @@ section per document → its own row (KI264).
 
 ## Acceptance criteria
 
-- [ ] AC1: For each href shape the table `M085_HREF_SHAPES` in
+- [x] AC1: For each href shape the table `M085_HREF_SHAPES` in
       `tests/run-tests.sh` names, the four readers — `htmlindex.resolve_href`,
       `epubcheck.py unique`, `epubindex.links` and `sitecheck.py links` —
       return the same leaves-the-publication verdict, shown by one leg that
       drives every row of that table through all four readers and fails naming
       the row and the disagreeing readers wherever a row's four verdicts are
       not one verdict.
-- [ ] AC2: `epubcheck.py links` no longer reports a link that leaves the
+- [x] AC2: `epubcheck.py links` no longer reports a link that leaves the
       publication as naming nothing in the publication: over the captured
       `demo.epub` repacked to carry one `https:` href and one `//` href inside
       its generated index section, the command exits 0 and its ok line states
       how many of the collected links it skipped as leaving.
-- [ ] AC3: The two EPUB commands give one answer over one publication: over the
+- [x] AC3: The two EPUB commands give one answer over one publication: over the
       AC2 repack, `epubcheck.py unique` and `epubcheck.py links` both exit 0,
       where today `links` fails on the same two hrefs `unique` counts as
       outside.
-- [ ] AC4: `sitecheck.py links` decides a scheme it does not name: over a copy
+- [x] AC4: `sitecheck.py links` decides a scheme it does not name: over a copy
       of the captured site carrying one `ftp://` href and one `irc:` href
       planted by `m40_plant_link`, the check exits 0 and its swept-domain line
       reports the same swept count it reports over the unplanted capture, where
       the planted page carries two hrefs more than the captured one.
-- [ ] AC5: `notes:draft.xhtml#x` — a relative filename carrying a colon — reads
+- [x] AC5: `notes:draft.xhtml#x` — a relative filename carrying a colon — reads
       as leaving the publication in each of the four readers AC1 names.
-- [ ] AC6: `tests/run-tests.sh --self-test` is clean.
+- [x] AC6: `tests/run-tests.sh --self-test` is clean.
 
 ## Coverage
 
@@ -143,6 +143,109 @@ section per document → its own row (KI264).
 - 2026-09-10: T6-T9 ticked, `cairn_validate` all-pass, status to review.
 - 2026-09-10: review opened. `main` had not moved under the branch (0 behind, 9 ahead), so nothing was merged in; draft PR #85 opened and recorded in the header. Consistency gate first half clean — `cairn_validate` all-pass, every advisory OK, `release window` unfired; no principle changed, so `cairn_impact` was skipped; the `generic` profile names no toolchain checks. Criterion evidence run (`--self-test`) and the three review lenses were still in flight at this commit.
 
+- 2026-09-10: evidence run clean — `--self-test` exit 0, 1451 checks, no `FAIL:` line — and all six criteria ticked against the evidence recorded in the Review section.
+- 2026-09-10: three review lenses ran; blame-history found nothing, prior-PR-comments probed `pulls/comments` empty and read the archive instead, diff-bug found eleven. Two fixed before the gate (both stale module docstrings stating the pre-M085 contract, `tests/sitecheck.py` and `tests/epubcheck.py`); five routed to follow-ups, three rejected with reasons, all logged in the Review section. The two fixes are docstring text only — nothing in the suite reads the removed wording (checked by grep) and both modules still import — so the 1451-check run above was not repeated for them.
+
 ## Decisions
 
 ## Review
+
+Evidence run: `tests/run-tests.sh --self-test` on 2026-09-10 over
+551e452 — exit 0, `All checks passed (1451 checks)`, no `FAIL:` line.
+Consistency gate: `cairn_validate.py` exit 0, all 16 checks PASS, every
+advisory OK (`release window` unfired). No `DESIGN.md` principle changed, so
+`cairn_impact.py` was not run. The `generic` profile's `consistency-gate` slot
+names no toolchain checks, so that half is a no-op.
+
+### Acceptance criteria
+
+- AC1 — met. The agreement leg reports: each of the 14 href shapes
+  `M085_HREF_SHAPES` names — 9 that leave and 5 that stay — gets the table's
+  verdict from all four readers, each asked at the name its own code calls
+  (`htmlindex.resolve_href`, `epubcheck.leaves_publication`,
+  `epubindex.leaves_publication`, `sitecheck.leaves_publication`). The leg's
+  own shape guards fire before the comparison: a row not `leaves`/`stays` plus
+  tab plus href is refused, and a table carrying one verdict only is refused.
+  Read as met because each entry is the verdict site the reader AC1 names
+  actually calls — `cmd_unique` calls `epubcheck.leaves_publication`, `links`
+  calls `epubindex.leaves_publication`, `check_links` calls
+  `sitecheck.leaves_publication` — so what the leg drives is each named
+  reader's own answer. F1 below records the coverage this leaves open.
+- AC2 — met. Over the captured `demo.epub` repacked to carry one `https:` and
+  one `//` locator inside its generated index section, `epubcheck.py links`
+  exits 0 and its ok line carries `; 2 link(s) skipped as leaving the
+  publication`. The leg reads that count rather than exit status, a green on
+  status alone being what a plant deleting the links would also produce.
+- AC3 — met. Over that same repack `epubcheck.py unique` also exits 0 and
+  counts `; 2 fragment-carrying link(s) leave the publication` — the two
+  commands reading one publication alike, where before this branch `links`
+  failed on exactly the hrefs `unique` counted as outside.
+- AC4 — met. `sitecheck.py links` over the `ftp://`+`irc:` plant passes and
+  sweeps 2024 links, the same total it sweeps over the unplanted capture, on a
+  page carrying 2 hrefs more; the `//` plant likewise at 2024 on 1 href more;
+  and the staying control sweeps 2025, one more, so the green above is not a
+  check that swept nothing.
+- AC5 — met. `notes:draft.xhtml#x` is a `leaves` row of `M085_HREF_SHAPES` and
+  `./notes:draft.xhtml#x` a `stays` row, both carried by the AC1 leg, which
+  fails unless all four readers return the table's verdict.
+- AC6 — met. `--self-test` clean at 1451 checks, exit 0.
+
+### Independent review
+
+Three fresh-context lenses. Blame-history: no findings — every deletion traces
+to the milestone's own purpose (M40's six-scheme list is the defect D-057
+retires, M05's `'://' or mailto:` test is broadened deliberately, M083's
+`SCHEME` regex is the same rule centralized). Prior-PR-comments: probed
+`pulls/comments` and found none, so the archive was the surface; one finding,
+merged into F2 below. Diff-bug: eleven findings.
+
+Actioned:
+
+- F1 (fix now, done): `tests/sitecheck.py` usage docstring still stated the
+  deleted six-scheme contract — "any value whose scheme is `http:`, `https:`,
+  `mailto:`, `tel:`, `data:` or `javascript:`" — the pre-M085 statement D-057
+  exists to remove, and it never mentioned the `//` skip. Rewritten to name
+  `leaves_publication` and its rule.
+- F2 (follow-up row): the AC1 leg reads each reader's verdict function, so a
+  divergence introduced downstream of that call — an override inside
+  `epubindex.links` after `leaves = leaves_publication(href)` — leaves the leg
+  green while `links` and `epubcheck.py unique` disagree. The recorded T7 red
+  reverted a verdict function, so it does not exercise this gap.
+- F3 (follow-up row): `m085_epub_plant` asserts the `links` skipped count and
+  the `unique` leaving count are the same number, but `cmd_unique` skips a
+  fragment-less href before its leaves test while `epubindex.links` marks every
+  leaving href. A plant rewriting a locator to `mailto:someone@example.invalid`
+  would fail that equality although both readers gave the href one verdict.
+- F4 (follow-up row): the refusal `cmd_links` adds for a publication all of
+  whose index links leave is in no criterion and no plant drives it — deleting
+  those five lines leaves the whole suite, `--self-test` included, green. The
+  same gap stands on `cmd_unique`'s counterpart, which predates this branch.
+- F5 (follow-up row): the new skip set is a strict superset of the old one, and
+  AC4 takes its baseline from the post-change binary, so a link the capture
+  already carried that the six-scheme list checked and the scheme rule now
+  skips is invisible to the leg.
+- F6 (Known issues): `leaves_publication` judges `href.strip()`, but
+  `resolve_href`, `epubindex.links` and `cmd_unique` then partition the
+  unstripped href, so `href=" ch1.xhtml#frag"` reads as staying and resolves to
+  a member named with its leading space. Unchanged from before this branch,
+  which stripped nowhere; the divergence between predicate and resolver is new.
+- F8 (fix now, done): `tests/epubcheck.py`'s module usage line for `links` —
+  "Every link inside a generated index section resolves in the publication" —
+  is false of a leaving link now. Rewritten to state the skip and the count.
+- F9 (Known issues): no tool in the suite now names WHICH EPUB index href
+  left. `unresolved` skips a leaving row, so the hand tool prints nothing for
+  it and `cmd_links` prints only a count; an author who writes an `https:`
+  locator by accident gets the count and no way to find it. Decided by D-057
+  rather than wrong, but the diagnosability loss was not recorded.
+
+Rejected:
+
+- F7: the unguarded `H.resolve_href` unpack at `tests/run-tests.sh:11993` sits
+  on a line this diff does not modify, and the fixture's space-carrying
+  locators do not reach the new leaving path.
+- F10: `sys.path.insert` before `import htmlindex` is the idiom
+  `tests/fragments.py:39` already uses, so it is not a fresh deviation; the
+  one-blank-line spacing is a style nitpick no check in this repo reads.
+- F11: under `set -euo pipefail` the `M085_SWEPT_BASE` guard's `|| fail`
+  message only fires for the exit-0-but-no-match case, but the run still fails
+  loudly on the other path — a message-quality nitpick, not a defect.

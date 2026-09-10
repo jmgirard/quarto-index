@@ -23,7 +23,8 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
       The EPUB's entry rows against the HTML render's, both first held to the
       manifest that pins them.
   links <epub> <prefix>
-      Every link inside a generated index section resolves in the publication.
+      Every link inside a generated index section that stays in the
+      publication resolves in it; one that leaves is skipped and counted.
   unique <epub>
       No manifest-listed document carries an id twice, and every index link
       fragment names an id its own document carries exactly once.

@@ -13,8 +13,9 @@
       Every link the rendered site makes to its own content resolves: the path
       part names a file the render produced, and a `#fragment` names an `id` the
       file it points at actually carries. `<use>` hrefs are excluded (they name
-      an SVG symbol, not a document), and so is any value whose scheme is
-      `http:`, `https:`, `mailto:`, `tel:`, `data:` or `javascript:`.
+      an SVG symbol, not a document), and so is any value that leaves the site
+      by `leaves_publication` below — one opening `//`, or one carrying a
+      scheme, whatever that scheme is.
 
       The path part is percent-DECODED before it is compared: `%20` is a space
       on disk, not two characters of a filename. Resolution is confined to the

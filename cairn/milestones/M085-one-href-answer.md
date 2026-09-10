@@ -87,7 +87,7 @@ section per document → its own row (KI264).
 - [x] T3: Route `epubcheck.leaves_publication` (`:236-249`) through T1 and
       delete its local `SCHEME` regex; `cmd_unique`'s skip-and-count and its
       domain line are unchanged.
-- [ ] T4: Give `epubindex.links` (`:191-196`) the T1 predicate, mark a leaving
+- [x] T4: Give `epubindex.links` (`:191-196`) the T1 predicate, mark a leaving
       link on the row it returns, have `unresolved` (`:202-227`) skip such a
       row, and have `epubcheck.cmd_links` (`:163-193`) print the skipped count
       on its ok line.
@@ -132,6 +132,7 @@ section per document → its own row (KI264).
 - 2026-09-10: T1 and T2 landed in one commit, each verified by its own clean suite run before it was ticked.
 - 2026-09-10: T3: `epubcheck.leaves_publication` is a name over the shared test; its local `SCHEME` regex and the module's `import re` are gone, and `cmd_unique` now hands it the whole href rather than the part it had already cut. Suite green.
 - 2026-09-10: T4 code landed (checkpoint, unticked): `epubindex.links` marks a leaving row and computes no member name for it, `unresolved` skips such a row, and `epubcheck.cmd_links` prints the skipped count and refuses a publication all of whose index links leave. Its verify run was still in flight at this commit.
+- 2026-09-10: T4 verify run clean, so T4 is ticked. `epubcheck.py links` over the captured demo publication reads `all 25 of 25 link(s) … 0 link(s) skipped as leaving the publication`.
 
 ## Decisions
 

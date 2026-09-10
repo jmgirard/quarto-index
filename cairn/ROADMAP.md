@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (M085 done and archived: one shared test in `tests/htmlindex.py` decides whether an href leaves the publication, and all four link readers route through it, their own tests deleted — an `ftp://` site link is no longer reported as a missing file, and the two EPUB commands stop giving one publication opposite verdicts. Review found eleven items; two stale module docstrings were fixed before merge, five routed to one new row and to KI268/KI269, three rejected. M082's row pruned under terminal-row retention. LESSONS.md is at both caps and check-design.md is 6 bytes under its own, so neither gained a line.)_
+_Last hygiene check: 2026-09-10 (M086 done and archived: the M24 residue probe plants each residue into every captured page at once and reads one sweep's output for all of them, eight sweeps in place of one per page, its section's timing row 3080 s to 23 s. Pass 1 returned it; pass 2 found no criterion failing — KI33 struck and a guard comment fixed before merge, KI270 filed, eight findings rejected. M083's row pruned under terminal-row retention. LESSONS.md is still at both caps and check-design.md 6 bytes under its own, so neither gained a line.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,9 +10,8 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M086 | The sweep-discrimination probe stops re-sweeping the set once per page | review | — | normal | milestones/M086-linear-sweep-discrimination.md |
+| M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
 | M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
-| M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | done | — | normal | milestones/archive/M083-epub-unique-instruments.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->

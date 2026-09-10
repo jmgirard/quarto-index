@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M085 | One answer to whether a link leaves the publication | planned | — | normal | milestones/M085-one-href-answer.md |
+| M085 | One answer to whether a link leaves the publication | in-progress | — | normal | milestones/M085-one-href-answer.md |
 | M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | done | — | normal | milestones/archive/M083-epub-unique-instruments.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |
 | M082 | The id census stays out of content the page does not render as markup | done | M081 | normal | milestones/archive/M082-census-unrendered-content.md |

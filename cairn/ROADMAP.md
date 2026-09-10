@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M087 | The link readers call the one link test and use the href it judged | planned | — | normal | milestones/M087-one-link-test-call.md |
+| M087 | The link readers call the one link test and use the href it judged | in-progress | — | normal | milestones/M087-one-link-test-call.md |
 | M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
 | M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |

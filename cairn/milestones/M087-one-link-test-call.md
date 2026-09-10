@@ -1,13 +1,13 @@
 # M087: The link readers call the one link test and use the href it judged
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — the acceptance suite's own link readers and their legs, run over rendered in-repo fixtures
-- **Branch/PR:** —
+- **Branch/PR:** m087-one-link-test-call
 
 ## Goal
 

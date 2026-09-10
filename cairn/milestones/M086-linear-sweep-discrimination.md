@@ -53,7 +53,7 @@ moves only how the probe exercises it.
 - [x] AC5: The unplanted-mirror precheck still runs ahead of every plant and
       both sweeps pass on it, so a red leg below it is evidence about the
       plant.
-- [ ] AC6: `tests/run-tests.sh --self-test` is clean (the `verify` slot's
+- [x] AC6: `tests/run-tests.sh --self-test` is clean (the `verify` slot's
       pre-review form).
 
 ## Coverage
@@ -162,5 +162,6 @@ moves only how the probe exercises it.
 - AC3 — pass. After each all-pages plant the leg counts the `Files … differ` lines of `diff -rq` between the unplanted and planted mirrors and requires that count to equal a fresh `find "$CAPTURE_ROOT" -name '*.html' | wc -l`, failing with a message naming the plant as at fault, before the sweep runs. Removing `book-corrupt/_book/last.html` from the unplanted mirror itself (the case pass 1's check missed) → red, "the pending plant changed 770 page(s) where the captured set holds 771". Restoring that page right after the plant → the same red at 770 of 771.
 - AC4 — pass. A `python3` shim on the control run's PATH, logging each `tests/htmlsweep.py` call apart from the probe's own counter, recorded 8 calls in the order pending, marker (precheck), pending, pending, marker (all-pages), pending, pending, marker (single-page); the probe printed `SWEEP_RUNS=8`. A ninth `sweep_run` → red at 9.
 - AC5 — pass. Read at `tests/run-tests.sh` 20718-20724: `sweep_mirror`, then the pending and marker sweeps each required to exit 0, ahead of every plant; every later leg re-copies from that same `$SWEEP_ORIG`. The shim's call order above shows the two precheck sweeps first. Planting `pending` into one page of the precheck mirror → red, "the pending sweep fails on the unplanted mirror".
+- AC6 — pass. `tests/run-tests.sh --self-test` at ea5ec63 (the code at 0a1de5f; the one commit after it is tracking-only): "All checks passed (1451 checks)", exit 0, no `FAIL` line, 9 min 47 s wall. The M24 pass line reports all 497 captured pages planted at once and 8 sweeps; the section's `timing.tsv` row is 23 s.
 
 **Consistency gate (pass 2).** `cairn_validate.py` exit 0, all checks passed. No principle text changed in `cairn/DESIGN.md`, so `cairn_impact.py` was skipped. The `generic` profile names no toolchain checks.

@@ -1034,8 +1034,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   silence either. — M24 review D5/D11
 - **KI32.** Five book captures copy a whole `_book` tree an earlier render
   mostly wrote. — M24 review D7
-- **KI33.** The sweep self-test is quadratic in captured pages, about 14,000
-  parses. — M24 review D8
 - **KI34.** `capture` copies every extension for the render's stem rather than
   what the render produced. — M24 review D9
 - **KI35.** The emission sweep's domain includes `.tex` from deliberately-broken
@@ -1215,6 +1213,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing changed. The suite reports the crash as a render failure, so a red
   run whose ONLY failure is a segfault is toolchain noise and is re-run rather
   than investigated. CI has not shown it. Accepted. — M078 review
+- **KI270.** The M24 residue probe's page-name guard stops the `--self-test`
+  run on any two page names containing a space that begin with the same word —
+  `a/later chapter.html` beside `a/later x.html` — although neither can be read
+  inside the other in the sweep's output. The 2026-09-10 capture root holds no
+  such pair. — M086 review O4
 
 ### The acceptance suite: coverage gaps
 

@@ -7,7 +7,7 @@
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — the acceptance suite's own link readers, run over rendered in-repo fixtures
-- **Branch/PR:** `m085-one-href-answer`
+- **Branch/PR:** `m085-one-href-answer` / https://github.com/jmgirard/quarto-index/pull/85
 
 ## Goal
 
@@ -141,6 +141,7 @@ section per document → its own row (KI264).
 - 2026-09-10: the AC1 leg shown able to fail: over a scratch copy whose `sitecheck.leaves_publication` is reverted to the old six-scheme list, it goes red naming both rows and the reader that parted — `'ftp://example.invalid/ch1.xhtml': the readers part — … sitecheck.leaves_publication says stays`.
 - 2026-09-10: claim audit: not owed — internal tier.
 - 2026-09-10: T6-T9 ticked, `cairn_validate` all-pass, status to review.
+- 2026-09-10: review opened. `main` had not moved under the branch (0 behind, 9 ahead), so nothing was merged in; draft PR #85 opened and recorded in the header. Consistency gate first half clean — `cairn_validate` all-pass, every advisory OK, `release window` unfired; no principle changed, so `cairn_impact` was skipped; the `generic` profile names no toolchain checks. Criterion evidence run (`--self-test`) and the three review lenses were still in flight at this commit.
 
 ## Decisions
 

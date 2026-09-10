@@ -20625,57 +20625,145 @@ fi
 # The sweeps' own discrimination (M24). A sweep over a set passes on a set it
 # never opens, which is exactly the vacuity the per-file checks it replaced
 # could not have had: three named files either exist and are read, or the run
-# dies. So for each of the pages the run captured, the residue that sweep names
-# is planted into a mirror of the captured set and the sweep is required to
-# fail — and to fail naming THAT page, so a sweep that died for some other
-# reason cannot be read as this page having been read.
+# dies. The residue each sweep names is planted into a mirror of the captured
+# set and the sweep is required to fail — and to fail naming the planted
+# page(s), so a sweep that died for some other reason cannot be read as those
+# pages having been read.
+#
+# Both whole-set sweeps ACCUMULATE: `sweep_pending` collects every page an
+# attribute survived on and `sweep_marker` appends a clause per page whose
+# count is wrong, so neither stops at its first offending page. That is what
+# lets one sweep carry the per-page reading claim (M086): each residue is
+# planted into EVERY page in one pass and the one sweep that follows must name
+# every one of them, in place of the sweep-per-page loop this replaced. Three
+# single-page legs are kept beside it, because the all-at-once form cannot show
+# a sweep telling one offending page from clean ones.
 # ---------------------------------------------------------------------------
 section 'The sweeps'\'' own discrimination (M24). A sweep over a set passes on a set it'
 if [ "${1:-}" = "--self-test" ]; then
   SWEEPW="$WORK/sweepprobe"
-  rm -rf "$SWEEPW"
-  SWEEP_PAGES=0
+  SWEEP_ORIG="$WORK/sweepprobe-unplanted"
+  rm -rf "$SWEEPW" "$SWEEP_ORIG"
+  # The domain, stated once from the capture root, and the pristine mirror
+  # every leg below is re-copied from.
+  SWEEP_RELS=()
   while IFS= read -r page; do
-    REL="${page#"$CAPTURE_ROOT"/}"
-    mkdir -p "$SWEEPW/$(dirname "$REL")"
-    cp "$page" "$SWEEPW/$REL"
-    SWEEP_PAGES=$((SWEEP_PAGES + 1))
+    SWEEP_RELS+=("${page#"$CAPTURE_ROOT"/}")
   done < <(find "$CAPTURE_ROOT" -name '*.html' | sort)
+  SWEEP_PAGES=${#SWEEP_RELS[@]}
   [ "$SWEEP_PAGES" -gt 0 ] \
     || fail "M24 self-test: the captured set holds no HTML page, so the probe below would prove the sweeps discriminating over nothing"
+  for REL in "${SWEEP_RELS[@]}"; do
+    mkdir -p "$SWEEP_ORIG/$(dirname "$REL")"
+    cp "$CAPTURE_ROOT/$REL" "$SWEEP_ORIG/$REL"
+  done
+  printf '%s\n' "${SWEEP_RELS[@]}" | LC_ALL=C sort -u > "$WORK/sweep-domain.txt"
+  # A page the sweep names is read out of its output by SUBSTRING, because the
+  # `pending` finding joins its page names with spaces and a captured page can
+  # carry one (`book-order-1/_book/later chapter.html`), so no whole-token read
+  # is available. Substring is exact only if no page name sits inside another
+  # at a path boundary — prove that of this domain rather than assume it.
+  SWEEP_AMBIG=$(awk '{n[$0] = 1; a[NR] = $0}
+    END {for (i = 1; i <= NR; i++) {s = a[i]
+           while ((p = index(s, "/")) > 0) {s = substr(s, p + 1)
+             if (s in n) print a[i] " contains " s}}}' "$WORK/sweep-domain.txt" | sed -n '1,3p')
+  [ -z "$SWEEP_AMBIG" ] \
+    || fail "M24 self-test: the captured set holds a page name inside another at a path boundary ($(printf '%s' "$SWEEP_AMBIG" | tr '\n' '; ')), so reading the sweep's output for a named page could report the wrong one and the legs below would not say what they claim"
+
+  # Every htmlsweep.py call in this half goes through here, so the count below
+  # is the run's own and not a reading of these lines: a call put back inside a
+  # loop would push it past the number the pass line states (M086-AC4).
+  SWEEP_RUNS=0
+  sweep_run() {
+    SWEEP_RUNS=$((SWEEP_RUNS + 1))
+    # `&& rc=0 || rc=$?` rather than a bare `&& fail`: these calls sit on a
+    # failing path BY DESIGN, and `A && B` with a failing A returns non-zero,
+    # which `set -e` would take as the run aborting here with no FAIL line.
+    SWEEP_OUT=$(MARKER_CLASS="$MARKER_CLASS" \
+      python3 tests/htmlsweep.py "$1" "$SWEEPW" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
+  }
+  # The pages of the domain the sweep's output names, in the domain's own
+  # (sorted) order so `comm` can read it. The membership test is awk's `index`
+  # over the whole output rather than `grep -oFf`: what a repeated -o match
+  # means differs between grep implementations, and the shim this machine
+  # answers `grep` with reported 146 of 771 named pages where every one was
+  # named.
+  sweep_named() {
+    printf '%s' "$SWEEP_OUT" > "$WORK/sweep-out.txt"
+    awk 'NR == FNR {out = out $0 "\n"; next} index(out, $0) > 0' \
+      "$WORK/sweep-out.txt" "$WORK/sweep-domain.txt"
+  }
+  sweep_mirror() { rm -rf "$SWEEPW"; cp -R "$SWEEP_ORIG" "$SWEEPW"; }
+
   # The mirror must pass BOTH sweeps unplanted, or no failure below is evidence
-  # of anything — it would be the mirror that was wrong, not the plant.
-  python3 tests/htmlsweep.py pending "$SWEEPW" > /dev/null \
-    || fail "M24 self-test: the pending sweep fails on the unplanted mirror, so no failure below is evidence of anything"
-  MARKER_CLASS="$MARKER_CLASS" python3 tests/htmlsweep.py marker "$SWEEPW" > /dev/null \
-    || fail "M24 self-test: the marker sweep fails on the unplanted mirror, so no failure below is evidence of anything"
-  while IFS= read -r page; do
-    REL="${page#"$CAPTURE_ROOT"/}"
-    # Three plants over two sweeps: the `pending` sweep reads both plumbing
-    # attributes (the tagging pass's `data-qi-meta` joined it in M071), so
-    # the `meta` plant is judged by that same mode.
-    for KIND in pending meta marker; do
-      SWEEP_MODE="$KIND"
-      [ "$KIND" != meta ] || SWEEP_MODE=pending
-      cp "$page" "$SWEEPW/$REL"
-      SWEEP_EXPECT=$(MARKER_CLASS="$MARKER_CLASS" \
-        python3 tests/plantdefect.py --html "$SWEEPW/$REL" "$KIND") \
-        || fail "M24 self-test: the $KIND defect aimed at $REL planted nothing — the sweep that follows would be reported as failing to discriminate when the fault is this mutation's"
-      # `&& rc=0 || rc=$?` rather than a bare `&& fail`: this line sits on a
-      # failing path BY DESIGN, and `A && B` with a failing A returns non-zero,
-      # which `set -e` would take as the run aborting here with no FAIL line.
-      SWEEP_OUT=$(MARKER_CLASS="$MARKER_CLASS" \
-        python3 tests/htmlsweep.py "$SWEEP_MODE" "$SWEEPW" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
-      [ "$SWEEP_RC" -ne 0 ] \
-        || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep passed with the residue planted in $REL, so it is not reading that page"; }
-      printf '%s' "$SWEEP_OUT" | grep -qF -- "$SWEEP_EXPECT" \
-        || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the plant in $REL, but not with <<$SWEEP_EXPECT>> — that failure is not this sweep catching this defect"; }
-      printf '%s' "$SWEEP_OUT" | grep -qF -- "$REL" \
-        || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the plant in $REL without naming that page, so nothing here says it read it"; }
-      cp "$page" "$SWEEPW/$REL"
-    done
-  done < <(find "$CAPTURE_ROOT" -name '*.html' | sort)
-  pass "M24: both whole-set residue sweeps fail, naming the page, on their own residue planted into each of the $SWEEP_PAGES captured page(s) in turn — the pending sweep on each of its two plumbing attributes"
+  # of anything — it would be the mirror that was wrong, not the plant. Every
+  # leg below is re-copied from this same prechecked tree.
+  sweep_mirror
+  sweep_run pending
+  [ "$SWEEP_RC" -eq 0 ] \
+    || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the pending sweep fails on the unplanted mirror, so no failure below is evidence of anything"; }
+  sweep_run marker
+  [ "$SWEEP_RC" -eq 0 ] \
+    || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the marker sweep fails on the unplanted mirror, so no failure below is evidence of anything"; }
+
+  # Three plants over two sweeps: the `pending` sweep reads both plumbing
+  # attributes (the tagging pass's `data-qi-meta` joined it in M071), so the
+  # `meta` plant is judged by that same mode.
+  for KIND in pending meta marker; do
+    SWEEP_MODE="$KIND"
+    [ "$KIND" != meta ] || SWEEP_MODE=pending
+    sweep_mirror
+    SWEEP_TARGETS=()
+    for REL in "${SWEEP_RELS[@]}"; do SWEEP_TARGETS+=("$SWEEPW/$REL"); done
+    # The plant's own domain, counted rather than assumed: a mirror built over
+    # fewer pages than the capture root holds would make the sweep's silence
+    # about a page mean nothing, and it is the plant that is wrong then, not
+    # the sweep.
+    [ "${#SWEEP_TARGETS[@]}" -eq "$(find "$CAPTURE_ROOT" -name '*.html' | wc -l | tr -d ' ')" ] \
+      || fail "M24 self-test: the $KIND plant aims at ${#SWEEP_TARGETS[@]} page(s) where the captured set holds $(find "$CAPTURE_ROOT" -name '*.html' | wc -l | tr -d ' ') — the mirror is not the captured set and the sweep below would be reported as failing to discriminate when the fault is this plant's"
+    SWEEP_EXPECT=$(MARKER_CLASS="$MARKER_CLASS" \
+      python3 tests/plantdefect.py --html "$KIND" "${SWEEP_TARGETS[@]}") \
+      || fail "M24 self-test: the $KIND defect planted nothing in one of the $SWEEP_PAGES captured page(s) — the sweep that follows would be reported as failing to discriminate when the fault is this mutation's"
+    sweep_run "$SWEEP_MODE"
+    [ "$SWEEP_RC" -ne 0 ] \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep passed with the residue planted in every captured page, so it is reading none of them"; }
+    printf '%s' "$SWEEP_OUT" | grep -qF -- "$SWEEP_EXPECT" \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the all-pages plant, but not with <<$SWEEP_EXPECT>> — that failure is not this sweep catching this defect"; }
+    SWEEP_UNNAMED=$(sweep_named | LC_ALL=C comm -23 "$WORK/sweep-domain.txt" - | sed -n '1,5p')
+    [ -z "$SWEEP_UNNAMED" ] \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the all-pages plant without naming $(printf '%s' "$SWEEP_UNNAMED" | tr '\n' ' ') — nothing here says it read those page(s)"; }
+  done
+
+  # The all-at-once legs above show every page read; they cannot show the sweep
+  # telling ONE offending page from clean ones, because they leave none clean.
+  # So each residue is also planted into a single page of a freshly re-copied
+  # unplanted mirror, and the sweep must name that page and no other.
+  SWEEP_ONE="${SWEEP_RELS[0]}"
+  LC_ALL=C grep -vxF -- "$SWEEP_ONE" "$WORK/sweep-domain.txt" > "$WORK/sweep-others.txt" || true
+  [ -s "$WORK/sweep-others.txt" ] \
+    || fail "M24 self-test: the captured set holds only $SWEEP_ONE, so the single-page legs below could not show a sweep naming one page and not another"
+  for KIND in pending meta marker; do
+    SWEEP_MODE="$KIND"
+    [ "$KIND" != meta ] || SWEEP_MODE=pending
+    sweep_mirror
+    SWEEP_EXPECT=$(MARKER_CLASS="$MARKER_CLASS" \
+      python3 tests/plantdefect.py --html "$KIND" "$SWEEPW/$SWEEP_ONE") \
+      || fail "M24 self-test: the $KIND defect aimed at $SWEEP_ONE planted nothing — the sweep that follows would be reported as failing to discriminate when the fault is this mutation's"
+    sweep_run "$SWEEP_MODE"
+    [ "$SWEEP_RC" -ne 0 ] \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep passed with the residue planted in $SWEEP_ONE alone, so it is not reading that page"; }
+    printf '%s' "$SWEEP_OUT" | grep -qF -- "$SWEEP_EXPECT" \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the plant in $SWEEP_ONE, but not with <<$SWEEP_EXPECT>> — that failure is not this sweep catching this defect"; }
+    sweep_named | LC_ALL=C grep -qxF -- "$SWEEP_ONE" \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep failed on the plant in $SWEEP_ONE without naming that page, so nothing here says it read it"; }
+    SWEEP_EXTRA=$(sweep_named | LC_ALL=C comm -12 "$WORK/sweep-others.txt" - | sed -n '1,5p')
+    [ -z "$SWEEP_EXTRA" ] \
+      || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep named $(printf '%s' "$SWEEP_EXTRA" | tr '\n' ' ') beside the one planted page $SWEEP_ONE, so it is not telling an offending page from a clean one"; }
+  done
+
+  [ "$SWEEP_RUNS" -eq 8 ] \
+    || fail "M24 self-test: the residue half ran the sweep $SWEEP_RUNS time(s), where its shape is eight — two for the unplanted precheck, three for the all-pages plants, three for the single-page plants; a sweep back inside a loop is the cost this count exists to catch"
+  pass "M24: both whole-set residue sweeps fail, naming every planted page, on their own residue planted into all $SWEEP_PAGES captured page(s) at once, and fail naming one page and no other on that residue planted into one page of an unplanted mirror — the pending sweep on each of its two plumbing attributes, in $SWEEP_RUNS sweeps over the set rather than one per page"
 
   # The empty-div half names its three pages, so its discrimination is per
   # page and not per set: each planted in a copy, each required to fail.
@@ -20684,7 +20772,7 @@ if [ "${1:-}" = "--self-test" ]; then
               "$CAPTURE_ROOT/misuse-html/marker-misuse.html" \
               "$CAPTURE_ROOT/marker-nomarks-html/marker-nomarks.html"; do
     cp "$page" "$SWEEPW/edprobe.html"
-    SWEEP_EXPECT=$(python3 tests/plantdefect.py --html "$SWEEPW/edprobe.html" emptydiv) \
+    SWEEP_EXPECT=$(python3 tests/plantdefect.py --html emptydiv "$SWEEPW/edprobe.html") \
       || fail "M24 self-test: the empty-div defect aimed at $page planted nothing"
     SWEEP_OUT=$(MARKER_CLASS="$MARKER_CLASS" QUARTO_EMPTY_DIV="$QUARTO_EMPTY_DIV" \
       python3 tests/htmlsweep.py emptydiv "$SWEEPW/edprobe.html" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?

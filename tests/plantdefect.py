@@ -10,7 +10,7 @@ died for some other reason cannot be read as the scan catching this.
 
 Usage:  python3 tests/plantdefect.py <scratch-ext-dir> <scan-name>
         python3 tests/plantdefect.py --duplicate <scratch-ext-dir> <scan-name>
-        python3 tests/plantdefect.py --html <captured-page> <residue-kind>
+        python3 tests/plantdefect.py --html <residue-kind> <captured-page>...
         python3 tests/plantdefect.py --separator <captured-page> <kind>
 
 Prints the expected failure marker. An aimed-at text the module does not carry
@@ -263,30 +263,40 @@ def plant_separator(path, kind):
     print(marker)
 
 
-def plant_html(path, kind):
-    """Plant one residue defect in a captured HTML page; print its marker."""
+def plant_html(kind, paths):
+    """Plant one residue defect in each captured HTML page; print its marker.
+
+    The marker is printed ONCE however many pages were named: it is the text
+    the run greps the sweep's output for, and the sweep says the same thing
+    whether one page or all of them carry the residue. The no-op guard is per
+    PAGE, though — a page whose anchor text is absent is an error naming that
+    page, so a plant that substituted nothing in one page of many is still
+    reported as this mutation's fault and not as the sweep failing to
+    discriminate (M086).
+    """
     if kind not in HTML_DEFECTS:
         raise SystemExit('FAIL: plantdefect: no HTML residue defect named %r'
                          % kind)
     old, new, marker = HTML_DEFECTS[kind]
     if kind == 'marker':
         new = new % os.environ['MARKER_CLASS']
-    src = open(path, encoding='utf-8').read()
-    if old not in src:
-        raise SystemExit(
-            'FAIL: plantdefect: %s carries no <<%s>>, so the %r defect plants '
-            'nothing and the sweep that follows would be reported as failing '
-            'to discriminate when the fault is this mutation\'s'
-            % (path, old, kind))
-    open(path, 'w', encoding='utf-8').write(src.replace(old, new, 1))
+    for path in paths:
+        src = open(path, encoding='utf-8').read()
+        if old not in src:
+            raise SystemExit(
+                'FAIL: plantdefect: %s carries no <<%s>>, so the %r defect '
+                'plants nothing there and the sweep that follows would be '
+                'reported as failing to discriminate when the fault is this '
+                'mutation\'s' % (path, old, kind))
+        open(path, 'w', encoding='utf-8').write(src.replace(old, new, 1))
     print(marker)
 
 
 def main(argv):
     if len(argv) == 4 and argv[1] == '--separator':
         return plant_separator(argv[2], argv[3])
-    if len(argv) == 4 and argv[1] == '--html':
-        return plant_html(argv[2], argv[3])
+    if len(argv) > 3 and argv[1] == '--html':
+        return plant_html(argv[2], argv[3:])
     if len(argv) == 4 and argv[1] == '--duplicate':
         return plant_duplicate(argv[2], argv[3])
     if len(argv) != 3:

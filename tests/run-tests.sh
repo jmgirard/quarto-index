@@ -20730,17 +20730,28 @@ if [ "${1:-}" = "--self-test" ]; then
     SWEEP_MODE="$KIND"
     [ "$KIND" != meta ] || SWEEP_MODE=pending
     sweep_mirror
+    # The plant aims at the pages the mirror itself holds, so a mirror short of
+    # the captured set plants short, where a list built from the capture root
+    # would name the missing page and hide it.
     SWEEP_TARGETS=()
-    for REL in "${SWEEP_RELS[@]}"; do SWEEP_TARGETS+=("$SWEEPW/$REL"); done
-    # The plant's own domain, counted rather than assumed: a mirror built over
-    # fewer pages than the capture root holds would make the sweep's silence
-    # about a page mean nothing, and it is the plant that is wrong then, not
-    # the sweep.
-    [ "${#SWEEP_TARGETS[@]}" -eq "$(find "$CAPTURE_ROOT" -name '*.html' | wc -l | tr -d ' ')" ] \
-      || fail "M24 self-test: the $KIND plant aims at ${#SWEEP_TARGETS[@]} page(s) where the captured set holds $(find "$CAPTURE_ROOT" -name '*.html' | wc -l | tr -d ' ') — the mirror is not the captured set and the sweep below would be reported as failing to discriminate when the fault is this plant's"
+    while IFS= read -r -d '' SWEEP_PAGE; do SWEEP_TARGETS+=("$SWEEP_PAGE"); done \
+      < <(find "$SWEEPW" -name '*.html' -print0)
     SWEEP_EXPECT=$(MARKER_CLASS="$MARKER_CLASS" \
       python3 tests/plantdefect.py --html "$KIND" "${SWEEP_TARGETS[@]}") \
-      || fail "M24 self-test: the $KIND defect planted nothing in one of the $SWEEP_PAGES captured page(s) — the sweep that follows would be reported as failing to discriminate when the fault is this mutation's"
+      || fail "M24 self-test: the $KIND defect planted nothing in one of the ${#SWEEP_TARGETS[@]} mirrored page(s) — the sweep that follows would be reported as failing to discriminate when the fault is this mutation's"
+    # The pages planted, counted from what the plant CHANGED rather than from
+    # what it was aimed at: every page that now differs from the unplanted
+    # mirror. That count must be the captured set's page count — otherwise a
+    # page the mirror lacks, or a page the plant left as it was, would make the
+    # sweep's silence about it read as the sweep failing to discriminate when
+    # the fault is this plant's.
+    SWEEP_DIFF=$(diff -rq "$SWEEP_ORIG" "$SWEEPW") && SWEEP_DIFF_RC=0 || SWEEP_DIFF_RC=$?
+    [ "$SWEEP_DIFF_RC" -le 1 ] \
+      || fail "M24 self-test: diff could not compare the unplanted mirror with the $KIND-planted one (exit $SWEEP_DIFF_RC), so the plant's page count is unknown"
+    SWEEP_PLANTED=$(printf '%s\n' "$SWEEP_DIFF" | awk '/^Files .* differ$/ {n++} END {print n + 0}')
+    SWEEP_CAPTURED=$(find "$CAPTURE_ROOT" -name '*.html' | wc -l | tr -d ' ')
+    [ "$SWEEP_PLANTED" -eq "$SWEEP_CAPTURED" ] \
+      || fail "M24 self-test: the $KIND plant changed $SWEEP_PLANTED page(s) where the captured set holds $SWEEP_CAPTURED — the sweep below would be reported as failing to discriminate when the fault is this plant's"
     sweep_run "$SWEEP_MODE"
     [ "$SWEEP_RC" -ne 0 ] \
       || { printf '%s\n' "$SWEEP_OUT" >&2; fail "M24 self-test: the $KIND sweep passed with the residue planted in every captured page, so it is reading none of them"; }

@@ -1,13 +1,13 @@
 # M085: One answer to whether a link leaves the publication
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — the acceptance suite's own link readers, run over rendered in-repo fixtures
-- **Branch/PR:** —
+- **Branch/PR:** `m085-one-href-answer`
 
 ## Goal
 
@@ -59,7 +59,8 @@ section per document → its own row (KI264).
 - [ ] AC4: `sitecheck.py links` decides a scheme it does not name: over a copy
       of the captured site carrying one `ftp://` href and one `irc:` href
       planted by `m40_plant_link`, the check exits 0 and its swept-domain line
-      reports a swept count two lower than the count of hrefs that page carries.
+      reports the same swept count it reports over the unplanted capture, where
+      the planted page carries two hrefs more than the captured one.
 - [ ] AC5: `notes:draft.xhtml#x` — a relative filename carrying a colon — reads
       as leaving the publication in each of the four readers AC1 names.
 - [ ] AC6: `tests/run-tests.sh --self-test` is clean.
@@ -75,11 +76,11 @@ section per document → its own row (KI264).
 
 ## Tasks
 
-- [ ] T1: Write the shared predicate beside `resolve_href` in
+- [x] T1: Write the shared predicate beside `resolve_href` in
       `tests/htmlindex.py`; its docstring states the rule, what it does not
       catch (the percent-encoded shape, KI120), and that a real relative
       filename carrying a colon reads as leaving unless written `./name:x`.
-- [ ] T2: Route `htmlindex.resolve_href` (`:869`) through T1; delete its
+- [x] T2: Route `htmlindex.resolve_href` (`:869`) through T1; delete its
       `'://' in href or href.startswith('mailto:')` test. Callers
       (`tests/fragments.py:68-72`, `run-tests.sh:7305-7307`) keep failing on a
       leaving href.
@@ -106,9 +107,10 @@ section per document → its own row (KI264).
       `//` clause and the scheme clause are planted separately.
 - [ ] T8: Build the AC2/AC3 repack rows through M083's `plant.py` and the AC4
       `m40_plant_link` rows.
-- [ ] T9: Strike KI98 and KI266, rewrite KI120's sentence naming
-      `leaves_publication`'s docstring enumeration to name where it now lives,
-      rewrite the root-relative candidate row, and run `--self-test`.
+- [ ] T9: Strike KI98, correct KI120's sentence naming `leaves_publication`'s
+      docstring enumeration to name where it now lives and KI266's clause on
+      the four readers' separate answers, rewrite the root-relative candidate
+      row, and run `--self-test`.
 
 ## Work log
 
@@ -117,6 +119,15 @@ section per document → its own row (KI264).
 - 2026-09-10: plan gate chose one scheme-shaped test over the site checker's named scheme list because a named list makes every unlisted scheme a false report, which is the defect in hand; falsified by a real fixture filename carrying a colon that authors will not write as `./name:x`.
 - 2026-09-10: plan gate chose `tests/htmlindex.py` as the predicate's home over a new `tests/hrefs.py` because three of the four readers already import it; falsified by a second non-HTML reader needing the predicate without wanting the HTML parser.
 - 2026-09-10: plan gate chose replacing the four tests without adding a report over also resolving a root-relative href, because the scope hardens checkers this repo already shipped and the deleting option is the one that rule recommends; falsified by an author or a fixture writing a root-relative index locator.
+- 2026-09-10: implementation gate chose a named entry per reader over one shared call plus a wiring assertion, so the AC1 leg reads each reader at its own call site; falsified by a reader whose own name shows nothing a shared call could not.
+- 2026-09-10: implementation gate chose running the AC2/AC3 EPUB legs on every run over confining them to `--self-test`, so M083's repack machinery is hoisted out of that self-test block.
+- 2026-09-10: implementation gate chose a recorded one-time red against the pre-change reader over standing revert legs, the pre-change reader not existing after this branch.
+- 2026-09-10: amendment gate replaced AC4's swept-count arithmetic with a before/after comparison against the unplanted capture: the check reports one swept total per captured directory, which no per-page href count can be two lower than. No criterion added, and none widened.
+- 2026-09-10: re-audit: AC4 (reduced) — nothing.
+- 2026-09-10: T9 narrowed to strike KI98 alone; KI266 stands, M085's Scope Out leaving a root-relative href where it found it, and T9 corrects its wording instead.
+- 2026-09-10: T1: `htmlindex.leaves_publication` states the rule, the percent-encoded shape it does not catch, and the `./name:x` form for a relative filename carrying a colon; every claim in its docstring was read off a run of the predicate over the shapes it names.
+- 2026-09-10: T2: `resolve_href` answers from the shared test, and its own `'://' in href or mailto:` test is gone. Suite green.
+- 2026-09-10: T1 and T2 landed in one commit, each verified by its own clean suite run before it was ticked.
 
 ## Decisions
 

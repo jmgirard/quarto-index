@@ -49,9 +49,9 @@ section per document → its own row (KI264).
       not one verdict.
 - [ ] AC2: `epubcheck.py links` no longer reports a link that leaves the
       publication as naming nothing in the publication: over the captured
-      `id-collision.epub` repacked to carry one `https:` href and one `//` href
-      inside its generated index section, the command exits 0 and its ok line
-      states how many of the collected links it skipped as leaving.
+      `demo.epub` repacked to carry one `https:` href and one `//` href inside
+      its generated index section, the command exits 0 and its ok line states
+      how many of the collected links it skipped as leaving.
 - [ ] AC3: The two EPUB commands give one answer over one publication: over the
       AC2 repack, `epubcheck.py unique` and `epubcheck.py links` both exit 0,
       where today `links` fails on the same two hrefs `unique` counts as
@@ -124,11 +124,14 @@ section per document → its own row (KI264).
 - 2026-09-10: implementation gate chose a recorded one-time red against the pre-change reader over standing revert legs, the pre-change reader not existing after this branch.
 - 2026-09-10: amendment gate replaced AC4's swept-count arithmetic with a before/after comparison against the unplanted capture: the check reports one swept total per captured directory, which no per-page href count can be two lower than. No criterion added, and none widened.
 - 2026-09-10: re-audit: AC4 (reduced) — nothing.
+- 2026-09-10: amendment gate replaced AC2's publication: `epubcheck.py links` cannot read `id-collision.epub` at all — that fixture's element claiming the index-section id carries no heading, and the prefix-based section reader raises on it — so the criterion names the captured `demo.epub`, which both EPUB commands pass over today. AC3 inherits it with no wording change. No criterion added, and none widened.
+- 2026-09-10: re-audit: AC2 (reduced) — nothing.
 - 2026-09-10: T9 narrowed to strike KI98 alone; KI266 stands, M085's Scope Out leaving a root-relative href where it found it, and T9 corrects its wording instead.
 - 2026-09-10: T1: `htmlindex.leaves_publication` states the rule, the percent-encoded shape it does not catch, and the `./name:x` form for a relative filename carrying a colon; every claim in its docstring was read off a run of the predicate over the shapes it names.
 - 2026-09-10: T2: `resolve_href` answers from the shared test, and its own `'://' in href or mailto:` test is gone. Suite green.
 - 2026-09-10: T1 and T2 landed in one commit, each verified by its own clean suite run before it was ticked.
 - 2026-09-10: T3: `epubcheck.leaves_publication` is a name over the shared test; its local `SCHEME` regex and the module's `import re` are gone, and `cmd_unique` now hands it the whole href rather than the part it had already cut. Suite green.
+- 2026-09-10: T4 code landed (checkpoint, unticked): `epubindex.links` marks a leaving row and computes no member name for it, `unresolved` skips such a row, and `epubcheck.cmd_links` prints the skipped count and refuses a publication all of whose index links leave. Its verify run was still in flight at this commit.
 
 ## Decisions
 

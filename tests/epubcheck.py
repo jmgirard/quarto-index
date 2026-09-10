@@ -165,6 +165,13 @@ def cmd_links(argv):
     The collected count is printed and required non-zero: an index whose
     entries lost their locator links would have nothing left to resolve, and
     a check that only counted failures would call that publication clean.
+
+    A link that leaves the publication is nothing this check can reach, and is
+    skipped rather than reported as naming nothing in it (D-057) — the verdict
+    `unique` below reaches on the same href. The skipped count is printed beside
+    the resolved one, and a publication ALL of whose index links leave is
+    refused: the skip is the second way this domain empties out, and exit status
+    alone cannot tell an empty sweep from a clean one.
     """
     if len(argv) != 2:
         print('usage: epubcheck.py links <epub> <prefix>', file=sys.stderr)
@@ -176,6 +183,12 @@ def cmd_links(argv):
         print(f'FAIL: {path}: no link inside a generated index section, so '
               f'this check would pass over an empty set', file=sys.stderr)
         return 1
+    left = [link for link in found if link['leaves']]
+    if len(left) == len(found):
+        print(f'FAIL: {path}: every one of the {len(found)} link(s) inside a '
+              f'generated index section leaves the publication, so the '
+              f'resolving below would pass over an empty set', file=sys.stderr)
+        return 1
     bad = epubindex.unresolved(book, prefix)
     if bad:
         print(f'FAIL: {path}: {len(bad)} of {len(found)} link(s) inside a '
@@ -185,10 +198,12 @@ def cmd_links(argv):
             print(f"  {link['document']}  {link['href']}  — {link['reason']}",
                   file=sys.stderr)
         return 1
-    files = len({link['file'] or link['document'] for link in found})
-    print(f'ok   {path}: all {len(found)} link(s) inside a generated index '
-          f'section resolve — each names one of the {files} manifest-listed '
-          f'document(s) and an element it carries')
+    files = len({link['file'] or link['document'] for link in found
+                 if not link['leaves']})
+    print(f'ok   {path}: all {len(found) - len(left)} of {len(found)} link(s) '
+          f'inside a generated index section resolve — each names one of the '
+          f'{files} manifest-listed document(s) and an element it carries; '
+          f'{len(left)} link(s) skipped as leaving the publication')
     return 0
 
 

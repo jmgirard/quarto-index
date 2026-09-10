@@ -238,6 +238,9 @@ Actioned:
   locator by accident gets the count and no way to find it. Decided by D-057
   rather than wrong, but the diagnosability loss was not recorded.
 
+PR conversation on #85, read once before the merge gate: no reviews, no
+conversation comments, no unresolved review threads — an empty read.
+
 Rejected:
 
 - F7: the unguarded `H.resolve_href` unpack at `tests/run-tests.sh:11993` sits

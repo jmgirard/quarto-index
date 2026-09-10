@@ -23,7 +23,8 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
       The EPUB's entry rows against the HTML render's, both first held to the
       manifest that pins them.
   links <epub> <prefix>
-      Every link inside a generated index section resolves in the publication.
+      Every link inside a generated index section that stays in the
+      publication resolves in it; one that leaves is skipped and counted.
   unique <epub>
       No manifest-listed document carries an id twice, and every index link
       fragment names an id its own document carries exactly once.
@@ -32,7 +33,6 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
 """
 
 import posixpath
-import re
 import sys
 
 import epubindex
@@ -166,6 +166,13 @@ def cmd_links(argv):
     The collected count is printed and required non-zero: an index whose
     entries lost their locator links would have nothing left to resolve, and
     a check that only counted failures would call that publication clean.
+
+    A link that leaves the publication is nothing this check can reach, and is
+    skipped rather than reported as naming nothing in it (D-057) — the verdict
+    `unique` below reaches on the same href. The skipped count is printed beside
+    the resolved one, and a publication ALL of whose index links leave is
+    refused: the skip is the second way this domain empties out, and exit status
+    alone cannot tell an empty sweep from a clean one.
     """
     if len(argv) != 2:
         print('usage: epubcheck.py links <epub> <prefix>', file=sys.stderr)
@@ -177,6 +184,12 @@ def cmd_links(argv):
         print(f'FAIL: {path}: no link inside a generated index section, so '
               f'this check would pass over an empty set', file=sys.stderr)
         return 1
+    left = [link for link in found if link['leaves']]
+    if len(left) == len(found):
+        print(f'FAIL: {path}: every one of the {len(found)} link(s) inside a '
+              f'generated index section leaves the publication, so the '
+              f'resolving below would pass over an empty set', file=sys.stderr)
+        return 1
     bad = epubindex.unresolved(book, prefix)
     if bad:
         print(f'FAIL: {path}: {len(bad)} of {len(found)} link(s) inside a '
@@ -186,10 +199,12 @@ def cmd_links(argv):
             print(f"  {link['document']}  {link['href']}  — {link['reason']}",
                   file=sys.stderr)
         return 1
-    files = len({link['file'] or link['document'] for link in found})
-    print(f'ok   {path}: all {len(found)} link(s) inside a generated index '
-          f'section resolve — each names one of the {files} manifest-listed '
-          f'document(s) and an element it carries')
+    files = len({link['file'] or link['document'] for link in found
+                 if not link['leaves']})
+    print(f'ok   {path}: all {len(found) - len(left)} of {len(found)} link(s) '
+          f'inside a generated index section resolve — each names one of the '
+          f'{files} manifest-listed document(s) and an element it carries; '
+          f'{len(left)} link(s) skipped as leaving the publication')
     return 0
 
 
@@ -233,20 +248,18 @@ def cmd_absent(argv):
     return 0
 
 
-SCHEME = re.compile(r'[A-Za-z][A-Za-z0-9+.\-]*:')
+def leaves_publication(href):
+    """True where an href names something outside the EPUB.
 
-
-def leaves_publication(target):
-    """True where the file part of an href names something outside the EPUB.
-
-    A `//` opening is a protocol-relative reference and a `scheme:` opening an
-    absolute one; either names a resource the publication does not contain.
-    Joining one against the linking member's directory builds a zip name no
-    manifest can list, so a link that is not broken would be reported as one
-    that is. An empty file part is the linking document itself, and a relative
-    reference's first segment cannot carry a colon, so neither is caught here.
+    This module's own name for the suite's one definition of that question
+    (`htmlindex.leaves_publication`, D-057), which states the rule and what it
+    does not catch. Kept as a name here rather than called through, so that the
+    agreement leg in `tests/run-tests.sh` reads this reader at its own call
+    site: a reader that stopped consulting the shared definition shows up there
+    as a verdict disagreeing with the other three, where a leg calling the
+    shared definition four times could not see it.
     """
-    return target.startswith('//') or SCHEME.match(target) is not None
+    return htmlindex.leaves_publication(href)
 
 
 def cmd_unique(argv):
@@ -306,7 +319,7 @@ def cmd_unique(argv):
             target, _, fragment = href.partition('#')
             if not fragment:
                 continue
-            if leaves_publication(target):
+            if leaves_publication(href):
                 outside += 1
                 continue
             fragments += 1

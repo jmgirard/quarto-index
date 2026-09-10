@@ -1078,8 +1078,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   claims a row form manifest 10 does not use. — M52 review F9
 - **KI97.** `epubindex.read` raises rather than reporting on a member it cannot
   decode or address. — M52 review F12
-- **KI98.** `epubindex.links` would report an external href as unresolved.
-  — M52 review F13
 - **KI102.** `pdfindex.read`'s `stop` bound drops the whole stop page, so an
   index running onto it loses entries silently and an `absent` cell reads a
   truncated entry identically to a dropped one, which is the distinction
@@ -1106,15 +1104,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   engine log; no capture whose rejection is the log's last `! ` line exists to
   exercise it. — M36
 - **KI120.** `%2F%2Fevil.com` is skipped by neither the `//` nor the scheme
-  guard and is resolved as a local path, a false report only. `epubcheck`'s
-  own `leaves_publication` answers the same shape the same way, and its
-  docstring's enumeration of what it does not catch omits it. — M46 review,
-  M083 review
-- **KI266.** A root-relative href (`/ch1.xhtml#frag`) is internal to all four
-  link readers, and three of them join it to the linking page's or member's
-  directory, where the leading slash discards that directory and leaves a path
-  no page map and no manifest lists; only `tests/sitecheck.py links` resolves
-  it, against the capture root. No fixture writes one. — M085 plan gate
+  test and is resolved as a local path, a false report only. One test answers
+  the question for every link reader now (corrected M085), and the enumeration
+  of what it does not catch names this shape:
+  `htmlindex.leaves_publication`'s docstring. — M46 review, M083 review, M085
+- **KI266.** A root-relative href (`/ch1.xhtml#frag`) stays in the publication
+  by the one test all four link readers now share (M085), and three of them
+  join it to the linking page's or member's directory, where the leading slash
+  discards that directory and leaves a path no page map and no manifest lists;
+  only `tests/sitecheck.py links` resolves it, against the capture root. No
+  fixture writes one. — M085 plan gate
 - **KI127.** Both sides of the version matrix's fixture-set comparison are
   sets, so two render targets written to one extraction name read as agreement
   while one extraction is silently overwritten. — M48 review
@@ -1465,6 +1464,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   verdict names the section it read. KI51 records the neighbouring risk that
   the first heading matched may not be a generated section at all. — M079
   review F9, M083 T2
+- **KI267.** `tests/epubcheck.py links` cannot be run over `id-collision.epub`
+  at all. It finds index sections by the minted id prefix, and that fixture
+  plants an element claiming the prefixed name with no heading inside it, on
+  which `epubindex.index_sections` raises rather than reporting; `unique` finds
+  its sections by heading and reads the publication fine. So the one fixture
+  built to carry contested ids is out of reach of the one check that resolves
+  every link inside an index section. — M085 implement
 
 ### The repo and its packaging
 

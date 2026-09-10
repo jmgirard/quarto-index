@@ -857,16 +857,58 @@ def html_files(directory):
     return sorted(found)
 
 
+# An RFC 3986 scheme: an ASCII letter, then any run of letters, digits, `+`,
+# `-` and `.`, closed by the `:` this pattern requires. Both letter classes
+# admit either case, which is the case-insensitivity the rule asks for, so
+# `MAILTO:` is a scheme here and no flag is needed to make it one.
+SCHEME = re.compile(r'[A-Za-z][A-Za-z0-9+.\-]*:')
+
+
+def leaves_publication(href):
+    """True where `href` names something the publication does not contain.
+
+    The one definition of that question for this suite (D-057). Every reader
+    that has to tell an outward link from a link into the publication calls
+    this: `resolve_href` below, `epubcheck.leaves_publication`,
+    `epubindex.links` and `sitecheck.check_links`. Before it there were four
+    different answers, and over one publication carrying an `https:` locator
+    two commands returned opposite verdicts on the same href.
+
+    The href is stripped of surrounding whitespace and cut at its first `#`,
+    and what is left leaves the publication when it opens `//` — a
+    protocol-relative reference, whose authority is a host and not a file
+    here — or matches an anchored scheme. Joining either against the linking
+    document's directory builds a path no page map and no manifest lists, so
+    a link that is not broken would be reported as one that is.
+
+    What it does NOT catch: a percent-encoded opening. `%2F%2Fevil.com` is a
+    protocol-relative reference written in escapes, and this reads it as a
+    relative path with a strange name (KI120). Nor is a fragment-only href
+    caught, or an empty one: neither has a file part, and both name the
+    document carrying them.
+
+    A relative filename that carries a colon in its first segment reads as
+    leaving — `notes:draft.xhtml` is a scheme match, not a file. An author
+    who means a file writes `./notes:draft.xhtml`, which is what a relative
+    reference already requires of that name; the rule errs only toward
+    calling something external.
+    """
+    target = href.strip().partition('#')[0]
+    return target.startswith('//') or SCHEME.match(target) is not None
+
+
 def resolve_href(page, href):
     """Where `href`, written on the page at relative path `page`, points.
 
     Returns `(target page, fragment)` with the target normalized against the
-    same root `page` is relative to, or `None` for a link that leaves the
-    site (a URL with a scheme). A fragment-only href resolves to `page`
-    itself, which is how a locator inside the chapter holding the index is
-    written.
+    same root `page` is relative to, or `None` where `leaves_publication`
+    above says the href leaves — this reader's own name for the suite's one
+    definition of that question, so a locator into the site and one out of it
+    are told apart here the way every other reader tells them apart (D-057).
+    A fragment-only href resolves to `page` itself, which is how a locator
+    inside the chapter holding the index is written.
     """
-    if '://' in href or href.startswith('mailto:'):
+    if leaves_publication(href):
         return None
     path, _, fragment = href.partition('#')
     if not path:

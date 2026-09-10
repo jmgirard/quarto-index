@@ -163,6 +163,19 @@ def section_rows(book, prefix, minted=(), hrefs=False):
     return rows
 
 
+def leaves_publication(href):
+    """True where an href names something outside the publication.
+
+    This module's own name for the suite's one definition of that question
+    (`htmlindex.leaves_publication`, D-057), which states the rule and what it
+    does not catch. Kept as a name here for the reason `epubcheck`'s is: the
+    agreement leg in `tests/run-tests.sh` reads this reader at its own call
+    site, so a reader that stopped consulting the shared definition shows up
+    there as a verdict disagreeing with the other three.
+    """
+    return htmlindex.leaves_publication(href)
+
+
 def links(book, prefix, minted=()):
     """Every `<a href>` inside a generated index section.
 
@@ -170,8 +183,16 @@ def links(book, prefix, minted=()):
     a link inside the section too, and a reader that collected locators alone
     would leave the other kind unresolved by anything. Each hit is a dict with
     `document` (the member the link is in), `href` (as written), `file` (the
-    member it resolves to, or None for a same-document fragment) and `ident`
-    (the fragment, or None where the href carries none).
+    member it resolves to, or None), `ident` (the fragment, or None where the
+    href carries none) and `leaves` (True where the href names something
+    outside the publication).
+
+    `file` is None for a same-document fragment and for a link that leaves:
+    joining a host or a scheme onto the linking member's directory builds a zip
+    name no manifest can list, and a reader downstream handed that name reported
+    a link that is not broken as one that is. What a caller does with a leaving
+    row is its own policy — `unresolved` below skips it, and `epubcheck.py
+    links` counts what was skipped.
     """
     out = []
     for found in index_sections(book, prefix, minted):
@@ -188,14 +209,16 @@ def links(book, prefix, minted=()):
             href = node.attrs.get('href')
             if href is None:
                 continue
+            leaves = leaves_publication(href)
             target, _, fragment = href.partition('#')
             name = None
-            if target:
+            if target and not leaves:
                 name = posixpath.normpath(
                     posixpath.join(posixpath.dirname(found['document']),
                                    target))
             out.append({'document': found['document'], 'href': href,
-                        'file': name, 'ident': fragment or None})
+                        'file': name, 'ident': fragment or None,
+                        'leaves': leaves})
     return out
 
 
@@ -207,9 +230,18 @@ def unresolved(book, prefix, minted=()):
     manifest lists it but it is not a document this reader parsed, or the
     document carries no element with the href's id. A link with no fragment
     resolves on its file alone — it names a document, not a passage in one.
+
+    A link that LEAVES the publication is none of those three and is skipped:
+    it names a host or a scheme, so no manifest can list it, and reporting it
+    as naming nothing in the publication reported a link that is not broken
+    (D-057, which closed that report). The caller counts what was skipped, so a
+    publication whose index links all left cannot read as one whose links all
+    resolved.
     """
     bad = []
     for link in links(book, prefix, minted):
+        if link['leaves']:
+            continue
         name = link['file'] or link['document']
         if name not in book.manifest:
             bad.append(dict(link, reason='no manifest item names ' + name))

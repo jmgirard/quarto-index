@@ -32,7 +32,6 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
 """
 
 import posixpath
-import re
 import sys
 
 import epubindex
@@ -233,20 +232,18 @@ def cmd_absent(argv):
     return 0
 
 
-SCHEME = re.compile(r'[A-Za-z][A-Za-z0-9+.\-]*:')
+def leaves_publication(href):
+    """True where an href names something outside the EPUB.
 
-
-def leaves_publication(target):
-    """True where the file part of an href names something outside the EPUB.
-
-    A `//` opening is a protocol-relative reference and a `scheme:` opening an
-    absolute one; either names a resource the publication does not contain.
-    Joining one against the linking member's directory builds a zip name no
-    manifest can list, so a link that is not broken would be reported as one
-    that is. An empty file part is the linking document itself, and a relative
-    reference's first segment cannot carry a colon, so neither is caught here.
+    This module's own name for the suite's one definition of that question
+    (`htmlindex.leaves_publication`, D-057), which states the rule and what it
+    does not catch. Kept as a name here rather than called through, so that the
+    agreement leg in `tests/run-tests.sh` reads this reader at its own call
+    site: a reader that stopped consulting the shared definition shows up there
+    as a verdict disagreeing with the other three, where a leg calling the
+    shared definition four times could not see it.
     """
-    return target.startswith('//') or SCHEME.match(target) is not None
+    return htmlindex.leaves_publication(href)
 
 
 def cmd_unique(argv):
@@ -306,7 +303,7 @@ def cmd_unique(argv):
             target, _, fragment = href.partition('#')
             if not fragment:
                 continue
-            if leaves_publication(target):
+            if leaves_publication(href):
                 outside += 1
                 continue
             fragments += 1

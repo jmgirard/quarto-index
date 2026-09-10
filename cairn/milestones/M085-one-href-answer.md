@@ -84,7 +84,7 @@ section per document → its own row (KI264).
       `'://' in href or href.startswith('mailto:')` test. Callers
       (`tests/fragments.py:68-72`, `run-tests.sh:7305-7307`) keep failing on a
       leaving href.
-- [ ] T3: Route `epubcheck.leaves_publication` (`:236-249`) through T1 and
+- [x] T3: Route `epubcheck.leaves_publication` (`:236-249`) through T1 and
       delete its local `SCHEME` regex; `cmd_unique`'s skip-and-count and its
       domain line are unchanged.
 - [ ] T4: Give `epubindex.links` (`:191-196`) the T1 predicate, mark a leaving
@@ -128,6 +128,7 @@ section per document → its own row (KI264).
 - 2026-09-10: T1: `htmlindex.leaves_publication` states the rule, the percent-encoded shape it does not catch, and the `./name:x` form for a relative filename carrying a colon; every claim in its docstring was read off a run of the predicate over the shapes it names.
 - 2026-09-10: T2: `resolve_href` answers from the shared test, and its own `'://' in href or mailto:` test is gone. Suite green.
 - 2026-09-10: T1 and T2 landed in one commit, each verified by its own clean suite run before it was ticked.
+- 2026-09-10: T3: `epubcheck.leaves_publication` is a name over the shared test; its local `SCHEME` regex and the module's `import re` are gone, and `cmd_unique` now hands it the whole href rather than the part it had already cut. Suite green.
 
 ## Decisions
 

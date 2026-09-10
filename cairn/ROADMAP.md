@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M086 | The sweep-discrimination probe stops re-sweeping the set once per page | in-progress | — | normal | milestones/M086-linear-sweep-discrimination.md |
+| M086 | The sweep-discrimination probe stops re-sweeping the set once per page | review | — | normal | milestones/M086-linear-sweep-discrimination.md |
 | M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
 | M083 | The EPUB id-uniqueness sweep goes red on what it claims to catch | done | — | normal | milestones/archive/M083-epub-unique-instruments.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |

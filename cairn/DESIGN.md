@@ -1110,6 +1110,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   own `leaves_publication` answers the same shape the same way, and its
   docstring's enumeration of what it does not catch omits it. — M46 review,
   M083 review
+- **KI266.** A root-relative href (`/ch1.xhtml#frag`) is internal to all four
+  link readers, and three of them join it to the linking page's or member's
+  directory, where the leading slash discards that directory and leaves a path
+  no page map and no manifest lists; only `tests/sitecheck.py links` resolves
+  it, against the capture root. No fixture writes one. — M085 plan gate
 - **KI127.** Both sides of the version matrix's fixture-set comparison are
   sets, so two render targets written to one extraction name read as agreement
   while one extraction is silently overwritten. — M48 review

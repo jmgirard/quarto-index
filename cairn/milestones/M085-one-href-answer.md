@@ -1,0 +1,123 @@
+# M085: One answer to whether a link leaves the publication
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** —
+- **Resolves:** —
+- **Surface tier:** internal — the acceptance suite's own link readers, run over rendered in-repo fixtures
+- **Branch/PR:** —
+
+## Goal
+
+One definition decides whether an href leaves the publication, and the suite's
+four link readers reach their verdict through it.
+
+## Scope
+
+**In:** a shared predicate in `tests/htmlindex.py` — strip the href, take the
+part before the first `#`, and answer "leaves" for a value opening `//` or
+matching an anchored RFC 3986 scheme, case-insensitively (D-057). The four
+readers that decide this today route through it and their own tests are
+deleted: `htmlindex.resolve_href` (`tests/htmlindex.py:869`),
+`epubcheck.leaves_publication` (`tests/epubcheck.py:236-249`),
+`epubindex.links`, which has no such test at all (`tests/epubindex.py:191-196`),
+and `sitecheck.check_links`' two skip clauses (`tests/sitecheck.py:106-107`,
+`:254-257`). Each caller keeps its own policy for a leaving link — the site
+check skips it, `epubcheck.py unique` counts it as outside, `epubindex` stops
+reporting it as unresolved, and `resolve_href`'s callers keep failing on it.
+The agreement is evidenced by one table-driven leg and by a plant against each
+reader.
+
+**Out:** resolving a root-relative href (`/ch1.xhtml#frag`) in the EPUB and HTML
+readers, and the percent-encoded `%2F%2F` shape neither guard catches (KI120) →
+both stay on the rewritten "root-relative" candidate row, whose promotion
+condition is a fixture or an author writing one. `sitecheck.check_links`'
+root-relative branch and its containment clauses → untouched here; they stay on
+the site/gallery/publishing repair row (KI119, KI153). Reading a second index
+section per document → its own row (KI264).
+
+## Acceptance criteria
+
+- [ ] AC1: For each href shape the table `M085_HREF_SHAPES` in
+      `tests/run-tests.sh` names, the four readers — `htmlindex.resolve_href`,
+      `epubcheck.py unique`, `epubindex.links` and `sitecheck.py links` —
+      return the same leaves-the-publication verdict, shown by one leg that
+      drives every row of that table through all four readers and fails naming
+      the row and the disagreeing readers wherever a row's four verdicts are
+      not one verdict.
+- [ ] AC2: `epubcheck.py links` no longer reports a link that leaves the
+      publication as naming nothing in the publication: over the captured
+      `id-collision.epub` repacked to carry one `https:` href and one `//` href
+      inside its generated index section, the command exits 0 and its ok line
+      states how many of the collected links it skipped as leaving.
+- [ ] AC3: The two EPUB commands give one answer over one publication: over the
+      AC2 repack, `epubcheck.py unique` and `epubcheck.py links` both exit 0,
+      where today `links` fails on the same two hrefs `unique` counts as
+      outside.
+- [ ] AC4: `sitecheck.py links` decides a scheme it does not name: over a copy
+      of the captured site carrying one `ftp://` href and one `irc:` href
+      planted by `m40_plant_link`, the check exits 0 and its swept-domain line
+      reports a swept count two lower than the count of hrefs that page carries.
+- [ ] AC5: `notes:draft.xhtml#x` — a relative filename carrying a colon — reads
+      as leaving the publication in each of the four readers AC1 names.
+- [ ] AC6: `tests/run-tests.sh --self-test` is clean.
+
+## Coverage
+
+- AC1 → T1, T2, T3, T4, T5, T6
+- AC2 → T1, T4, T7, T8
+- AC3 → T3, T4, T7, T8
+- AC4 → T5, T7, T8
+- AC5 → T1, T6
+- AC6 → T9
+
+## Tasks
+
+- [ ] T1: Write the shared predicate beside `resolve_href` in
+      `tests/htmlindex.py`; its docstring states the rule, what it does not
+      catch (the percent-encoded shape, KI120), and that a real relative
+      filename carrying a colon reads as leaving unless written `./name:x`.
+- [ ] T2: Route `htmlindex.resolve_href` (`:869`) through T1; delete its
+      `'://' in href or href.startswith('mailto:')` test. Callers
+      (`tests/fragments.py:68-72`, `run-tests.sh:7305-7307`) keep failing on a
+      leaving href.
+- [ ] T3: Route `epubcheck.leaves_publication` (`:236-249`) through T1 and
+      delete its local `SCHEME` regex; `cmd_unique`'s skip-and-count and its
+      domain line are unchanged.
+- [ ] T4: Give `epubindex.links` (`:191-196`) the T1 predicate, mark a leaving
+      link on the row it returns, have `unresolved` (`:202-227`) skip such a
+      row, and have `epubcheck.cmd_links` (`:163-193`) print the skipped count
+      on its ok line.
+- [ ] T5: Route both skip clauses of `sitecheck.check_links`
+      (`tests/sitecheck.py:254-257`) through T1 and delete `NON_LOCAL_SCHEMES`
+      (`:106-107`); the root-relative branch (`:274-287`) and the containment
+      clauses (`:299-314`) are not touched.
+- [ ] T6: Write `M085_HREF_SHAPES` and the AC1 leg — leaving shapes
+      (`https://`, `//host/x`, `mailto:`, `MAILTO:`, `tel:`, `data:`, `ftp://`,
+      a leading-whitespace ` mailto:`, `notes:draft.xhtml#x`) and staying
+      controls (`ch1.xhtml#frag`, `#frag`, `sub/two.html#frag`,
+      `/ch1.xhtml#frag`), each row's expected verdict held in one place and
+      expanded at every reader's call site.
+- [ ] T7: Plant one leaving and one staying href against each of the four
+      readers, and show each plant red against the pre-change reader before
+      trusting its green — a plant per reader is not a plant per clause, so the
+      `//` clause and the scheme clause are planted separately.
+- [ ] T8: Build the AC2/AC3 repack rows through M083's `plant.py` and the AC4
+      `m40_plant_link` rows.
+- [ ] T9: Strike KI98 and KI266, rewrite KI120's sentence naming
+      `leaves_publication`'s docstring enumeration to name where it now lives,
+      rewrite the root-relative candidate row, and run `--self-test`.
+
+## Work log
+
+- 2026-09-10: created by /milestone-plan.
+- 2026-09-10: criteria audit ran in reduced mode (internal tier); three findings, all on the draft AC5 — an unbounded "everywhere", a promise disproportionate to the tier by the same wording, and two instrument-bound clauses (a table row's membership, the predicate's docstring wording); repaired at the gate to the four named readers' verdict, docstring moved to T1.
+- 2026-09-10: plan gate chose one scheme-shaped test over the site checker's named scheme list because a named list makes every unlisted scheme a false report, which is the defect in hand; falsified by a real fixture filename carrying a colon that authors will not write as `./name:x`.
+- 2026-09-10: plan gate chose `tests/htmlindex.py` as the predicate's home over a new `tests/hrefs.py` because three of the four readers already import it; falsified by a second non-HTML reader needing the predicate without wanting the HTML parser.
+- 2026-09-10: plan gate chose replacing the four tests without adding a report over also resolving a root-relative href, because the scope hardens checkers this repo already shipped and the deleting option is the one that rule recommends; falsified by an author or a fixture writing a root-relative index locator.
+
+## Decisions
+
+## Review

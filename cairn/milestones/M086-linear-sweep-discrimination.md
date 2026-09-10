@@ -126,6 +126,8 @@ moves only how the probe exercises it.
 - 2026-09-10: T9 — `tests/run-tests.sh --self-test` clean at 0a1de5f, 1451 checks, exit 0, 9 min 41 s wall. The M24 section's `find` listed 497 pages and its timing row is 23 s, the figures KI33 already states, so KI33 is unchanged.
 - 2026-09-10: claim audit: not owed — internal tier.
 - 2026-09-10: review pass 2 checkpoint (in progress) — AC1-AC5 evidence recorded and the consistency gate clean; AC6 unticked while the fresh `--self-test` run is going, and the diff-bug reviewer has not reported.
+- 2026-09-10: review pass 2 fixed [O]2 (KI33 deleted) and [O]6 (guard comment) at the gate and filed [O]4 as KI270; the other findings were rejected with reasons in the Review section.
+- 2026-09-10: step-7 approval: m086-linear-sweep-discrimination approved for merge
 
 ## Decisions
 
@@ -181,3 +183,5 @@ moves only how the probe exercises it.
 [S] blame-history: no undisclosed regression. 1. `plant_html` now writes pages as it goes, so a failure partway leaves earlier pages planted, where the one-page form was all-or-nothing. Proposed: reject — every caller stops the run on that failure.
 
 [S] prior-review: no archived findings on these lines; the PR-comment probe returned `[]`. 1. Pass-1 findings 7-10 were never dispositioned. Proposed: dispositioned here — 7 is [O]5 above, 8 and 10 are in [O]8, 9 is rejected as the implement gate's recorded choice.
+
+**Gate triage (pass 2).** The maintainer accepted the proposed dispositions at the merge gate. Fixed before the push: [O]2, KI33 deleted from `cairn/DESIGN.md`; [O]6, the guard comment in `tests/run-tests.sh` reworded — comment lines only (checked with `git diff -U0`), and `bash -n` parses the script. Follow-up: [O]4, filed as KI270 under the acceptance suite's reads-and-holds subheading. Rejected with the reasons above: [O]1, [O]3, [O]5, [O]7, [O]8, [S] blame-history 1, and pass-1 findings 7-10.

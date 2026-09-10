@@ -20671,9 +20671,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # name to share a space-delimited word with some other name: a name with no
   # space would have to be a word of a name with one, and a name with a space
   # would have to begin with a word some other name carries, or with a word
-  # the sweep prints itself — none of which carries a `/` outside the
-  # bracketed list `marker` prints when a kept-marker page is missing, a word
-  # that opens with `['`. Prove that of this domain rather than assume it.
+  # the sweep prints itself — none of which carries a `/`. The one printed
+  # word that can is the bracketed list `marker` prints when a kept-marker
+  # page is missing, and the guard below does not check it: that list cannot
+  # print past the unplanted precheck, which fails on it, and every leg
+  # re-copies that prechecked mirror. Prove the rest of this domain rather
+  # than assume it.
   SWEEP_AMBIG=$(awk '{name[NR] = $0; n = split($0, w, / /)
       for (k = 1; k <= n; k++) if (!((w[k], NR) in seen)) {seen[w[k], NR] = 1; carriers[w[k]]++}
       if (n > 1) {first[NR] = w[1]; for (k = 1; k <= n; k++) inmulti[w[k]] = 1}}

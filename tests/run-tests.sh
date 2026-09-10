@@ -20658,17 +20658,33 @@ if [ "${1:-}" = "--self-test" ]; then
     cp "$CAPTURE_ROOT/$REL" "$SWEEP_ORIG/$REL"
   done
   printf '%s\n' "${SWEEP_RELS[@]}" | LC_ALL=C sort -u > "$WORK/sweep-domain.txt"
-  # A page the sweep names is read out of its output by SUBSTRING, because the
-  # `pending` finding joins its page names with spaces and a captured page can
-  # carry one (`book-order-1/_book/later chapter.html`), so no whole-token read
-  # is available. Substring is exact only if no page name sits inside another
-  # at a path boundary — prove that of this domain rather than assume it.
-  SWEEP_AMBIG=$(awk '{n[$0] = 1; a[NR] = $0}
-    END {for (i = 1; i <= NR; i++) {s = a[i]
-           while ((p = index(s, "/")) > 0) {s = substr(s, p + 1)
-             if (s in n) print a[i] " contains " s}}}' "$WORK/sweep-domain.txt" | sed -n '1,3p')
+  # A page the sweep names is read out of its output BETWEEN SPACES. Both
+  # sweeps print a page's name after a space (`HTML: `, the space `pending`
+  # joins names with, or `; `) and follow it with a space or the end of the
+  # line, so a page counts as named where ` name ` occurs in the output once
+  # each line is padded with a space at both ends. A plain substring read is
+  # not enough: `book-html/_book/index.html` sits inside
+  # `parity-inst-book-html/_book/index.html` (M086 review). Page names can
+  # carry a space themselves (`book-order-1/_book/later chapter.html`), so
+  # the space-bounded read is exact only if no name can occur that way inside
+  # another name or across two names printed side by side. Either needs a
+  # name to share a space-delimited word with some other name: a name with no
+  # space would have to be a word of a name with one, and a name with a space
+  # would have to begin with a word some other name carries, or with a word
+  # the sweep prints itself — none of which carries a `/` outside the
+  # bracketed list `marker` prints when a kept-marker page is missing, a word
+  # that opens with `['`. Prove that of this domain rather than assume it.
+  SWEEP_AMBIG=$(awk '{name[NR] = $0; n = split($0, w, / /)
+      for (k = 1; k <= n; k++) if (!((w[k], NR) in seen)) {seen[w[k], NR] = 1; carriers[w[k]]++}
+      if (n > 1) {first[NR] = w[1]; for (k = 1; k <= n; k++) inmulti[w[k]] = 1}}
+    END {for (i = 1; i <= NR; i++) {
+           if (i in first) {
+             if (index(first[i], "/") == 0) print name[i] " begins with a word carrying no /"
+             else if (carriers[first[i]] > 1) print name[i] " begins with a word another page name carries"
+           } else if (name[i] in inmulti) print name[i] " is a word of a page name with a space in it"}}' \
+    "$WORK/sweep-domain.txt" | sed -n '1,3p')
   [ -z "$SWEEP_AMBIG" ] \
-    || fail "M24 self-test: the captured set holds a page name inside another at a path boundary ($(printf '%s' "$SWEEP_AMBIG" | tr '\n' '; ')), so reading the sweep's output for a named page could report the wrong one and the legs below would not say what they claim"
+    || fail "M24 self-test: the captured set holds a page name the space-bounded read cannot tell apart ($(printf '%s' "$SWEEP_AMBIG" | tr '\n' '; ')), so reading the sweep's output for a named page could report the wrong one and the legs below would not say what they claim"
 
   # Every htmlsweep.py call in this half goes through here, so the count below
   # is the run's own and not a reading of these lines: a call put back inside a
@@ -20683,14 +20699,15 @@ if [ "${1:-}" = "--self-test" ]; then
       python3 tests/htmlsweep.py "$1" "$SWEEPW" 2>&1) && SWEEP_RC=0 || SWEEP_RC=$?
   }
   # The pages of the domain the sweep's output names, in the domain's own
-  # (sorted) order so `comm` can read it. The membership test is awk's `index`
-  # over the whole output rather than `grep -oFf`: what a repeated -o match
-  # means differs between grep implementations, and the shim this machine
-  # answers `grep` with reported 146 of 771 named pages where every one was
-  # named.
+  # (sorted) order so `comm` can read it: ` name ` against the output with each
+  # line padded by a space at both ends, the read the guard above proves exact.
+  # The membership test is awk's `index` rather than `grep -oFf`: what a
+  # repeated -o match means differs between grep implementations, and the shim
+  # this machine answers `grep` with reported 146 of 771 named pages where
+  # every one was named.
   sweep_named() {
-    printf '%s' "$SWEEP_OUT" > "$WORK/sweep-out.txt"
-    awk 'NR == FNR {out = out $0 "\n"; next} index(out, $0) > 0' \
+    printf '%s\n' "$SWEEP_OUT" > "$WORK/sweep-out.txt"
+    awk 'NR == FNR {out = out " " $0 " \n"; next} index(out, " " $0 " ") > 0' \
       "$WORK/sweep-out.txt" "$WORK/sweep-domain.txt"
   }
   sweep_mirror() { rm -rf "$SWEEPW"; cp -R "$SWEEP_ORIG" "$SWEEPW"; }

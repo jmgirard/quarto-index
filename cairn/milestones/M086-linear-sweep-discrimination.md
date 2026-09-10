@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M086: The sweep-discrimination probe stops re-sweeping the set once per page
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -39,21 +39,21 @@ moves only how the probe exercises it.
       requires the sweep to go red naming every one of those pages; the
       three residues are `data-qi-pending`, `data-qi-meta` and the marker
       class.
-- [ ] AC2: For each of the three residues the probe also plants into a
+- [x] AC2: For each of the three residues the probe also plants into a
       single page of an otherwise unplanted mirror, and requires the sweep
       to go red naming that page and no other page the same `find` lists.
 - [ ] AC3: The probe counts the pages it planted and fails when that count
       is not the page count the same `find` returns, so a plant that
       substituted nothing is reported as the plant it is rather than as the
       sweep failing to discriminate.
-- [ ] AC4: On a `--self-test` run the M24 section's residue half invokes
+- [x] AC4: On a `--self-test` run the M24 section's residue half invokes
       `tests/htmlsweep.py` exactly eight times: two for the unplanted-mirror
       precheck, three for the all-at-once plants, three for the single-page
       plants.
-- [ ] AC5: The unplanted-mirror precheck still runs ahead of every plant and
+- [x] AC5: The unplanted-mirror precheck still runs ahead of every plant and
       both sweeps pass on it, so a red leg below it is evidence about the
       plant.
-- [ ] AC6: `tests/run-tests.sh --self-test` is clean (the `verify` slot's
+- [x] AC6: `tests/run-tests.sh --self-test` is clean (the `verify` slot's
       pre-review form).
 
 ## Coverage
@@ -102,7 +102,32 @@ moves only how the probe exercises it.
 - 2026-09-10: T5 — `tests/run-tests.sh --self-test` clean, 1451 checks, exit 0. The M24 section's timing row is 23 s against the 3080 s the run before it recorded. The section's own `find` listed 497 pages, the capture root still filling at that point in the run (771 by the end), so the half's cost is 8 x 497 = 3,976 parses.
 - 2026-09-10: corrects the T4 line above and the KI33 text it landed — the 771 pages it cited came from a leftover capture root accumulated across runs, not from the 2026-09-10 run's own root at the section's point in it. KI33 fixed in place to 497 pages and 3,976 parses; the mutation and extraction evidence recorded above stands, having been run over that 771-page root.
 - 2026-09-10: claim audit: not owed — internal tier.
+- 2026-09-10: review returned to in-progress (defect return 1). AC1 fails: `sweep_named` counts a page as named when its path occurs anywhere in the sweep output, and the path-boundary guard misses `book-html/_book/index.html` inside `parity-inst-book-html/_book/index.html`, so the all-pages leg passed with that page left unplanted. AC3 fails: the count check compares two reads of one unchanged `find`, taken before the plant runs, so it counts no planted page and cannot go red. Evidence and the diff-bug reviewer's ten untriaged findings are in the Review section.
 
 ## Decisions
 
 ## Review
+
+**Pass 1 — 2026-09-10, at e92fa0f. Stopped at step 3: AC1 and AC3 fail as written.** Branch base abe17d1 is `origin/main`'s head, so no sync merge was needed; no PR exists. Mutation evidence below comes from the M24 residue half extracted into a scratch script over a copy of the run's 771-page capture root (control: exit 0, 8 sweeps, 24 s).
+
+- AC1 — **fail.** Restoring one planted page (`book-corrupt/_book/last.html`) turns the all-pages leg red naming it. But the domain holds 9 page names that occur inside another page's name without a `/` before them (e.g. `book-html/_book/index.html` inside `parity-inst-book-html/_book/index.html` and `parity-tree-book-html/_book/index.html`), and the real run's 497-page mirror holds those pages too. The ambiguity guard checks only suffixes after a `/` and passes. Leaving `book-html/_book/index.html` unplanted in the all-pages leg: the probe passes, exit 0. The probe does not require the sweep to name every page.
+- AC2 — pass. Planting a second page (`book-badxref/_book/last.html`) in the single-page leg turns it red naming that page beside `book-badxref/_book/index.html`.
+- AC3 — **fail.** The number compared is the length of the target list built from the first `find`, checked against a second `find` over the same unchanged root, before `plantdefect.py` runs; no planted page is counted. Deleting one page from the mirror before the plant is caught by `plantdefect.py`'s `FileNotFoundError` and the "planted nothing" message, not by the count check. Only editing the target array itself turns the count check red (770 of 771).
+- AC4 — pass. The suite's pass line reports 8 sweeps and the extraction prints `SWEEP_RUNS=8`; every call in the half goes through `sweep_run`. Adding a ninth `sweep_run` turns the count leg red at 9.
+- AC5 — pass. Read at `tests/run-tests.sh` 20701-20707: `sweep_mirror`, then both sweeps required to exit 0, ahead of every plant; each later leg re-copies from that same `$SWEEP_ORIG`. The suite run below reached and passed both.
+- AC6 — pass. `tests/run-tests.sh --self-test`: 1451 checks, exit 0, 9 min 50 s wall. The M24 section's timing row is 23 s; its `find` listed 497 pages (771 at the end of the run).
+
+**Consistency gate.** `cairn_validate.py` exit 0, all checks passed. No principle text changed, so `cairn_impact.py` was skipped. The `generic` profile names no toolchain checks.
+
+**Independent review.** [S] blame-history: no findings; one note with no failure case (the page array is sorted by locale, the domain file by C collation; `comm` reads only C-sorted files). [S] prior-review: no prior-review evidence in the archives on these files; the PR-comment probe returned nothing. [O] diff-bug: ten findings, ranked by the reviewer, untriaged because review stopped before the gate:
+
+1. The AC3 count check cannot fail and counts no planted page (`tests/run-tests.sh:20722`) — confirmed above.
+2. The ambiguity guard checks only suffixes after `/`, while `sweep_named` matches any substring, so a page can read as named when only a page containing its name was; the comment's exactness claim is wrong for the same reason (20666, 20693) — confirmed live above.
+3. KI33 says what remains belongs to the suite-run shape candidate row, which does not list KI33; the entry also carries one run's section timing, which covers the M33 plant matrix and empty-div half as well as the residue half (`cairn/DESIGN.md:1037`, `cairn/ROADMAP.md:30`).
+4. Two comments in `tests/plantdefect.py` still describe planting into one page (186, 197).
+5. `--html <kind>` with no page falls into the source-scan path and exits with a misleading message rather than a usage error (298).
+6. `find -name '*.html'` has no `-type f`; a directory so named would stop the run with no FAIL line (20652, 20722).
+7. The AC4 counter counts `sweep_run` calls, so a direct `htmlsweep.py` call added later would go uncounted (20764).
+8. A filename containing a newline would break the domain file and the `wc -l` count (20662, 20722).
+9. All three single-page legs use the same page, `SWEEP_RELS[0]` — the implement gate's recorded choice.
+10. `$WORK/sweepprobe-unplanted` is left in place, a second copy of the captured HTML until the next run.

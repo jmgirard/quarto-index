@@ -165,3 +165,19 @@ moves only how the probe exercises it.
 - AC6 — pass. `tests/run-tests.sh --self-test` at ea5ec63 (the code at 0a1de5f; the one commit after it is tracking-only): "All checks passed (1451 checks)", exit 0, no `FAIL` line, 9 min 47 s wall. The M24 pass line reports all 497 captured pages planted at once and 8 sweeps; the section's `timing.tsv` row is 23 s.
 
 **Consistency gate (pass 2).** `cairn_validate.py` exit 0, all checks passed. No principle text changed in `cairn/DESIGN.md`, so `cairn_impact.py` was skipped. The `generic` profile names no toolchain checks.
+
+**Independent review (pass 2).** Three fresh reviewers. None demonstrates a criterion failing over today's domain, so no return. Proposed dispositions below go to the merge gate.
+
+[O] diff-bug, ranked by the reviewer (it confirms pass-1 findings 1-5 fixed):
+1. The AC3 count counts changed pages, not planted residue: a page carrying `<body` or `</body>` text in a comment or script ahead of the real tag differs from the mirror with no residue in it, the count passes, and the sweep takes the blame (confirmed with a decoy comment). Proposed: reject — KI41 already records that the plants target the first `<body` textually, and all 771 captured pages carry exactly one `<body` and one `</body>` (checked).
+2. KI33 now describes a closed issue as history, where D-013 has the closing milestone strike the entry. Proposed: fix now — delete KI33; nothing outside the archives and this file points at it.
+3. Any non-zero exit from `plantdefect.py` is reported as "planted nothing", an import crash included (confirmed). Proposed: reject — pre-existing message shape, and the traceback prints above it.
+4. The name guard goes red on two spaced names sharing a first word (`a/later chapter.html`, `a/later x.html`) that cannot be misread, which would stop the run (confirmed on the awk alone). Proposed: follow-up — Known issues entry KI270.
+5. `SWEEP_RUNS` misses a `sweep_run` in a subshell or a direct `htmlsweep.py` call (confirmed; pass-1 finding 7). Proposed: reject — AC4 promises this run's count, which the PATH shim counted at 8 apart from the counter.
+6. The guard's comment says it proves the `['` word case, which the awk never checks. Proposed: fix now — the comment says that list prints only when a kept-marker page is missing, which the precheck already fails on.
+7. AC1 says the plant goes into the pages `find "$CAPTURE_ROOT"` lists; the code aims at `find "$SWEEPW"`. Proposed: reject — AC3's count holds the changed set equal to the capture root's count over a mirror copied from that list.
+8. Pass-1 findings 6, 8, 10 stand, plus a locale `sort` failure in the process substitution shortening `SWEEP_RELS` silently. Proposed: reject — 6 was declined at the implement gate; 8 needs names the suite does not write; 10 is cleared at every run start; the `sort` case goes red, not green.
+
+[S] blame-history: no undisclosed regression. 1. `plant_html` now writes pages as it goes, so a failure partway leaves earlier pages planted, where the one-page form was all-or-nothing. Proposed: reject — every caller stops the run on that failure.
+
+[S] prior-review: no archived findings on these lines; the PR-comment probe returned `[]`. 1. Pass-1 findings 7-10 were never dispositioned. Proposed: dispositioned here — 7 is [O]5 above, 8 and 10 are in [O]8, 9 is rejected as the implement gate's recorded choice.

@@ -98,7 +98,7 @@ moves only how the probe exercises it.
       require that count to equal the capture root's `find` count, failing
       as the plant's fault. Re-prove: a page deleted from the mirror before
       the plant turns this leg red.
-- [ ] T8: Review findings folded in at the implement gate: KI33's pointer
+- [x] T8: Review findings folded in at the implement gate: KI33's pointer
       and the scope of its timing figure; the two single-page comments in
       `tests/plantdefect.py`; a usage error for `--html` with no page.
 - [ ] T9: Run `tests/run-tests.sh --self-test` whole and bring KI33's
@@ -122,6 +122,7 @@ moves only how the probe exercises it.
 - 2026-09-10: resumed after the review return. Implement gate chose a space-bounded name read, with a guard over names that could read as named inside another name or across two, over parsing the sorted list; a count of pages that differ from the unplanted mirror, over the plant tool reporting its own count; and folding review findings 3-5 into this round, leaving `-type f` out because AC1 and AC3 quote the `find` command. T6-T9 added and Coverage extended to them (minor amendment; no criterion text changed).
 - 2026-09-10: T6 — `sweep_named` reads ` name ` against the output padded with a space per line end, and the guard fails on a name that is a word of a name with a space, or a spaced name beginning with a word another name carries or one with no `/`. Verified on the section extracted over a copy of the 771-page capture root (the same deviation as T1-T3; T9's whole run is the verify): control passes at 8 sweeps; `book-html/_book/index.html` left unplanted → all-pages leg red naming it; a second page planted in a single-page leg → red naming it; an added `book-order-1/_book/later x.html` → guard red naming both names.
 - 2026-09-10: T7 — the all-pages plant aims at `find "$SWEEPW" -name '*.html'`, and the pages it planted are counted as the `Files … differ` lines of `diff -rq` against the unplanted mirror, required equal to the capture root's `find` count before the sweep runs. Verified on the extraction over the 771-page copy: control passes at 8 sweeps (23 s); a page deleted from the mirror before the plant → count leg red at 770 of 771; a page restored after the plant → the same; a page restored after the count, before the sweep → all-pages leg red naming `book-html/_book/index.html`; a second single-page plant → red naming it; a ninth sweep → red at 9.
+- 2026-09-10: T8 — KI33 drops its pointer to the suite-run shape row (that row is at its 400-byte cap and does not list KI33) and says its 23 s row covers the whole section, M33 plant matrix and empty-div half included; `plantdefect.py`'s two residue-plant comments describe the pages named on the command line; `--html` with no page now exits with the usage text (exit 1) instead of falling into the source-scan path. The T7 extraction runs above used this `plantdefect.py`.
 
 ## Decisions
 

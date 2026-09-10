@@ -1041,10 +1041,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   captured set in all, so 8 × the page count in parses, 3,976 at the 497 pages
   the section's own `find "$CAPTURE_ROOT" -name '*.html'` listed in the
   2026-09-10 `--self-test` run (the root is still filling at that point in the
-  run; it holds 771 by the end). That run's timing row for the section is 23 s,
-  against 3080 s for the run before it. What is left of this entry is the whole
-  `--self-test` run's cost, which belongs to the suite-run shape candidate row
-  and not to this half. — M24 review D8; cost clause corrected M086
+  run; it holds 771 by the end). That run's timing row for the whole section,
+  which also holds the M33 plant matrix and the empty-div half, is 23 s,
+  against 3080 s for the run before it. — M24 review D8; cost clause corrected
+  M086
 - **KI34.** `capture` copies every extension for the render's stem rather than
   what the render produced. — M24 review D9
 - **KI35.** The emission sweep's domain includes `.tex` from deliberately-broken

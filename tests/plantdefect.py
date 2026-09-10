@@ -183,8 +183,9 @@ def plant_duplicate(root, name):
 
 
 # The residue plants (M24; the `meta` plant added M071). Each is the defect its sweep in
-# tests/htmlsweep.py exists to catch, planted into one captured page so the
-# sweep is shown to READ that page and not merely to walk past it: a sweep over
+# tests/htmlsweep.py exists to catch, planted into the captured pages named on
+# the command line so the sweep is shown to READ them and not merely to walk
+# past them: a sweep over
 # a set is satisfied by a set it never opens, which is the vacuous pass the
 # per-file checks it replaced could not have.
 #
@@ -193,9 +194,10 @@ def plant_duplicate(root, name):
 # the filter's own constant, and a second copy is one more thing that must
 # change with it and will not.
 #
-# Each plant names the text its sweep prints, WITHOUT the page's name — the
-# caller knows which page it planted into and requires that name in the output
-# too, which is what says the sweep caught this page rather than some other.
+# Each plant names the text its sweep prints, WITHOUT any page's name — the
+# caller knows which pages it planted into and requires their names in the
+# output too, which is what says the sweep caught those pages rather than
+# some other.
 HTML_DEFECTS = {
     'pending': ('<body', '<body data-qi-pending="planted"',
                 'data-qi-pending survived into rendered HTML'),
@@ -295,7 +297,9 @@ def plant_html(kind, paths):
 def main(argv):
     if len(argv) == 4 and argv[1] == '--separator':
         return plant_separator(argv[2], argv[3])
-    if len(argv) > 3 and argv[1] == '--html':
+    if len(argv) > 1 and argv[1] == '--html':
+        if len(argv) < 4:
+            raise SystemExit(__doc__)
         return plant_html(argv[2], argv[3:])
     if len(argv) == 4 and argv[1] == '--duplicate':
         return plant_duplicate(argv[2], argv[3])

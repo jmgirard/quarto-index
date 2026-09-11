@@ -9,9 +9,10 @@ is removed in turn and the comparison is required to FAIL.
 
   AC3  one probe per module, its whole reset emptied of what it restores, and
        — the form axis — latex.lua's reset left in place with one cell alone
-       dropped from it. indexes.lua keeps the two lines installing the unnamed
-       index: a document with no index to file a mark in fails to render,
-       which is not a comparison moving.
+       dropped from it. The indexes.lua probe drops the six cells that reset
+       clears and keeps the two lines installing the unnamed index and the
+       `read(doc.meta)` call: a document with no index to file a mark in fails
+       to render, which is not a comparison moving.
   AC4  one probe per cell in CELLS, each cell alone dropped and put back. The
        cells EXEMPT names are expected to PASS, each for the reason recorded
        there; they are probed too, and their passing is the evidence for those
@@ -98,7 +99,8 @@ EXEMPT = {
         "read assigns it on every document, from that document's own lang:",
     'index_labels':
         'read assigns every declared index its own map, nil included, and '
-        'label is asked only for a name the document declares',
+        'label is asked only for the index a mark files in, which is a '
+        'declared name or the unnamed cell no declaration can name',
 }
 
 
@@ -219,8 +221,8 @@ def probes():
     yield ('reset:sortkeys', 'sortkeys', None,
            "sortkeys.lua's whole reset restores nothing")
     yield ('reset:indexes', 'indexes', INDEXES_RESTORES,
-           "indexes.lua's reset restores nothing, its two installation lines "
-           "kept")
+           "indexes.lua's reset emptied of the six cells it clears, its two "
+           "installation lines and its read call kept")
     yield ('reset:latex-one-cell', 'latex', ['principal_ordinals = 0'],
            "latex.lua's reset kept, principal_ordinals alone dropped from it")
     for name, module, statement in CELLS:

@@ -56,7 +56,7 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 
 ## Tasks
 
-- [ ] T1: Add a section to `examples/xref-escaping.qmd`, after "Targets that
+- [x] T1: Add a section to `examples/xref-escaping.qmd`, after "Targets that
       cannot be used", whose prose says the probe's targets resolve against
       its marks, holding one invisible mark `[]{.index entry="…"}` per distinct
       target path the file's `see=`/`see-also=` values name after the
@@ -66,7 +66,7 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
       prefix of another its own mark anyway. No added path may equal the
       source entry of a cross-reference mark in the file, which would contest
       that key (M15).
-- [ ] T2: In `tests/run-tests.sh`, with the arithmetic shown in each comment:
+- [x] T2: In `tests/run-tests.sh`, with the arithmetic shown in each comment:
       re-derive `XREF_MARKS` at the M02-AC3 makeindex leg (line 6987) for the
       added entries; set the `examples/xref-escaping.qmd` corpus manifest row
       (line 14043) to 0 and rewrite its derivation comment (lines 13878-13884)
@@ -76,7 +76,7 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
       `$WORK/xref-latex.log`, and for `WARN_DANGLING_INDEX` over the fixture's
       gfm corpus log. Batch the edits; never edit the file while a run is in
       flight.
-- [ ] T3: Discrimination probe, one-off and outside the suite: in a scratch
+- [x] T3: Discrimination probe, one-off and outside the suite: in a scratch
       directory holding a copy of the fixture and of `examples/_extensions`,
       render the unedited copy to gfm and read no dangling-target report; then,
       one copy each, remove the added mark for a multi-level path, for a
@@ -86,11 +86,11 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
       naming the removed path — four for the special character, which its
       single, see-also and two dual forms each name. Record the four results in the work log. Never run
       while the suite runs.
-- [ ] T4: Narrow KI72 in `cairn/DESIGN.md` ("The acceptance suite: coverage
+- [x] T4: Narrow KI72 in `cairn/DESIGN.md` ("The acceptance suite: coverage
       gaps") to the incidental targets this milestone leaves in
       `examples/demo.qmd` and `examples/xref-conflict.qmd`, marked `narrowed
       M091`.
-- [ ] T5: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
+- [x] T5: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
 
 ## Work log
 
@@ -105,6 +105,9 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 - 2026-09-11: T3 amended (minor): a special character is named by four targets, so removing its mark draws four reports, not one.
 - 2026-09-11: T3 probe (scratch copies, gfm): unedited 0 reports; `L1!%!L3` removed → 1 naming it; `%` removed → 4 naming `%`; `café naïve` removed → 1 naming it; per-index wording 0 in all four. Scratch LaTeX render of the edited fixture: 0 reports, makeindex 464 accepted, 0 rejected.
 - 2026-09-11: T4: KI72 narrowed to the incidental targets in `examples/demo.qmd` and `examples/xref-conflict.qmd`.
+- 2026-09-11: T5: `tests/run-tests.sh --self-test` clean, 1456 checks, exit 0, 14m27s; T1-T4 ticked on the same run.
+- 2026-09-11: T5 run surfaced that AC2's "16 exact cross-reference strings" names a set the M02-AC3 typeset leg does not read: it reads 66, a count unchanged on main.
+- claim audit: not owed — internal tier
 
 ## Decisions
 

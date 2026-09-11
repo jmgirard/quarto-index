@@ -1,13 +1,13 @@
 # M089: Two book-fixture hygiene gaps close
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — a root ignore rule and one acceptance-suite helper; no consumer of the extension relies on either
-- **Branch/PR:** —
+- **Branch/PR:** m089-book-fixture-hygiene
 
 ## Goal
 
@@ -38,7 +38,7 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 
 ## Tasks
 
-- [ ] T1: In the root `.gitignore`, beside the `examples/book*/_book/` rules, add `examples/book*/*.html` and `examples/book*/site_libs/` under a comment naming what they hold (pages and assets a render wrote beside the project rather than under `_book/`, as the reset M073 checkpoint 7c83a21 carried). Run AC1's and AC2's commands.
+- [x] T1: In the root `.gitignore`, beside the `examples/book*/_book/` rules, add `examples/book*/*.html` and `examples/book*/site_libs/` under a comment naming what they hold (pages and assets a render wrote beside the project rather than under `_book/`, as the reset M073 checkpoint 7c83a21 carried). Run AC1's and AC2's commands.
 - [ ] T2: Before editing, run one control on a scratch copy of `examples/book-placement` outside the suite (extension installed as `m063_tree` installs it): a whole-book HTML render, then one chapter rendered with `_book` kept, listing `_book/*.html` to show whether the other chapters' pages survive; one work-log line. Then in `m069_cold_chapter` (`tests/run-tests.sh:10760`) remove `"$M061W/$slug/_book"` with the store, as `m069_tree` does (`:10796`), keeping the function's comment true. Mark KI231 resolved in `cairn/DESIGN.md`.
 - [ ] T3: Run `tests/run-tests.sh`, then `tests/run-tests.sh --self-test` (the profile's pre-review check), one after the other, with no edit to `tests/run-tests.sh` while either runs; record both exit codes.
 
@@ -50,6 +50,8 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 - 2026-09-10: plan gate chose ignoring `*.html` and `site_libs/` inside every `examples/book*/` project over `examples/book-placement/` alone because the six book fixtures share the layout and AC2 fences tracked files; falsified by a book fixture needing a tracked page or asset at that depth.
 - 2026-09-10: plan gate chose recording nothing about the unreproduced write over a Known-issues entry or an investigation task because an ignored repeat harms nothing; falsified by such a page reaching a check or a capture.
 - 2026-09-10: plan chose the root `.gitignore` over `examples/.gitignore` because the root already holds every `examples/book*` rule and KI75 records the examples file duplicating it; falsified by a rule the root file cannot express for that directory.
+- 2026-09-10: implement started on branch m089-book-fixture-hygiene; question gate skipped, nothing open.
+- 2026-09-10: T1 — root `.gitignore` gains `examples/book*/*.html` and `examples/book*/site_libs/`; AC1's command (paths on stdin) prints 22 lines, none `::` (5 matched by the `*.html` rule, 17 by `site_libs/`); AC2's prints nothing; control with the two rules stashed prints `::` for all 22.
 
 ## Decisions
 

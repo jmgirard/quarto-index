@@ -27,7 +27,7 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 - [x] AC1: The root `.gitignore` ignores each of the 22 paths under `examples/` that `refs/probes/m073-swept` records: `git check-ignore --no-index --non-matching -v` over the paths `git show --name-only --format= refs/probes/m073-swept -- examples` lists prints one line per path and no line opening `::`, the marker for a path no rule ignores.
 - [x] AC2: The ignore rules hide no tracked file: `git ls-files -ci --exclude-standard` prints nothing.
 - [x] AC3: `m069_cold_chapter` in `tests/run-tests.sh` removes its copy's `_book` before the `quarto render` it runs, as `m069_tree` removes its own.
-- [ ] AC4: `tests/run-tests.sh` exits 0 on the branch head.
+- [x] AC4: `tests/run-tests.sh` exits 0 on the branch head.
 
 ## Coverage
 
@@ -57,6 +57,7 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 - 2026-09-10: T3 — on cea788b, `tests/run-tests.sh` exit 0 (779 checks), then `tests/run-tests.sh --self-test` exit 0 (1453 checks), run one after the other with no edit between; neither run left a page or `site_libs/` beside any `examples/book*/` project.
 - 2026-09-10: claim audit: not owed — internal tier
 - 2026-09-10: review in progress (checkpoint): AC1–AC3 evidenced and ticked, consistency gate clean; AC4's suite run and the three reviewers still running.
+- 2026-09-10: review pre-gate checkpoint: AC1–AC4 evidenced and ticked; three reviewers returned four low findings (F1–F4), none failing a criterion; awaiting the merge gate.
 
 ## Decisions
 
@@ -68,3 +69,12 @@ Evidence gathered 2026-09-10 on 7286864, the branch head; `main` and `origin/mai
 - AC2: `git ls-files -ci --exclude-standard` prints nothing, exit 0.
 - AC3: read at 7286864, `tests/run-tests.sh:10762` runs `rm -rf "$M061W/$slug/.quarto/$STORE_DIR" "$M061W/$slug/_book"` before the `quarto render "$chapter" --to html` at `:10764`, the same `rm -rf` line `m069_tree` runs at `:10798`.
 - Consistency gate: `cairn_validate.py` exit 0, every check PASS or OK; no DESIGN.md principle changed (the DESIGN.md diff strikes KI231 only), so `cairn_impact` is skipped; the `generic` profile names no toolchain checks. `git grep KI231` finds it only in this milestone file.
+- AC4: `tests/run-tests.sh` on the 7286864 tree exit 0, "All checks passed (779 checks)", no `FAIL` line; 6dcc40e, the head now, differs from it only under `cairn/`. After the run no `*.html` or `site_libs/` sits directly inside any `examples/book*/` project.
+
+Independent review (full three-reviewer fan-out, the diff touching `tests/run-tests.sh`); dispositions are set at the merge gate:
+- [O] F1: the rewritten `m069_cold_chapter` comment (`tests/run-tests.sh:10757-10758`) says an emptied `_book` holds "this chapter's page and no other", but every such render also writes `index.html` (`:10893`), which the callers' manifests name (`:10926`, `:10960`); the old comment carried the same claim.
+- [O] F2: the added `rm` of `_book` removes nothing today, `m063_tree` copying a base whose `_book` is already gone (`:8499`); defensive, as KI231 described.
+- [O] F3: `examples/book*/*.html` misses a page written beside a nested chapter, e.g. `examples/book/sub/two.html`; the plan scoped the rules to files directly inside each project.
+- [O] F4: `examples/book*/` would also match a future `examples/bookmarks/`; today it matches the six book projects, the reach of the `_book/` and `.quarto/` rules beside it.
+- [S] blame-history: no findings; the change completes M069 review F8 and matches `m069_tree`.
+- [S] prior-review: no findings; no PR review threads exist (`pulls/comments` empty).

@@ -31,14 +31,14 @@ index section in `epubcheck.py unique` → KI264's row.
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/run-tests.sh` neither defines nor calls
+- [x] AC1: `tests/run-tests.sh` neither defines nor calls
       `check_locator_fragments` — `grep -c check_locator_fragments
       tests/run-tests.sh` prints 0 — the M063-AC2 old-store leg runs
       `tests/fragments.py resolve` over `place-oldstore/_book/index.html` where
       the removed call stood, and `links by an anchor` appears on no line
       between that leg's `place_render place-oldstore ` call and its
       `pass "M063-AC2: over a store` line.
-- [ ] AC2: `m085_epub_plant` takes one expected count, and every call holds
+- [x] AC2: `m085_epub_plant` takes one expected count, and every call holds
       both `epubcheck.py links`' skipped count and `epubcheck.py unique`'s
       leaving count to it.
 - [ ] AC3: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
@@ -89,7 +89,13 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
 - 2026-09-10: T3 done — `tests/run-tests.sh` passed (779 checks, 0 FAIL), then `tests/run-tests.sh --self-test` passed (1453 checks, 0 FAIL), run one after the other with no edit in flight; the four M085 T7 plants report 0/0, 0/0, 1/1, 1/1.
 - 2026-09-10: claim audit: not owed — internal tier
 - 2026-09-10: status → review.
+- 2026-09-10: review pass 1 in progress — AC1/AC2 evidenced and ticked, `cairn_validate` passed; AC3's suite runs and the three-lens review still running.
 
 ## Decisions
 
 ## Review
+
+Pass 1, 2026-09-10. Branch cut from `origin/main` at bf01f30, which has not moved; no merge needed.
+
+- AC1: `grep -c check_locator_fragments tests/run-tests.sh` prints 0. The old-store leg runs from `place_render place-oldstore ` (:11243) to `pass "M063-AC2: over a store whose records all stand` (:11269); between them `links by an anchor` matches 0 lines, and `python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html || fail …` (:11265-11268) stands where the diff removes the `check_locator_fragments … index.html` call.
+- AC2: `m085_epub_plant` (:24076) reads `<slug> <label> <count>` and shifts 3; the `links` grep (:24089) matches `; $count link(s) skipped as leaving the publication` and the `unique` grep (:24093) `; $count fragment-carrying link(s) leave the publication`, both on the one `$count`. Its four calls (:24098-24109) pass one count each: clean 0, staying 0, scheme 1, network-path 1.

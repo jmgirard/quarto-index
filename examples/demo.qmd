@@ -50,8 +50,9 @@ marked both ways can fail the index build, and the extension says so.
 **Both attributes on one mark**, which warns and emits one entry carrying
 both targets: [both]{.index see="Aye" see-also="Bee"}.
 
-**Targets.** Each target above names one of these entries, marked with no
-visible text, so every cross-reference resolves:
+**Targets.** Each target above names one of the entries marked below, so every
+cross-reference resolves. The marks carry no visible text, so this paragraph
+prints nothing after this sentence.
 []{.index entry="Felines"} []{.index entry="Pets"}
 []{.index entry="Birds!Owls"} []{.index entry="Wow!!Hey"}
 []{.index entry="Vulpes"} []{.index entry="Spirits"}

@@ -96,7 +96,8 @@ EXEMPT = {
         'finish_ranges assigns it wholesale on every document, so nothing '
         'survives into one',
     'language_words':
-        "read assigns it on every document, from that document's own lang:",
+        "read assigns it on every document, from the lang: that document "
+        'declares',
     'index_labels':
         'read assigns every declared index its own map, nil included, and '
         'label is asked only for the index a mark files in, which is a '

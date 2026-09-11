@@ -144,6 +144,8 @@ stays open.
 - 2026-09-11: T3 edits in, unticked: `tests/fragments.py` gains `outside-heading`, and the suite gains the `Quoin`, `mullion-passage` (both captures) and `Bramble` checks with their five plants. On an earlier run's `four.html` the new mode passes, and it fails on each of three scratch plants with its own message. The suite has not run.
 - 2026-09-11: review evidence gathered at 18f0202. All five criteria ticked against fresh runs. `tests/run-tests.sh --self-test` ran clean at 1515 checks. `tests/stateprobe.py` ran clean over the seven new probes. The two corpus logs were read back for the 0 and 1 report counts and for rho's target. `cairn_validate.py` passed. The `generic` profile names no toolchain checks, and no principle changed. Three fresh-context lenses ran. The blame-history and prior-review lenses found nothing. The diff-bug lens returned 15 ranked findings, each checked against the code before it was recorded.
 
+- 2026-09-11: gate triage applied at the user's selection. The nine wrong-prose findings are corrected on the branch, in `tests/run-tests.sh`, `tests/state-pollute.lua`, `tests/stateprobe.py`, `examples/demo.qmd` and `DESIGN.md` KI10. The four gaps are filed as KI284 to KI287 with one clustered candidate row. The self-test suite is re-running against the corrected tree, and the merge waits on it.
+
 ## Decisions
 
 ## Review

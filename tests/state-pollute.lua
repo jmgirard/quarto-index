@@ -1,4 +1,4 @@
--- Test-only. Never shipped: it lives under tests/ and is named by the three
+-- Test-only. Never shipped: it lives under tests/ and is named by the four
 -- state-reuse fixtures alone.
 --
 -- M26's oracle. Each fixture is rendered twice off one tree with this filter
@@ -39,7 +39,7 @@ local function mark(text, attributes)
 end
 
 -- One synthetic document, built so that every cell it fills collides with what
--- one of the three fixtures produces on its own. The comment on each mark says
+-- one of the four fixtures produces on its own. The comment on each mark says
 -- which cell its value is aimed at; a mark whose value matched the fixture's
 -- would leave that cell's probe unable to tell a reset from its absence.
 local marks = {
@@ -125,7 +125,12 @@ end
 -- Filled through `reset`, which is the door the filter itself uses: it empties
 -- the cells and reads the declaration below, leaving exactly what a document
 -- declaring two labelled indexes leaves. The fixture that reads them declares
--- none, so every value here differs from the one that fixture installs.
+-- none, so the names, titles, document labels and declared flag left here are
+-- all values no fixture installs for itself. Two cells are not like that and
+-- cannot be: `read` assigns `language_words` on every document, and it assigns
+-- an `index_labels` map only to a DECLARED name, never to the unnamed index a
+-- fixture's marks file in. `EXEMPT` in tests/stateprobe.py records both, and
+-- their probes are expected to pass.
 local declaration = pandoc.MetaList({
   pandoc.MetaMap({
     name = pandoc.MetaString("leaked"),

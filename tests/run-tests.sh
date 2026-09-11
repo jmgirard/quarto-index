@@ -2670,8 +2670,9 @@ pass "M02-AC5: the composed-entry report names each of the eight contested entri
 # M03-AC4 — cross-references in a generated HTML index.
 # Manifest 1f, same oracle rule and same row format as manifest 1e. The
 # fixture holds all three shapes the criterion names. Targets that resolve:
-# sigma's, and every other target but rho's, each naming an entry the
-# fixture's last section marks with no visible text. One that does not: rho's.
+# sigma's, which names the two-level entry `pi` marks, and every other target
+# but rho's, each of those naming an entry the fixture's last section marks
+# with no visible text. One that does not: rho's.
 # And the colliding string: rho's SINGLE level `Note: on birds` prints exactly
 # like sigma's TWO levels `Note`/`on birds`, and only sigma's may link. `kappa`
 # carries a locator AND a cross-reference, which makeindex rejects but HTML
@@ -11429,7 +11430,9 @@ HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
 # M095-AC3: `Bramble` links by the anchor two.qmd's record carries. The value
 # is derived from the source: a minted `qi-mark-<n>` is numbered per chapter in
 # document order over the marks that mint one, skipping marks that carry an id
-# of the author's own, which keep it. `Bramble` is the first anchoring mark
+# of the author's own, which keep it, and stepping over any number already
+# taken on the page (html.lua's `until not taken[...]`). two.qmd carries no
+# such id, so nothing shifts the count. `Bramble` is the first anchoring mark
 # two.qmd writes, so `qi-mark-1`. index.qmd renders first and reads that
 # record, the only thing carrying the anchor.
 check_entry_locators "$CAPTURE_ROOT/place-oldstore/_book/index.html" \
@@ -17802,11 +17805,14 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # document that sets the same cell itself: the rich fixture reaches the cells
 # its marks fill, the one-mark fixture is the only place a leaked "this
 # document used the principal subsystem" flag shows, the mark-free fixture is
-# the only place a leaked count of marks seen shows, and the fixture that
-# declares no index is the only place a leaked declaration shows, a document
-# declaring one reading its own over whatever was left behind. Which cells
-# each reset owns is `CELLS` in tests/stateprobe.py, which the per-cell probes
-# enumerate.
+# the only place a leaked count of marks seen shows, and the index-declaration
+# fixture is the only place a leaked index TITLE shows. None of the four
+# declares an index, which is what leaves the declaration cells readable at
+# all; what the fourth adds is a mark naming an index nothing declares, and
+# that lookup is the only read of `titles` a fixture can reach. The other
+# declaration cells move on the rich fixture. Which cells each reset owns is
+# `CELLS` in tests/stateprobe.py, which the per-cell probes enumerate, and
+# which fixture each cell actually moves is that script's own output.
 # ---------------------------------------------------------------------------
 section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 state_reuse_pair() {

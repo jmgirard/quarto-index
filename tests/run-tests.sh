@@ -412,6 +412,14 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	Custom Entry
 1	Top!Middle!Leaf
 1	Ghost!Sub
+1	Felines
+1	Pets
+1	Birds!Owls
+1	Wow"!Hey
+1	Vulpes
+1	Spirits
+1	Aye
+1	Bee
 1	"!Bang leads
 1	Wow"!Really
 1	Trail bang"!
@@ -545,8 +553,9 @@ HTML_PRINCIPAL_CLASS='qi-principal'
 #   6. Locators: one per locator-contributing mark on that entry, in document
 #      order. A cross-reference mark contributes none.
 #   7. Cross-reference targets join with `: ` and are hyperlinked exactly when
-#      the target's LEVEL LIST is an entry in this index. No target in
-#      demo.qmd names an entry, so every row here is `plain`; the linked and
+#      the target's LEVEL LIST is an entry in this index. Every target in
+#      demo.qmd names an entry that one of its invisible marks writes, so
+#      every cross-reference row here is a link. The plain and
 #      colliding-string cases live in xref-conflict.qmd (M03-AC4).
 # ---------------------------------------------------------------------------
 read -r -d '' DEMO_HTML_INDEX <<'MANIFEST' || true
@@ -561,24 +570,30 @@ letter	A
 0	A!B	1
 0	Alpha	0
 1	Beta	1
+0	Aye	1
 letter	B
-0	bang	0	see-plain Wow!Hey
+0	bang	0	see-link Wow!Hey
 0	bang ! quote "	1
-0	both	0	see-plain Aye	also-plain Bee
+0	Bee	1
+0	Birds	0
+1	Owls	1
+0	both	0	see-link Aye	also-link Bee
 0	bs \ tilde ~ caret ^	1
 letter	C
 0	café naïve	1
 0	Canids	0
-1	Foxes	0	see-plain Vulpes
-0	cats	0	see-plain Felines
+1	Foxes	0	see-link Vulpes
+0	cats	0	see-link Felines
 0	Custom Entry	1
 letter	D
-0	dogs	0	also-plain Pets
+0	dogs	0	also-link Pets
 0	dollar $ at @ bar |	1
+letter	F
+0	Felines	1
 letter	G
 0	Ghost	0
 1	Sub	1
-0	Ghosts	0	also-plain Spirits
+0	Ghosts	0	also-link Spirits
 0	Grüße	0
 1	Straße	1
 letter	L
@@ -589,12 +604,14 @@ letter	O
 2	Three	0
 3	Four	0
 4	Five	1
-0	owls	0	see-plain Birds: Owls
+0	owls	0	see-link Birds: Owls
 letter	P
 0	pandoc	3
 0	pct % amp & hash #	1
+0	Pets	1
 letter	S
 0	Specials % & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Spirits	1
 letter	T
 0	Top	0
 1	Middle	0
@@ -602,7 +619,10 @@ letter	T
 0	Trail bang!	1
 letter	U
 0	us _ brace { }	1
+letter	V
+0	Vulpes	1
 letter	W
+0	Wow!Hey	1
 0	Wow!Really	1
 MANIFEST
 
@@ -2428,7 +2448,7 @@ done
 section 'M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.'
 check_html_index_manifest "$CAPTURE_ROOT/demo-html/demo.html" "$DEMO_HTML_INDEX" "M03-AC2"
 check_letter_sweep "$CAPTURE_ROOT/demo-html/demo.html" "M07-AC3 (demo)" \
-  $'Symbols\nA\nB\nC\nD\nG\nL\nO\nP\nS\nT\nU\nW'
+  $'Symbols\nA\nB\nC\nD\nF\nG\nL\nO\nP\nS\nT\nU\nV\nW'
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - "$CAPTURE_ROOT/demo-html/demo.html" \
@@ -2649,50 +2669,70 @@ pass "M02-AC5: the composed-entry report names each of the eight contested entri
 # ---------------------------------------------------------------------------
 # M03-AC4 — cross-references in a generated HTML index.
 # Manifest 1f, same oracle rule and same row format as manifest 1e. The
-# fixture holds all three shapes the criterion names: a target that resolves
-# (sigma), one that does not (kappa, lambda, mu, rho), and the colliding
-# string — rho's SINGLE level `Note: on birds` prints exactly like sigma's
-# TWO levels `Note`/`on birds`, and only sigma may link. `kappa` carries a
-# locator AND a cross-reference, which makeindex rejects but HTML does not.
+# fixture holds all three shapes the criterion names. Targets that resolve:
+# sigma's, and every other target but rho's, each naming an entry the
+# fixture's last section marks with no visible text. One that does not: rho's.
+# And the colliding string: rho's SINGLE level `Note: on birds` prints exactly
+# like sigma's TWO levels `Note`/`on birds`, and only sigma's may link. `kappa`
+# carries a locator AND a cross-reference, which makeindex rejects but HTML
+# does not.
 # ---------------------------------------------------------------------------
 section 'M03-AC4 — cross-references in a generated HTML index.'
 read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
+letter	Symbols
+0	% & # _ { } \ ~ ^ $ @ | ! " < >	1
+letter	A
+0	Afar	1
+0	Another Way	1
+0	Aye Two	1
+letter	B
+0	Bee Two	1
 letter	C
-0	chi	1	see-plain % & # _ { } \ ~ ^ $ @ | ! " < >
+0	chi	1	see-link % & # _ { } \ ~ ^ $ @ | ! " < >
 letter	D
 0	Deep	0
-1	Level	1	see-plain Shallow
+1	Level	1	see-link Shallow
+letter	E
+0	Elsewhere	1
+0	Elsewhere Again	1
+letter	H
+0	Here	1
 letter	K
-0	kappa	2	see-plain Elsewhere
+0	kappa	2	see-link Elsewhere
 letter	L
-0	lambda	0	see-plain Here	also-plain There
+0	lambda	0	see-link Here	also-link There
 letter	M
-0	mu	0	see-plain Same
+0	mu	0	see-link Same
 letter	N
 0	Note	0
 1	on birds	1
 0	nu	2
+letter	O
+0	One Way	1
 letter	P
-0	phi	1	see-plain Aye Two	also-plain Bee Two
+0	phi	1	see-link Aye Two	also-link Bee Two
 letter	R
 0	rho	0	see-plain Note: on birds
 letter	S
+0	Same	1
+0	Shallow	1
 0	sigma	0	see-link Note: on birds
 letter	T
-0	tau	1	also-plain Elsewhere Again
+0	tau	1	also-link Elsewhere Again
+0	There	1
 0	Tree	0
 1	Branch	0
 2	Cedar	0
-3	Dogwood	1	see-plain Afar
+3	Dogwood	1	see-link Afar
 2	Maple	0
 3	Holly	1
 letter	U
-0	upsilon	0	see-plain One Way	see-plain Another Way
+0	upsilon	0	see-link One Way	see-link Another Way
 MANIFEST
 
 check_html_index_manifest "$CAPTURE_ROOT/conflict-html/xref-conflict.html" "$XREF_HTML_INDEX" "M03-AC4"
 check_letter_sweep "$CAPTURE_ROOT/conflict-html/xref-conflict.html" "M07-AC3 (cross-references)" \
-  $'C\nD\nK\nL\nM\nN\nP\nR\nS\nT\nU'
+  $'Symbols\nA\nB\nC\nD\nE\nH\nK\nL\nM\nN\nO\nP\nR\nS\nT\nU'
 
 # The token above says sigma's target is A link; this says it is the RIGHT
 # link. A cross-reference pointing at some other entry would satisfy the
@@ -14081,18 +14121,17 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  the two non-ASCII targets against their own marks; and
 #                  `see="A!"`, its empty level dropped, against `A`. 0.
 #   demo           8 attributes (Felines, Pets, Birds!Owls, Wow!!Hey, Vulpes,
-#                  Spirits, Aye, Bee). The file's entries are its visible terms
-#                  plus `Canids!Foxes`, `Ghosts`, `Wow!!Really`, `Top!Middle!
-#                  Leaf` and the escaping entries; no target is among them, and
-#                  `Wow!!Hey` parses to the single level `Wow!Hey`, which
-#                  `Wow!!Really` does not spell. 8.
+#                  Spirits, Aye, Bee). The file's `Targets` paragraph writes
+#                  one invisible mark per target, each spelling the target as
+#                  written, so every target names a path a mark indexes. 0.
 #   dangling-xref  9 attributes, of which 2 name `Cats`, which the file
 #                  indexes. 7.
-#   xref-conflict  15 attributes after M15 extended it. Only
-#                  `see="Note!on birds"` names an entry the file marks;
-#                  `see="Note: on birds"` is a single level that merely prints
-#                  the same way (the M02 shape), and the other thirteen name
-#                  nothing. 14.
+#   xref-conflict  15 attributes after M15 extended it. `see="Note!on birds"`
+#                  names the entry `pi` marks. The thirteen others besides
+#                  `rho`'s name twelve distinct targets, and the file's last
+#                  section writes one invisible mark for each. Only
+#                  `see="Note: on birds"`, a single level that merely prints
+#                  like `pi`'s two (the M02 shape), names nothing. 1.
 #   html-index     5 attributes: `see="A!B"` four times, which names the file's
 #                  one entry, and `see="A: B"` once, which does not. 1.
 #   fold-xref      7 attributes. Judged here on the levels the author wrote,
@@ -14206,7 +14245,7 @@ examples/book-scopes/last.qmd	1
 examples/book/sub/two.qmd	1
 examples/content.qmd	0
 examples/dangling-xref.qmd	7
-examples/demo.qmd	8
+examples/demo.qmd	0
 examples/empty-levels.qmd	0
 examples/fold-xref-both.qmd	0
 examples/fold-xref-empty.qmd	0
@@ -14241,7 +14280,7 @@ examples/range.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
 examples/state-reuse.qmd	1
-examples/xref-conflict.qmd	14
+examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
 MANIFEST
 
@@ -14299,6 +14338,13 @@ check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING_INDEX" 0 "M14 (corp
 check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING_INDEX" 1 "M14 (corpus, examples/book-scopes)"
 check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING" 0 "M14 (corpus, examples/book-scopes, not the one-namespace shape)"
 check_warning_count "$WORK/corpus-xref-escaping.log" "$WARN_DANGLING_INDEX" 0 "M14 (corpus, examples/xref-escaping, which declares no index to name)"
+# The one report xref-conflict.qmd still draws is `rho`'s. Its target is the
+# single level `Note: on birds`, which prints like the two-level entry `pi`
+# marks and names nothing the file indexes. The count above says one report is
+# drawn, and this says which.
+check_warning_count "$WORK/corpus-xref-conflict.log" \
+  "$(dangling_report see 'term "rho"' 'Note: on birds' document)" 1 \
+  "M095-AC2 (corpus, examples/xref-conflict: the one report names rho's target)"
 pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
 # The fold fixtures render here, ahead of M15's residue sweep: one of them has
@@ -14372,23 +14418,40 @@ pass "M15-AC1: the fixture that could not build now renders to PDF, with neither
 #   Maple, …   that twin: the same depth and the same shape of sort key, with
 #              no cross-reference to contest the key. One plain mark: 1.
 #   upsilon    two DIFFERENT see= targets, no plain mark, as lambda: 0.
+#   Afar, …    the twelve entries the fixture's last section marks with no
+#              visible text, one per distinct target the marks above name
+#              other than `sigma`'s and `rho`'s. Each is one plain mark on one
+#              page: 1. The one spelled with every escaped character opens
+#              with a symbol, so it prints ahead of every letter.
 #
 # Printed in collation order with each sub-entry under its parent, which is the
 # order pdfindex reconstructs, so a column break cannot reorder these rows.
 read -r -d '' CONFLICT_PDF_INDEX <<'MANIFEST' || true
+0	% & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Afar	1
+0	Another Way	1
+0	Aye Two	1
+0	Bee Two	1
 0	chi, see % & # _ { } \ ~ ^ $ @ | ! " < >	1
 0	Deep	0
 1	Level, see Shallow	1
+0	Elsewhere	1
+0	Elsewhere Again	1
+0	Here	1
 0	kappa, see Elsewhere	2
 0	lambda, see Here; see also There	0
 0	mu, see Same	0
 0	Note	0
 1	on birds	1
 0	nu	1
+0	One Way	1
 0	phi, see Aye Two; see also Bee Two	1
 0	rho, see Note: on birds	0
+0	Same	1
+0	Shallow	1
 0	sigma, see Note: on birds	0
 0	tau, see also Elsewhere Again	1
+0	There	1
 0	Tree	0
 1	Branch	0
 2	Cedar, Dogwood, see Afar	1

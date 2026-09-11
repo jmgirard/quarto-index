@@ -155,6 +155,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: T8 done: `tests/run-tests.sh --self-test` at 5b06ed5, run alone with no edits in flight, exit 0, "All checks passed (1469 checks)", no FAIL line. Every new check and plant from T1-T6 printed its ok line. T1-T6 ticked on this run.
 - claim audit: not owed — internal tier
 - 2026-09-11: status set to review.
+- 2026-09-11: review gate: all seven criteria evidenced. The maintainer chose fix now for R1-R3, R5, R7, R9 and R10, so approval is asked again after a re-run. No status change.
 
 ## Decisions
 
@@ -184,3 +185,8 @@ Independent review, as a three-lens fan-out because the diff touches scripts. Th
 - R8 (diff-bug): the `[ -s ... ] || fail` guards after two Python heredocs never run, because `set -e` stops first. The Python FAIL line still prints. Proposed: reject, no message is lost.
 - R9 (diff-bug): the M58-AC4 comment credits the M56 and M59 document-level controls. The checks that hold a report-everything filter are the new zero totals and M58-AC1's silence count. Proposed: fix now, comment wording.
 - R10 (diff-bug): the `tests/sepcheck.py` docstring does not state the new depth and slot rules. Proposed: fix now.
+
+Gate triage by the maintainer on 2026-09-11:
+- Fix now: R1, R2, R3, R5, R7, R9 and R10. The maintainer chose fix now for the four check gaps, so approval is asked again after the re-run.
+- Known issues entry at the post-merge pass: R4.
+- Rejected: R6, because stricter manifest input is the milestone's intent. R8, because the Python FAIL line still prints and the run still exits nonzero.

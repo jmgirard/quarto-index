@@ -25282,8 +25282,12 @@ compiled = [(i, re.compile(p), why) for i, p, why in LEDGER]
 
 left = open(fixture_tex, encoding='utf-8').read().splitlines()
 right = open(twin_tex, encoding='utf-8').read().splitlines()
-differing = [line for line in difflib.unified_diff(left, right, n=0)
-             if line[:1] in '+-' and not line.startswith(('---', '+++'))]
+# The unified diff's two file-header lines are its first two, and are dropped by
+# position (M092): dropped by their `---`/`+++` prefix, a differing line whose
+# own body is `--` or `++` went with them unclassified. The `@@` hunk lines
+# carry neither sign.
+differing = [line for line in list(difflib.unified_diff(left, right, n=0))[2:]
+             if line[:1] in '+-']
 if not differing:
     print(f'FAIL: {label}: {fixture_tex} and {twin_tex} are identical, so the '
           f'lang: line changed nothing in LaTeX at all and this comparison '
@@ -25403,6 +25407,14 @@ if [ "${1:-}" = "--self-test" ]; then
     'match no ledger entry' \
     m57_tex_ledger "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" \
       "$M57W/filtered.tex" "M57 probe"
+  # A pair whose differing lines have the bodies `--` and `++`, which read as
+  # diff headers to a filter keyed on the prefix and so vanished rather than
+  # failing as unclassified (M092).
+  printf 'a\n--\nb\n' > "$M57W/dashes-left.tex"
+  printf 'a\n++\nb\n' > "$M57W/dashes-right.tex"
+  m57_planted 'a pair differing only in a line reading -- and one reading ++' \
+    '2 differing line(s) of' \
+    m57_tex_ledger "$M57W/dashes-left.tex" "$M57W/dashes-right.tex" "M57 probe"
   m57_planted 'a pair whose two .tex files are identical' \
     'are identical' \
     m57_tex_ledger "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" \

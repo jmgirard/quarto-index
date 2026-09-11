@@ -82,7 +82,7 @@ Independent review (full three-reviewer fan-out, the diff touching `tests/run-te
 - [S] prior-review: no findings; no PR review threads exist (`pulls/comments` empty).
 
 Dispositions at the merge gate, 2026-09-10:
-- F1: fix now — the comment names the book's `index.html` beside the chapter's page; the suite is re-run on the fixed head.
+- F1: fix now — the comment names the book's `index.html` beside the chapter's page; `tests/run-tests.sh` re-run on b6cd606, the fixed head: exit 0, "All checks passed (779 checks)", no `FAIL` line.
 - F2: rejected — the removal is the intended guard against the gap KI231 described, matching `m069_tree`.
 - F3: rejected — the stray write was seen only at a project's top level, and the plan scoped the rules there on purpose.
 - F4: rejected — the pattern has the reach of the `_book/` and `.quarto/` rules beside it, and matches the six book projects today.

@@ -1479,13 +1479,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   for it, and `tests/epubcheck.py links` prints only a count; an author who
   writes an `https:` locator by accident is told one link was skipped and has
   no way to find it. Decided by D-057 rather than wrong. — M085 review F9
-- **KI269.** `htmlindex.leaves_publication` judges `href.strip()`, but
-  `resolve_href`, `epubindex.links` and `epubcheck.cmd_unique` then partition
-  the href unstripped, so `href=" ch1.xhtml#frag"` reads as staying and
-  resolves against a member name carrying its leading space. Unchanged from
-  before M085, which stripped nowhere; only the divergence between the
-  predicate and its callers is new. `tests/sitecheck.py` strips first and is
-  not affected. — M085 review F6
 
 ### The repo and its packaging
 

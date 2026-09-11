@@ -909,7 +909,7 @@ def resolve_href(page, href):
     """
     if leaves_publication(href):
         return None
-    path, _, fragment = href.partition('#')
+    path, _, fragment = href.strip().partition('#')
     if not path:
         return page, fragment
     target = os.path.normpath(os.path.join(os.path.dirname(page), path))

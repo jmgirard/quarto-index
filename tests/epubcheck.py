@@ -302,7 +302,7 @@ def cmd_unique(argv):
             href = node.attrs.get('href')
             if href is None:
                 continue
-            target, _, fragment = href.partition('#')
+            target, _, fragment = href.strip().partition('#')
             if not fragment:
                 continue
             if htmlindex.leaves_publication(href):

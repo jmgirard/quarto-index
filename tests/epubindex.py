@@ -197,7 +197,7 @@ def links(book, prefix, minted=()):
             if href is None:
                 continue
             leaves = htmlindex.leaves_publication(href)
-            target, _, fragment = href.partition('#')
+            target, _, fragment = href.strip().partition('#')
             name = None
             if target and not leaves:
                 name = posixpath.normpath(

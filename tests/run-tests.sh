@@ -24046,6 +24046,45 @@ printf '%s' "$M085_UNIQUE_OUT" \
   || { printf '%s\n' "$M085_UNIQUE_OUT" >&2; fail "M085-AC3: the id-uniqueness check did not count the two leaving locators, so the two commands are not reading this publication alike"; }
 pass "M085-AC2/AC3: over one publication whose index section carries an \`https:\` locator and one opening \`//\`, the link check and the id-uniqueness check both pass and both count the same two links as leaving it"
 
+# M087 AC3 — a reader goes on to use the href the predicate judged. The
+# predicate strips an href before it judges it; before M087 `resolve_href`,
+# `epubindex.links` and `epubcheck.py unique` then cut the UNSTRIPPED href at
+# its `#`, so ` ch003.xhtml#…` was judged as staying and joined into a member
+# name carrying the space, which no manifest lists (DESIGN.md Known issues).
+# One direct call, then one locator given a leading space and read by both
+# commands, each by the count it prints as well as by exit status.
+python3 - <<'M087PY'
+import sys
+
+sys.path.insert(0, 'tests')
+
+import htmlindex  # noqa: E402
+
+got = htmlindex.resolve_href('index.html', ' ch1.xhtml#frag')
+if got != ('ch1.xhtml', 'frag'):
+    print(f"FAIL: M087-AC3: resolve_href('index.html', ' ch1.xhtml#frag') "
+          f"returns {got!r}, not ('ch1.xhtml', 'frag'), so it resolves an "
+          f"href other than the one the predicate judged", file=sys.stderr)
+    sys.exit(1)
+print("ok   M087-AC3: resolve_href('index.html', ' ch1.xhtml#frag') returns "
+      "('ch1.xhtml', 'frag')")
+M087PY
+python3 "$M083W/plant.py" "$M085_SRC" "$M085W/space.epub" \
+  "$M085_MEMBER" "href=\"$M085_LOCATOR1_RE\"" "href=\" $M085_LOCATOR1\"" \
+  || fail "M087-AC3: the publication could not be rewritten to carry an index locator with a leading space (the plant's own message is above)"
+M087_LINKS_OUT=$(python3 tests/epubcheck.py links "$M085W/space.epub" \
+  "$HTML_SECTION_ID" 2>&1) \
+  || { printf '%s\n' "$M087_LINKS_OUT" >&2; fail "M087-AC3: the link check fails over a publication whose one change is a leading space on an index locator"; }
+printf '%s' "$M087_LINKS_OUT" \
+  | grep -qF -- '; 0 link(s) skipped as leaving the publication' \
+  || { printf '%s\n' "$M087_LINKS_OUT" >&2; fail "M087-AC3: the link check passed the leading-space locator without stating that it skipped none as leaving the publication"; }
+M087_UNIQUE_OUT=$(python3 tests/epubcheck.py unique "$M085W/space.epub" 2>&1) \
+  || { printf '%s\n' "$M087_UNIQUE_OUT" >&2; fail "M087-AC3: the id-uniqueness check fails over a publication whose one change is a leading space on an index locator"; }
+printf '%s' "$M087_UNIQUE_OUT" \
+  | grep -qF -- '; 0 fragment-carrying link(s) leave the publication' \
+  || { printf '%s\n' "$M087_UNIQUE_OUT" >&2; fail "M087-AC3: the id-uniqueness check passed the leading-space locator without stating that none of its links leave the publication"; }
+pass "M087-AC3: over one publication whose index locator carries a leading space, the link check and the id-uniqueness check both pass and neither counts a link as leaving it"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M085 T7 — a plant per clause against the two EPUB readers, in the

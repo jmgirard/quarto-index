@@ -332,21 +332,30 @@ end
 -- directory belongs, a read-only project tree, a full disk — and none of
 -- them may take the render down with it: a marked-up document always
 -- renders (IP2). The whole write is one guarded unit, reported once.
+--
+-- A failure this function foresees is RETURNED as its cause rather than
+-- raised. Quarto's filter runtime replaces the global `error` with a logger
+-- that prints an `ERROR` line and returns, so a raise from inside the guard
+-- does not unwind: execution runs on past it, and the report then names
+-- whatever fault comes next or, where nothing faults, is not drawn at all.
+-- `pcall` stays for the faults nobody foresaw.
 local function store_write(ctx, record)
   local path = store_path(ctx, ctx.file)
   local ok, err = pcall(function()
     pandoc.system.make_directory(pandoc.path.directory(path), true)
     local fh, open_err = io.open(path, "w")
     if not fh then
-      error(tostring(open_err), 0)
+      return tostring(open_err)
     end
     local written, write_err = fh:write(pandoc.json.encode(record))
     fh:close()
     if not written then
-      error(tostring(write_err), 0)
+      return tostring(write_err)
     end
   end)
-  if not ok then
+  -- `err` is the raised fault where `ok` is false, and the returned cause, or
+  -- nil for a write that succeeded, where it is true.
+  if not ok or err ~= nil then
     qi_core.warn(("could not record index marks for %s (%s); this chapter's marks "
           .. "will be missing from the book's index until it is rendered "
           .. "again"):format(ctx.file, tostring(err)))
@@ -899,15 +908,18 @@ local function recover_record(ctx, file)
   if not readable_source(file) then
     return nil, true
   end
+  -- A source that cannot be opened or read returns nil from inside the guard
+  -- rather than raising, for the reason `store_write` gives: Quarto's `error`
+  -- logs and returns, so a raise here would not unwind.
   local ok, record = pcall(function()
     local fh = io.open(pandoc.path.join({ ctx.root, file }), "r")
     if not fh then
-      error("cannot open", 0)
+      return nil
     end
     local text = fh:read("a")
     fh:close()
     if text == nil then
-      error("cannot read", 0)
+      return nil
     end
     local parsed = pandoc.read(text, "markdown")
     -- The conditional-content removal reaches both inputs, but not both here:

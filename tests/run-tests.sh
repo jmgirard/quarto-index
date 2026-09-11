@@ -2225,12 +2225,41 @@ python3 "$SCAN_DIR/warn-distinct.py" --patterns > "$QI_WARN_PATTERNS" \
 # message whose wildcard can span another message's text matches the same line
 # twice, and Quarto writes one warning per line, so the line is the unit that
 # counts each warning once.
+#
+# SGR colour escapes (`ESC [ ... m`) are stripped before the patterns read a
+# line. Quarto colours some lines it writes, and the escape that closes one sits
+# at the head of the next line, where an anchored `^\(W\) ` pattern would miss a
+# warning written right after it (M094). Stripping reads from a file rather than
+# grep's own open, so a log that is not there, or cannot be read, is refused
+# first: the pipe would otherwise read it as empty and a zero expectation would
+# pass over nothing.
 check_extension_warning_count() {
   local logfile="$1" want="$2" label="$3" got
-  got=$( { grep -E -c -f "$QI_WARN_PATTERNS" "$logfile" || true; } | tr -d ' ')
+  [ -f "$logfile" ] && [ -r "$logfile" ] \
+    || fail "$label: $logfile is not a readable file, so a count of this extension's warnings over it would assert nothing"
+  got=$( { perl -pe 's/\e\[[0-9;]*m//g' "$logfile" \
+             | grep -E -c -f "$QI_WARN_PATTERNS" || true; } | tr -d ' ')
   if [ "$got" != "$want" ]; then
-    { grep -E -f "$QI_WARN_PATTERNS" "$logfile" || true; } >&2
+    { perl -pe 's/\e\[[0-9;]*m//g' "$logfile" \
+        | grep -E -f "$QI_WARN_PATTERNS" || true; } >&2
     fail "$label: expected $want warning(s) from this extension in $logfile, got $got"
+  fi
+}
+
+# Assert Quarto printed no ERROR line during a render. Quarto's filter runtime
+# replaces the global `error` with a logger that writes `ERROR (<caller>)
+# <message>` and returns, so a call to it from this extension leaves that line
+# in the log and no failure anywhere (M094). Read after the same escape strip as
+# above.
+check_no_quarto_error() {   # <logfile> <label>
+  local logfile="$1" label="$2" got
+  [ -f "$logfile" ] && [ -r "$logfile" ] \
+    || fail "$label: $logfile is not a readable file, so a count of ERROR lines over it would assert nothing"
+  got=$( { perl -pe 's/\e\[[0-9;]*m//g' "$logfile" \
+             | grep -E -c 'ERROR \(' || true; } | tr -d ' ')
+  if [ "$got" != "0" ]; then
+    { perl -pe 's/\e\[[0-9;]*m//g' "$logfile" | grep -E 'ERROR \(' || true; } >&2
+    fail "$label: expected 0 ERROR line(s) in $logfile, got $got"
   fi
 }
 
@@ -7428,7 +7457,9 @@ pass "M05-AC6: the missing-marker report fires exactly once in a full render, na
 # own record, so a record planted in the last chapter is read by the two
 # chapters ahead of it and by no other. 2 is therefore neither one report for
 # the book nor one per chapter rendered (3) — the two readings a two-chapter
-# fixture cannot tell apart.
+# fixture cannot tell apart. For AC3 the count also rules out the gate
+# reverting to `if builds then`; the note beside its count says so, and names
+# the rule it does not separate.
 # ---------------------------------------------------------------------------
 section 'M062-AC2/AC3 — a book with NO placement marker anywhere still says when it'
 NOMARKER_STORE="$NOMARKER_DIR/.quarto/$STORE_DIR"
@@ -7498,9 +7529,22 @@ if {mark.get('index') for mark in record['marks']} == {value}:
              f'every mark, so the plant changes nothing')
 for mark in record['marks']:
     mark['index'] = value
+# The sort keys move with the marks, as the M062-AC1 plant's do, so the key
+# half of `fold_undeclared`'s rebuild is planted too wherever this fixture's
+# record comes to carry one.
+merged = {}
+for keys in record.get('sorts', {}).values():
+    merged.update(keys)
+record['sorts'] = {value: merged} if merged else {}
 json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
 NOMARKNAMEPY
 nomarker_render nomarker-undeclared "M062-AC3"
+# The count of 2 rules out a revert of the gate to `if builds then`, which
+# draws 0 here because no chapter of this book builds a section. It does not
+# separate the shipped rule from the report being drawn inside
+# `fold_undeclared`: every rendering chapter calls that function over the
+# records it reads, so the two chapters that read the plant would draw 2 there
+# as well.
 check_warning_count "$WORK/nomarker-undeclared.log" "$WARN_INDEX_STALE_NAME" 2 \
   "M062-AC3 (the two chapters that read the plant while no chapter of the book places an index)"
 nomarker_named nomarker-undeclared \
@@ -7508,12 +7552,14 @@ nomarker_named nomarker-undeclared \
   "M062-AC3"
 check_store_reports "$WORK/nomarker-undeclared.log" \
   "M062-AC3 (refiled for its name, not refused for its version; nor refused for its shape)"
-# The marks that record carries still print. This book builds no index section
-# at all — nothing places one — so the section of the render they print in is
-# the chapter's own body: the term two.qmd marks is still inside the page's
-# document content, which is where M05-AC6 requires every marked term of this
-# book to be. Read out of that region rather than off the whole file, so a
-# term surviving only in the page's navigation or its search index would fail.
+# The term two.qmd marks still prints in the document content of two.html.
+# That page renders from two.qmd's own source, so the term prints there whether or
+# not the planted record is refiled: this reads that the plant cost the
+# chapter's own page nothing, and says nothing about where a refiled mark goes.
+# This book builds no index section, so that is asserted over
+# examples/book-placement/ instead, at M094-AC4 below. Read out of the
+# document-content region rather than off the whole file, so a term surviving
+# only in the page's navigation or its search index would fail.
 NOMARKER_PLANTED_TERM='Nomark Three'
 NOMARKER_BODY_ID='quarto-document-content'
 QI_NOMARKER_TERM="$NOMARKER_PLANTED_TERM" QI_NOMARKER_BODY="$NOMARKER_BODY_ID" \
@@ -7531,8 +7577,8 @@ if body is None:
     sys.exit(1)
 if term not in H.text(body, ' '):
     print(f'FAIL: M062-AC3: {term!r} is not in the document content of '
-          f'{sys.argv[1]}, so a record refiled for its index name cost its '
-          f'chapter the terms it carries', file=sys.stderr)
+          f'{sys.argv[1]}, so the planted record cost that chapter\'s own '
+          f'page its term', file=sys.stderr)
     sys.exit(1)
 if H.index_section(doc) is not None:
     print(f'FAIL: M062-AC3: {sys.argv[1]} carries an index section, so the '
@@ -7540,10 +7586,11 @@ if H.index_section(doc) is not None:
           f'author wrote it', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M062-AC3: {term!r} still prints in the document content of '
-      f'two.html, on a page carrying no index section of its own')
+      f"two.html, which renders from two.qmd's own source, on a page "
+      f'carrying no index section of its own')
 NOMARKTERMPY
 cp "$WORK/nomarker-two-record.json" "$NOMARKER_RECORD"
-pass "M062-AC3: in the same book, a record naming an index it does not declare is reported by each of the two chapters that read it, each naming that chapter and that name, and the term that record carries still prints in a section of the render"
+pass "M062-AC3: in the same book, a record naming an index it does not declare is reported by each of the two chapters that read it, each naming that chapter and that name, and the term that record carries still prints on its own chapter's page, which renders from that chapter's source"
 
 # ---------------------------------------------------------------------------
 # M05-AC5 — the book PDF. One merged document, so the LaTeX back-end needs
@@ -8754,13 +8801,11 @@ fi
 #
 #   4 recovery + 1 write-failure + 2 marker-position = 7.
 #
-# Seven warning lines, of which the pattern-set helper below counts six. The
-# seventh is four.qmd's write-failure report: Quarto writes an ERROR line of its
-# own immediately before it, and the report's line then opens with that line's
-# colour-reset escape rather than with `(W)`, where the helper's anchored
-# patterns cannot reach it (KI206). It is counted by its own key, and the raw
-# count of warning lines is asserted alongside, so all seven are held either
-# way.
+# Seven warning lines, and the pattern-set helper below counts all seven. The
+# write-failure report gives as its cause the text `io.open` returned for the
+# held path, that path followed by `: Is a directory` on the render this leg
+# was written against (2026-09-11), and Quarto prints no ERROR line beside it (M094-AC1). The raw
+# count of warning lines is asserted alongside.
 #
 # The unreadable report is drawn from inside `store_read`, once per rendering
 # chapter that meets the held path — four of the five — and not once per
@@ -8774,6 +8819,19 @@ m061_block_record() {   # <chapter file> <store directory> <label>
   mkdir -p "$store/$chapter$STORE_SUFFIX"
   [ -d "$store/$chapter$STORE_SUFFIX" ] \
     || fail "$label: the store path for $chapter is not a directory, so the write below would succeed and the run would be about an ordinary record"
+}
+
+# M094-AC1 — the write-failure report for four.qmd's held path, read off the
+# report's own line rather than anywhere in the log: its cause is the text
+# `io.open` returned, which is the refused path followed by `: Is a directory`.
+m094_check_cause() {   # <logfile> <label>
+  local logfile="$1" label="$2" line
+  line=$( { grep -F -- "$WARN_STORE_UNWRITABLE four.qmd (" "$logfile" || true; } )
+  case "$line" in
+    *"four.qmd$STORE_SUFFIX: Is a directory); "*) : ;;
+    *) printf '%s\n' "$line" >&2
+       fail "$label: the write-failure report for four.qmd does not give the held path's own open failure, <<Is a directory>>, as its cause" ;;
+  esac
 }
 
 
@@ -8877,8 +8935,12 @@ for M061_PASS in one two; do
     "M063-AC3 (render $M061_PASS: index.qmd and three.qmd each build a section with chapters after them)"
   check_warning_count "$WORK/place-blocked-$M061_PASS.log" "$WARN_INDEX_STALE_NAME" 0 \
     "M063-AC3 (render $M061_PASS: no record names an index this book does not declare)"
-  check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 6 \
-    "M063-AC3 (render $M061_PASS emitted a warning this suite cannot name; the six its anchored patterns reach are four unreadable-record reports and two marker-position reports)"
+  check_extension_warning_count "$WORK/place-blocked-$M061_PASS.log" 7 \
+    "M063-AC3 (render $M061_PASS emitted a warning this suite cannot name; the seven its patterns reach are four unreadable-record reports, four.qmd's write-failure report and two marker-position reports)"
+  m094_check_cause "$WORK/place-blocked-$M061_PASS.log" \
+    "M094-AC1 (render $M061_PASS)"
+  check_no_quarto_error "$WORK/place-blocked-$M061_PASS.log" \
+    "M094-AC1 (render $M061_PASS)"
   # M064-AC2 — where the `gamma` section's locators point. `Dovetail` was
   # recovered from four.qmd's source and its author wrote no id on it, so its
   # whole href is the chapter's page. The fragments the section's other
@@ -8962,6 +9024,53 @@ if [ "${1:-}" = "--self-test" ]; then
   grep -qF 'three.html	qi-index-gamma' "$WORK/m063-lastplacer-blocked-probe.log" \
     || { cat "$WORK/m063-lastplacer-blocked-probe.log" >&2; fail "M063 T7 self-test: the mutated render failed the manifest, but not by putting gamma in three.html — that failure is not the one this case is about"; }
   pass "M063 T7 self-test: with the superseded rule restored and nothing else changed, the same held store path puts gamma in three.html rather than in the book's last chapter — which is what the manifest the run above is held to refuses"
+
+  # -------------------------------------------------------------------------
+  # M094 T2 — the same held store path against a copy of the extension whose
+  # only change restores the `error(...)` call `store_write` made where
+  # `io.open` fails. Each of the two M094-AC1 checks above must go red on that
+  # render, and by naming the defect it is there for.
+  # -------------------------------------------------------------------------
+  m061_mutant m094-raise "M094 T2 self-test" \
+    's{      return tostring\(open_err\)\n}{      error(tostring(open_err), 0)\n}'
+  m061_block_record four.qmd "$M061W/m094-raise/.quarto/$STORE_DIR" \
+    "M094 T2 self-test"
+  ( cd "$M061W/m094-raise" && quarto render --to html ) \
+    > "$WORK/m094-raise.log" 2>&1 \
+    || { tail -30 "$WORK/m094-raise.log" >&2; fail "M094 T2 self-test: the mutated render failed; the case below is about what the report and the log say, not about a broken render"; }
+  capture --project "$M061W/m094-raise" html "m094-raise"
+  if M094_OUT=$( ( check_no_quarto_error "$WORK/m094-raise.log" \
+                     "M094 T2 probe" ) 2>&1 ); then
+    fail "M094 T2 self-test: with the raise restored the ERROR-line check passed, so its green above says nothing"
+  fi
+  case "$M094_OUT" in
+    *"M094 T2 probe: expected 0 ERROR line(s)"*"got 1") : ;;
+    *) fail "M094 T2 self-test: the ERROR-line check failed on the mutated render, but not by counting its one ERROR line (<<$M094_OUT>>)" ;;
+  esac
+  if M094_OUT=$( ( m094_check_cause "$WORK/m094-raise.log" \
+                     "M094 T2 cause probe" ) 2>&1 ); then
+    fail "M094 T2 self-test: with the raise restored the cause check passed, so its green above says nothing"
+  fi
+  case "$M094_OUT" in
+    *"M094 T2 cause probe: the write-failure report for four.qmd does not give"*) : ;;
+    *) fail "M094 T2 self-test: the cause check failed on the mutated render, but not on the report's cause (<<$M094_OUT>>)" ;;
+  esac
+  pass "M094 T2 self-test: with store_write's raise restored and nothing else changed, the held store path prints one ERROR line and a write-failure report whose cause is not the open failure, and each M094-AC1 check is red naming that"
+
+  # -------------------------------------------------------------------------
+  # M094 T3 — a warning line that opens with a colour escape is still counted.
+  # The shipped filter's M063-AC3 render no longer writes one, so the escape is
+  # planted into a copy of that render's log, place-blocked-one.log, at the
+  # head of four.qmd's write-failure report.
+  # -------------------------------------------------------------------------
+  perl -pe 's/^(?=\(W\) could not record index marks for four\.qmd )/\e[39m/' \
+    "$WORK/place-blocked-one.log" > "$WORK/m094-sgr.log"
+  M094_RAW=$( { grep -E -c -f "$QI_WARN_PATTERNS" "$WORK/m094-sgr.log" || true; } | tr -d ' ')
+  [ "$M094_RAW" = "6" ] \
+    || fail "M094 T3 self-test: the anchored patterns read $M094_RAW line(s) of the planted log with no strip, want 6, so the escape did not land at the head of the write-failure report"
+  check_extension_warning_count "$WORK/m094-sgr.log" 7 \
+    "M094 T3 self-test (a warning line opening with a colour escape)"
+  pass "M094 T3 self-test: a copy of the held-path log whose write-failure report opens with a colour escape reads 6 to the anchored patterns alone and 7 to the warning-count helper, which strips the escape first"
 fi
 
 # The held path goes back to an ordinary record: it is removed, and two further
@@ -9087,9 +9196,8 @@ m064_chapter_render() {   # <slug> <capture slug> <chapter> <label>
 #              recovered markers show `alpha` and `beta` placed, so it takes
 #              `gamma` on and builds its section with all nineteen entries.
 #
-#   8 recovery + 2 write-failure + 2 marker-position = 12 warning lines, of
-#   which the anchored pattern set reaches the 10 that are not write failures
-#   (KI206).
+#   8 recovery + 2 write-failure + 2 marker-position = 12 warning lines, all
+#   of which the pattern-set helper reaches.
 # ---------------------------------------------------------------------------
 section 'M064-AC3 — KI214'\''s own observation: the store paths of BOTH chapters that'
 m063_tree m064-heldpair
@@ -9105,8 +9213,8 @@ for M064_PASS in one two; do
   check_store_reports "$WORK/m063-m064-heldpair-$M064_PASS.log" \
     "M064-AC3 (render $M064_PASS: each of the five chapters reads the held paths that are not its own; render $M064_PASS: both sources parse, so nothing is lost; render $M064_PASS: both sources carry marks, so the no-marks wording is never drawn; render $M064_PASS: index.qmd's and three.qmd's own writes)" \
     WARN_STORE_UNREADABLE_RECOVERED=8 WARN_STORE_UNWRITABLE=2
-  check_extension_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" 10 \
-    "M064-AC3 (render $M064_PASS emitted a warning this suite cannot name; the ten its anchored patterns reach are eight recovery reports and two marker-position reports)"
+  check_extension_warning_count "$WORK/m063-m064-heldpair-$M064_PASS.log" 12 \
+    "M064-AC3 (render $M064_PASS emitted a warning this suite cannot name; the twelve its patterns reach are eight recovery reports, index.qmd's and three.qmd's write-failure reports and two marker-position reports)"
   M064_LINES=$( { grep -c '(W) ' "$WORK/m063-m064-heldpair-$M064_PASS.log" || true; } | tr -d ' ')
   [ "$M064_LINES" = "12" ] \
     || { grep '(W) ' "$WORK/m063-m064-heldpair-$M064_PASS.log" >&2; fail "M064-AC3 (render $M064_PASS): the render wrote $M064_LINES warning line(s), and the kinds this check counts by name account for 12"; }
@@ -9136,8 +9244,12 @@ for M064_PASS in one two; do
   { grep -F -- "$WARN_STORE_UNREADABLE_LOST" \
       "$WORK/m063-m064-lostsource-$M064_PASS.log" | grep -qF 'four.qmd'; } \
     || { grep -F -- "$WARN_STORE_UNREADABLE_LOST" "$WORK/m063-m064-lostsource-$M064_PASS.log" >&2; fail "M064-AC5 (render $M064_PASS): the report does not name four.qmd, the chapter whose record and source were both unreadable"; }
-  check_extension_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" 6 \
-    "M064-AC5 (render $M064_PASS emitted a warning this suite cannot name; the six its anchored patterns reach are four unrecovered-record reports and two marker-position reports)"
+  # Seven, four.qmd's write-failure report among them: no ERROR line is written
+  # before that report any more, and the helper strips colour escapes (M094).
+  check_extension_warning_count "$WORK/m063-m064-lostsource-$M064_PASS.log" 7 \
+    "M064-AC5 (render $M064_PASS emitted a warning this suite cannot name; the seven its patterns reach are four unrecovered-record reports, four.qmd's write-failure report and two marker-position reports)"
+  check_no_quarto_error "$WORK/m063-m064-lostsource-$M064_PASS.log" \
+    "M094-AC1 (the M064-AC5 render $M064_PASS)"
   M064_LINES=$( { grep -c '(W) ' "$WORK/m063-m064-lostsource-$M064_PASS.log" || true; } | tr -d ' ')
   [ "$M064_LINES" = "7" ] \
     || { grep '(W) ' "$WORK/m063-m064-lostsource-$M064_PASS.log" >&2; fail "M064-AC5 (render $M064_PASS): the render wrote $M064_LINES warning line(s), and the kinds this check counts by name account for 7"; }
@@ -9459,10 +9571,9 @@ pass "M065-AC5: a whole-book render in which one chapter's record carries a vers
 #
 #   20 recovery + 5 write-failure + 2 marker-position = 27 warning lines.
 #
-# The named counts account for all 27, so the raw count is asserted alongside
-# them rather than through the anchored-pattern helper, whose reach the write
-# failures fall in and out of depending on what Quarto printed just before them
-# (KI206).
+# The named counts account for 25, the recovery and write-failure reports.
+# The raw count of warning lines, asserted alongside them, holds all 27, the
+# two marker-position reports among them.
 # ---------------------------------------------------------------------------
 section '...and the store DIRECTORY itself replaced by a regular file, so no record'
 m065_break_store() {   # <store directory> <label>
@@ -10058,9 +10169,7 @@ fi
 #   4 recovery + 1 write-failure + 2 marker-position = 7 warning lines.
 #
 # The named counts account for all 7 and the raw count of warning lines is
-# asserted alongside them, since the write-failure report falls in and out of
-# the anchored-pattern helper's reach depending on what Quarto printed just
-# before it (KI206).
+# asserted alongside them.
 # ---------------------------------------------------------------------------
 section 'M068 — a record FILE that is there and cannot be opened, behind a store'
 m068_dangle_record() {   # <chapter file> <store directory> <label>
@@ -11278,15 +11387,50 @@ place_render place-rewarm-three "M063-AC2 (the render after the planted store)"
 #       2. Expected reports: 2.
 #
 #   (2) index.qmd alone, over the same plant. One chapter renders and builds
-#       `alpha`. Expected reports: 1.
+#       `alpha`. Expected reports: 1. This run is a control: one chapter
+#       rendered, one reading, one section built and one book all give 1, so
+#       it separates no counting rule from another.
 #
 # 2 is none of the fixture's chapter count (5), the chapters that read the
 # plant (4), the chapters that build a section (3) or one report for the book,
-# so the two runs together separate once-per-building-chapter from every one of
-# them.
+# so run (1) separates once-per-building-chapter from every one of them.
+#
+# M094-AC4 — both runs also read where the refiled mark prints. five.qmd's
+# record carries one mark, `Escutcheon`; `fold_undeclared` refiles it to
+# `qi_indexes.default()`, the book's first declared index, `alpha`, and
+# index.qmd builds that section in index.html. Each run is held to the term
+# being there, and the self-test below drops the mark from the plant and sees
+# that assertion red.
 # ---------------------------------------------------------------------------
 section 'M062-AC1 — the report for a record naming an index this book does not'
 PLACE_UNDECLARED='ghostplacement'
+PLACE_REFILED_TERM='Escutcheon'
+place_refiled_term() {   # <rendered book dir> <label>
+  HTML_SECTION_ID="$HTML_SECTION_ID" QI_TERM="$PLACE_REFILED_TERM" python3 - \
+    "$1/index.html" "$2" <<'REFILEDPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+page, label = sys.argv[1:3]
+term = os.environ['QI_TERM']
+section = os.environ['HTML_SECTION_ID'] + '-alpha'
+doc = H.parse(page)
+found = H.find_id(doc, section)
+if found is None:
+    print(f'FAIL: {label}: {page} carries no element with id {section!r}, so '
+          f'the check below would be over an empty domain', file=sys.stderr)
+    sys.exit(1)
+terms = [record['term'] for record in H.entry_records(found)]
+if term not in terms:
+    print(f'FAIL: {label}: {term!r} is not among the terms of the {section} '
+          f'section of {page} ({terms}), so the mark refiled from an '
+          f'undeclared index name does not print where it was refiled to',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: {term!r} prints in the {section} section of index.html, '
+      f'one of its {len(terms)} term(s)')
+REFILEDPY
+}
 place_undeclared() {   # <slug> <render argument or ""> <expected count> <label>
   local slug="$1" target="$2" want="$3" label="$4" named
   cp "$PLACE_STORE/five.qmd$STORE_SUFFIX" "$WORK/place-$slug-record.json"
@@ -11325,14 +11469,53 @@ PLACENAMEPY
     || { grep -F -- "$WARN_INDEX_STALE_NAME" "$WORK/place-$slug.log" >&2; fail "M062-AC1 ($label): $named of the reports name five.qmd and $PLACE_UNDECLARED, want $want — the count is right only if each report is about the chapter whose record was planted and the name it carries"; }
   check_store_reports "$WORK/place-$slug.log" \
     "M062-AC1 ($label, refiled for its name rather than refused for its version; $label, nor refused for its shape)"
+  place_refiled_term "$CAPTURE_ROOT/place-$slug/_book" "M094-AC4 ($label)"
   cp "$WORK/place-$slug-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
 }
 
 place_undeclared undeclared-book '' 2 \
   'the whole book, two of whose five chapters build a section'
 place_undeclared undeclared-first index.qmd 1 \
-  'index.qmd alone, the one chapter rendered and the one that builds'
+  'index.qmd alone, a control: the one chapter rendered and the one that builds'
 pass "M062-AC1: the report for a record naming an index this book does not declare is drawn once per chapter that builds a section — twice in a whole-book render two of whose five chapters build one, and once where a single building chapter is rendered — and each report names the chapter whose record it refiled and the name that record carries"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M094 T4 — the same plant, less the mark it refiles. Rendered from
+  # index.qmd alone, the chapter that builds `alpha`, the M094-AC4 assertion
+  # must be red, and red naming the term.
+  # -------------------------------------------------------------------------
+  cp "$PLACE_STORE/five.qmd$STORE_SUFFIX" "$WORK/place-refiled-drop-record.json"
+  QI_PLACE_UNDECLARED="$PLACE_UNDECLARED" QI_TERM="$PLACE_REFILED_TERM" python3 - \
+    "$WORK/place-refiled-drop-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX" <<'DROPREFILEDPY'
+import json, os, sys
+record = json.load(open(sys.argv[1], encoding='utf-8'))
+term = os.environ['QI_TERM']
+marks = record.get('marks', [])
+kept = [mark for mark in marks if mark.get('levels') != [term]]
+if len(kept) == len(marks):
+    sys.exit(f'FAIL: M094 T4 self-test: five.qmd\'s record carries no mark '
+             f'for {term!r}, so the plant below would drop nothing')
+for mark in kept:
+    mark['index'] = os.environ['QI_PLACE_UNDECLARED']
+record['marks'] = kept
+json.dump(record, open(sys.argv[2], 'w', encoding='utf-8'))
+DROPREFILEDPY
+  ( cd "$PLACE_DIR" && quarto render index.qmd --to html ) \
+    > "$WORK/place-refiled-drop.log" 2>&1 \
+    || { tail -30 "$WORK/place-refiled-drop.log" >&2; fail "M094 T4 self-test: the render failed; the case below is about which terms a section prints, not about a broken render"; }
+  capture --project "$PLACE_DIR" html place-refiled-drop
+  cp "$WORK/place-refiled-drop-record.json" "$PLACE_STORE/five.qmd$STORE_SUFFIX"
+  if M094_OUT=$( ( place_refiled_term "$CAPTURE_ROOT/place-refiled-drop/_book" \
+                     "M094 T4 probe" ) 2>&1 ); then
+    fail "M094 T4 self-test: with the refiled mark dropped from five.qmd's record the assertion passed, so its green above says nothing"
+  fi
+  case "$M094_OUT" in
+    *"M094 T4 probe: '$PLACE_REFILED_TERM' is not among the terms"*) : ;;
+    *) fail "M094 T4 self-test: the assertion failed with the refiled mark dropped, but not by missing that term (<<$M094_OUT>>)" ;;
+  esac
+  pass "M094 T4 self-test: with the refiled mark dropped from five.qmd's record and nothing else changed, the alpha section of index.html no longer carries $PLACE_REFILED_TERM and the M094-AC4 assertion is red naming it"
+fi
 
 # Back to a store every record of which was written by the chapter it belongs
 # to, from that chapter's own source.

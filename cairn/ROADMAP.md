@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M094 | A failed store write or source read reports its own cause | planned | — | normal | milestones/M094-store-failure-causes.md |
+| M094 | A failed store write or source read reports its own cause | review | — | normal | milestones/M094-store-failure-causes.md |
 | M095 | Three candidate rows' unasserted fixture facts get checks | planned | — | normal | milestones/M095-suite-pins-three-rows.md |
 | M093 | The label and language paths are exercised where no render reached them | done | M092 | normal | milestones/archive/M093-label-language-coverage.md |
 | M092 | The label and separator checks fail on the defects they name | done | — | normal | milestones/archive/M092-label-checks-discriminate.md |

@@ -1787,3 +1787,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   and so does a fixture whose `index-labels:` map sets `separator` twice. The
   plan recorded the blind spot for quoting, comments and key order only.
   — M092 review R4
+- **KI279.** The M093 locale probe in `tests/run-tests.sh` calls
+  `os.setlocale("fr_FR.ISO8859-1")` and fails the whole run when that call
+  returns nil. By the plan's choice it never skips. The name is the macOS
+  spelling. A machine that lacks the locale or names it another way, as a
+  Linux system can, gets a red run from a probe of letters, not of the index.
+  — M093 review F1

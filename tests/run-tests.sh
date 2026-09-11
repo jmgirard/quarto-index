@@ -10751,13 +10751,15 @@ m069_assert_nostore() {   # <tree> <label>
     "$label" "$tree"
 }
 
-# One chapter of one such tree, rendered on its own. The copy is fresh, so its
-# `_book` holds this chapter's page and no other and the section manifests
-# below can say that a page carries no section at all.
+# One chapter of one such tree, rendered on its own. Its `_book` goes with the
+# store, as `m069_tree` removes its own: a chapter rendered alone rewrites its
+# own page and leaves every other page a kept `_book` holds in place, so only
+# an emptied one holds this chapter's page and no other and lets the section
+# manifests below say that a page carries no section at all.
 m069_cold_chapter() {   # <slug> <chapter> <label>
   local slug="$1" chapter="$2" label="$3"
   m063_tree "$slug"
-  rm -rf "$M061W/$slug/.quarto/$STORE_DIR"
+  rm -rf "$M061W/$slug/.quarto/$STORE_DIR" "$M061W/$slug/_book"
   m069_assert_nostore "$M061W/$slug" "$label"
   ( cd "$M061W/$slug" && quarto render "$chapter" --to html ) \
     > "$WORK/m069-$slug.log" 2>&1 \

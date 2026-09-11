@@ -39,7 +39,7 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 ## Tasks
 
 - [x] T1: In the root `.gitignore`, beside the `examples/book*/_book/` rules, add `examples/book*/*.html` and `examples/book*/site_libs/` under a comment naming what they hold (pages and assets a render wrote beside the project rather than under `_book/`, as the reset M073 checkpoint 7c83a21 carried). Run AC1's and AC2's commands.
-- [ ] T2: Before editing, run one control on a scratch copy of `examples/book-placement` outside the suite (extension installed as `m063_tree` installs it): a whole-book HTML render, then one chapter rendered with `_book` kept, listing `_book/*.html` to show whether the other chapters' pages survive; one work-log line. Then in `m069_cold_chapter` (`tests/run-tests.sh:10760`) remove `"$M061W/$slug/_book"` with the store, as `m069_tree` does (`:10796`), keeping the function's comment true. Mark KI231 resolved in `cairn/DESIGN.md`.
+- [x] T2: Before editing, run one control on a scratch copy of `examples/book-placement` outside the suite (extension installed as `m063_tree` installs it): a whole-book HTML render, then one chapter rendered with `_book` kept, listing `_book/*.html` to show whether the other chapters' pages survive; one work-log line. Then in `m069_cold_chapter` (`tests/run-tests.sh:10760`) remove `"$M061W/$slug/_book"` with the store, as `m069_tree` does (`:10796`), keeping the function's comment true. Mark KI231 resolved in `cairn/DESIGN.md`.
 - [ ] T3: Run `tests/run-tests.sh`, then `tests/run-tests.sh --self-test` (the profile's pre-review check), one after the other, with no edit to `tests/run-tests.sh` while either runs; record both exit codes.
 
 ## Work log
@@ -52,6 +52,8 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 - 2026-09-10: plan chose the root `.gitignore` over `examples/.gitignore` because the root already holds every `examples/book*` rule and KI75 records the examples file duplicating it; falsified by a rule the root file cannot express for that directory.
 - 2026-09-10: implement started on branch m089-book-fixture-hygiene; question gate skipped, nothing open.
 - 2026-09-10: T1 — root `.gitignore` gains `examples/book*/*.html` and `examples/book*/site_libs/`; AC1's command (paths on stdin) prints 22 lines, none `::` (5 matched by the `*.html` rule, 17 by `site_libs/`); AC2's prints nothing; control with the two rules stashed prints `::` for all 22.
+- 2026-09-10: T2 control (scratch copy of `examples/book-placement`, extension copied in, Quarto 1.10.18): whole-book HTML render wrote five pages at 21:29:54; `quarto render two.qmd --to html` with `_book` kept rewrote `two.html` at 21:29:57 and left the other four in place, three carrying `qi-index` sections.
+- 2026-09-10: T2 — `m069_cold_chapter` removes `"$M061W/$slug/_book"` with the store, comment rewritten to say why; KI231 struck from DESIGN.md. Suite run for T1–T2 is T3's.
 
 ## Decisions
 

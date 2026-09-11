@@ -1839,10 +1839,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   reports each source it read; the `m074-quiet` leg renders exactly this shape
   and holds every never-written wording, the refusal included, at zero. — M069
   review F2, F5; report half resolved M074
-- **KI231.** `m069_cold_chapter` does not remove its `_book` before rendering
-  while its sibling `m069_tree` does. Benign while `$M061W/base` is created
-  with `_book` removed; it would silently let `check_book_sections` read a
-  stale `_book` if that changed. — M069 review F8
 - **KI235.** A mark written in a chapter's `title:` in an HTML book files
   several locators, all live. Quarto copies the title into the top-level
   `#quarto-navigation-envelope` div ahead of every filter, and that div

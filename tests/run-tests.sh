@@ -24400,43 +24400,100 @@ section 'M56 — the three words the HTML and EPUB back-ends print themselves, s
 # the labels fixture with its two `index-labels:` blocks deleted, and nothing
 # else. Without this an empty `.tex` diff could be two files that drifted apart
 # together, and the criterion would pass for a reason it does not state.
+#
+# The front matter is parsed with PyYAML (D-030) and the body compared as text
+# (M092). A line walker ended a block at its first blank line, which is legal
+# inside a YAML map, and so reported a correct pair as drifted. The parse is
+# blind to a spelling that parses the same (quoting, a comment, key order).
+#
+# Arguments: fixture, twin, the number of `index-labels:` keys the fixture
+# writes, a label, and optionally the key set each of those maps must hold
+# exactly, space-separated.
 derive_labels_twin() {
-  python3 - "$1" "$2" "$3" "$4" <<'M56DERIVEPY'
-import re, sys
-fixture_path, twin_path, wanted, label = sys.argv[1:5]
+  python3 - "$1" "$2" "$3" "$4" "${5:-}" <<'M56DERIVEPY'
+import sys
+fixture_path, twin_path, wanted, label, keys = sys.argv[1:6]
 wanted = int(wanted)
-fixture = open(fixture_path, encoding='utf-8').read()
-twin = open(twin_path, encoding='utf-8').read()
-# A `index-labels:` block is the key line and every line indented deeper than
-# it -- the shape a YAML map takes at either level -- so this deletion is the
-# one the criterion names and not a line-by-line filter that could also drop an
-# unrelated line.
-out, inside = [], None
-blocks = 0
-for line in fixture.splitlines(True):
-    opened = re.match(r'^(\s*)index-labels:\s*$', line)
-    if inside is not None:
-        if line.strip() and (len(line) - len(line.lstrip())) > inside:
-            continue
-        inside = None
-    if opened:
-        inside = len(opened.group(1))
-        blocks += 1
-        continue
-    out.append(line)
-if blocks != wanted:
-    print(f'FAIL: {label}: {fixture_path} carries {blocks} `index-labels:` '
-          f'block(s), where the fixture is written with {wanted}',
-          file=sys.stderr)
+expected = keys.split() if keys else None
+
+
+def fail(message):
+    print(f'FAIL: {label}: {message}', file=sys.stderr)
     sys.exit(1)
-if ''.join(out) != twin:
-    print(f'FAIL: {label}: {twin_path} is not {fixture_path} with its '
-          f'{wanted} `index-labels:` block(s) deleted; the two have drifted '
-          f'apart and a comparison of their renders would compare two '
-          f'different documents', file=sys.stderr)
-    sys.exit(1)
+
+
+try:
+    import yaml
+except ImportError:
+    fail('PyYAML is not installed on this python3, so the front matter '
+         'cannot be parsed; install it (python3 -m pip install pyyaml), D-030')
+
+
+def split(path):
+    """The parsed front matter and the body text after its closing line."""
+    lines = open(path, encoding='utf-8').read().splitlines(True)
+    if not lines or lines[0].rstrip('\r\n') != '---':
+        fail(f'{path} does not open with a `---` front-matter line')
+    for close in range(1, len(lines)):
+        if lines[close].rstrip('\r\n') in ('---', '...'):
+            break
+    else:
+        fail(f'{path} opens front matter and never closes it')
+    try:
+        meta = yaml.safe_load(''.join(lines[1:close]))
+    except yaml.YAMLError as bad:
+        fail(f'{path}: the front matter does not parse as YAML ({bad})')
+    if not isinstance(meta, dict):
+        fail(f'{path}: the front matter is not a map')
+    return meta, ''.join(lines[close + 1:])
+
+
+fixture_meta, fixture_body = split(fixture_path)
+twin_meta, twin_body = split(twin_path)
+
+# The deletion the criterion names: the key at the document level and inside
+# each `indexes:` entry, the two places an author writes it.
+deleted = []
+if 'index-labels' in fixture_meta:
+    deleted.append(('the document level', fixture_meta.pop('index-labels')))
+entries = fixture_meta.get('indexes')
+if isinstance(entries, list):
+    for number, entry in enumerate(entries, 1):
+        if isinstance(entry, dict) and 'index-labels' in entry:
+            deleted.append((f'entry {number} of indexes:',
+                            entry.pop('index-labels')))
+if len(deleted) != wanted:
+    fail(f'{fixture_path} carries {len(deleted)} `index-labels:` block(s), '
+         f'where the fixture is written with {wanted}')
+
+if expected is not None:
+    for where, value in deleted:
+        if not isinstance(value, dict):
+            fail(f'the `index-labels:` block at {where} of {fixture_path} is '
+                 f'not a map, where it is written to set '
+                 f'{", ".join(expected)}')
+        for key in value:
+            if key not in expected:
+                fail(f'the `index-labels:` block at {where} of '
+                     f'{fixture_path} sets the key "{key}", which is not one '
+                     f'of {", ".join(expected)}')
+        for key in expected:
+            if key not in value:
+                fail(f'the `index-labels:` block at {where} of '
+                     f'{fixture_path} does not set the key "{key}"')
+
+for part, mine, theirs in (('front matter', fixture_meta, twin_meta),
+                           ('body', fixture_body, twin_body)):
+    if mine != theirs:
+        fail(f'{twin_path} is not {fixture_path} with its {wanted} '
+             f'`index-labels:` block(s) deleted: the {part} differs, so the '
+             f'two have drifted apart and a comparison of their renders would '
+             f'compare two different documents')
+held = (f', each setting exactly {", ".join(expected)}'
+        if expected is not None else '')
 print(f'ok   {label}: {twin_path} is {fixture_path} with its {wanted} '
-      f'`index-labels:` block(s) deleted, and nothing else')
+      f'`index-labels:` block(s) deleted{held}, compared as parsed front '
+      f'matter and body text')
 M56DERIVEPY
 }
 
@@ -24838,6 +24895,30 @@ if [ "${1:-}" = "--self-test" ]; then
   grep -q 'carries 0 `index-labels:` block' "$M56W/noblocks.out" \
     || { cat "$M56W/noblocks.out" >&2; fail "M56 T4 self-test: the derivation failed a fixture with no declaration, but not for that reason"; }
   pass "M56 T4 self-test: the derivation catches a fixture that writes no index-labels: block, and reports it as that"
+
+  # A blank line inside the document's `index-labels:` map is legal YAML, and
+  # the twin is unchanged, so the derivation passes (M092). A walker that ended
+  # the block at the blank line reported this pair as drifted.
+  python3 - examples/index-labels.qmd "$M56W/blankline.qmd" <<'M092BLANKPY'
+import sys
+src, out = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+needle = '  symbols: "Zeichen"\n'
+if text.count(needle) != 1:
+    print(f'FAIL: M092 plant: {src} carries {text.count(needle)} copies of '
+          f'the aimed-at map line, where it is written with 1', file=sys.stderr)
+    sys.exit(1)
+open(out, 'w', encoding='utf-8').write(text.replace(needle, needle + '\n'))
+M092BLANKPY
+  [ -s "$M56W/blankline.qmd" ] \
+    || fail "M56 T4 self-test: planting a blank line inside the map wrote no file (its own FAIL line is above)"
+  derive_labels_twin "$M56W/blankline.qmd" examples/index-labels-twin.qmd 2 \
+    "M56 probe" > "$M56W/blankline.out" 2>&1 && rc=0 || rc=$?
+  [ "$rc" -eq 0 ] \
+    || { cat "$M56W/blankline.out" >&2; fail "M56 T4 self-test: the derivation failed a fixture copy whose only change is a blank line inside an index-labels: map, which is the same document"; }
+  grep -q '^ok   M56 probe: examples/index-labels-twin.qmd is ' "$M56W/blankline.out" \
+    || { cat "$M56W/blankline.out" >&2; fail "M56 T4 self-test: the derivation exited 0 on the blank-line copy without printing its ok line"; }
+  pass "M56 T4 self-test: the derivation passes a fixture copy carrying a blank line inside an index-labels: map, held against the unchanged twin"
 
   # The labels manifest, against the artifact that prints the English words:
   # the twin's own page. A comparison blind to the printed word would pass this.
@@ -25407,6 +25488,7 @@ M58_EPUB="$CAPTURE_ROOT/index-separators-epub/index-separators.epub"
 # state.
 derive_labels_twin examples/index-separators.qmd \
   examples/index-separators-twin.qmd 1 "M58-AC2 (derivation)" \
+  "separator xref-separator" \
   || fail "M58-AC2: the twin is not the separators fixture with its \`index-labels:\` block removed (its own FAIL line is above)"
 
 read -r -d '' M58_SEPARATORS <<'MANIFEST' || true
@@ -25647,6 +25729,29 @@ if [ "${1:-}" = "--self-test" ]; then
     'states no section at all' \
     python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
       "$M58W/empty.txt" "M58 probe"
+
+  # AC2's premise, that the fixture's one block sets `separator` and
+  # `xref-separator` and no other key, on a copy whose block sets a third
+  # (M092). The twin comparison alone passes this copy, since the whole block
+  # is deleted before it compares.
+  python3 - examples/index-separators.qmd "$M58W/thirdkey.qmd" <<'M092KEYPY'
+import sys
+src, out = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+needle = 'index-labels:\n'
+if text.count(needle) != 1:
+    print(f'FAIL: M092 plant: {src} carries {text.count(needle)} '
+          f'`index-labels:` lines, where it is written with 1', file=sys.stderr)
+    sys.exit(1)
+open(out, 'w', encoding='utf-8').write(
+    text.replace(needle, needle + '  see: "siehe"\n'))
+M092KEYPY
+  [ -s "$M58W/thirdkey.qmd" ] \
+    || fail "M58 T9 self-test: planting a third key wrote no file (its own FAIL line is above)"
+  m58_planted 'a separators fixture whose index-labels: block sets a third key' \
+    'sets the key "see", which is not one of separator, xref-separator' \
+    derive_labels_twin "$M58W/thirdkey.qmd" examples/index-separators-twin.qmd \
+      1 "M58 probe" "separator xref-separator"
 
   # And the twin's manifest against the declaring render, which is the
   # comparison a check blind to the printed glyph would pass.

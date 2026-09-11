@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (triage: dropped KI8 refuted premise, KI26/KI79/KI137/KI138/KI157/KI209 already shipped; KI179 merged into KI10; KI43, KI182 and the M083-plant scoping row compressed; no decision entry; validate green.)_
+_Last hygiene check: 2026-09-11 (M091 archived; KI277 added from its review; M088 row pruned; no lesson or decision entry; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,10 +10,9 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M091 | The cross-reference escaping probe's targets name terms it indexes | review | — | normal | milestones/M091-xref-probe-targets-resolve.md |
+| M091 | The cross-reference escaping probe's targets name terms it indexes | done | — | normal | milestones/archive/M091-xref-probe-targets-resolve.md |
 | M090 | M079's cross-reference id rules each turn the id-collision leg red | done | — | normal | milestones/archive/M090-xref-id-rule-plants.md |
 | M089 | Two book-fixture hygiene gaps close | done | — | normal | milestones/archive/M089-book-fixture-hygiene.md |
-| M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

@@ -1484,6 +1484,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   cross-reference mark left untagged); every line the leg prints under T3 it
   prints under T2 too (observed 2026-09-10), so T3's red does not tell its
   defect from T2's. — M090 review F1
+- **KI277.** `check_warning_count` in `tests/run-tests.sh` counts a log that
+  does not exist as 0 occurrences, so a zero count over a log another loop
+  writes passes when that log was never written: the per-index zero over
+  `corpus-xref-escaping.log`, and the zero counts beside it over the book
+  logs, would stay green if their manifest row or render were removed. —
+  M091 review F1
 
 ### The repo and its packaging
 

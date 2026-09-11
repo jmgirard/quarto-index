@@ -1307,9 +1307,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   with the index style's delimiter. The entries for `'` and `` ` `` likewise
   print as the right and left single quotation marks, which is what those ASCII
   positions hold in a T1 text font. — M30 T1
-- **KI72.** The example corpus's roughly 250 probe `see=`/`see-also=` targets do
-  not all name terms the fixture indexes; M14 pins the expected report counts
-  instead. — M14 plan gate
+- **KI72.** The incidental `see=`/`see-also=` targets in `examples/demo.qmd`
+  and `examples/xref-conflict.qmd` do not all name terms each file indexes;
+  M14 pins their expected report counts instead. — M14 plan gate, narrowed
+  M091
 - **KI74.** That a registered page actually prints emphasized is exercised only
   by M20's T9 checks and by no acceptance criterion, the criteria set having
   been held rather than widened, so the last leg of that chain has no criterion

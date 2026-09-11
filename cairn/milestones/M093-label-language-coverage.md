@@ -1,13 +1,13 @@
 # M093: The label and language paths are exercised where no render reached them
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M092
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it edits `languages.lua` and `indexes.lua`, which ship in the extension
-- **Branch/PR:** —
+- **Branch/PR:** `m093-label-language-coverage`
 
 ## Goal
 
@@ -123,6 +123,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: created by /milestone-plan.
 - 2026-09-11: criteria audit (full mode, fresh [O] reader) returned findings, all fixed before the gate: AC1 and AC4 named an "empty-value" report that is the same report as the blank-value one; AC4's unquoted values arrive trimmed (probed under `quarto render`), so values are double-quoted and T4 plants `BLANKS` without the 23; AC5's `label(nil, "title", fb)` was already true, so it now reads `lang: it` first; AC6 called the private `well_formed`, now `resolve`, with a later-subtag case; AC2 cites the reference page; AC3 says exactly once; T2 no longer lists a book in `site/gallery.yml`.
 - 2026-09-11: plan gate chose fixing KI185 with a locale-switching `pandoc lua` probe over leaving it open, because the switch was shown to part `%a` on byte 0xE9 on this machine; falsified by the probe's locale missing on a machine that runs the suite.
+- 2026-09-11: implement started on branch `m093-label-language-coverage`. Question gate: T5 splits each `languages.lua` row into a `words` table and a `title` field, rather than filtering keys in `indexes.lua`. T4's generated fixture fills the last two of its 25 key slots with visible non-ASCII words that must draw no report.
 
 ## Decisions
 

@@ -1578,13 +1578,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the same way — and M063 adds the marker-less last chapter as a new instance.
   Narrowing it needs `marks_in`, which M063 retired with the reports that were
   its only callers. — M063 review F1
-- **KI206.** M063-AC3's warning-count assertion expects 6 anchored `(W)`
-  matches because Quarto writes a colour-reset escape at the head of the
-  write-failure report's line, which `tests/scans/warn-distinct.py`'s
-  `^\(W\) ` patterns then miss. Nothing sets or asserts that escape, so an
-  uncoloured log makes the count 7 and the check red for a reason that is not
-  the extension's. The raw warning-line count asserted beside it is the stable
-  half. — M061 review F2, counts corrected M063
 - **KI208.** The gate drawing the two store reports from a chapter that builds
   no index section, `builds or first == nil`, reads `first` off the records
   that chapter could read, so it fires in any book whose marker chapter's own
@@ -1596,34 +1589,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   0. Observed 2026-08-30 on a scratch three-chapter book built from
   `examples/book-nomarker/` with a marker added to `two.qmd`.
   — M062 review F1
-- **KI210.** M062-AC3's "the marks still print" assertion cannot fail on the
-  defect it names: `two.html` renders from `two.qmd`'s own source, so
-  `Nomark Three` prints whether or not the planted record is refiled. The
-  fixture builds no index section, so it holds nowhere a refiled mark is
-  observable. — M062 review F3
-- **KI211.** M062-AC3's count of 2 does not separate the shipped
-  once-per-reading-chapter rule from the one it replaces: with the report drawn
-  from inside `fold_undeclared` the same three-chapter render also gives 2. It
-  does catch a revert of the gate to `if builds then`, which gives 0; the
-  block's header comment claims the wider separation. — M062 review F4
-- **KI212.** M062-AC1's single-chapter run separates no counting rule from
-  another — one chapter rendered, one reading, one section built and one book
-  all give 1. It is a control; the criterion's text calls it more. — M062
-  review F6
-- **KI213.** M062-AC3's plant renames each mark's index and leaves
-  `record['sorts']` alone, where M062-AC1's plant re-keys the sort map and says
-  why. `examples/book-nomarker/` carries no sort keys and the check guards
-  none, so the key half of `fold_undeclared`'s rebuild would silently stop
-  being covered there if the fixture gained one. — M062 review F7
-- **KI204.** `store_write`'s open-failure guard does not stop the write. With
-  the record's store path held by a directory, the render logs
-  `ERROR ([C]:-1) <path>: Is a directory` — the text `io.open` hands back — and
-  then draws its own write-failure report whose stated cause is
-  `book.lua:209: attempt to index a nil value (local 'fh')`, the line AFTER the
-  guard, so execution passed the guard's `error()` without unwinding. The
-  render survives and reports once, so IP2 holds; what the author is shown is
-  the second failure rather than the first, beside an ERROR line the extension
-  did not mean to print. Observed 2026-08-30 on M061-AC3's render. — M061 T8
 - **KI216.** A book chapter that declares `output-file:` in its own front
   matter drops out of the book's index entirely and indexes itself alone.
   `quarto.doc.output_file` for such a chapter is `<project>/<name>.html`

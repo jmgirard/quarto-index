@@ -1,13 +1,13 @@
 # M094: A failed store write or source read reports its own cause
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — the write-failure report an author reads changes its stated cause, and a stray `ERROR` line leaves the render log
-- **Branch/PR:** —
+- **Branch/PR:** m094-store-failure-causes
 
 ## Goal
 
@@ -118,6 +118,8 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: criteria audit (full mode, fresh [O] reader) returned findings, all fixed before the gate: the `ERROR (` clauses were already true because the line opens with an SGR escape (now matched after stripping); M064-AC5 never reaches sites 905 and 910, and site 346 is unreachable and draws no report, so AC2 became a review grep over the modules; M064-AC5's total count moves 6 to 7 (T2); the refiled term prints in `index.html`'s alpha section, not gamma (AC4, T4); KI206's escape is the reset closing KI204's ERROR line (Scope).
 - 2026-09-11: plan gate chose fixing KI204 inside M094 over a separate hotfix because the fix and the M062/M063 check repairs read the same legs; falsified by an author reporting the misleading write-failure cause before M094 merges.
 - 2026-09-11: plan chose returning failure values beside `pcall` over calling Quarto's saved `builtin_error_function`, because that name is internal to Quarto's filter runtime; falsified by a Quarto release whose runtime also changes `pcall` or the return path.
+- 2026-09-11: implement started on m094-store-failure-causes; question gate skipped, the plan left no implementation choice open.
+- 2026-09-11: checkpoint, T1-T7 edits written and not yet verified: a scratch render with four.qmd's record path held shows no ERROR line and the cause `...four.qmd.qi.json: Is a directory`; the strip moves three pinned counts over the prior run's logs, M063-AC3 6 to 7, M064-AC5 6 to 7, and M064-AC3 10 to 12, which the plan did not name (set under T3); `tests/run-tests.sh --self-test` is running, boxes stay unticked until it reads clean.
 
 ## Decisions
 

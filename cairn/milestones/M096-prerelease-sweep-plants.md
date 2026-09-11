@@ -2,14 +2,14 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M096: The pre-release sweep fails on the defects it names, from one definition
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** —
 - **Resolves:** —
 - **Surface tier:** internal — a checker over the repo's own documentation pages, which nothing outside the repo consumes
-- **Branch/PR:** —
+- **Branch/PR:** m096-prerelease-sweep-plants
 
 ## Goal
 
@@ -66,27 +66,27 @@ deleting the unmeasured page count from the floor's comment.
 
 ## Tasks
 
-- [ ] T1: Move the retired-sentence comparison and the unreadable-page branch
+- [x] T1: Move the retired-sentence comparison and the unreadable-page branch
       into `tests/sitecheck.py` beside `swept_domain` and `read_rows`
       (`tests/sitecheck.py:505-535`), so one definition holds the enumeration,
       the README test, the floor, the row reading and the comparison. Keep the
       overlay-directory argument the self-test drives it with.
-- [ ] T2: Refuse a retired-sentence row whose sentence half is empty, in
+- [x] T2: Refuse a retired-sentence row whose sentence half is empty, in
       `read_rows`, beside the existing no-tab refusal. Today an empty sentence
       flattens to the empty string, which is a substring of every page body, so
       the sweep reports the whole domain.
-- [ ] T3: Replace `check_prerelease_absent`'s inline heredoc in
+- [x] T3: Replace `check_prerelease_absent`'s inline heredoc in
       `tests/run-tests.sh:1839-1937` with a call to `tests/sitecheck.py`,
       leaving the call site at `tests/run-tests.sh:1935` and its `fail` message
       unchanged. Batch every edit to this file: editing it while a run is in
       flight corrupts that run's own parse (M073).
-- [ ] T4: Plant the four branches no case reaches — `git ls-files` exiting
+- [x] T4: Plant the four branches no case reaches — `git ls-files` exiting
       non-zero, README.md untracked, a page in the domain that cannot be read,
       and the empty-sentence row — each asserting the branch's own message
       rather than a bare non-zero exit. Read the `errexit` shape the plant
       helper runs under before trusting a green plant (M37), and show each
       plant red before trusting it.
-- [ ] T5: Delete the page count from the floor's comment in
+- [x] T5: Delete the page count from the floor's comment in
       `tests/sitecheck.py:110-112`, which asserts a number nothing measures.
       The floor and its basis stay; each run already prints the live size.
 
@@ -99,6 +99,9 @@ deleting the unmeasured page count from the floor's comment.
 - 2026-09-11: branch m096-prerelease-sweep-plants cut from main, status in-progress.
 - 2026-09-11: question gate posed one open choice, the merged sweep's case comparison. The user asked the session to decide. The Decisions entry below records it.
 - 2026-09-11: CHECKPOINT, no task ticked. T1-T5 are written and each of the four new branches was shown red by hand against scratch repositories. The full `tests/run-tests.sh --self-test` run that must be clean before any box is ticked was still in flight when the turn ended.
+- 2026-09-11: T1-T5 done and ticked. `tests/run-tests.sh --self-test` clean, 1520 checks, exit 0, on the tree at this commit. The five new red plants are at lines 992-996 of that run.
+- 2026-09-11: claim audit: not owed — internal tier.
+- 2026-09-11: status review.
 - 2026-09-11: plan gate chose deleting the floor comment's unmeasured page count over teaching the check to fail on drift, because the drift threshold would be invented here rather than derived; falsified by a live domain growing past the floor with the run's printed size going unread.
 
 ## Decisions

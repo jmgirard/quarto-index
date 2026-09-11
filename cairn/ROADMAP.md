@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (M090 done: three cross-reference id-rule plants, M084 T2 self-test removed; KI274-KI276 added; M087 row pruned.)_
+_Last hygiene check: 2026-09-10 (triage: dropped KI8 refuted premise, KI26/KI79/KI137/KI138/KI157/KI209 already shipped; KI179 merged into KI10; KI43, KI182 and the M083-plant scoping row compressed; no decision entry; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -36,7 +36,7 @@ _Released 0.3.0 2026-09-05._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Paths and filenames this repo does not handle (clustered): a chapter filename containing `#` or `?`; a checkout on Windows without symlink support — added 2026-08-16, clustered 2026-09-02 — M01 review R18, M05 review F11 — KI14, KI78
-- Scope the M083 EPUB plants' derived index locator to the links the sweep reads: it takes any relative `href` in the member, where `tests/epubcheck.py unique` counts only anchors inside the index section, so a member link outside that section would aim all three plants at a link the sweep never resolves. Promote on the fixture writing such a link, or with any other pass over the M083 plants — added 2026-09-08 — M084 review F2 — KI264
+- Scope the M083 EPUB plants' derived index locator to the links the sweep reads: it takes any relative `href` in the member, where `tests/epubcheck.py unique` counts only anchors inside the index section. Promote on the fixture writing a link outside that section, or with any other pass over the M083 plants — added 2026-09-08 — M084 review F2 — KI264
 - [low] Close the last id-census shape M081 and M082 leave in `note_raw`: a `style` or `script` inside `svg` or `math`, where a breakout tag is reported to make a real element the walk steps over. Promote on evidence checked against a browser, which this repo does not run, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - [low] Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254
 - [low] See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255

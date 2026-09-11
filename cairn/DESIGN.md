@@ -800,11 +800,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   message-whole in the suite over `examples/sortkey-clamp.qmd`. The "with no
   report" this entry claimed was written three milestones before that report
   shipped. — M06 review pass 2 F9; corrected 2026-08-28 at a plan gate
-- **KI8.** An empty entry tree would render the index as a bare `Index` heading
-  with no list and no warning. Unreachable today, and guarded twice over: the
-  HTML back-end builds a section only for an index some mark files in, and
-  `place_index` emits nothing for an index it holds no blocks for. — M07 review
-  F3; second guard recorded 2026-08-28 at a plan gate
 - **KI9.** see-also entries keep their locators in both back-ends — M03's gate
   chose LaTeX-aligned no-locator semantics and M15 keeps that semantics for a
   contested key — and the extension prints `see One Way; see Another Way` where
@@ -837,10 +832,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   M56's `doc_labels` and `index_labels` — are outside it:
   `tests/state-pollute.lua` never calls `qi_indexes.read` and no fixture the
   probe drives declares an index, so removing any of the six from `reset` would
-  show no difference to compare (KI179). — M01 review R16, widened through M03
+  show no difference to compare. — M01 review R16, widened through M03
   P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory corrected
   M38; the arrival history and the cell count "19", stale since M56, retired
-  2026-09-04 with git holding both
+  2026-09-04 with git holding both; absorbs KI179 (a reused state would print
+  the first document's declared words), M56 review F7, merged 2026-09-10
 - **KI11.** A placement marker written in YAML `abstract:` survives verbatim
   into the HTML header — filter residue of the IP2 class, since
   `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is
@@ -992,19 +988,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   visible text. The number is one the author wrote, so D-006 holds, but no
   fixture carries the shape (`entry="!" sort="a!b!c"`) and no check covers it.
   — M19 review F1
-- **KI26.** Reader-facing strings the filter emits are hard-coded English —
-  four of them, not the two this entry named until now: `Index`, the `Symbols`
-  group label, and the `see` and `see also` cross-reference labels
-  (`core.lua:24-27`, emitted at `html.lua:296`). HTML and EPUB only: the LaTeX
-  back-end emits `\see`, `\seealso` and an untitled `\printindex`, so babel
-  supplies all four words per the document's language. Distinct from KI6,
-  which is about what an author writes. The policy — D-035, D-036 and D-037 —
-  is settled and, since M56-M58, implemented: all four words now resolve
-  through an author's `index-labels:` map and then the shipped language table,
-  and the English strings are what is left when neither supplies one, which is
-  what remains of this entry. — M07 review F6; enumeration corrected 2026-08-28
-  from RR02 B1; unimplemented clause corrected M59
-
 - **KI105.** `report_below_marker` reads marker positions off `doc.blocks`
   after `resolve_markers` rebuilt it while the message promises the document as
   received, so an ignored or duplicate marker standing above a named index's
@@ -1046,9 +1029,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   review R9
 - **KI42.** `CAPTURE_CALL` matches the helper's own definition line. — M24
   review R10
-- **KI43.** `run-tests.sh:1651` calls `warn-distinct.py --patterns` directly,
+- **KI43.** `tests/run-tests.sh` calls `warn-distinct.py --patterns` directly,
   not through `run_scan`, which its header calls the one place saying how each
-  scan is invoked. — M25 review F9
+  scan is invoked. — M25 review F9; citation corrected 2026-09-10
 - **KI44.** A criterion enumerating scans by `re.search`/`re.match`/`re.findall`
   reaches neither `re.finditer` nor `.count(`/`.split(`, so a scan reading the
   source set through one of those falls outside it. — M25 review F7
@@ -1130,8 +1113,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   match into the filter and passes. The counts file already carries the
   number. The loop is `spliced_copy` since M067, so `m067_mutant`'s copies of
   the test modules inherit the gap. — M066 review F7, M067 review F11
-- **KI138.** `check_folded_heading` raises rather than reporting. — M38 review
-  round 3
 - **KI140.** The gallery's AC4 extracts with plain `pdftotext` where the
   suite's own module documents column interleaving. — M41 review
 - **KI144.** The gallery entry comparison discards level and which named index
@@ -1147,8 +1128,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI151.** The gallery build carries a dead `has_pdf` parameter. — M41 review
 - **KI156.** `text=True` decodes a non-UTF-8 tracked path strictly. — M46
   review F21
-- **KI157.** The domain wording in D-027 and in this document's prose stands
-  as M46 wrote it, its report clause corrected by D-029. — M46 review F23
 - **KI158.** The base-segment comparison runs before `os.path.normpath`, a
   false report only. — M46 review F27
 - **KI241.** Three checks sweep what the whole run has accumulated rather than
@@ -1410,9 +1389,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   regex. — M37 review
 - **KI136.** The loud-failure fixture is hand-written rather than derived.
   — M37 review
-- **KI137.** `check_folded_heading`'s section-count clause has a plant that
-  fires an unrelated `ValueError` before the count is ever compared. — M38
-  review round 3
 - **KI139.** `ran_clean` has one unplanted failure clause. — M38 Scope Out
 - **KI141.** The gallery's AC5 comparison and several named clauses have no
   plant. — M41 review
@@ -1524,8 +1500,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI78.** Windows checkouts without symlink support break
   `examples/_extensions`, and `site/_extensions` since M40. — M01 review R18,
   extended M40
-- **KI79.** The Quarto version floor is an untested contract claim; a CI matrix
-  at floor and latest is what would fence it. — M01 review R15
 
 - **KI166.** In a book that declares several indexes, a chapter's own pairing
   reports now name the index rather than the chapter — "closes a range this
@@ -1553,12 +1527,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   hypothetical since M57: three of the four languages it ships spell `see also`
   as two words, so every non-English manifest it added carries the fold
   (corrected M057). — M56 review F5, M57 review F12
-- **KI179.** The state-reuse comment's cell counts ("seventeen", "fourteen")
-  are stale after M56 added `doc_labels` and `index_labels`, and more than the
-  prose is stale: `tests/state-pollute.lua` never calls `qi_indexes.read`, so
-  deleting either new cell from `reset` turns nothing red. In a reused Lua
-  state a second document's index would print the first's declared words.
-  — M56 review F7
 - **KI180.** AC6's `.tex` comparison is proved able to fail by a plant that
   re-implements the comparison inline rather than calling the real check, so
   an inverted condition or swapped paths in the real check would still let the
@@ -1569,10 +1537,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   zero and the misuse needles are pinned absent, but a valid `index-labels:`
   drawing a spurious report, in LaTeX especially where it would not touch the
   `.tex`, passes the whole M56 block. — M56 review F10
-- **KI182.** `m56_derive` ends a block at the first blank line, but a blank
-  line inside an `index-labels:` map is legal YAML; with one present the
+- **KI182.** `derive_labels_twin` ends a block at the first blank line, but a
+  blank line inside an `index-labels:` map is legal YAML; with one present the
   derivation check fails with "drifted apart" on a fixture pair that is in
-  fact correct, naming the wrong cause. — M56 review F12
+  fact correct, naming the wrong cause. — M56 review F12; citation corrected
+  2026-09-10, `m56_derive` having become `derive_labels_twin` at M058
 - **KI183.** The unknown-key and empty-value reports are exercised only at the
   document level: the misuse fixture writes both per-key shapes there and only
   the not-a-map shape per index, so a defect in how those two messages name an
@@ -1702,10 +1671,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   0. Observed 2026-08-30 on a scratch three-chapter book built from
   `examples/book-nomarker/` with a marker added to `two.qmd`.
   — M062 review F1
-- **KI209.** `DESIGN.md`'s store paragraph enumerates the cases a book reports
-  without stating the counting rule for the two store reports, which is now the
-  two-branch rule KI208 names — the one place a reader would meet that rule by
-  inspection. — M062 review F8
 - **KI210.** M062-AC3's "the marks still print" assertion cannot fail on the
   defect it names: `two.html` renders from `two.qmd`'s own source, so
   `Nomark Three` prints whether or not the planted record is refiled. The

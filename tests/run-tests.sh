@@ -25742,6 +25742,96 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
       "$M58W/empty.txt" "M58 probe"
 
+  # A malformed manifest is the check's own input failing, and is reported as
+  # one FAIL line and exit 1, never a traceback (M092). Three shapes: a slot
+  # name that is no printed position, and a space in place of a tab, once
+  # between two slots and once between the depth and the term.
+  m092_manifest_refused() {
+    local label="$1" manifest="$2" want="$3" out rc
+    out=$(python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
+      "$manifest" "M58 probe" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -eq 1 ] \
+      || fail "M58 T9 self-test: sepcheck.py exited $rc on $label, where a malformed manifest exits 1 (<<$out>>)"
+    case "$out" in
+      *Traceback*) fail "M58 T9 self-test: sepcheck.py printed a traceback on $label (<<$out>>)" ;;
+    esac
+    [ "$(printf '%s\n' "$out" | grep -c '^FAIL: ')" = 1 ] \
+      || fail "M58 T9 self-test: sepcheck.py did not print exactly one FAIL: line on $label (<<$out>>)"
+    case "$out" in
+      *"$want"*) pass "M58 T9 self-test: sepcheck.py refuses $label with one FAIL line naming it" ;;
+      *) fail "M58 T9 self-test: sepcheck.py failed $label, but not for that reason (<<$out>>)" ;;
+    esac
+  }
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/S1=U+060C	S2=/S9=U+060C	S2=/' \
+    > "$M58W/badslot.txt"
+  grep -q 'S9=' "$M58W/badslot.txt" \
+    || fail "M58 T9 self-test: planting an unknown slot name changed no row"
+  m092_manifest_refused 'a manifest naming the slot S9' "$M58W/badslot.txt" \
+    "'S9' is no printed position"
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/S1=U+060C	S2=/S1=U+060C S2=/' \
+    > "$M58W/spaceslot.txt"
+  grep -q 'S1=U+060C S2=' "$M58W/spaceslot.txt" \
+    || fail "M58 T9 self-test: planting a space between two slots changed no row"
+  m092_manifest_refused 'a manifest with a space for the tab between two slots' \
+    "$M58W/spaceslot.txt" "carries whitespace; a row's fields are separated by tabs"
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/^0	Azurite	/0 Azurite	/' \
+    > "$M58W/spacedepth.txt"
+  grep -q '^0 Azurite	' "$M58W/spacedepth.txt" \
+    || fail "M58 T9 self-test: planting a space between depth and term changed no row"
+  m092_manifest_refused 'a manifest with a space for the tab after a depth' \
+    "$M58W/spacedepth.txt" "is not a number written in ASCII digits"
+
+  # The separator reader, on copies of two captured pages whose every entry
+  # line is wrapped in a `<p>`, the shape a writer emitting the list loose
+  # produces (M092). The separators must come back as on the capture: the
+  # separators fixture reaches all five positions, and resolving-xref nests
+  # entries three deep, so the wrap sits beside a nested list.
+  for page in "$M58_HTML" "$CAPTURE_ROOT/resolving-html/resolving-xref.html"; do
+    python3 - "$page" "$HTML_SECTION_ID" <<'M092LOOSEPY' \
+      || fail "M58 T9 self-test: the separator reader reads a loose entry list differently from a tight one (its own FAIL line is above)"
+import re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+page, prefix = sys.argv[1:3]
+text = open(page, encoding='utf-8').read()
+wrapped = re.sub(r'<li>(.*?)(<ul>|</li>)',
+                 lambda m: f'<li><p>{m.group(1)}</p>{m.group(2)}',
+                 text, flags=re.S)
+
+
+def separators(markup):
+    return [(found['ident'], record['term'], record['separators'])
+            for found in H.index_sections(H.parse_text(markup), prefix)
+            for record in found['records'] if record['kind'] == 'entry']
+
+
+tight, loose = separators(text), separators(wrapped)
+slots = sum(len(seps) for _i, _t, seps in tight)
+if not slots:
+    print(f'FAIL: M092 loose list: {page} yields no separator at all, so the '
+          f'comparison would hold over nothing', file=sys.stderr)
+    sys.exit(1)
+wraps = len(re.findall(r'<li><p><span [^>]*class="qi-term"', wrapped))
+if wraps != len(tight):
+    print(f'FAIL: M092 loose list: {wraps} entry line(s) of {page} are wrapped '
+          f'in <p>, where the page prints {len(tight)}', file=sys.stderr)
+    sys.exit(1)
+if len(loose) != len(tight):
+    print(f'FAIL: M092 loose list: {page} reads {len(loose)} entry line(s) '
+          f'wrapped and {len(tight)} unwrapped', file=sys.stderr)
+    sys.exit(1)
+if loose != tight:
+    for a, b in zip(tight, loose):
+        if a != b:
+            print(f'FAIL: M092 loose list: {page}: {a!r} reads as {b!r} once '
+                  f'the entry line is wrapped in <p>', file=sys.stderr)
+            break
+    sys.exit(1)
+print(f'ok   M092 loose list: {page}: all {len(tight)} entry line(s) yield the '
+      f'same {slots} separator(s) wrapped in <p> as unwrapped')
+M092LOOSEPY
+  done
+
   # AC2's premise, that the fixture's one block sets `separator` and
   # `xref-separator` and no other key, on a copy whose block sets a third
   # (M092). The twin comparison alone passes this copy, since the whole block

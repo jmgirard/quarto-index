@@ -191,3 +191,5 @@ Gate triage by the maintainer on 2026-09-11:
 - Fix now: R1, R2, R3, R5, R7, R9 and R10. The maintainer chose fix now for the four check gaps, so approval is asked again after the re-run.
 - Known issues entry at the post-merge pass: R4.
 - Rejected: R6, because stricter manifest input is the milestone's intent. R8, because the Python FAIL line still prints and the run still exits nonzero.
+
+Gate fixes, re-verified: `tests/run-tests.sh --self-test` ran at ba1d9fb on 2026-09-11. It exited 0 with "All checks passed (1474 checks)", no `FAIL` line and no traceback. Each of the five added plants printed its ok line. They cover a missing twin `.tex`, an unwritable diff file, a space after a term, a missing `xref-separator`, and a block that is not a map. No ok line of the first run is missing from this one. R2 was not changed, because its claim does not hold. The loop greps the script's own constants, so a cut-down needle fails there whatever index it names. R2 goes back to the maintainer as a reject.

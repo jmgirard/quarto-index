@@ -126,6 +126,8 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: suite run 3 of `tests/run-tests.sh --self-test` exited 0 with all 1504 checks passed. The M094 T2, T3 and T4 plants each went red for their named defect. T1 to T8 are ticked and status is review.
 - 2026-09-11: review checkpoint: AC2 grep evidence, the consistency gate and nine diff-bug findings are recorded, and AC2 is ticked. Review suite run 1 stopped at M069-AC1 on a Quarto Deno segmentation fault. Run 2 is running, and AC1, AC3, AC4 and AC5 stay unticked until it reads clean.
 - 2026-09-11: review suite run 2 exited 0 with all 1504 checks passed. AC1 to AC5 have evidence lines and are ticked. This is the pre-gate checkpoint, and the nine diff-bug findings go to the merge gate for triage.
+- 2026-09-11: step-7 approval: m094-store-failure-causes approved for merge. The gate fixes F1 and F4 land first, and the suite must run clean again.
+- 2026-09-11: checkpoint, gate fixes F1 (readable-log guard in both helpers, shown red on a mode-000 log) and F4 (changelog narrowed to the open failure) written. Review suite run 3 is running, and the push waits until it reads clean.
 
 ## Decisions
 
@@ -196,3 +198,17 @@ Independent review (three fresh reviewers):
     `PLACENAMEPY` does. five.qmd's `sorts` is empty today.
   - F9. A failed T4 render exits before the `cp` that restores five.qmd's
     record in `examples/book-placement/`.
+
+Triage at the merge gate (2026-09-11, the user chose the recommended set):
+- F1: fix now. Both helpers now also refuse a log that cannot be read. In a
+  scratch copy with a mode-000 log, the helpers from a6a0cfc passed a zero
+  count, and the fixed helpers failed naming the file. A readable log still
+  passed a count of 7 and a zero ERROR count.
+- F4: fix now. The `CHANGELOG.md` entry now names only the open failure.
+- F2, F3, F5, F6: follow-up. Each becomes a known-issue entry under "The repo
+  and its packaging" in the post-merge hygiene commit.
+- F7: rejected. AC4 asks only for the drop plant.
+- F8: rejected. five.qmd's record has no sort keys, so the plant has no
+  effect today.
+- F9: rejected. The suite is already stopping at that point, and
+  `place_undeclared` behaves the same way.

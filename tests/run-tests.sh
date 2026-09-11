@@ -2230,12 +2230,13 @@ python3 "$SCAN_DIR/warn-distinct.py" --patterns > "$QI_WARN_PATTERNS" \
 # line. Quarto colours some lines it writes, and the escape that closes one sits
 # at the head of the next line, where an anchored `^\(W\) ` pattern would miss a
 # warning written right after it (M094). Stripping reads from a file rather than
-# grep's own open, so a log that is not there is refused first: the pipe would
-# otherwise read it as empty and a zero expectation would pass over nothing.
+# grep's own open, so a log that is not there, or cannot be read, is refused
+# first: the pipe would otherwise read it as empty and a zero expectation would
+# pass over nothing.
 check_extension_warning_count() {
   local logfile="$1" want="$2" label="$3" got
-  [ -f "$logfile" ] \
-    || fail "$label: $logfile is not a file, so a count of this extension's warnings over it would assert nothing"
+  [ -f "$logfile" ] && [ -r "$logfile" ] \
+    || fail "$label: $logfile is not a readable file, so a count of this extension's warnings over it would assert nothing"
   got=$( { perl -pe 's/\e\[[0-9;]*m//g' "$logfile" \
              | grep -E -c -f "$QI_WARN_PATTERNS" || true; } | tr -d ' ')
   if [ "$got" != "$want" ]; then
@@ -2252,8 +2253,8 @@ check_extension_warning_count() {
 # above.
 check_no_quarto_error() {   # <logfile> <label>
   local logfile="$1" label="$2" got
-  [ -f "$logfile" ] \
-    || fail "$label: $logfile is not a file, so a count of ERROR lines over it would assert nothing"
+  [ -f "$logfile" ] && [ -r "$logfile" ] \
+    || fail "$label: $logfile is not a readable file, so a count of ERROR lines over it would assert nothing"
   got=$( { perl -pe 's/\e\[[0-9;]*m//g' "$logfile" \
              | grep -E -c 'ERROR \(' || true; } | tr -d ' ')
   if [ "$got" != "0" ]; then

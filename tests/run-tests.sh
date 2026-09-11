@@ -1402,47 +1402,6 @@ print(f'ok   {label}: the entry {term!r} links to <<{got}>>')
 LOCPY
 }
 
-# Every locator in one section that carries a `#` resolves to an id the page it
-# points at actually holds (M064-AC2). The page is looked up in the file the
-# href names rather than in the page the index is on, since a book's locator
-# points across chapters. A section whose locators carry no fragment at all
-# fails rather than passing on an empty sweep.
-check_locator_fragments() {
-  local bookdir="$1" page="$2" section="$3" label="$4"
-  QI_SECTION="$section" python3 - "$bookdir" "$page" "$label" <<'FRAGPY'
-import os, sys
-sys.path.insert(0, 'tests')
-import htmlindex as H
-root, page, label = sys.argv[1:4]
-section = H.find_id(H.parse(os.path.join(root, page)),
-                    os.environ['QI_SECTION'])
-if section is None:
-    print(f'FAIL: {label}: {page} carries no '
-          f'{os.environ["QI_SECTION"]!r} section', file=sys.stderr)
-    sys.exit(1)
-pages, checked = {}, 0
-for record in H.entry_records(section):
-    for href in record['locators']:
-        if '#' not in href:
-            continue
-        target, fragment = href.split('#', 1)
-        where = target or page
-        if where not in pages:
-            pages[where] = set(H.all_ids(H.parse(os.path.join(root, where))))
-        if fragment not in pages[where]:
-            print(f'FAIL: {label}: {record["term"]!r} links to {href!r}, and '
-                  f'{where} carries no id {fragment!r}', file=sys.stderr)
-            sys.exit(1)
-        checked += 1
-if checked == 0:
-    print(f'FAIL: {label}: no locator in the section carries a fragment, so '
-          f'this check asserted nothing', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   {label}: all {checked} fragment-carrying locator(s) name an id '
-      f'the page they point at holds')
-FRAGPY
-}
-
 # The role each of ONE entry's locator links carries (M065-AC4). `want` is
 # `principal` or `plain`: a mark whose role its own chapter resolved is printed
 # emphasized and carrying the principal class, and a mark whose role nothing
@@ -9001,23 +8960,18 @@ for M061_PASS in one two; do
     "M063-AC3 (render $M061_PASS emitted a warning this suite cannot name; the six its anchored patterns reach are four unreadable-record reports and two marker-position reports)"
   # M064-AC2 — where the `gamma` section's locators point. `Dovetail` was
   # recovered from four.qmd's source and its author wrote no id on it, so its
-  # whole href is the chapter's page; the nine that carry a fragment are the
-  # three out of records that minted one and the six author ids recovery
-  # brought back, and each of those fragments is an id the page it points at
-  # holds.
+  # whole href is the chapter's page. The fragments the section's other
+  # locators carry are resolved by the M078-AC3 sweep below.
   check_entry_locators \
     "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/five.html" \
     "$HTML_SECTION_ID-gamma" Dovetail "four.html" \
     "M064-AC2 (render $M061_PASS: the recovered term's locator carries no fragment)"
-  check_locator_fragments "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" \
-    five.html "$HTML_SECTION_ID-gamma" \
-    "M064-AC2 (render $M061_PASS: every fragment-carrying locator of the gamma section)"
-  # M078-AC3. The same page again, over every generated section on it rather
-  # than the one the manifest above names, and through the reader that owns
-  # this question rather than a second copy of it. The recovered rows now carry
-  # fragments of their own, so an id an author wrote that the rendered page
-  # does not carry — a form the source names and the render drops, a heading id
-  # the relocation lost — is a dead link this sweep is what refuses.
+  # M078-AC3, and M064-AC2's fragment clause with it. Every fragment any
+  # locator on the same page carries, over every generated section on it, the
+  # `gamma` section included. The recovered rows now carry fragments of their
+  # own, so an id an author wrote that the rendered page does not carry — a
+  # form the source names and the render drops, a heading id the relocation
+  # lost — is a dead link this sweep is what refuses.
   HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
   HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
     python3 tests/fragments.py resolve \
@@ -11303,12 +11257,15 @@ check_store_reports "$WORK/place-oldstore-fifth.log" \
   "M063-AC2 (five.qmd reads four planted records and refuses none)"
 check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
   "M063-AC2 (five.qmd has no chapter after it and reads only valid records, so it has nothing to say)"
-# The locator M063 T2's self-test contrasts with: over the unmutated filter no
-# record is refused, so `Bramble` links by the anchor two.qmd's record carries
-# rather than by that chapter's page alone.
-check_locator_fragments "$CAPTURE_ROOT/place-oldstore/_book" index.html \
-  "$HTML_SECTION_ID-alpha" \
-  "M063-AC2 (an upgraded store: every locator of the alpha section links by an anchor)"
+# Every fragment a locator on the index page carries names an id the page it
+# links to holds exactly once. It does not say which locators carry one, so
+# this is no check of the anchor M063 T2's self-test contrasts with: that
+# `Bramble` links by the anchor two.qmd's record carries is asserted nowhere
+# here.
+HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
+HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
+  python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html \
+  || fail "M063-AC2 (an upgraded store: every fragment any locator on index.html carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
 pass "M063-AC2: over a store whose records all stand at the current version and carry the three fields this milestone retired — one of them holding a value the superseded validator would have refused — a whole-book render prints the same sections and every one of the terms the fixture marks, and the book's last chapter reading those records on its own says nothing at all"
 
 if [ "${1:-}" = "--self-test" ]; then

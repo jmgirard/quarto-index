@@ -1,13 +1,13 @@
 # M088: Two link-check defects M087's review filed close by deletion
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — changes only the acceptance suite's own checks and self-test plants
-- **Branch/PR:** —
+- **Branch/PR:** m088-link-check-deletions
 
 ## Goal
 
@@ -53,7 +53,7 @@ index section in `epubcheck.py unique` → KI264's row.
 
 Line numbers are as of the plan commit; T1's deletion moves T2's up.
 
-- [ ] T1: Delete `check_locator_fragments` with its comment
+- [x] T1: Delete `check_locator_fragments` with its comment
       (`tests/run-tests.sh:1405-1444`) and its M064-AC2 call (:9012-9014),
       `five.html` being read already by `fragments.py resolve` at :9023.
       Rewrite the M064-AC2 comment (:9003-9008), which describes the removed
@@ -84,6 +84,7 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
 - 2026-09-10: plan gate chose deleting `check_locator_fragments` for `fragments.py resolve` over routing it through `htmlindex.leaves_publication` because routing keeps two readers answering one question; falsified by a leg needing one named section's fragments checked where `fragments.py resolve` reads every section on the page.
 - 2026-09-10: plan gate chose one expected count in `m085_epub_plant` over adding a plant whose two counts differ because it shrinks a check M085/M087 shipped rather than extending it; falsified by `unique` counting a fragment-less leaving link, or `links` ceasing to count one, with the suite green.
 - 2026-09-10: plan gate left `Bramble`'s old-store anchor unpinned (KI273, recovered-locator candidate row) over pinning it with `check_entry_locators` because pinning extends a shipped check; falsified by the record route losing that anchor with the suite green.
+- 2026-09-10: T1 done — `check_locator_fragments` and its M064-AC2 call deleted, the old-store leg runs `fragments.py resolve` over index.html (passes on today's capture: 2 locators, 2 fragments), three comments rewritten, KI271 struck, KI273 corrected to the page-wide check; `bash -n` clean, full suite deferred to T3 as planned.
 
 ## Decisions
 

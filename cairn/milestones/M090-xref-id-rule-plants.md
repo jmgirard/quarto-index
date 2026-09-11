@@ -53,24 +53,24 @@ entries for the gaps the gate chose to record.
      coverage-complete counts AC checkboxes positionally (M107); departures:
      a "Deviations from RR<NN>" table ends this section. -->
 
-- [ ] AC1: Under `tests/run-tests.sh --self-test`, a copy of the extension in
+- [x] AC1: Under `tests/run-tests.sh --self-test`, a copy of the extension in
       which a cross-reference mark is no longer tagged to contest its
       author-written id (one substitution at `contestable_xref` in
       `modules/passes.lua`) renders `examples/id-collision.qmd`, and the
       M079-AC1 leg, run from the file the unplanted run wrote, exits non-zero
       with a message naming `xref-dup`, the id the fixture's `rho` mark shares
       with a div.
-- [ ] AC2: Under the same run, a copy in which a locator mark no longer
+- [x] AC2: Under the same run, a copy in which a locator mark no longer
       outranks a cross-reference mark for a shared name, the first in document
       order keeping it instead (one substitution in `keepable_author_ids`,
       `modules/html.lua`), renders the same fixture, and the leg exits non-zero
       with a message naming the term `chi`.
-- [ ] AC3: Under the same run, a copy in which a cross-reference mark gives up
+- [x] AC3: Under the same run, a copy in which a cross-reference mark gives up
       its author-written id whether or not anything else carries it (one
       substitution in `assign_anchors`, `modules/html.lua`), renders the same
       fixture, and the leg exits non-zero with a message naming `xref-solo`,
       the id of the fixture's uncontested cross-reference mark `upsilon`.
-- [ ] AC4: The M084 T2 self-test leg, which holds a copy of the M079-AC1 leg's
+- [x] AC4: The M084 T2 self-test leg, which holds a copy of the M079-AC1 leg's
       minted-anchor grouping read, is removed from `tests/run-tests.sh` along
       with its `text_keyed` and `grouped` helpers, and the M079-AC1 leg's own
       grouping read is left in place.
@@ -155,3 +155,19 @@ entries for the gaps the gate chose to record.
      results, review findings + triage. EXEMPT from the 150-line cap (M55),
      as are the work log (D-046) and the decisions section (D-074); evidence
      never scrambles plan-owned content. -->
+
+**Sync.** 2026-09-10: `main` equals `origin/main` and is an ancestor of the branch; nothing to merge in.
+
+**Suite run.** One `tests/run-tests.sh --self-test` at b865217 (code tree unchanged since f3e60b6; later commits are tracking only), 2026-09-10: "All checks passed (1455 checks)", exit 0. The unmutated-copy control ("M081 T4 self-test: an unmutated copy … leaves the check green") passed before the plants ran. The plant helper (`tests/run-tests.sh:4451-4484`) fails on a substitution that matches nothing or changes nothing, renders `id-collision.qmd` in the planted copy, runs `$WORK/id-collision-ids.py` (the leg file the unplanted run wrote), and passes only on a non-zero exit whose output contains the pinned text.
+
+- AC1: pass line "M090 T2 self-test: a cross-reference mark no longer tagged to contest its author-written id: the check is red on <<the contested id 'xref-dup' is still on the span printing 'rho'>>"; the substitution is the one at `contestable_xref` in `passes.lua` (fifth helper argument `passes.lua`).
+- AC2: pass line "M090 T3 self-test: a locator mark no longer outranking a cross-reference mark for a shared name: the check is red on <<the locator for 'chi' names>>"; the substitution drops the `anchoring and not standing.anchoring` clause in `keepable_author_ids`, `html.lua` (default module). The [O] reviewer's scratch render of the T2 plant also prints this line (finding F1 below); AC2 asks only for a message naming `chi`.
+- AC3: pass line "M090 T4 self-test: a cross-reference mark giving up its author-written id when nothing contests it: the check is red on <<the uncontested id 'xref-solo' is on 'nothing', not on the span printing 'upsilon'>>"; the substitution is in `assign_anchors`, `html.lua`.
+- AC4: `grep -n 'M084 T2\|def text_keyed\|def grouped' tests/run-tests.sh` prints nothing (exit 1), and the run log carries no M084 T2 line; the leg's own grouping read `minted.setdefault(printed, []).append(name)` is still at `tests/run-tests.sh:4326`, and the leg passed ("M079-AC1: no id among the page's 233 is carried twice …").
+
+**Consistency gate.** `cairn_validate.py` exit 0, every check PASS/OK. No `DESIGN.md` principle changed (the diff adds KI274/KI275 only), so no impact report. Profile `generic`: no toolchain checks.
+
+**Independent review** (three lenses, fresh context). [S] blame-history: no finding; the M084 T2 removal matches M084 review F1, and the leg's read it copied is untouched. [S] prior-review: no finding; no inline PR comments exist on the repo. [O] diff-bug: no correctness defect (each substitution matches once at HEAD; T2 and T4 pins appear only in their own plant's output), three findings, triage below.
+- F1: the M090 plants' comment (`tests/run-tests.sh:4547-4555`) says each pinned line names that plant's own case "rather than a line a neighbouring plant also draws", which is false for T3: the T2 plant's output also prints "the locator for 'chi' names" (confirmed in the reviewer's scratch `t2.out`), and no line in T3's output is absent from T2's.
+- F2: the helper's failure messages (`:4466`, `:4468`, `:4482`) still say "the census", which the three M090 plants do not touch; the temp file is still `html-spliced` when the module is `passes.lua`.
+- F3: the section header comment (`:4418-4443`) still describes six plants over the census; there were seven before M090 and are ten now.

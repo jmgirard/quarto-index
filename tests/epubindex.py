@@ -163,19 +163,6 @@ def section_rows(book, prefix, minted=(), hrefs=False):
     return rows
 
 
-def leaves_publication(href):
-    """True where an href names something outside the publication.
-
-    This module's own name for the suite's one definition of that question
-    (`htmlindex.leaves_publication`, D-057), which states the rule and what it
-    does not catch. Kept as a name here for the reason `epubcheck`'s is: the
-    agreement leg in `tests/run-tests.sh` reads this reader at its own call
-    site, so a reader that stopped consulting the shared definition shows up
-    there as a verdict disagreeing with the other three.
-    """
-    return htmlindex.leaves_publication(href)
-
-
 def links(book, prefix, minted=()):
     """Every `<a href>` inside a generated index section.
 
@@ -209,8 +196,8 @@ def links(book, prefix, minted=()):
             href = node.attrs.get('href')
             if href is None:
                 continue
-            leaves = leaves_publication(href)
-            target, _, fragment = href.partition('#')
+            leaves = htmlindex.leaves_publication(href)
+            target, _, fragment = href.strip().partition('#')
             name = None
             if target and not leaves:
                 name = posixpath.normpath(

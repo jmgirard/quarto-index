@@ -4778,6 +4778,11 @@ does not hold, a pattern matching nothing, a pattern matching more than once
 one place), or a substitution leaving the text as it was would each produce a
 publication the check passes for a reason that is not the one the plant
 claims.
+
+`--every` rewrites every run the pattern matches instead of requiring exactly
+one, for a plant whose claim is about all of them (M087). A pattern matching
+nothing is still refused, and so is a substitution leaving the text as it was;
+the count of runs rewritten is printed, so a caller can see how many it reached.
 """
 
 import re
@@ -4786,8 +4791,11 @@ import zipfile
 
 
 def main(argv):
-    if len(argv) not in (2, 5):
-        print('usage: plant.py <src.epub> <dest.epub> '
+    every = bool(argv) and argv[0] == '--every'
+    if every:
+        argv = argv[1:]
+    if len(argv) not in (2, 5) or (every and len(argv) != 5):
+        print('usage: plant.py [--every] <src.epub> <dest.epub> '
               '[<member> <pattern> <replacement>]', file=sys.stderr)
         return 2
     src, dest = argv[0], argv[1]
@@ -4805,14 +4813,14 @@ def main(argv):
                 if info.filename == member:
                     text = data.decode('utf-8')
                     found = len(re.findall(pattern, text))
-                    if found != 1:
+                    if not every and found != 1:
                         print(f'FAIL: {member} carries {found} run(s) matching '
                               f'{pattern!r}, not the one this plant aims at, '
                               f'so what it planted is not what it claims',
                               file=sys.stderr)
                         return 1
                     planted, hits = re.subn(pattern, replacement, text,
-                                            count=1)
+                                            count=0 if every else 1)
                     if not hits:
                         print(f'FAIL: {member} carries no run matching '
                               f'{pattern!r}, so this plant changed nothing',
@@ -4823,6 +4831,9 @@ def main(argv):
                               f'it as it was, so a green below would be the '
                               f'unplanted publication', file=sys.stderr)
                         return 1
+                    if every:
+                        print(f'planted {hits} run(s) matching {pattern!r} '
+                              f'in {member}')
                     data = planted.encode('utf-8')
                 out.writestr(info, data)
     return 0
@@ -23914,19 +23925,19 @@ fi
 # ---------------------------------------------------------------------------
 # M085 — the link readers give one answer to whether an href leaves
 #
-# AC1. Four readers of this suite decide that question, and each is asked here
-# at its OWN name — `htmlindex.resolve_href`, and the `leaves_publication` that
-# `epubcheck.py unique`, `epubindex.links` and `sitecheck.py links` each call.
-# Asking them at their own names is the point of the leg: one that called the
-# shared definition four times would agree with itself whatever the readers do,
-# where a reader that reintroduced a test of its own shows up here as a verdict
-# disagreeing with the other three.
+# The table. Four readers of this suite decide that question, and each calls
+# `htmlindex.leaves_publication` by that name (M087 removed the per-module
+# names M085 kept for this leg to read: a name wrapping the predicate answered
+# before its caller did anything with the href, so reading it could not see a
+# reader that went on to treat the href some other way). What is asked here is
+# the one predicate, one row at a time; what the commands then DO with a leaving
+# link is held on every run by the two-command leg below for the two EPUB
+# commands only, and under `--self-test` by M085's plants for the site and
+# fragment readers — a plain run plants no leaving link for those two.
 #
-# The expected verdict is written once per row of `M085_HREF_SHAPES` and
-# expanded at all four call sites, so a row cannot be right about one reader
-# and wrong about another. Both verdicts are required present: a table that lost
-# its staying rows would pass a reader calling every href external, and one that
-# lost its leaving rows a reader calling none of them.
+# Both verdicts are required present: a table that lost its staying rows would
+# pass a predicate calling every href external, and one that lost its leaving
+# rows a predicate calling none of them.
 #
 # AC2/AC3. Then the two EPUB commands over ONE publication carrying two index
 # locators that leave it — one `https:`, one `//`. Before this milestone `links`
@@ -23969,22 +23980,7 @@ import sys
 
 sys.path.insert(0, 'tests')
 
-import epubcheck  # noqa: E402
-import epubindex  # noqa: E402
 import htmlindex  # noqa: E402
-import sitecheck  # noqa: E402
-
-# Each reader at the name its OWN code calls, never the one definition they now
-# share: what this leg is about is whether all four still route there.
-# `resolve_href` answers by returning nothing for an href that leaves, which is
-# how its own callers read its verdict.
-READERS = (
-    ('htmlindex.resolve_href',
-     lambda href: htmlindex.resolve_href('index.html', href) is None),
-    ('epubcheck.leaves_publication', epubcheck.leaves_publication),
-    ('epubindex.leaves_publication', epubindex.leaves_publication),
-    ('sitecheck.leaves_publication', sitecheck.leaves_publication),
-)
 
 
 def word(leaves):
@@ -23997,42 +23993,33 @@ for n, line in enumerate(sys.argv[1].split('\n'), 1):
         continue
     parts = line.split('\t')
     if len(parts) != 2 or parts[0] not in ('leaves', 'stays'):
-        print(f'FAIL: M085-AC1: row {n} of M085_HREF_SHAPES is {line!r}, where '
+        print(f'FAIL: M087-AC2: row {n} of M085_HREF_SHAPES is {line!r}, where '
               f'a row is a `leaves` or `stays` verdict, a tab, and an href',
               file=sys.stderr)
         sys.exit(1)
     rows.append((parts[0] == 'leaves', parts[1]))
 
 if len({want for want, _href in rows}) != 2:
-    print(f'FAIL: M085-AC1: the {len(rows)} row(s) of M085_HREF_SHAPES carry '
-          f'one of the two verdicts, so this leg cannot tell a reader that '
+    print(f'FAIL: M087-AC2: the {len(rows)} row(s) of M085_HREF_SHAPES carry '
+          f'one of the two verdicts, so this leg cannot tell a predicate that '
           f'answers every href alike from one that reads the href',
           file=sys.stderr)
     sys.exit(1)
 
-bad = []
-for want, href in rows:
-    got = [(name, bool(read(href))) for name, read in READERS]
-    verdicts = {verdict for _name, verdict in got}
-    if len(verdicts) != 1:
-        parted = ', '.join(f'{name} says {word(verdict)}'
-                           for name, verdict in got)
-        bad.append(f'  {href!r}: the readers part — {parted}')
-    elif verdicts != {want}:
-        bad.append(f'  {href!r}: all four readers say {word(not want)}, and '
-                   f'the table says {word(want)}')
+bad = [f'  {href!r}: htmlindex.leaves_publication says {word(not want)}, and '
+       f'the table says {word(want)}'
+       for want, href in rows
+       if bool(htmlindex.leaves_publication(href)) != want]
 if bad:
-    print(f'FAIL: M085-AC1: {len(bad)} of the {len(rows)} href shape(s) '
+    print(f'FAIL: M087-AC2: {len(bad)} of the {len(rows)} href shape(s) '
           f'M085_HREF_SHAPES names:', file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
 
-print(f'ok   M085-AC1: each of the {len(rows)} href shape(s) M085_HREF_SHAPES '
+print(f'ok   M087-AC2: each of the {len(rows)} href shape(s) M085_HREF_SHAPES '
       f'names — {sum(1 for want, _href in rows if want)} that leave the '
       f'publication and {sum(1 for want, _href in rows if not want)} that stay '
-      f'in it — gets the table\'s verdict from all four readers, each asked at '
-      f'the name its own code calls: '
-      + ', '.join(name for name, _read in READERS))
+      f'in it — gets the table\'s verdict from htmlindex.leaves_publication')
 M085PY
 
 # The publication the two EPUB commands read here, and the two locators the
@@ -24072,6 +24059,45 @@ printf '%s' "$M085_UNIQUE_OUT" \
   || { printf '%s\n' "$M085_UNIQUE_OUT" >&2; fail "M085-AC3: the id-uniqueness check did not count the two leaving locators, so the two commands are not reading this publication alike"; }
 pass "M085-AC2/AC3: over one publication whose index section carries an \`https:\` locator and one opening \`//\`, the link check and the id-uniqueness check both pass and both count the same two links as leaving it"
 
+# M087 AC3 — a reader goes on to use the href the predicate judged. The
+# predicate strips an href before it judges it; before M087 `resolve_href`,
+# `epubindex.links` and `epubcheck.py unique` then cut the UNSTRIPPED href at
+# its `#`, so ` ch003.xhtml#…` was judged as staying and joined into a member
+# name carrying the space, which no manifest lists.
+# One direct call, then one locator given a leading space and read by both
+# commands, each by the count it prints as well as by exit status.
+python3 - <<'M087PY'
+import sys
+
+sys.path.insert(0, 'tests')
+
+import htmlindex  # noqa: E402
+
+got = htmlindex.resolve_href('index.html', ' ch1.xhtml#frag')
+if got != ('ch1.xhtml', 'frag'):
+    print(f"FAIL: M087-AC3: resolve_href('index.html', ' ch1.xhtml#frag') "
+          f"returns {got!r}, not ('ch1.xhtml', 'frag'), so it resolves an "
+          f"href other than the one the predicate judged", file=sys.stderr)
+    sys.exit(1)
+print("ok   M087-AC3: resolve_href('index.html', ' ch1.xhtml#frag') returns "
+      "('ch1.xhtml', 'frag')")
+M087PY
+python3 "$M083W/plant.py" "$M085_SRC" "$M085W/space.epub" \
+  "$M085_MEMBER" "href=\"$M085_LOCATOR1_RE\"" "href=\" $M085_LOCATOR1\"" \
+  || fail "M087-AC3: the publication could not be rewritten to carry an index locator with a leading space (the plant's own message is above)"
+M087_LINKS_OUT=$(python3 tests/epubcheck.py links "$M085W/space.epub" \
+  "$HTML_SECTION_ID" 2>&1) \
+  || { printf '%s\n' "$M087_LINKS_OUT" >&2; fail "M087-AC3: the link check fails over a publication whose one change is a leading space on an index locator"; }
+printf '%s' "$M087_LINKS_OUT" \
+  | grep -qF -- '; 0 link(s) skipped as leaving the publication' \
+  || { printf '%s\n' "$M087_LINKS_OUT" >&2; fail "M087-AC3: the link check passed the leading-space locator without stating that it skipped none as leaving the publication"; }
+M087_UNIQUE_OUT=$(python3 tests/epubcheck.py unique "$M085W/space.epub" 2>&1) \
+  || { printf '%s\n' "$M087_UNIQUE_OUT" >&2; fail "M087-AC3: the id-uniqueness check fails over a publication whose one change is a leading space on an index locator"; }
+printf '%s' "$M087_UNIQUE_OUT" \
+  | grep -qF -- '; 0 fragment-carrying link(s) leave the publication' \
+  || { printf '%s\n' "$M087_UNIQUE_OUT" >&2; fail "M087-AC3: the id-uniqueness check passed the leading-space locator without stating that none of its links leave the publication"; }
+pass "M087-AC3: over one publication whose index locator carries a leading space, the link check and the id-uniqueness check both pass and neither counts a link as leaving it"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M085 T7 — a plant per clause against the two EPUB readers, in the
@@ -24086,9 +24112,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # in the publication; and the straight repack green with none, or a count
   # above would be the repacking and not the plant inside it.
   # -------------------------------------------------------------------------
-  m085_epub_plant() {   # <slug> <label> <expected count> [<pattern> <replacement>]
-    local slug="$1" label="$2" count="$3"
-    shift 3
+  # Two expected counts, not one: `links` counts every link it skipped and
+  # `unique` only the fragment-carrying ones, so the two agree on these plants
+  # by the fixture's shape rather than by what either command promises.
+  m085_epub_plant() {   # <slug> <label> <links skipped> <unique leaving> [<pattern> <replacement>]
+    local slug="$1" label="$2" skipped="$3" leaving="$4"
+    shift 4
     local dest="$M085W/$slug.epub" out
     if [ "$#" -eq 2 ]; then
       python3 "$M083W/plant.py" "$M085_SRC" "$dest" "$M085_MEMBER" "$1" "$2" \
@@ -24099,27 +24128,60 @@ if [ "${1:-}" = "--self-test" ]; then
     fi
     out=$(python3 tests/epubcheck.py links "$dest" "$HTML_SECTION_ID" 2>&1) \
       || { printf '%s\n' "$out" >&2; fail "$label: the link check failed a publication this plant leaves valid, so it is red for something that is not a defect"; }
-    printf '%s' "$out" | grep -qF -- "; $count link(s) skipped as leaving the publication" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the link check passed this plant without skipping $count link(s) as leaving the publication, so its green is not this clause reading this plant"; }
+    printf '%s' "$out" | grep -qF -- "; $skipped link(s) skipped as leaving the publication" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the link check passed this plant without skipping $skipped link(s) as leaving the publication, so its green is not this clause reading this plant"; }
     out=$(python3 tests/epubcheck.py unique "$dest" 2>&1) \
       || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check failed a publication the link check just passed"; }
-    printf '%s' "$out" | grep -qF -- "; $count fragment-carrying link(s) leave the publication" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check did not count $count link(s) as leaving the publication, so the two readers are not reading this plant alike"; }
-    pass "$label: both EPUB commands pass and both count $count link(s) as leaving the publication"
+    printf '%s' "$out" | grep -qF -- "; $leaving fragment-carrying link(s) leave the publication" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check did not count $leaving fragment-carrying link(s) as leaving the publication, so the two readers are not reading this plant alike"; }
+    pass "$label: both EPUB commands pass, the link check skipping $skipped link(s) and the id-uniqueness check counting $leaving fragment-carrying link(s) as leaving the publication"
   }
 
   m085_epub_plant clean \
     'M085 T7 self-test: a repacked copy of the captured publication, rewritten nowhere' \
-    0
+    0 0
   m085_epub_plant staying \
     'M085 T7 self-test: an index locator rewritten to the same target through `./`' \
-    0 "href=\"$M085_LOCATOR1_RE\"" "href=\"./$M085_LOCATOR1\""
+    0 0 "href=\"$M085_LOCATOR1_RE\"" "href=\"./$M085_LOCATOR1\""
   m085_epub_plant scheme \
     'M085 T7 self-test: an index locator rewritten to an `https:` href' \
-    1 "href=\"$M085_LOCATOR1_RE\"" "href=\"https://example.invalid/$M085_LOCATOR1\""
+    1 1 "href=\"$M085_LOCATOR1_RE\"" "href=\"https://example.invalid/$M085_LOCATOR1\""
   m085_epub_plant network-path \
     'M085 T7 self-test: an index locator rewritten to an href opening `//`' \
-    1 "href=\"$M085_LOCATOR1_RE\"" "href=\"//example.invalid/$M085_LOCATOR1\""
+    1 1 "href=\"$M085_LOCATOR1_RE\"" "href=\"//example.invalid/$M085_LOCATOR1\""
+
+  # M087 AC4 — the refusal each EPUB command gives when EVERY link inside a
+  # generated index section leaves the publication. Every index locator of the
+  # member is rewritten to an `https:` href with its `#fragment` kept: without
+  # the fragment `unique` refuses on its no-fragment branch instead, which is
+  # not the refusal planted here. Each command is read by its own refusal text
+  # and by printing exactly one FAIL line, never by exit status alone — with
+  # its all-leave refusal removed `unique` still exits 1, on that other branch.
+  M087_PLANTED=$(python3 "$M083W/plant.py" --every "$M085_SRC" \
+    "$M085W/allout.epub" "$M085_MEMBER" \
+    'href="([^":/?#]+\.xhtml#[^"]+)"' 'href="https://example.invalid/\1"') \
+    || fail "M087-AC4: the publication could not be rewritten to carry only index locators that leave it (the plant's own message is above)"
+  M087_PLANTED_COUNT=$(printf '%s' "$M087_PLANTED" | sed -n 's/^planted \([0-9][0-9]*\) run(s) .*/\1/p')
+  [ -n "$M087_PLANTED_COUNT" ] \
+    || fail "M087-AC4: the plant printed no count of the locators it rewrote, so the refusals below cannot be held to that count"
+
+  m087_refusal() {   # <command> <refusal text> [<command args>...]
+    local cmd="$1" refusal="$2" out rc
+    shift 2
+    out=$(python3 tests/epubcheck.py "$cmd" "$M085W/allout.epub" "$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -eq 1 ] \
+      || { printf '%s\n' "$out" >&2; fail "M087-AC4 ($cmd): the command exits $rc over a publication every index link of which leaves it, not 1"; }
+    printf '%s' "$out" | grep -qF -- "$refusal" \
+      || { printf '%s\n' "$out" >&2; fail "M087-AC4 ($cmd): the command is red, but not with the refusal it gives when every index link leaves the publication — <<$refusal>>"; }
+    [ "$(printf '%s\n' "$out" | grep -c '^FAIL:')" -eq 1 ] \
+      || { printf '%s\n' "$out" >&2; fail "M087-AC4 ($cmd): the command prints a failure beside its all-links-leave refusal"; }
+    pass "M087-AC4 ($cmd): over a publication whose $M087_PLANTED_COUNT index locators all leave it, the command exits 1 with its all-links-leave refusal and no other failure"
+  }
+  m087_refusal links \
+    "every one of the $M087_PLANTED_COUNT link(s) inside a generated index section leaves the publication, so the resolving below would pass over an empty set" \
+    "$HTML_SECTION_ID"
+  m087_refusal unique \
+    "every one of the $M087_PLANTED_COUNT fragment-carrying link(s) inside a generated index section leaves the publication, so this check resolved none of them"
 fi
 
 # ---------------------------------------------------------------------------

@@ -869,7 +869,7 @@ def leaves_publication(href):
 
     The one definition of that question for this suite (D-057). Every reader
     that has to tell an outward link from a link into the publication calls
-    this: `resolve_href` below, `epubcheck.leaves_publication`,
+    this by this name: `resolve_href` below, `epubcheck.cmd_unique`,
     `epubindex.links` and `sitecheck.check_links`. Before it there were four
     different answers, and over one publication carrying an `https:` locator
     two commands returned opposite verdicts on the same href.
@@ -902,15 +902,14 @@ def resolve_href(page, href):
 
     Returns `(target page, fragment)` with the target normalized against the
     same root `page` is relative to, or `None` where `leaves_publication`
-    above says the href leaves — this reader's own name for the suite's one
-    definition of that question, so a locator into the site and one out of it
+    above says the href leaves, so a locator into the site and one out of it
     are told apart here the way every other reader tells them apart (D-057).
     A fragment-only href resolves to `page` itself, which is how a locator
     inside the chapter holding the index is written.
     """
     if leaves_publication(href):
         return None
-    path, _, fragment = href.partition('#')
+    path, _, fragment = href.strip().partition('#')
     if not path:
         return page, fragment
     target = os.path.normpath(os.path.join(os.path.dirname(page), path))

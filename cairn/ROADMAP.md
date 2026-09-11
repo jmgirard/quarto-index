@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M087 | The link readers call the one link test and use the href it judged | planned | — | normal | milestones/M087-one-link-test-call.md |
+| M087 | The link readers call the one link test and use the href it judged | review | — | normal | milestones/M087-one-link-test-call.md |
 | M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
 | M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
 | M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |
@@ -42,6 +42,7 @@ _Released 0.3.0 2026-09-05._
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Paths and filenames this repo does not handle (clustered): a chapter filename containing `#` or `?`; a checkout on Windows without symlink support — added 2026-08-16, clustered 2026-09-02 — M01 review R18, M05 review F11 — KI14, KI78
 - Scope the M083 EPUB plants' derived index locator to the links the sweep reads: it takes any relative `href` in the member, where `tests/epubcheck.py unique` counts only anchors inside the index section, so a member link outside that section would aim all three plants at a link the sweep never resolves. Promote on the fixture writing such a link, or with any other pass over the M083 plants — added 2026-09-08 — M084 review F2 — KI264
+- Close the suite's link-test gaps M087 left: route `check_locator_fragments` through `htmlindex.leaves_publication` and the strip, and give `m085_epub_plant` a plant whose two expected counts differ. Promote with any other pass over the M085 link legs or the locator-fragment check — added 2026-09-10 — M087 review O3/O5 — KI271, KI272
 - [low] Close the last id-census shape M081 and M082 leave in `note_raw`: a `style` or `script` inside `svg` or `math`, where a breakout tag is reported to make a real element the walk steps over. Promote on evidence checked against a browser, which this repo does not run, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - [low] Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254
 - [low] See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255

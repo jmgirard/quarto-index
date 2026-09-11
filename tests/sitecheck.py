@@ -14,7 +14,7 @@
       part names a file the render produced, and a `#fragment` names an `id` the
       file it points at actually carries. `<use>` hrefs are excluded (they name
       an SVG symbol, not a document), and so is any value that leaves the site
-      by `leaves_publication` below — one opening `//`, or one carrying a
+      by `htmlindex.leaves_publication` — one opening `//`, or one carrying a
       scheme, whatever that scheme is.
 
       The path part is percent-DECODED before it is compared: `%20` is a space
@@ -106,20 +106,6 @@ RENAMED_HEADINGS = {
     # M52 made EPUB a third back-end, so the page counting them was wrong.
     'Where the two back-ends differ': 'Where the back-ends differ',
 }
-
-def leaves_publication(href):
-    """True where an href names something outside this site.
-
-    This module's own name for the suite's one definition of that question
-    (`htmlindex.leaves_publication`, D-057), which states the rule and what it
-    does not catch. It replaces a list of six named schemes: a list makes every
-    scheme nobody wrote down a false report — `ftp://` was reported here as
-    naming no file of the site — where the scheme-shaped rule errs only toward
-    calling something external. Kept as a name here so the agreement leg in
-    `tests/run-tests.sh` reads this reader at its own call site.
-    """
-    return htmlindex.leaves_publication(href)
-
 
 # The floor the site/README sweep holds its own enumeration to. Stated, never
 # read off the enumeration it guards.
@@ -267,7 +253,7 @@ def check_links(captured, base_path=''):
     for rel, page in pages.items():
         for href in page.hrefs:
             value = href.strip()
-            if not value or leaves_publication(value):
+            if not value or htmlindex.leaves_publication(value):
                 continue
             path, _, fragment = value.partition('#')
             fragment = html.unescape(fragment)

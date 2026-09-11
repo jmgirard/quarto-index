@@ -42,11 +42,11 @@ section per document → its row (KI264). `epubcheck.py links` over
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/htmlindex.py` is the only tracked module under `tests/`
+- [x] AC1: `tests/htmlindex.py` is the only tracked module under `tests/`
       carrying a top-level `def leaves_publication`:
       `git grep -n '^def leaves_publication' -- 'tests/*.py'` prints exactly
       one line, and it names `tests/htmlindex.py`.
-- [ ] AC2: For each row of `M085_HREF_SHAPES` in `tests/run-tests.sh`,
+- [x] AC2: For each row of `M085_HREF_SHAPES` in `tests/run-tests.sh`,
       `htmlindex.leaves_publication` returns the row's verdict.
 - [ ] AC3: `htmlindex.resolve_href('index.html', ' ch1.xhtml#frag')` returns
       `('ch1.xhtml', 'frag')`; and over a copy of the captured `demo.epub` in
@@ -118,3 +118,8 @@ section per document → its row (KI264). `epubcheck.py links` over
 ## Decisions
 
 ## Review
+
+Review pass 1, 2026-09-10. Branch contains `origin/main` (b870082, no new commits on the default branch since the cut), so no merge was needed before gathering evidence.
+
+- AC1: `git grep -n '^def leaves_publication' -- 'tests/*.py'` printed one line, `tests/htmlindex.py:867:def leaves_publication(href):`.
+- AC2: the 14 rows of `M085_HREF_SHAPES` (9 `leaves`, 5 `stays`), cut from `tests/run-tests.sh` and read by a scratch script outside the suite, each got their row's verdict from `htmlindex.leaves_publication` under Python 3.9.6 and 3.14.7, no mismatches.

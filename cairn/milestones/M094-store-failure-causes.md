@@ -128,6 +128,7 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: review suite run 2 exited 0 with all 1504 checks passed. AC1 to AC5 have evidence lines and are ticked. This is the pre-gate checkpoint, and the nine diff-bug findings go to the merge gate for triage.
 - 2026-09-11: step-7 approval: m094-store-failure-causes approved for merge. The gate fixes F1 and F4 land first, and the suite must run clean again.
 - 2026-09-11: checkpoint, gate fixes F1 (readable-log guard in both helpers, shown red on a mode-000 log) and F4 (changelog narrowed to the open failure) written. Review suite run 3 is running, and the push waits until it reads clean.
+- 2026-09-11: review suite run 3 exited 0 with all 1504 checks passed on the gate fixes. The branch is pushed and the PR opened next.
 
 ## Decisions
 
@@ -205,6 +206,8 @@ Triage at the merge gate (2026-09-11, the user chose the recommended set):
   count, and the fixed helpers failed naming the file. A readable log still
   passed a count of 7 and a zero ERROR count.
 - F4: fix now. The `CHANGELOG.md` entry now names only the open failure.
+- After both fixes, review suite run 3 exited 0 with "All checks passed (1504
+  checks)", no line opening `FAIL` and no crash.
 - F2, F3, F5, F6: follow-up. Each becomes a known-issue entry under "The repo
   and its packaging" in the post-merge hygiene commit.
 - F7: rejected. AC4 asks only for the drop plant.

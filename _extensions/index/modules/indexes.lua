@@ -27,12 +27,11 @@ local NAME_FIELD = "name"
 local TITLE_FIELD = "title"
 
 -- The heading a document that declares nothing prints, which is what it has
--- always printed, and the key the language table holds its own heading under.
--- The English word stays here rather than in that table for the reason the
--- table's own comment gives: it is not a translation, it is the word this
--- extension has printed since its first release.
+-- always printed. The English word stays here rather than in the language
+-- table for the reason the table's own comment gives: it is not a
+-- translation, it is the word this extension has printed since its first
+-- release.
 local DEFAULT_TITLE = "Index"
-local TITLE_KEY = "title"
 
 -- The metadata key an author writes the reader-facing text under, and the
 -- five keys one map may set. A nested map rather than fields beside `title:`
@@ -177,8 +176,10 @@ local declared = false
 -- index can have, and this way the nearest-wins lookup below is two reads.
 local doc_labels = {}
 local index_labels = {}
--- The row of the shipped language table this document's `lang:` resolves to,
--- or nil where it resolves to none. One cell rather than a lookup per word:
+-- The words of the shipped language table's row this document's `lang:`
+-- resolves to, or nil where it resolves to none. The row's heading is not
+-- in this table: `label` looks up whatever key it is handed here, so a label
+-- key spelled `title` would otherwise print the index heading (M093). One cell rather than a lookup per word:
 -- the resolution is a fact about the document, settled once when the metadata
 -- is read, and a per-word lookup would re-answer it for every entry printed.
 local language_words = nil
@@ -330,15 +331,16 @@ local function read(meta)
   -- The language table, before anything else the metadata says: the untitled
   -- heading installed below is one of its words, and it has to be in place
   -- before a declaration can replace the whole title table.
-  language_words = qi_languages.resolve(meta and meta.lang or nil)
-  if language_words ~= nil and language_words[TITLE_KEY] ~= nil then
+  local row = qi_languages.resolve(meta and meta.lang or nil)
+  language_words = row ~= nil and row.words or nil
+  if row ~= nil and row.title ~= nil then
     -- ONLY the heading an undeclared document falls back to. A declared index
     -- with no `title:` is headed by its own `name`, which is text its author
     -- wrote, and the `qi_core.empty(titles)` below throws this cell away the
     -- moment a declaration takes (D-038). That is also why no word of this
     -- table can reach LaTeX: `\makeindex[title={...}]` is written only when
     -- `is_declared()`, and this heading exists only when it is not.
-    titles[UNNAMED] = language_words[TITLE_KEY]
+    titles[UNNAMED] = row.title
   end
   local words = read_labels(meta and meta[LABELS_KEY] or nil, DOCUMENT_LEVEL)
   if words ~= nil then
@@ -544,7 +546,6 @@ M["INDEXES_KEY"] = INDEXES_KEY
 M["NAME_FIELD"] = NAME_FIELD
 M["TITLE_FIELD"] = TITLE_FIELD
 M["DEFAULT_TITLE"] = DEFAULT_TITLE
-M["TITLE_KEY"] = TITLE_KEY
 M["LABELS_KEY"] = LABELS_KEY
 M["LABEL_KEYS"] = LABEL_KEYS
 M["NAME_SHAPE"] = NAME_SHAPE

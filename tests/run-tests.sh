@@ -25475,6 +25475,77 @@ check_extension_warning_count "$WORK/book-lang-epub.log" 0 \
   "M093-AC2 (EPUB book, silence)"
 pass "M093-AC2: the EPUB of the same book prints Simboli, vedi and vedi anche, under the heading Indice analitico"
 
+# M093 — two module probes, run through Quarto's own Pandoc (`quarto pandoc
+# lua`) from a modules directory, so the modules load exactly as the filter
+# requires them and the suite needs no second Pandoc on PATH. Each probe
+# prints one line per question and the shell holds the whole output to what
+# is stated here by hand. A probe that cannot run is a failure, never a skip.
+#
+# AC5: after `read` of metadata declaring `lang: it`, `label(nil, "title", fb)`
+# gives `fb` back, since the heading is not in the table `label` reads. The
+# first line is the control that the language path was taken at all: `see`
+# is a label key the Italian row sets, and it reads `vedi` (W-IT2).
+#
+# AC6: under `fr_FR.ISO8859-1`, both bytes of `ê` (0xC3 0xAA) read as letters
+# to `%a`, and so do both after `:lower()`, which is what `resolve` hands its
+# test. The two tags carrying them are refused as `malformed`. `es-ES` and
+# `sw` are the controls that the locale leaves ordinary tags alone: `subtag`
+# and `miss`, as M57-AC2 and M57-AC3 state them.
+m093_lua_probe() {   # <modules dir> <probe script> <label>
+  local dir="$1" script="$2" label="$3"
+  ( cd "$dir" && quarto pandoc lua "$script" ) 2>&1 \
+    || { printf 'FAIL: %s: the probe exited non-zero\n' "$label" >&2; return 1; }
+}
+m093_probe_matches() {   # <modules dir> <probe script> <expected output> <label>
+  local dir="$1" script="$2" want="$3" label="$4" got
+  got=$(m093_lua_probe "$dir" "$script" "$label") \
+    || { printf '%s\n' "$got" >&2; printf 'FAIL: %s: the probe did not run to its end\n' "$label" >&2; return 1; }
+  if [ "$got" != "$want" ]; then
+    printf 'FAIL: %s: the probe printed <<%s>>, where it should print <<%s>>\n' \
+      "$label" "$got" "$want" >&2
+    return 1
+  fi
+  printf 'ok   %s: the probe printed exactly the stated lines\n' "$label"
+}
+
+M093_LUA="$PWD/$WORK/m093-lua"
+rm -rf "$M093_LUA"
+mkdir -p "$M093_LUA"
+cat > "$M093_LUA/title.lua" <<'M093TITLELUA'
+local indexes = require("./indexes")
+local doc = pandoc.read("---\nlang: it\n---\n", "markdown")
+indexes.read(doc.meta)
+print("see\t" .. indexes.label(nil, "see", "FALLBACK"))
+print("title\t" .. indexes.label(nil, "title", "FALLBACK"))
+M093TITLELUA
+cat > "$M093_LUA/locale.lua" <<'M093LOCALELUA'
+local languages = require("./languages")
+if os.setlocale("fr_FR.ISO8859-1") == nil then
+  io.stderr:write("the locale fr_FR.ISO8859-1 is not installed on this machine, so the probe cannot run\n")
+  os.exit(1)
+end
+local pair = "\195\170"
+if not pair:match("^%a%a$") or not pair:lower():match("^%a%a$") then
+  io.stderr:write("under fr_FR.ISO8859-1 the bytes 0xC3 0xAA do not both read as letters, so the probe tests nothing\n")
+  os.exit(1)
+end
+for _, tag in ipairs({ "\195\170\195\170", "es-\195\170\195\170", "es-ES", "sw" }) do
+  local row, outcome = languages.resolve(tag)
+  print(tag .. "\t" .. (row == nil and "nil" or "row") .. "\t" .. outcome)
+end
+M093LOCALELUA
+M093_TITLE_WANT=$(printf 'see\tvedi\ntitle\tFALLBACK')
+M093_LOCALE_WANT=$(printf 'êê\tnil\tmalformed\nes-êê\tnil\tmalformed\nes-ES\trow\tsubtag\nsw\tnil\tmiss')
+
+m093_probe_matches "$QI_EXT_DIR/modules" "$M093_LUA/title.lua" \
+  "$M093_TITLE_WANT" "M093-AC5 (label reads no heading)" \
+  || fail "M093-AC5: after reading lang: it, label(nil, \"title\", fb) does not give fb back, or the Italian row was not read at all (its own FAIL line is above)"
+pass "M093-AC5: after read of lang: it metadata, label(nil, \"see\", fb) gives vedi and label(nil, \"title\", fb) gives fb"
+m093_probe_matches "$QI_EXT_DIR/modules" "$M093_LUA/locale.lua" \
+  "$M093_LOCALE_WANT" "M093-AC6 (letters are ASCII)" \
+  || fail "M093-AC6: under fr_FR.ISO8859-1, resolve does not refuse a tag written with ê as malformed, or the probe could not run (its own FAIL line is above)"
+pass "M093-AC6: under fr_FR.ISO8859-1, where both bytes of ê read as letters to %a, resolve returns nil and malformed for êê and for es-êê"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M57 T6 — a planted defect per new check, each shown red on an artifact or
@@ -25602,6 +25673,47 @@ if [ "${1:-}" = "--self-test" ]; then
     'does not match the manifest' \
     python3 tests/epubcheck.py sections "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
       "$M57W/book-english-epub.txt" --labels
+
+  # The two module probes, each against a scratch copy of the modules carrying
+  # the defect its criterion names, and nothing else (M093): the heading put
+  # back into the table `label` reads, and the letter test put back on `%a`
+  # and `%w`.
+  m093_modules_copy() {   # <slug>
+    rm -rf "$M57W/$1"
+    cp -R "$QI_EXT_DIR/modules" "$M57W/$1"
+  }
+  m093_modules_copy heading-in-words
+  m093_modules_copy locale-letters
+  python3 - "$M57W/heading-in-words/indexes.lua" \
+      "$M57W/locale-letters/languages.lua" <<'M093MODPLANTPY' \
+    || fail "M093 T5/T6 self-test: planting a module defect failed (its own FAIL line is above)"
+import sys
+indexes_path, languages_path = sys.argv[1:3]
+def plant(path, old, new):
+    src = open(path, encoding='utf-8').read()
+    if src.count(old) != 1:
+        print(f'FAIL: M093 plant: {path} carries {src.count(old)} copies of '
+              f'<<{old}>>, where the plant replaces 1', file=sys.stderr)
+        sys.exit(1)
+    open(path, 'w', encoding='utf-8').write(src.replace(old, new))
+line = '  language_words = row ~= nil and row.words or nil\n'
+plant(indexes_path, line, line +
+      '  if language_words ~= nil then language_words.title = row.title end\n')
+letter = '[A-Za-z]'
+alnum = '[A-Za-z0-9]'
+first = '"^' + letter * 2 + (letter + '?') * 6 + '$"'
+later = '"^' + alnum + (alnum + '?') * 7 + '$"'
+plant(languages_path, first, '"^%a%a%a?%a?%a?%a?%a?%a?$"')
+plant(languages_path, later, '"^%w%w?%w?%w?%w?%w?%w?%w?$"')
+M093MODPLANTPY
+  m57_planted 'a label table that holds the index heading beside the words' \
+    'where it should print' \
+    m093_probe_matches "$M57W/heading-in-words" "$M093_LUA/title.lua" \
+      "$M093_TITLE_WANT" "M093 probe"
+  m57_planted 'a tag test reading letters through the locale' \
+    'where it should print' \
+    m093_probe_matches "$M57W/locale-letters" "$M093_LUA/locale.lua" \
+      "$M093_LOCALE_WANT" "M093 probe"
 fi
 
 

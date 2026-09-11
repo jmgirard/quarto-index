@@ -24748,9 +24748,14 @@ for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
               "$M56_MISUSE_SCALAR" "$M56_MISUSE_SEQUENCE"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M56-AC5"
-  # The control: the same message over the fixture that writes NO unusable
-  # shape. Without it a filter that reported every document would satisfy the
-  # four counts above.
+done
+# The control: the same message over the fixture that writes NO unusable
+# shape. Without it a filter that reported every document would satisfy the
+# four counts above. Only the two document-level messages are held there: the
+# other two name the `notes` and `sources` indexes, which
+# examples/index-labels.qmd does not declare, so no filter behavior could put
+# either in its log and a zero count over it could not fail (M092).
+for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY"; do
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M56-AC5 (control)"
 done
@@ -25520,15 +25525,15 @@ check_extension_warning_count "$WORK/index-separators-scoped-html.log" 0 \
 pass "M58-AC3: one render prints the second index's own separator inside that index and the document's cross-reference separator in both, so the nearer declaration wins key by key rather than map by map"
 
 # AC4 — the two empty values, each asserted WHOLE: a prefix would let the half
-# naming the key or the level be reworded away. The control is the fixture that
-# writes no unusable shape, without which a filter reporting every document
-# would satisfy both counts.
+# naming the key or the level be reworded away. No zero control sits beside
+# them: both messages name the `figures` index, which
+# examples/index-separators.qmd does not declare, so a zero count over its log
+# could not fail (M092). A filter reporting every document is held by the
+# document-level controls in the M56 and M59 blocks.
 M58_MISUSE_EMPTY_SEP='index-labels: in the entry declaring the index named "figures" gives the key "separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 M58_MISUSE_EMPTY_XREF='index-labels: in the entry declaring the index named "figures" gives the key "xref-separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 for needle in "$M58_MISUSE_EMPTY_SEP" "$M58_MISUSE_EMPTY_XREF"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 "M58-AC4"
-  check_warning_count "$WORK/index-separators-html.log" "$needle" 0 \
-    "M58-AC4 (control)"
 done
 check_separators html "$M56_MISUSE_HTML" "$M58_MISUSE" "M58-AC4 (fallback)"
 pass "M58-AC4: each empty punctuation value draws exactly its own whole message, naming the key and the index it was written in, and every position in all three of that document's indexes falls back to the ASCII mark"
@@ -25699,9 +25704,13 @@ for needle in "$M59_INVIS_SEEALSO" "$M59_INVIS_SYMBOLS" \
               "$M59_LIST_SYMBOLS" "$M59_MAP_SEE"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M59-AC1/AC2"
-  # The control: the same message over the fixture that writes no unusable
-  # shape. Without it a filter that reported every document would satisfy the
-  # four counts above.
+done
+# The control: the same message over the fixture that writes no unusable
+# shape. Without it a filter that reported every document would satisfy the
+# four counts above. Only the two document-level messages are held there: the
+# other two name the `strata` index, which examples/index-labels.qmd does not
+# declare, so a zero count over its log could not fail (M092).
+for needle in "$M59_INVIS_SEEALSO" "$M59_LIST_SYMBOLS"; do
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M59-AC1/AC2 (control)"
 done
@@ -25731,9 +25740,10 @@ for needle in "$M59_NONAME" "$M59_EMPTYNAME" "$M59_BADNAME" "$M59_REPEATED" \
               "$M59_DROPPED_8"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M59-AC3"
-  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
-    "M59-AC3 (control)"
 done
+# No zero control: every one of these messages names an `indexes:` entry from 5
+# to 8, and examples/index-labels.qmd writes two entries, so a zero count over
+# its log could not fail (M092).
 pass "M59-AC3: each of the four refusal branches an indexes: entry carrying a label map can reach draws its own whole refusal message and, beside it, the whole further message saying that map sets no word"
 
 # The total, which is what makes the counts above a statement about the WHOLE
@@ -25763,15 +25773,11 @@ check_warning_count "$WORK/index-labels-clash-html.log" "$M59_NOCLASH" 0 \
 # And the whole render's total: one report, from one of the two indexes.
 check_extension_warning_count "$WORK/index-labels-clash-html.log" 1 \
   "M59-AC4 (total)"
-# The zero-expectation control on the fixtures that write no clashing word at
-# all -- the misuse fixture declares `symbols:` at both levels and every one of
-# them falls back to `Symbols`, which no letter group can head.
-for needle in "$M59_CLASH" "$M59_NOCLASH"; do
-  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 0 \
-    "M59-AC4 (control)"
-  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
-    "M59-AC4 (control)"
-done
+# No zero control over the other two labels fixtures' logs: the messages name
+# the `minerals` and `fossils` indexes, which neither examples/index-labels.qmd
+# nor examples/index-labels-misuse.qmd declares, so a zero count over either
+# log could not fail (M092). The silence count and the total above are the
+# controls, and the self-test plants each red.
 
 # What prints is unchanged: both groups are still there, in their own places,
 # the non-letter one still leading its index. A manifest and not a search for
@@ -25848,6 +25854,20 @@ if [ "${1:-}" = "--self-test" ]; then
   m59_planted 'a render that printed two groups under one heading in silence' \
     'expected 1 occurrence' \
     check_warning_count "$M59W/clash.log" "$M59_CLASH" 1 "M59 probe"
+
+  # The silence half, against copies of the clash log carrying what the render
+  # must not (M092): the report the `fossils` index would draw, and one warning
+  # of this extension's that is no clash report at all.
+  cp "$WORK/index-labels-clash-html.log" "$M59W/noclash.log"
+  printf '%s\n' "(W) $M59_NOCLASH" >> "$M59W/noclash.log"
+  m59_planted 'a render that reported a clash in the index whose word heads no letter group' \
+    'expected 0 occurrence' \
+    check_warning_count "$M59W/noclash.log" "$M59_NOCLASH" 0 "M59 probe"
+  cp "$WORK/index-labels-clash-html.log" "$M59W/other.log"
+  printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/other.log"
+  m59_planted 'a clash render reporting one message that is not a clash report' \
+    'expected 1 warning(s)' \
+    check_extension_warning_count "$M59W/other.log" 1 "M59 probe"
 
   # The total, against a log carrying one warning of this extension's more than
   # the fixture derives: a pin read off the render rather than derived would

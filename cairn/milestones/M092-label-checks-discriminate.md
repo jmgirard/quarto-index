@@ -147,6 +147,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - re-audit: AC3 (reduced) — nothing (the reader asked that Scope and T3 name the two added loops, and both now do)
 - 2026-09-11: T1 checkpoint: `check_tex_identical` serves M56-AC6, M58-AC6 and the M56 plant, and reports a diff exit 2 apart from a difference. Isolated probe: green on both real pairs, the plant red on a one-line drift and red on an inverted-case mutant. Suite run pending.
 - 2026-09-11: T2 checkpoint: zero totals over the labels fixture's HTML and LaTeX logs, and a plant per log appending one extension warning. Isolated probe over the last run's logs: both pins green (the logs hold 0 extension warnings each), both plants red with `expected 0 warning(s)`. Suite run pending.
+- 2026-09-11: T3 checkpoint: kept set derived from the three fixtures' front matter (labels declares `main`, `authors`; separators no `indexes:`). Eighteen controls deleted (14 M59, 2 M56-AC5, 2 M58-AC4). The four document-level controls stay (M56-AC5 unknown key and empty `see`, M59 invisible `see-also` and list `symbols`), and the M59 silence count over the clash log stays because that fixture declares `fossils`. Two clash-log plants added. Isolated probe: kept controls and counts green, both plants red. Suite run pending.
 
 ## Decisions
 

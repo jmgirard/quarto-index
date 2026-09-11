@@ -58,6 +58,8 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 - 2026-09-10: claim audit: not owed — internal tier
 - 2026-09-10: review in progress (checkpoint): AC1–AC3 evidenced and ticked, consistency gate clean; AC4's suite run and the three reviewers still running.
 - 2026-09-10: review pre-gate checkpoint: AC1–AC4 evidenced and ticked; three reviewers returned four low findings (F1–F4), none failing a criterion; awaiting the merge gate.
+- 2026-09-10: gate: F1 fixed now (comment names `index.html`), F2–F4 rejected with reasons; suite re-run on the fixed head before the push.
+- step-7 approval: m089-book-fixture-hygiene approved for merge
 
 ## Decisions
 
@@ -78,3 +80,9 @@ Independent review (full three-reviewer fan-out, the diff touching `tests/run-te
 - [O] F4: `examples/book*/` would also match a future `examples/bookmarks/`; today it matches the six book projects, the reach of the `_book/` and `.quarto/` rules beside it.
 - [S] blame-history: no findings; the change completes M069 review F8 and matches `m069_tree`.
 - [S] prior-review: no findings; no PR review threads exist (`pulls/comments` empty).
+
+Dispositions at the merge gate, 2026-09-10:
+- F1: fix now — the comment names the book's `index.html` beside the chapter's page; the suite is re-run on the fixed head.
+- F2: rejected — the removal is the intended guard against the gap KI231 described, matching `m069_tree`.
+- F3: rejected — the stray write was seen only at a project's top level, and the plan scoped the rules there on purpose.
+- F4: rejected — the pattern has the reach of the `_book/` and `.quarto/` rules beside it, and matches the six book projects today.

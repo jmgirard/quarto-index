@@ -47,31 +47,31 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 
 ## Acceptance criteria
 
-- [ ] AC1: In `examples/index-labels-misuse.qmd`, a per-index `index-labels:`
+- [x] AC1: In `examples/index-labels-misuse.qmd`, a per-index `index-labels:`
       map that carries an unknown key draws the unknown-key report, and one
       that carries an empty word value draws the report for a value with no
       character a reader can see. Each report names that index, as needles
       in `tests/run-tests.sh` read the HTML render's log.
-- [ ] AC2: A book fixture that declares `lang: it` prints, in its HTML book
+- [x] AC2: A book fixture that declares `lang: it` prints, in its HTML book
       index and in its EPUB index, the Italian `symbols`, `see` and
       `see-also` words that `cairn/references/index-words-by-language.md`
       gives.
-- [ ] AC3: Rendered to EPUB, `examples/index-labels-clash.qmd` draws the
+- [x] AC3: Rendered to EPUB, `examples/index-labels-clash.qmd` draws the
       letter-clash report exactly once and draws no no-clash report.
-- [ ] AC4: For each of the 23 non-ASCII characters that `BLANKS` lists at
+- [x] AC4: For each of the 23 non-ASCII characters that `BLANKS` lists at
       plan time, a label value made only of that character, written as a
       double-quoted YAML scalar, draws the report for a value with no
       character a reader can see, naming the index and key it is written
       under.
-- [ ] AC5: `languages.lua` holds no `OUTCOMES` table and `indexes.lua` exports
+- [x] AC5: `languages.lua` holds no `OUTCOMES` table and `indexes.lua` exports
       no `TITLE_KEY`, as a `grep` of both modules at review reads. After
       `read` of metadata that declares `lang: it`, `label(nil, "title", fb)`
       returns `fb`.
-- [ ] AC6: Under `fr_FR.ISO8859-1`, a locale in which
+- [x] AC6: Under `fr_FR.ISO8859-1`, a locale in which
       `("\195\170"):match("^%a%a$")` succeeds (bytes 0xC3 0xAA, the UTF-8
       `ê`), `resolve` in `languages.lua` returns `nil` and the token
       `"malformed"` for the tag written `êê` and for the tag written `es-êê`.
-- [ ] AC7: The active profile's verify command, `tests/run-tests.sh
+- [x] AC7: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
 ## Coverage
@@ -147,3 +147,21 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 ## Decisions
 
 ## Review
+
+- Sync: on 2026-09-11 the branch contains `origin/main` (ba9128c), so no merge was needed. No PR exists yet.
+- Suite run for this review: `tests/run-tests.sh --self-test` at 6901bb0, run once and alone, printed "All checks passed (1499 checks)" and exited 0. The AC lines below cite it as "the run".
+- AC1: in the run, the M56-AC5 pass line holds the two `figures` needles over the HTML render log. They are the unknown key `symbol` and the empty `see`, and each names `the index named "figures"`. The two M56 T4 plants, a document-level report where `figures` wrote the key or value, go red.
+- AC2: in the run, the HTML book index matches all 9 manifest rows. The EPUB holds one section, `qi-index (Indice analitico)`, and it matches its manifest. Both manifests state `Simboli`, `vedi` and `vedi anche`. The reference page, read this session, gives the same words in rows W-IT2 to W-IT4. Both logs carry 0 extension warnings. The two M57 T6 plants that hold the book to the English words go red.
+- AC3: in the run, the EPUB log of `examples/index-labels-clash.qmd` carries the letter-clash report 1 time and the no-clash report 0 times. It carries 1 extension warning in total. The captured `.epub` is not empty. The two M59 T7 EPUB plants go red.
+- AC4: `BLANKS` on `main` holds 27 entries. A script run this session maps the suite's 23 Unicode names, in order, to its 23 code points above 0x7F. In the run, the generated document reads back through PyYAML as the 23 blanks and 2 visible characters at their named places. All 25 per-place counts pass: 1 report for each blank, naming its index and key, and 0 for each visible value. The total is 23. The plant that keeps only the 4 ASCII entries of `BLANKS` turns all 23 counts red.
+- AC5: this session, `grep -c 'OUTCOMES\|TITLE_KEY'` gives 0 in `languages.lua` and 0 in `indexes.lua`, where `main` has both. A separate `quarto pandoc lua` probe, run from the branch's `modules/`, reads `lang: it` metadata. After that, `label(nil, "title", "FB")` returns `FB` and `label(nil, "symbols", "FB")` returns `Simboli`. The same probe over `main`'s modules returns `Indice analitico` for the title. The suite's own AC5 probe passed in the run.
+- AC6: a separate `quarto pandoc lua` probe this session set `fr_FR.ISO8859-1`, and `os.setlocale` returned that name. Under it, `("\195\170"):match("^%a%a$")` succeeds. The branch's `resolve` returns `nil` and `malformed` for `êê` and for `es-êê`. Over `main`'s modules, the same probe returns `nil` and `miss` for `êê`, and a row and `subtag` for `es-êê`. The suite's own AC6 probe passed in the run.
+- AC7: the run above is the profile's verify command with `--self-test`. It printed "All checks passed (1499 checks)" and exited 0. Its 5 lines holding "FAIL" are all `ok` lines that quote a plant's expected FAIL text.
+- Consistency gate: `cairn_validate.py` passes every check after the ticks above. The `generic` profile names no toolchain checks. The diff changes no principle text in `cairn/DESIGN.md`, so no impact report runs.
+- Independent review, three fresh reviewers. The blame-history reviewer found nothing. The prior-review reviewer found nothing, and its probe found no PR review threads. The diff-bug reviewer reported six findings, ranked, each verified against the files this session. Dispositions below are proposed and settle at the merge gate.
+- F1 (locale probe fails the whole suite where `fr_FR.ISO8859-1` is missing, as on many Linux machines): proposed as an accepted limitation, a Known issues entry at hygiene. The plan gate chose a probe that never skips.
+- F2 (`CHANGELOG.md` says "English words", but the undeclared heading also changes, from `Índice alfabético` to `Index`): proposed fix now.
+- F3 (`cairn/references/index-words-by-language.md` Disposition says the German row "ships three keys", which is the old row shape): proposed fix now, marked corrected M093.
+- F4 (`indexes.lua:182` comment line is 110 columns in an 80-column block): proposed fix now.
+- F5 (`examples/index-labels-misuse.qmd` prose lines 52 and 59 wrap unevenly): proposed fix now.
+- F6 (no plant puts a dangling report into the book-lang logs): proposed reject. The 0 extension-warning count over both logs turns red on any such report.

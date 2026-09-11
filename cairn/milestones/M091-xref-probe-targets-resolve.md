@@ -34,11 +34,11 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendered to gfm and to LaTeX, `examples/xref-escaping.qmd` draws no
+- [x] AC1: Rendered to gfm and to LaTeX, `examples/xref-escaping.qmd` draws no
       dangling-target report in either wording the suite pins:
       `check_warning_count` in `tests/run-tests.sh` reads 0 for
       `WARN_DANGLING` and for `WARN_DANGLING_INDEX` over each render's log.
-- [ ] AC2: `examples/xref-escaping.qmd` still covers every printable ASCII
+- [x] AC2: `examples/xref-escaping.qmd` still covers every printable ASCII
       character from `!` to `~` (0x21-0x7E) as its own target level under both
       `see=` and `see-also=`, and its targets under each attribute use all
       three level positions; each of its 16 special-character probes renders
@@ -48,7 +48,7 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
       special-character-source and 2 non-ASCII probes typesets its exact
       cross-reference string in its PDF index — each as read by the M02-AC3
       legs of `tests/run-tests.sh`.
-- [ ] AC3: The active profile's verify command, `tests/run-tests.sh
+- [x] AC3: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
 ## Coverage
@@ -120,3 +120,18 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 ## Decisions
 
 ## Review
+
+Fresh run 2026-09-11 on `23ba362` (default branch unmoved since the cut): `tests/run-tests.sh --self-test`, 1456 checks, exit 0.
+
+- AC1: `check_warning_count` (which calls `fail`, exit 1, on a mismatch) read 0 for `WARN_DANGLING` and for `WARN_DANGLING_INDEX` over `$WORK/xref-latex.log` (ok line "no cross-reference target in the probe dangles in the LaTeX render, in either report wording"); over the gfm corpus log `corpus-xref-escaping.log` it read 0 for `WARN_DANGLING` via the manifest row and 0 for `WARN_DANGLING_INDEX` via the added check, both before the M14 ok line "every example's dangling-target report count matches its pinned expectation". The log is written by the corpus loop (`tests/run-tests.sh:14088`) before it is read.
+- AC2: the M02-AC3 legs passed on the same run: "probe covers all 94 printable ASCII characters under both attributes, all three level positions, and the single and dual forms render each target identically"; "an empty target level and an unusable target each warn once"; the makeindex grep (a `fail` on mismatch) passed, the run's `xref-escaping.ilg` reading "464 entries accepted, 0 rejected"; "all 66 exact cross-reference strings typeset in the probe index", the 66 rows of `XREF_PROBE_TEXT` being 16 `Xs` (see), 16 `Xt` (see-also), 16 `Xb` (dual), 16 `A?B, see Tgt` (special-character source) and 2 `Xu` (non-ASCII).
+- AC3: `tests/run-tests.sh --self-test`, run sequentially with nothing else invoking it, printed "All checks passed (1456 checks)" and exited 0.
+
+**Consistency gate.** `cairn_validate.py` exit 0, every check PASS/OK. No DESIGN principle changed, so `cairn_impact` skipped. Generic profile: no toolchain checks.
+
+**Independent review** (full three-lens fan-out; `tests/run-tests.sh` is executable surface). [S] blame-history: no findings (checked M02, M14, M15 intent; D-011, D-021, D-022; no other leg reads this fixture's counts). [S] prior-review: no findings (archived M02, M14, M15, M39, M076 reviews and LESSONS checked; the GitHub PR-comment probe returned none). [O] diff-bug: no blocking findings; independently derived 208 target paths matching the 208 added marks exactly in order, no contested source key, 464 accepted by a scratch makeindex run, and both logs written before they are read. Ranked findings:
+
+- F1: `check_warning_count` reads a missing log as 0, so the new gfm per-index zero at `tests/run-tests.sh:14110`, which names its log outside the loop that writes it, would pass vacuously if the fixture's manifest row were removed or renamed (the book-row checks beside it share this).
+- F2: the gfm zero count has no in-suite discrimination: with the row at 0, nothing proves the fixture's gfm log still carries filter warnings (the LaTeX half is covered by the Xe00/Xe01 counts of 1 on the same log); the plan gate accepted this with a one-off probe.
+- F3: "invisible" is loose for gfm: each mark is emitted as a raw empty `<span class="index" data-entry="…">`, hidden only once the HTML renders.
+- F4: nothing guards the mark list against a later probe target being added without its mark, beyond the corpus zero counts (LaTeX still catches it).

@@ -43,14 +43,14 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 
 ## Acceptance criteria
 
-- [ ] AC1: The M56-AC6 `.tex` comparison in `tests/run-tests.sh` is one
+- [x] AC1: The M56-AC6 `.tex` comparison in `tests/run-tests.sh` is one
       function. The run's own comparison and its `--self-test` plant both
       call it, and it fails on a `.tex` pair that differs.
-- [ ] AC2: `examples/index-labels.qmd` draws 0 extension warnings when
+- [x] AC2: `examples/index-labels.qmd` draws 0 extension warnings when
       rendered to HTML and when rendered to LaTeX, as
       `check_extension_warning_count` reads each render's log. A render log
       with one extension warning more fails that count.
-- [ ] AC3: Each zero-expectation control left in the M59 block of
+- [x] AC3: Each zero-expectation control left in the M59 block of
       `tests/run-tests.sh`, the M59-AC4 control loop included, and each left
       in the M56-AC5 and M58-AC4 control loops, is
       document-level or names an index or `indexes:` position that the
@@ -58,22 +58,22 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       `examples/index-labels-clash.qmd`'s HTML log fail when that log carries
       a no-clash report line, and fail when it carries one extension warning
       other than a clash report.
-- [ ] AC4: `derive_labels_twin` fails when the twin's parsed front matter or
+- [x] AC4: `derive_labels_twin` fails when the twin's parsed front matter or
       its body differs from the fixture's with every `index-labels:` key
       deleted. It passes on a copy of `examples/index-labels.qmd` with a blank
       line inside an `index-labels:` map, held against the unchanged twin. It
       fails when the `index-labels:` block of `examples/index-separators.qmd`
       sets a key other than `separator` and `xref-separator`.
-- [ ] AC5: `m57_tex_ledger` classifies a differing line whose body is `--` or
+- [x] AC5: `m57_tex_ledger` classifies a differing line whose body is `--` or
       `++`, and does not discard it as a diff header.
-- [ ] AC6: `entry_separators` in `tests/htmlindex.py` returns the same
+- [x] AC6: `entry_separators` in `tests/htmlindex.py` returns the same
       separators for a copy of a captured index whose entry lines are wrapped
       in `<p>` as for the unwrapped capture. Given a manifest with an unknown
       slot name, and given one with a space in place of a tab,
       `tests/sepcheck.py` prints one `FAIL:` line and exits 1 with no
       traceback. Its pass and fail
       lines say "whitespace character", which is what the check accepts.
-- [ ] AC7: The active profile's verify command, `tests/run-tests.sh
+- [x] AC7: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
 ## Coverage
@@ -159,3 +159,28 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 ## Decisions
 
 ## Review
+
+Evidence run: `tests/run-tests.sh --self-test` at c291187 on 2026-09-11, alone and with no edits in flight. It exited 0 with "All checks passed (1469 checks)", no `FAIL` line and no traceback, in 10m45s. The branch already contains `origin/main`, so no sync was needed.
+
+- AC1: `check_tex_identical` in `tests/run-tests.sh` is the one `.tex` comparison. M56-AC6 and M58-AC6 call it, and both printed their ok lines. The M56 plant calls it through `m56_planted` on a twin `.tex` with one extra line. That plant printed its ok line, matched against the function's own "differs from" FAIL text.
+- AC2: `check_extension_warning_count` holds `index-labels-html.log` and `index-labels-latex.log` at 0, and the run printed "M092: the fixture declaring all three words draws no message". Two plants append one extension warning to a copy of each log. Both printed their ok lines, matched on "expected 0 warning(s)".
+- AC3: A grep of the M59 block and the M56-AC5 and M58-AC4 loops lists every zero-count check left. The M56-AC5 and M59-AC1/AC2 controls read the unknown-key, empty `see`, invisible `see-also` and list `symbols` messages, all four worded "in this document's metadata". The M59-AC4 silence count names `fossils`, which `examples/index-labels-clash.qmd` declares. The M58-AC4 loop holds no control, and the M59 block holds no other zero check. The front matter of the four fixtures read shows `index-labels.qmd` declaring only `main` and `authors`. The two clash-log plants printed their ok lines, matched on "expected 0 occurrence" and "expected 1 warning(s)".
+- AC4: The suite printed ok lines for both real derivations, the body-drift and byte-copy plants, the blank-line copy passing, and the third-key plant. That plant matched on 'sets the key "see"'. A scratch probe of the extracted function names the part for each drift plant: the appended sentence gives "the body differs", and the byte copy gives "the front matter differs". The same probe shows `main`'s line walker failing the blank-line copy that the new function passes.
+- AC5: `m57_tex_ledger` now drops the first two lines of the unified diff by position. The M57 plant over a synthetic pair differing in `--` against `++` printed its ok line, matched on "2 differing line(s) of". The ledger counted both lines and did not report the pair identical. The four real ledgers stayed green in the same run.
+- AC6: The loose-list probe printed ok for two captured pages with every entry line wrapped in `<p>`. The separators page gave the same 7 separators over 4 entry lines, and `resolving-xref.html` gave the same 6 over 10. `m092_manifest_refused` asserts exit 1, no traceback, exactly one `FAIL:` line and the named cause. It printed ok for the unknown slot `S9`, a space between two slots, and a space after a depth. In `tests/sepcheck.py`, the ok line (seen in this run's M58 lines) and the spacing FAIL line both say "exactly one whitespace character".
+- AC7: The evidence run above is the profile's verify command `tests/run-tests.sh --self-test`. It exited 0 with 1469 checks passed and no `FAIL` line.
+
+Consistency gate: `cairn_validate.py` passed with exit 0 and all 16 checks PASS. No IP or GP principle changed, so `cairn_impact` was skipped. The `generic` profile names no toolchain checks.
+
+Independent review, as a three-lens fan-out because the diff touches scripts. The prior-review lens found no prior-review evidence contradicted, and the GitHub comment probe came back empty. No finding shows a criterion failing, so none meets the return floor. Proposed dispositions go to the approval gate.
+
+- R1 (diff-bug): `tests/sepcheck.py` does not catch a space in place of the tab between the term and the first slot. The slot joins the term and the FAIL line blames the render. Proposed: follow-up.
+- R2 (diff-bug): the M56 T4 self-test loop still counts the `notes` and `sources` messages at 0 over `index-labels-html.log`, which cannot carry them. Outside AC3's named loops. Proposed: follow-up.
+- R3 (diff-bug): the missing-key and not-a-map branches of `derive_labels_twin`'s key check have no plant. Proposed: follow-up.
+- R4 (diff-bug, with blame-history B1): the parsed comparison is blind to YAML 1.1 readings such as `yes` for `true`, and to a duplicate key. The plan recorded only quoting, comments and key order. Proposed: Known issues entry, since the plan chose this trade.
+- R5 (diff-bug): `check_tex_identical`'s exit-2 branch has no plant, and a failed redirect reports as "differs". Proposed: follow-up.
+- R6 (diff-bug): `read_manifest` now refuses a trailing space and a space-padded depth that `main` accepted. No suite manifest writes either. Proposed: reject, stricter input is the intent.
+- R7 (diff-bug): the `_line_pieces` docstring says its descent is `own_nodes`', but text inside a non-part element now joins the separator run. No real capture has such an element. Proposed: fix now, docstring wording.
+- R8 (diff-bug): the `[ -s ... ] || fail` guards after two Python heredocs never run, because `set -e` stops first. The Python FAIL line still prints. Proposed: reject, no message is lost.
+- R9 (diff-bug): the M58-AC4 comment credits the M56 and M59 document-level controls. The checks that hold a report-everything filter are the new zero totals and M58-AC1's silence count. Proposed: fix now, comment wording.
+- R10 (diff-bug): the `tests/sepcheck.py` docstring does not state the new depth and slot rules. Proposed: fix now.

@@ -1,6 +1,6 @@
 # M094: A failed store write or source read reports its own cause
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -75,12 +75,12 @@ the M062 and M063 checks around those reports fail on the defects they name.
 
 ## Tasks
 
-- [ ] T1: KI204. At the four `error(...)` sites in `book.lua`, return a
+- [x] T1: KI204. At the four `error(...)` sites in `book.lua`, return a
       failure value from the guarded function instead, and branch on it
       beside `pcall`'s own result. `pcall` stays as the IP2 net for faults
       nobody planned for. Keep the report wording, and put the open or read
       failure's own text in the cause.
-- [ ] T2: KI204 checks. At the M063-AC3 held-record leg (near line 8867),
+- [x] T2: KI204 checks. At the M063-AC3 held-record leg (near line 8867),
       assert the cause substring on the `could not record index marks` line
       itself, not anywhere in the log, and a zero count of `ERROR \(` lines
       after SGR stripping. Assert the same zero count at the M064-AC5 leg
@@ -89,28 +89,28 @@ the M062 and M063 checks around those reports fail on the defects they name.
       shown. Add a `--self-test` plant that restores the `error(...)` call at
       341 in a scratch copy of the extension and shows the zero count red.
       Add a `CHANGELOG.md` entry under the development heading.
-- [ ] T3: KI206. Strip SGR escapes (`\x1b\[[0-9;]*m`) from the log before the
+- [x] T3: KI206. Strip SGR escapes (`\x1b\[[0-9;]*m`) from the log before the
       anchored grep in `check_extension_warning_count` (near line 2228), as
       the M12 check near line 3710 already does. Add a `--self-test` plant: a
       copy of a log with an SGR prefix before one `(W)` line keeps its count.
       Set the M063-AC3 count (near line 8880) to the raw figure and rewrite
       its comment. Re-read every other count this function pins in a run and
       correct any figure the change moves, with the reason shown.
-- [ ] T4: KI210. `fold_undeclared` refiles to `qi_indexes.default()`, which
+- [x] T4: KI210. `fold_undeclared` refiles to `qi_indexes.default()`, which
       is `alpha` in `examples/book-placement/`. Add the refiled-term
       assertion to an M062-AC1 leg (near lines 11288-11335) over the alpha
       section of `index.html`. Add a plant that drops the refiled mark. Reword the
       M062-AC3 "the marks still print" assertion (near line 7524) to what it
       reads.
-- [ ] T5: KI211, KI212. Rewrite the M062-AC3 count comment (near line 7503)
+- [x] T5: KI211, KI212. Rewrite the M062-AC3 count comment (near line 7503)
       to say that the count rules out a revert to `if builds then` and does
       not separate the two counting rules. Label the M062-AC1 single-chapter
       leg (near line 11317) a control.
-- [ ] T6: KI213. Re-key `record['sorts']` in the M062-AC3 plant
+- [x] T6: KI213. Re-key `record['sorts']` in the M062-AC3 plant
       (`NOMARKNAMEPY`, near line 7484) as `PLACENAMEPY` does.
-- [ ] T7: Strike KI204, KI206, KI210, KI211, KI212 and KI213 from
+- [x] T7: Strike KI204, KI206, KI210, KI211, KI212 and KI213 from
       `cairn/DESIGN.md` per D-013.
-- [ ] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
+- [x] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
 
 ## Work log
 
@@ -123,6 +123,7 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: suite run 1 stopped at M06-AC3 when Quarto's Deno binary crashed with a segmentation fault rendering sort-escaping.qmd to gfm. The same render then exited 0 three times out of three, so the crash was transient. Every leg M094 touches had passed before it.
 - 2026-09-11: claim audit: 51 claims read, 7 corrected — CHANGELOG.md, _extensions/index/modules/book.lua, tests/run-tests.sh
 - 2026-09-11: suite run 2 failed M24-AC3 because the M094 T2 mutant render had no capture call after it. The call is added, the audit corrections and a tighter `got 1` glob are applied, and suite run 3 is running.
+- 2026-09-11: suite run 3 of `tests/run-tests.sh --self-test` exited 0 with all 1504 checks passed. The M094 T2, T3 and T4 plants each went red for their named defect. T1 to T8 are ticked and status is review.
 
 ## Decisions
 

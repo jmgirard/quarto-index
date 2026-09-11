@@ -23931,7 +23931,9 @@ fi
 # before its caller did anything with the href, so reading it could not see a
 # reader that went on to treat the href some other way). What is asked here is
 # the one predicate, one row at a time; what the commands then DO with a leaving
-# link is held by the two-command leg below and M085's site plants.
+# link is held on every run by the two-command leg below for the two EPUB
+# commands only, and under `--self-test` by M085's plants for the site and
+# fragment readers — a plain run plants no leaving link for those two.
 #
 # Both verdicts are required present: a table that lost its staying rows would
 # pass a predicate calling every href external, and one that lost its leaving
@@ -24061,7 +24063,7 @@ pass "M085-AC2/AC3: over one publication whose index section carries an \`https:
 # predicate strips an href before it judges it; before M087 `resolve_href`,
 # `epubindex.links` and `epubcheck.py unique` then cut the UNSTRIPPED href at
 # its `#`, so ` ch003.xhtml#…` was judged as staying and joined into a member
-# name carrying the space, which no manifest lists (DESIGN.md Known issues).
+# name carrying the space, which no manifest lists.
 # One direct call, then one locator given a leading space and read by both
 # commands, each by the count it prints as well as by exit status.
 python3 - <<'M087PY'

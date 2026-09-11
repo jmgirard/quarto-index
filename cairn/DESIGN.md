@@ -1479,6 +1479,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   for it, and `tests/epubcheck.py links` prints only a count; an author who
   writes an `https:` locator by accident is told one link was skipped and has
   no way to find it. Decided by D-057 rather than wrong. — M085 review F9
+- **KI271.** `check_locator_fragments` in `tests/run-tests.sh` cuts each index
+  locator at its `#` and opens the part before it as a file under the book's
+  root, with no strip and no call to `htmlindex.leaves_publication`, so an
+  `https:` locator carrying a fragment stops the check on a traceback opening a
+  path that does not exist rather than naming the href. It predates D-057, which
+  names four readers and not this one. — M087 review O5
+- **KI272.** Every call of `m085_epub_plant` in `tests/run-tests.sh` passes the
+  same number for the `links` skipped count and the `unique` leaving count, so
+  no standing plant tells the two apart: swapping the two arguments at a call,
+  or reading one of them in both arms, leaves all four plants green. — M087
+  review O3
 
 ### The repo and its packaging
 

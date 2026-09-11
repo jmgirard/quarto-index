@@ -114,6 +114,8 @@ section per document → its row (KI264). `epubcheck.py links` over
 - 2026-09-10: T5 code landed, unticked until the suite runs over it — `plant.py --every` rewrites every match (still refusing none, and the default mode still refusing 25 matches); the AC4 leg (under `--self-test`, after M085's plants) rewrites the member's 25 locators to `https://example.invalid/…#frag` and holds each command to exit 1, its own refusal text naming the planted count, and one FAIL line. Extracted alone it passes under 3.9.6 and 3.14.7, and goes red against scratch copies of `epubcheck.py` with each refusal removed: `links` exits 0, `unique` exits 1 on its no-fragment refusal and fails the text assertion.
 - 2026-09-10: T6 — the first `tests/run-tests.sh --self-test` stopped at the M064 F1 self-test render (`run-tests.sh:9679`, a book render of a Lua-filter mutant that calls none of the readers this branch changed), Quarto's launcher printing a Deno `Segmentation fault: 11` before the check read any output; the re-run over the same tree passed, 1455 checks, that render and every M087 leg included. T3, T4 and T5 ticked on it.
 - 2026-09-10: claim audit: not owed — internal tier
+- 2026-09-10: review pass 1: AC1–AC4 verified with fresh evidence, consistency gate clean; findings triaged at the merge gate — O1, O2 fixed (comments only), O3 and O5 filed as KI271/KI272 with one candidate row, O4, O6, O7 rejected.
+- 2026-09-10: step-7 approval: m087-one-link-test-call approved for merge
 
 ## Decisions
 
@@ -140,3 +142,13 @@ Independent review (three lenses; executable surface touched). Dispositions are 
   - O5 `tests/run-tests.sh:1410-1440`: `check_locator_fragments` splits locators at `#` with no strip and no `leaves_publication` call, against `htmlindex.py:869-873`'s "every reader … calls this" (confirmed; code predates this branch).
   - O6 the milestone's `## Decisions` section is empty though the work log records two gate choices.
   - O7 minor: `found` computed and unused under `--every` (`:4814`); the both-verdicts message at 0 rows (`:24001`); "Four readers" uncited (`:23928`); the M085 archive summary's "all four readers" wording (history).
+
+Dispositions, set at the merge gate 2026-09-10 (no finding demonstrates a criterion failing, so none returns status):
+
+- O1: fix now — the table comment now says the two-command leg holds the EPUB commands on every run and M085's site and fragment plants run under `--self-test` only.
+- O2: fix now — the Known issues pointer for the deleted KI269 removed from the AC3 comment.
+- O3 (and the blame-history note): follow-up — KI272, candidate row "Close the suite's link-test gaps M087 left".
+- O5: follow-up — KI271, the same candidate row.
+- O4: reject — the gap the existing candidate row on the M083 plants' derived locator already holds (KI264); not reachable on today's capture.
+- O6: reject — the plan and implement gate choices are recorded in the work log, where the plan gate writes them.
+- O7: reject — wording and one unused computation with no effect on behavior; the M085 archive summary is history.

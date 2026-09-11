@@ -1,6 +1,6 @@
 # M087: The link readers call the one link test and use the href it judged
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -82,23 +82,23 @@ section per document → its row (KI264). `epubcheck.py links` over
       alone, failing and naming each row whose verdict it does not return; keep
       its row-shape guard and its both-verdicts guard; rewrite the section
       header comment, which argues for the four-reader reading being removed.
-- [ ] T3: Strip the href before partitioning it in `resolve_href`
+- [x] T3: Strip the href before partitioning it in `resolve_href`
       (`htmlindex.py:913`), `epubindex.links` (`:213`) and `cmd_unique`
       (`epubcheck.py:319`); the row `links` returns keeps `href` as written.
       Add the AC3 leg beside M085's EPUB legs (a `resolve_href` assertion and a
       leading-space repack through `$M083W/plant.py`, read by both commands'
       printed counts), recording it red against the unstripped readers first.
       Strike KI269.
-- [ ] T4: `m085_epub_plant` (`tests/run-tests.sh:24089`) takes the expected
+- [x] T4: `m085_epub_plant` (`tests/run-tests.sh:24089`) takes the expected
       `links` skipped count and the expected `unique` leaving count as two
       arguments, and its four calls pass both.
-- [ ] T5: Build the AC4 copy — `plant.py` refuses a pattern matching more than
+- [x] T5: Build the AC4 copy — `plant.py` refuses a pattern matching more than
       once, so either chain one plant per locator (`$M083W/locators.py` lists
       them) or give `plant.py` an every-match mode that still refuses a pattern
       matching nothing — and assert each command's own refusal text, not exit
       status alone. Record each assertion red against a scratch copy of its
       command with that refusal removed.
-- [ ] T6: Run `tests/run-tests.sh --self-test` clean over the finished tree.
+- [x] T6: Run `tests/run-tests.sh --self-test` clean over the finished tree.
 
 ## Work log
 
@@ -112,6 +112,8 @@ section per document → its row (KI264). `epubcheck.py links` over
 - 2026-09-10: T3 code landed, unticked until the suite runs over it — the AC3 leg (every run, after M085's two-command leg) went red against the unstripped readers, `resolve_href` returning `(' ch1.xhtml', 'frag')` and `links` failing on the member name `EPUB/text/ ch003.xhtml`; with `resolve_href`, `epubindex.links` and `cmd_unique` partitioning `href.strip()` the leg passes under 3.9.6 and 3.14.7; KI269 deleted from `DESIGN.md`.
 - 2026-09-10: T4 code landed, unticked until the suite runs over it — `m085_epub_plant` takes the `links` skipped count and the `unique` leaving count as two arguments and its four calls pass both; extracted alone the four plants pass, and the scheme plant given `1 0` goes red on the `unique` arm alone.
 - 2026-09-10: T5 code landed, unticked until the suite runs over it — `plant.py --every` rewrites every match (still refusing none, and the default mode still refusing 25 matches); the AC4 leg (under `--self-test`, after M085's plants) rewrites the member's 25 locators to `https://example.invalid/…#frag` and holds each command to exit 1, its own refusal text naming the planted count, and one FAIL line. Extracted alone it passes under 3.9.6 and 3.14.7, and goes red against scratch copies of `epubcheck.py` with each refusal removed: `links` exits 0, `unique` exits 1 on its no-fragment refusal and fails the text assertion.
+- 2026-09-10: T6 — the first `tests/run-tests.sh --self-test` stopped at the M064 F1 self-test render (`run-tests.sh:9679`, a book render of a Lua-filter mutant that calls none of the readers this branch changed), Quarto's launcher printing a Deno `Segmentation fault: 11` before the check read any output; the re-run over the same tree passed, 1455 checks, that render and every M087 leg included. T3, T4 and T5 ticked on it.
+- 2026-09-10: claim audit: not owed — internal tier
 
 ## Decisions
 

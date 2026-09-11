@@ -168,3 +168,4 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - F6 (no plant puts a dangling report into the book-lang logs): proposed reject. The 0 extension-warning count over both logs turns red on any such report.
 - Gate triage, 2026-09-11: the user accepted every proposed disposition. F2 to F5 are fixed on the branch. F1 goes to Known issues at hygiene. F6 is rejected for the reason above.
 - F2 fix: a probe under `en_US.UTF-8` shows `lang: es-êê` heading an undeclared index `Índice alfabético` on `main` and `Index` on the branch. The entry now names the heading.
+- Re-run after the fixes: `tests/run-tests.sh --self-test` over a982566 printed "All checks passed (1499 checks)" and exited 0.

@@ -115,3 +115,5 @@ Independent review (three lenses, fresh context; dispositions pending the gate):
 - [O] F5: `cairn/DESIGN.md` KI273's pass condition leaves out two things `fragments.py resolve` also refuses: an id on more than one element, and a locator leaving the site.
 
 Dispositions at the gate (2026-09-10): F1, F2, F4, F5 fix now; F3 rejected — the section-to-page widening is the plan's own choice (Tasks T1) and reads the same set on today's fixture, and its fail text understates rather than overstates. No finding meets the return floor: none fails a criterion.
+
+- AC3 re-run after the fixes, on HEAD 12a74ff: `tests/run-tests.sh` exited 0 with 779 checks and 0 FAIL, then `tests/run-tests.sh --self-test` exited 0 with 1453 checks and 0 FAIL, sequential; the rewritten M063 T2 self-test pass line printed.

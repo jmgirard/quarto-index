@@ -142,6 +142,8 @@ entries for the gaps the gate chose to record.
 - 2026-09-10: claim audit: not owed — internal tier
 - 2026-09-10: T1-T7 ticked against one `tests/run-tests.sh --self-test` run at f3e60b6's tree (1455 checks, 0 FAIL, exit 0): the unmutated-copy control green; M090 T2/T3/T4 plants each red on their pinned line; no M084 T2 line; T5's grep prints nothing and the leg's grouping read stays (line 4326). T2-T4 were checked off together with T1 and T5-T6 on that one run rather than a run per task, each run taking over 13 minutes.
 - 2026-09-10: implement complete; status review.
+- 2026-09-10: review: fresh `--self-test` run green (1455 checks); AC1-AC4 ticked; three [O] wording findings fixed now at the gate (comment and failure-message text only, `bash -n` clean).
+- 2026-09-10: step-7 approval: m090-xref-id-rule-plants approved for merge
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote
@@ -171,3 +173,5 @@ entries for the gaps the gate chose to record.
 - F1: the M090 plants' comment (`tests/run-tests.sh:4547-4555`) says each pinned line names that plant's own case "rather than a line a neighbouring plant also draws", which is false for T3: the T2 plant's output also prints "the locator for 'chi' names" (confirmed in the reviewer's scratch `t2.out`), and no line in T3's output is absent from T2's.
 - F2: the helper's failure messages (`:4466`, `:4468`, `:4482`) still say "the census", which the three M090 plants do not touch; the temp file is still `html-spliced` when the module is `passes.lua`.
 - F3: the section header comment (`:4418-4443`) still describes six plants over the census; there were seven before M090 and are ten now.
+
+**Triage** (maintainer, step-7 gate, 2026-09-10): F1, F2, F3 fix now. F1: the comment now says the T2 and T4 lines are printed by no other plant and the T3 line is also printed under T2, so T3's red does not tell its defect from T2's. F2: the three messages name `$module` or "the mutated copy", and the temp file is `spliced`. F3: the header names the ten plants the helper runs (10 call sites by grep). Text-only edits in comments and failure-branch strings; checked with `bash -n`, not a new suite run.

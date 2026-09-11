@@ -4417,7 +4417,10 @@ python3 "$WORK/id-collision-ids.py" \
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M081 T4 and M082 T4 — a planted defect per repair, the first plants over
-  # the id census.
+  # the id census. Ten plants run through the helper below: the six this
+  # comment explains, M084 T6's over the census's CDATA read, and M090's three
+  # over the cross-reference id rules, each of the last four explained where it
+  # is called.
   #
   # One substitution per repair, each undoing that repair alone: the census
   # reads a construct a browser makes a comment as markup again, it ends a
@@ -4462,12 +4465,12 @@ if [ "${1:-}" = "--self-test" ]; then
       die "the substitution could not be applied (a compile error, or a death inside it): $@" if $@;
       die "the substitution matched nothing\n" unless $n;
       print $text;
-    ' "$sub" < "$filter" > "$dir/html-spliced" \
-      || fail "$label: the substitution aimed at the census could not be applied (its own message is above)"
-    if cmp -s "$filter" "$dir/html-spliced"; then
-      fail "$label: the substitution reported a match and the census is unchanged, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+    ' "$sub" < "$filter" > "$dir/spliced" \
+      || fail "$label: the substitution aimed at $module could not be applied (its own message is above)"
+    if cmp -s "$filter" "$dir/spliced"; then
+      fail "$label: the substitution reported a match and $module is unchanged, so the render below would be reported as a check failing to matter when the fault is this mutation's"
     fi
-    mv "$dir/html-spliced" "$filter"
+    mv "$dir/spliced" "$filter"
     ( cd "$dir" && quarto render id-collision.qmd --to html ) \
       > "$WORK/m081-$slug.log" 2>&1 \
       || { tail -20 "$WORK/m081-$slug.log" >&2; fail "$label: the fixture failed to render with the repair undone; IP2 forbids any of this taking a render down"; }
@@ -4479,7 +4482,7 @@ if [ "${1:-}" = "--self-test" ]; then
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "$label: the check passed a page rendered with the repair undone, so its green says nothing about that repair"; }
     printf '%s' "$out" | grep -qF -- "$want" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the mutated census, but not with <<$want>> — that failure is not this check catching this defect"; }
+      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the mutated copy, but not with <<$want>> — that failure is not this check catching this defect"; }
     pass "$label: the check is red on <<$want>>"
   }
 
@@ -4551,8 +4554,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # name it shares with a cross-reference mark whichever is written first
   # (`keepable_author_ids`); and a cross-reference mark whose name nothing else
   # carries keeps it (`assign_anchors`). Each expected line names that plant's
-  # own case — `rho` giving up `xref-dup`, the `chi` locator, the `upsilon`
-  # control — rather than a line a neighbouring plant also draws.
+  # own case: `rho` giving up `xref-dup`, the `chi` locator, the `upsilon`
+  # control. The T2 and T4 lines are printed by no other plant here; the T3
+  # line is not so placed, because untagging `phi` (T2) also leaves `chi`
+  # yielding `twin-xref`, and every line the check prints under T3 it prints
+  # under T2 as well (observed 2026-09-10, M090 review F1). T3's red holds the
+  # check to that rule's case; it does not tell T3's defect from T2's.
   m081_census_plant xref-untagged \
     'M090 T2 self-test: a cross-reference mark no longer tagged to contest its author-written id' \
     "the contested id 'xref-dup' is still on the span printing 'rho'" \

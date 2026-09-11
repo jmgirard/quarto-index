@@ -1758,3 +1758,21 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   spelling. A machine that lacks the locale or names it another way, as a
   Linux system can, gets a red run from a probe of letters, not of the index.
   — M093 review F1
+- **KI280.** `store_write` in `_extensions/index/modules/book.lua` ignores the
+  value `fh:close()` returns. A write that fails only when the buffer is
+  flushed, as on a full disk, draws no write-failure report and can leave a
+  truncated record. — M094 review F2
+- **KI281.** No leg reaches three branches M094 changed in `store_write` and
+  `recover_record`. After a failed `fh:write`, the write-failure report is
+  now drawn where none was. For a chapter source that cannot be opened or
+  read, no `ERROR` line is printed now. M064-AC5 breaks its source with a
+  byte that is not UTF-8, so `pandoc.read` fails first and neither read
+  branch runs. — M094 review F3
+- **KI282.** `m094_check_cause` in `tests/run-tests.sh` matches the English
+  system text `Is a directory`. On a machine whose locale or platform words
+  that open failure another way, the check goes red with the filter correct.
+  — M094 review F5
+- **KI283.** The M094 T2 plant's cause probe prints one message whether the
+  mutant drew no write-failure report or drew one with the wrong cause. Its
+  ERROR probe counts one `ERROR (` line and does not check that the line is
+  four.qmd's. — M094 review F6

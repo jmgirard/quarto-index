@@ -24400,43 +24400,100 @@ section 'M56 — the three words the HTML and EPUB back-ends print themselves, s
 # the labels fixture with its two `index-labels:` blocks deleted, and nothing
 # else. Without this an empty `.tex` diff could be two files that drifted apart
 # together, and the criterion would pass for a reason it does not state.
+#
+# The front matter is parsed with PyYAML (D-030) and the body compared as text
+# (M092). A line walker ended a block at its first blank line, which is legal
+# inside a YAML map, and so reported a correct pair as drifted. The parse is
+# blind to a spelling that parses the same (quoting, a comment, key order).
+#
+# Arguments: fixture, twin, the number of `index-labels:` keys the fixture
+# writes, a label, and optionally the key set each of those maps must hold
+# exactly, space-separated.
 derive_labels_twin() {
-  python3 - "$1" "$2" "$3" "$4" <<'M56DERIVEPY'
-import re, sys
-fixture_path, twin_path, wanted, label = sys.argv[1:5]
+  python3 - "$1" "$2" "$3" "$4" "${5:-}" <<'M56DERIVEPY'
+import sys
+fixture_path, twin_path, wanted, label, keys = sys.argv[1:6]
 wanted = int(wanted)
-fixture = open(fixture_path, encoding='utf-8').read()
-twin = open(twin_path, encoding='utf-8').read()
-# A `index-labels:` block is the key line and every line indented deeper than
-# it -- the shape a YAML map takes at either level -- so this deletion is the
-# one the criterion names and not a line-by-line filter that could also drop an
-# unrelated line.
-out, inside = [], None
-blocks = 0
-for line in fixture.splitlines(True):
-    opened = re.match(r'^(\s*)index-labels:\s*$', line)
-    if inside is not None:
-        if line.strip() and (len(line) - len(line.lstrip())) > inside:
-            continue
-        inside = None
-    if opened:
-        inside = len(opened.group(1))
-        blocks += 1
-        continue
-    out.append(line)
-if blocks != wanted:
-    print(f'FAIL: {label}: {fixture_path} carries {blocks} `index-labels:` '
-          f'block(s), where the fixture is written with {wanted}',
-          file=sys.stderr)
+expected = keys.split() if keys else None
+
+
+def fail(message):
+    print(f'FAIL: {label}: {message}', file=sys.stderr)
     sys.exit(1)
-if ''.join(out) != twin:
-    print(f'FAIL: {label}: {twin_path} is not {fixture_path} with its '
-          f'{wanted} `index-labels:` block(s) deleted; the two have drifted '
-          f'apart and a comparison of their renders would compare two '
-          f'different documents', file=sys.stderr)
-    sys.exit(1)
+
+
+try:
+    import yaml
+except ImportError:
+    fail('PyYAML is not installed on this python3, so the front matter '
+         'cannot be parsed; install it (python3 -m pip install pyyaml), D-030')
+
+
+def split(path):
+    """The parsed front matter and the body text after its closing line."""
+    lines = open(path, encoding='utf-8').read().splitlines(True)
+    if not lines or lines[0].rstrip('\r\n') != '---':
+        fail(f'{path} does not open with a `---` front-matter line')
+    for close in range(1, len(lines)):
+        if lines[close].rstrip('\r\n') in ('---', '...'):
+            break
+    else:
+        fail(f'{path} opens front matter and never closes it')
+    try:
+        meta = yaml.safe_load(''.join(lines[1:close]))
+    except yaml.YAMLError as bad:
+        fail(f'{path}: the front matter does not parse as YAML ({bad})')
+    if not isinstance(meta, dict):
+        fail(f'{path}: the front matter is not a map')
+    return meta, ''.join(lines[close + 1:])
+
+
+fixture_meta, fixture_body = split(fixture_path)
+twin_meta, twin_body = split(twin_path)
+
+# The deletion the criterion names: the key at the document level and inside
+# each `indexes:` entry, the two places an author writes it.
+deleted = []
+if 'index-labels' in fixture_meta:
+    deleted.append(('the document level', fixture_meta.pop('index-labels')))
+entries = fixture_meta.get('indexes')
+if isinstance(entries, list):
+    for number, entry in enumerate(entries, 1):
+        if isinstance(entry, dict) and 'index-labels' in entry:
+            deleted.append((f'entry {number} of indexes:',
+                            entry.pop('index-labels')))
+if len(deleted) != wanted:
+    fail(f'{fixture_path} carries {len(deleted)} `index-labels:` block(s), '
+         f'where the fixture is written with {wanted}')
+
+if expected is not None:
+    for where, value in deleted:
+        if not isinstance(value, dict):
+            fail(f'the `index-labels:` block at {where} of {fixture_path} is '
+                 f'not a map, where it is written to set '
+                 f'{", ".join(expected)}')
+        for key in value:
+            if key not in expected:
+                fail(f'the `index-labels:` block at {where} of '
+                     f'{fixture_path} sets the key "{key}", which is not one '
+                     f'of {", ".join(expected)}')
+        for key in expected:
+            if key not in value:
+                fail(f'the `index-labels:` block at {where} of '
+                     f'{fixture_path} does not set the key "{key}"')
+
+for part, mine, theirs in (('front matter', fixture_meta, twin_meta),
+                           ('body', fixture_body, twin_body)):
+    if mine != theirs:
+        fail(f'{twin_path} is not {fixture_path} with its {wanted} '
+             f'`index-labels:` block(s) deleted: the {part} differs, so the '
+             f'two have drifted apart and a comparison of their renders would '
+             f'compare two different documents')
+held = (f', each setting exactly {", ".join(expected)}'
+        if expected is not None else '')
 print(f'ok   {label}: {twin_path} is {fixture_path} with its {wanted} '
-      f'`index-labels:` block(s) deleted, and nothing else')
+      f'`index-labels:` block(s) deleted{held}, compared as parsed front '
+      f'matter and body text')
 M56DERIVEPY
 }
 
@@ -24677,6 +24734,17 @@ check_extension_warning_count "$WORK/index-labels-twin-latex.log" 0 \
   "M56-AC4 (twin, LaTeX)"
 pass "M56-AC4: the twin prints Symbols, see and see also and draws no message at all, though Quarto writes a labels: map into its metadata"
 
+# The declaring fixture's own total, in both formats (M092). The misuse
+# messages are held absent from its log one needle at a time, which says
+# nothing about a report no needle names: a valid `index-labels:` drawing a
+# spurious report would pass them, and in LaTeX it would not touch the `.tex`
+# either. Every declaration this fixture writes is usable, so it draws nothing.
+check_extension_warning_count "$WORK/index-labels-html.log" 0 \
+  "M092 (labels fixture, HTML)"
+check_extension_warning_count "$WORK/index-labels-latex.log" 0 \
+  "M092 (labels fixture, LaTeX)"
+pass "M092: the fixture declaring all three words draws no message from this extension in HTML or in LaTeX"
+
 # AC4's other half — a fixture that declares nothing renders exactly the index
 # it rendered before this milestone. examples/letter-groups.qmd is held to
 # LETTER_GROUPS_INDEX above, unchanged and with no row edited.
@@ -24737,9 +24805,14 @@ for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
               "$M56_MISUSE_SCALAR" "$M56_MISUSE_SEQUENCE"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M56-AC5"
-  # The control: the same message over the fixture that writes NO unusable
-  # shape. Without it a filter that reported every document would satisfy the
-  # four counts above.
+done
+# The control: the same message over the fixture that writes NO unusable
+# shape. Without it a filter that reported every document would satisfy the
+# four counts above. Only the two document-level messages are held there: the
+# other two name the `notes` and `sources` indexes, which
+# examples/index-labels.qmd does not declare, so no filter behavior could put
+# either in its log and a zero count over it could not fail (M092).
+for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY"; do
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M56-AC5 (control)"
 done
@@ -24752,12 +24825,32 @@ pass "M56-AC5: each of the four unusable writings draws exactly its own whole me
 # proved is that same file with only its two `index-labels:` blocks removed.
 # `diff` and not a search for the declared words: a difference anywhere in the
 # file fails this, whatever the differing lines say.
-if ! diff -u "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
-             "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
-             > "$WORK/index-labels-tex.diff" 2>&1; then
-  head -40 "$WORK/index-labels-tex.diff" >&2
-  fail "M56-AC6: the labels fixture's .tex differs from its twin's, so an index-labels: declaration reached the LaTeX back-end"
-fi
+#
+# One function, which this check, M58-AC6 below and the self-test plant all
+# call, so the plant's red is a statement about the comparison these checks run
+# rather than about a second copy of it. `diff` exits 1 on a difference and 2 on
+# trouble, and the two are reported apart: a missing capture is not a
+# declaration that reached the back-end.
+#
+# The diff file is opened before `diff` runs: a redirect that fails also exits
+# 1, and would read as a difference (M092 review).
+check_tex_identical() {
+  local fixture_tex="$1" twin_tex="$2" diffout="$3" label="$4" rc
+  { : > "$diffout"; } 2>/dev/null \
+    || fail "$label: cannot write the diff to $diffout, so nothing is known about the LaTeX back-end"
+  diff -u "$fixture_tex" "$twin_tex" > "$diffout" 2>&1 && rc=0 || rc=$?
+  case "$rc" in
+    0) ;;
+    1) head -40 "$diffout" >&2
+       fail "$label: $fixture_tex differs from $twin_tex, so an index-labels: declaration reached the LaTeX back-end" ;;
+    *) cat "$diffout" >&2
+       fail "$label: diff could not compare $fixture_tex with $twin_tex (exit $rc), so nothing is known about the LaTeX back-end" ;;
+  esac
+}
+
+check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+  "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
+  "$WORK/index-labels-tex.diff" "M56-AC6"
 pass "M56-AC6: the labels fixture and its twin render byte-for-byte identical .tex, so no index-labels: declaration reaches the LaTeX back-end"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -24808,6 +24901,30 @@ if [ "${1:-}" = "--self-test" ]; then
     || { cat "$M56W/noblocks.out" >&2; fail "M56 T4 self-test: the derivation failed a fixture with no declaration, but not for that reason"; }
   pass "M56 T4 self-test: the derivation catches a fixture that writes no index-labels: block, and reports it as that"
 
+  # A blank line inside the document's `index-labels:` map is legal YAML, and
+  # the twin is unchanged, so the derivation passes (M092). A walker that ended
+  # the block at the blank line reported this pair as drifted.
+  python3 - examples/index-labels.qmd "$M56W/blankline.qmd" <<'M092BLANKPY'
+import sys
+src, out = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+needle = '  symbols: "Zeichen"\n'
+if text.count(needle) != 1:
+    print(f'FAIL: M092 plant: {src} carries {text.count(needle)} copies of '
+          f'the aimed-at map line, where it is written with 1', file=sys.stderr)
+    sys.exit(1)
+open(out, 'w', encoding='utf-8').write(text.replace(needle, needle + '\n'))
+M092BLANKPY
+  [ -s "$M56W/blankline.qmd" ] \
+    || fail "M56 T4 self-test: planting a blank line inside the map wrote no file (its own FAIL line is above)"
+  derive_labels_twin "$M56W/blankline.qmd" examples/index-labels-twin.qmd 2 \
+    "M56 probe" > "$M56W/blankline.out" 2>&1 && rc=0 || rc=$?
+  [ "$rc" -eq 0 ] \
+    || { cat "$M56W/blankline.out" >&2; fail "M56 T4 self-test: the derivation failed a fixture copy whose only change is a blank line inside an index-labels: map, which is the same document"; }
+  grep -q '^ok   M56 probe: examples/index-labels-twin.qmd is ' "$M56W/blankline.out" \
+    || { cat "$M56W/blankline.out" >&2; fail "M56 T4 self-test: the derivation exited 0 on the blank-line copy without printing its ok line"; }
+  pass "M56 T4 self-test: the derivation passes a fixture copy carrying a blank line inside an index-labels: map, held against the unchanged twin"
+
   # The labels manifest, against the artifact that prints the English words:
   # the twin's own page. A comparison blind to the printed word would pass this.
   m56_planted 'a render printing the English words where the manifest states the declared ones' \
@@ -24837,15 +24954,36 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 tests/epubcheck.py sections "$M56_EPUB" "$HTML_SECTION_ID" \
       "$M56W/twin-epub.txt" --labels
 
-  # The `.tex` comparison, on a pair that differs by one line.
+  # The `.tex` comparison, on a pair that differs by one line, through the
+  # function M56-AC6 and M58-AC6 call (M092).
   cp "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
     "$M56W/drifted.tex"
   printf '%% a line the fixture does not carry\n' >> "$M56W/drifted.tex"
-  if diff -q "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
-             "$M56W/drifted.tex" > /dev/null 2>&1; then
-    fail "M56 T4 self-test: the .tex comparison passed a twin carrying an extra line, so its green above says nothing"
-  fi
-  pass "M56 T4 self-test: the .tex comparison catches a twin differing by one line"
+  m56_planted 'a twin .tex differing from the fixture'"'"'s by one line' \
+    "differs from $M56W/drifted.tex, so an index-labels: declaration reached" \
+    check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+      "$M56W/drifted.tex" "$M56W/drifted.diff" "M56 probe"
+  # Its two other failures, each reported apart from a difference (M092
+  # review): a capture that is not there, and a diff file it cannot write.
+  m56_planted 'a twin .tex that does not exist' \
+    "diff could not compare $CAPTURE_ROOT/index-labels-latex/index-labels.tex with $M56W/absent.tex (exit 2)" \
+    check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+      "$M56W/absent.tex" "$M56W/absent.diff" "M56 probe"
+  m56_planted 'a diff file in a directory that does not exist' \
+    "cannot write the diff to $M56W/absent-dir/out.diff" \
+    check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+      "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
+      "$M56W/absent-dir/out.diff" "M56 probe"
+
+  # The labels fixture's two zero totals, each against a copy of its log
+  # carrying one warning of this extension's more (M092).
+  for fmt in html latex; do
+    cp "$WORK/index-labels-$fmt.log" "$M56W/extra-$fmt.log"
+    printf '%s\n' "(W) $M56_MISUSE_UNKNOWN" >> "$M56W/extra-$fmt.log"
+    m56_planted "the labels fixture's $fmt log carrying one message" \
+      'expected 0 warning(s)' \
+      check_extension_warning_count "$M56W/extra-$fmt.log" 0 "M56 probe"
+  done
 
   # Each whole-message assertion, against the log of the fixture that writes no
   # unusable shape: a message asserted by a prefix short enough to match
@@ -25160,8 +25298,12 @@ compiled = [(i, re.compile(p), why) for i, p, why in LEDGER]
 
 left = open(fixture_tex, encoding='utf-8').read().splitlines()
 right = open(twin_tex, encoding='utf-8').read().splitlines()
-differing = [line for line in difflib.unified_diff(left, right, n=0)
-             if line[:1] in '+-' and not line.startswith(('---', '+++'))]
+# The unified diff's two file-header lines are its first two, and are dropped by
+# position (M092): dropped by their `---`/`+++` prefix, a differing line whose
+# own body is `--` or `++` went with them unclassified. The `@@` hunk lines
+# carry neither sign.
+differing = [line for line in list(difflib.unified_diff(left, right, n=0))[2:]
+             if line[:1] in '+-']
 if not differing:
     print(f'FAIL: {label}: {fixture_tex} and {twin_tex} are identical, so the '
           f'lang: line changed nothing in LaTeX at all and this comparison '
@@ -25281,6 +25423,14 @@ if [ "${1:-}" = "--self-test" ]; then
     'match no ledger entry' \
     m57_tex_ledger "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" \
       "$M57W/filtered.tex" "M57 probe"
+  # A pair whose differing lines have the bodies `--` and `++`, which read as
+  # diff headers to a filter keyed on the prefix and so vanished rather than
+  # failing as unclassified (M092).
+  printf 'a\n--\nb\n' > "$M57W/dashes-left.tex"
+  printf 'a\n++\nb\n' > "$M57W/dashes-right.tex"
+  m57_planted 'a pair differing only in a line reading -- and one reading ++' \
+    '2 differing line(s) of' \
+    m57_tex_ledger "$M57W/dashes-left.tex" "$M57W/dashes-right.tex" "M57 probe"
   m57_planted 'a pair whose two .tex files are identical' \
     'are identical' \
     m57_tex_ledger "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" \
@@ -25366,6 +25516,7 @@ M58_EPUB="$CAPTURE_ROOT/index-separators-epub/index-separators.epub"
 # state.
 derive_labels_twin examples/index-separators.qmd \
   examples/index-separators-twin.qmd 1 "M58-AC2 (derivation)" \
+  "separator xref-separator" \
   || fail "M58-AC2: the twin is not the separators fixture with its \`index-labels:\` block removed (its own FAIL line is above)"
 
 read -r -d '' M58_SEPARATORS <<'MANIFEST' || true
@@ -25484,15 +25635,16 @@ check_extension_warning_count "$WORK/index-separators-scoped-html.log" 0 \
 pass "M58-AC3: one render prints the second index's own separator inside that index and the document's cross-reference separator in both, so the nearer declaration wins key by key rather than map by map"
 
 # AC4 — the two empty values, each asserted WHOLE: a prefix would let the half
-# naming the key or the level be reworded away. The control is the fixture that
-# writes no unusable shape, without which a filter reporting every document
-# would satisfy both counts.
+# naming the key or the level be reworded away. No zero control sits beside
+# them: both messages name the `figures` index, which
+# examples/index-separators.qmd does not declare, so a zero count over its log
+# could not fail (M092). A filter reporting every document is held by the zero
+# totals over the logs of the fixtures that write no unusable shape: M58-AC1's
+# silence count over the separators log, and the labels fixture's two in M56.
 M58_MISUSE_EMPTY_SEP='index-labels: in the entry declaring the index named "figures" gives the key "separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 M58_MISUSE_EMPTY_XREF='index-labels: in the entry declaring the index named "figures" gives the key "xref-separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 for needle in "$M58_MISUSE_EMPTY_SEP" "$M58_MISUSE_EMPTY_XREF"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 "M58-AC4"
-  check_warning_count "$WORK/index-separators-html.log" "$needle" 0 \
-    "M58-AC4 (control)"
 done
 check_separators html "$M56_MISUSE_HTML" "$M58_MISUSE" "M58-AC4 (fallback)"
 pass "M58-AC4: each empty punctuation value draws exactly its own whole message, naming the key and the index it was written in, and every position in all three of that document's indexes falls back to the ASCII mark"
@@ -25511,12 +25663,10 @@ pass "M58-AC5: the unknown-key report lists all five writable keys, the two new 
 # and not a search for the declared glyphs: a difference anywhere in the file
 # fails this, whatever the differing lines say. A same-tree comparison of two
 # documents, which is not the merge-base refactor oracle D-004 refused (D-012).
-if ! diff -u "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" \
-             "$CAPTURE_ROOT/index-separators-twin-latex/index-separators-twin.tex" \
-             > "$WORK/index-separators-tex.diff" 2>&1; then
-  head -40 "$WORK/index-separators-tex.diff" >&2
-  fail "M58-AC6: the separators fixture's .tex differs from its twin's, so an index-labels: declaration reached the LaTeX back-end"
-fi
+# The comparison is M56-AC6's function, which the M56 self-test plants red.
+check_tex_identical "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" \
+  "$CAPTURE_ROOT/index-separators-twin-latex/index-separators-twin.tex" \
+  "$WORK/index-separators-tex.diff" "M58-AC6"
 # And the count that says the comparison ran over a file with index commands in
 # it, so an empty diff cannot come of two documents that index nothing.
 # Derived from the fixture's seven marks and latex.lua's contested-key rule,
@@ -25609,6 +25759,153 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
       "$M58W/empty.txt" "M58 probe"
 
+  # A malformed manifest is the check's own input failing, and is reported as
+  # one FAIL line and exit 1, never a traceback (M092). Three shapes: a slot
+  # name that is no printed position, and a space in place of a tab, once
+  # between two slots and once between the depth and the term.
+  m092_manifest_refused() {
+    local label="$1" manifest="$2" want="$3" out rc
+    out=$(python3 tests/sepcheck.py html "$M58_HTML" "$HTML_SECTION_ID" \
+      "$manifest" "M58 probe" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -eq 1 ] \
+      || fail "M58 T9 self-test: sepcheck.py exited $rc on $label, where a malformed manifest exits 1 (<<$out>>)"
+    case "$out" in
+      *Traceback*) fail "M58 T9 self-test: sepcheck.py printed a traceback on $label (<<$out>>)" ;;
+    esac
+    [ "$(printf '%s\n' "$out" | grep -c '^FAIL: ')" = 1 ] \
+      || fail "M58 T9 self-test: sepcheck.py did not print exactly one FAIL: line on $label (<<$out>>)"
+    case "$out" in
+      *"$want"*) pass "M58 T9 self-test: sepcheck.py refuses $label with one FAIL line naming it" ;;
+      *) fail "M58 T9 self-test: sepcheck.py failed $label, but not for that reason (<<$out>>)" ;;
+    esac
+  }
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/S1=U+060C	S2=/S9=U+060C	S2=/' \
+    > "$M58W/badslot.txt"
+  grep -q 'S9=' "$M58W/badslot.txt" \
+    || fail "M58 T9 self-test: planting an unknown slot name changed no row"
+  m092_manifest_refused 'a manifest naming the slot S9' "$M58W/badslot.txt" \
+    "'S9' is no printed position"
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/S1=U+060C	S2=/S1=U+060C S2=/' \
+    > "$M58W/spaceslot.txt"
+  grep -q 'S1=U+060C S2=' "$M58W/spaceslot.txt" \
+    || fail "M58 T9 self-test: planting a space between two slots changed no row"
+  m092_manifest_refused 'a manifest with a space for the tab between two slots' \
+    "$M58W/spaceslot.txt" "carries whitespace; a row's fields are separated by tabs"
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/^0	Azurite	/0 Azurite	/' \
+    > "$M58W/spacedepth.txt"
+  grep -q '^0 Azurite	' "$M58W/spacedepth.txt" \
+    || fail "M58 T9 self-test: planting a space between depth and term changed no row"
+  m092_manifest_refused 'a manifest with a space for the tab after a depth' \
+    "$M58W/spacedepth.txt" "is not a number written in ASCII digits"
+  # A space for the tab after the term joins the first slot into the term,
+  # which may itself hold spaces, so it is refused by the slot's shape.
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/^0	Azurite	S1=/0	Azurite S1=/' \
+    > "$M58W/spaceterm.txt"
+  grep -q '^0	Azurite S1=' "$M58W/spaceterm.txt" \
+    || fail "M58 T9 self-test: planting a space between term and slot changed no row"
+  m092_manifest_refused 'a manifest with a space for the tab after a term' \
+    "$M58W/spaceterm.txt" "term 'Azurite S1=U+060C' carries the slot 'S1=U+060C'"
+
+  # The separator reader, on copies of two captured pages whose every entry
+  # line is wrapped in a `<p>`, the shape a writer emitting the list loose
+  # produces (M092). The separators must come back as on the capture: the
+  # separators fixture reaches all five positions, and resolving-xref nests
+  # entries three deep, so the wrap sits beside a nested list.
+  for page in "$M58_HTML" "$CAPTURE_ROOT/resolving-html/resolving-xref.html"; do
+    python3 - "$page" "$HTML_SECTION_ID" <<'M092LOOSEPY' \
+      || fail "M58 T9 self-test: the separator reader reads a loose entry list differently from a tight one (its own FAIL line is above)"
+import re, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+page, prefix = sys.argv[1:3]
+text = open(page, encoding='utf-8').read()
+wrapped = re.sub(r'<li>(.*?)(<ul>|</li>)',
+                 lambda m: f'<li><p>{m.group(1)}</p>{m.group(2)}',
+                 text, flags=re.S)
+
+
+def separators(markup):
+    return [(found['ident'], record['term'], record['separators'])
+            for found in H.index_sections(H.parse_text(markup), prefix)
+            for record in found['records'] if record['kind'] == 'entry']
+
+
+tight, loose = separators(text), separators(wrapped)
+slots = sum(len(seps) for _i, _t, seps in tight)
+if not slots:
+    print(f'FAIL: M092 loose list: {page} yields no separator at all, so the '
+          f'comparison would hold over nothing', file=sys.stderr)
+    sys.exit(1)
+wraps = len(re.findall(r'<li><p><span [^>]*class="qi-term"', wrapped))
+if wraps != len(tight):
+    print(f'FAIL: M092 loose list: {wraps} entry line(s) of {page} are wrapped '
+          f'in <p>, where the page prints {len(tight)}', file=sys.stderr)
+    sys.exit(1)
+if len(loose) != len(tight):
+    print(f'FAIL: M092 loose list: {page} reads {len(loose)} entry line(s) '
+          f'wrapped and {len(tight)} unwrapped', file=sys.stderr)
+    sys.exit(1)
+if loose != tight:
+    for a, b in zip(tight, loose):
+        if a != b:
+            print(f'FAIL: M092 loose list: {page}: {a!r} reads as {b!r} once '
+                  f'the entry line is wrapped in <p>', file=sys.stderr)
+            break
+    sys.exit(1)
+print(f'ok   M092 loose list: {page}: all {len(tight)} entry line(s) yield the '
+      f'same {slots} separator(s) wrapped in <p> as unwrapped')
+M092LOOSEPY
+  done
+
+  # AC2's premise, that the fixture's one block sets `separator` and
+  # `xref-separator` and no other key, on a copy whose block sets a third
+  # (M092). The twin comparison alone passes this copy, since the whole block
+  # is deleted before it compares.
+  python3 - examples/index-separators.qmd "$M58W/thirdkey.qmd" <<'M092KEYPY'
+import sys
+src, out = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+needle = 'index-labels:\n'
+if text.count(needle) != 1:
+    print(f'FAIL: M092 plant: {src} carries {text.count(needle)} '
+          f'`index-labels:` lines, where it is written with 1', file=sys.stderr)
+    sys.exit(1)
+open(out, 'w', encoding='utf-8').write(
+    text.replace(needle, needle + '  see: "siehe"\n'))
+M092KEYPY
+  [ -s "$M58W/thirdkey.qmd" ] \
+    || fail "M58 T9 self-test: planting a third key wrote no file (its own FAIL line is above)"
+  m58_planted 'a separators fixture whose index-labels: block sets a third key' \
+    'sets the key "see", which is not one of separator, xref-separator' \
+    derive_labels_twin "$M58W/thirdkey.qmd" examples/index-separators-twin.qmd \
+      1 "M58 probe" "separator xref-separator"
+  # The key check's other two branches (M092 review): a block missing one of
+  # the two keys, and a block that is not a map at all.
+  python3 - examples/index-separators.qmd "$M58W" <<'M092KEYSPY'
+import sys
+src, outdir = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+key_line = '  xref-separator: "؛"\n'
+block = '  separator: "،"\n' + key_line
+for needle in (key_line, block):
+    if text.count(needle) != 1:
+        print(f'FAIL: M092 plant: {src} carries {text.count(needle)} copies of '
+              f'{needle!r}, where it is written with 1', file=sys.stderr)
+        sys.exit(1)
+open(f'{outdir}/missingkey.qmd', 'w', encoding='utf-8').write(
+    text.replace(key_line, ''))
+open(f'{outdir}/scalarblock.qmd', 'w', encoding='utf-8').write(
+    text.replace('index-labels:\n' + block, 'index-labels: "،"\n'))
+M092KEYSPY
+  m58_planted 'a separators fixture whose index-labels: block does not set xref-separator' \
+    'does not set the key "xref-separator"' \
+    derive_labels_twin "$M58W/missingkey.qmd" examples/index-separators-twin.qmd \
+      1 "M58 probe" "separator xref-separator"
+  m58_planted 'a separators fixture whose index-labels: value is not a map' \
+    'is not a map, where it is written to set separator, xref-separator' \
+    derive_labels_twin "$M58W/scalarblock.qmd" examples/index-separators-twin.qmd \
+      1 "M58 probe" "separator xref-separator"
+
   # And the twin's manifest against the declaring render, which is the
   # comparison a check blind to the printed glyph would pass.
   printf '%s\n' "$M58_ENGLISH" > "$M58W/english.txt"
@@ -25665,9 +25962,13 @@ for needle in "$M59_INVIS_SEEALSO" "$M59_INVIS_SYMBOLS" \
               "$M59_LIST_SYMBOLS" "$M59_MAP_SEE"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M59-AC1/AC2"
-  # The control: the same message over the fixture that writes no unusable
-  # shape. Without it a filter that reported every document would satisfy the
-  # four counts above.
+done
+# The control: the same message over the fixture that writes no unusable
+# shape. Without it a filter that reported every document would satisfy the
+# four counts above. Only the two document-level messages are held there: the
+# other two name the `strata` index, which examples/index-labels.qmd does not
+# declare, so a zero count over its log could not fail (M092).
+for needle in "$M59_INVIS_SEEALSO" "$M59_LIST_SYMBOLS"; do
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M59-AC1/AC2 (control)"
 done
@@ -25697,9 +25998,10 @@ for needle in "$M59_NONAME" "$M59_EMPTYNAME" "$M59_BADNAME" "$M59_REPEATED" \
               "$M59_DROPPED_8"; do
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M59-AC3"
-  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
-    "M59-AC3 (control)"
 done
+# No zero control: every one of these messages names an `indexes:` entry from 5
+# to 8, and examples/index-labels.qmd writes two entries, so a zero count over
+# its log could not fail (M092).
 pass "M59-AC3: each of the four refusal branches an indexes: entry carrying a label map can reach draws its own whole refusal message and, beside it, the whole further message saying that map sets no word"
 
 # The total, which is what makes the counts above a statement about the WHOLE
@@ -25729,15 +26031,11 @@ check_warning_count "$WORK/index-labels-clash-html.log" "$M59_NOCLASH" 0 \
 # And the whole render's total: one report, from one of the two indexes.
 check_extension_warning_count "$WORK/index-labels-clash-html.log" 1 \
   "M59-AC4 (total)"
-# The zero-expectation control on the fixtures that write no clashing word at
-# all -- the misuse fixture declares `symbols:` at both levels and every one of
-# them falls back to `Symbols`, which no letter group can head.
-for needle in "$M59_CLASH" "$M59_NOCLASH"; do
-  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 0 \
-    "M59-AC4 (control)"
-  check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
-    "M59-AC4 (control)"
-done
+# No zero control over the other two labels fixtures' logs: the messages name
+# the `minerals` and `fossils` indexes, which neither examples/index-labels.qmd
+# nor examples/index-labels-misuse.qmd declares, so a zero count over either
+# log could not fail (M092). The silence count and the total above are the
+# controls, and the self-test plants each red.
 
 # What prints is unchanged: both groups are still there, in their own places,
 # the non-letter one still leading its index. A manifest and not a search for
@@ -25814,6 +26112,20 @@ if [ "${1:-}" = "--self-test" ]; then
   m59_planted 'a render that printed two groups under one heading in silence' \
     'expected 1 occurrence' \
     check_warning_count "$M59W/clash.log" "$M59_CLASH" 1 "M59 probe"
+
+  # The silence half, against copies of the clash log carrying what the render
+  # must not (M092): the report the `fossils` index would draw, and one warning
+  # of this extension's that is no clash report at all.
+  cp "$WORK/index-labels-clash-html.log" "$M59W/noclash.log"
+  printf '%s\n' "(W) $M59_NOCLASH" >> "$M59W/noclash.log"
+  m59_planted 'a render that reported a clash in the index whose word heads no letter group' \
+    'expected 0 occurrence' \
+    check_warning_count "$M59W/noclash.log" "$M59_NOCLASH" 0 "M59 probe"
+  cp "$WORK/index-labels-clash-html.log" "$M59W/other.log"
+  printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/other.log"
+  m59_planted 'a clash render reporting one message that is not a clash report' \
+    'expected 1 warning(s)' \
+    check_extension_warning_count "$M59W/other.log" 1 "M59 probe"
 
   # The total, against a log carrying one warning of this extension's more than
   # the fixture derives: a pin read off the render rather than derived would

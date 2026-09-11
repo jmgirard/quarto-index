@@ -585,6 +585,32 @@ SEP_LOCATORS_XREF = 'S3'      # locators -> the first cross-reference
 SEP_TERM_XREF = 'S4'          # term -> the first cross-reference, no locators
 SEP_XREF_XREF = 'S5'          # one cross-reference -> the next
 
+# The spans an entry line is made of, whose own text is never a separator.
+LINE_PART_CLASSES = ('qi-term', 'qi-locators', 'qi-xref')
+
+
+def _line_pieces(node):
+    """An entry line's text runs and part spans, in document order.
+
+    Like `own_nodes`, a nested list is a sub-entry's and is skipped, and any
+    other element that is not one of the line's part spans is walked through.
+    Unlike `own_nodes`, the walk yields text runs as well as elements, and a
+    walked-through element yields none of its own: its text joins the run
+    around it. So `<b>!</b>` between the term and the locators makes that run
+    `!, `, where a reader of the item's direct children alone ended the run at
+    the `<b>`. This extension writes no such element inside an entry line.
+    """
+    for child in node.children:
+        if isinstance(child, str):
+            yield child
+        elif isinstance(child, Node):
+            if child.tag in LIST_TAGS:
+                continue
+            if classes(child) & set(LINE_PART_CLASSES):
+                yield child
+            else:
+                yield from _line_pieces(child)
+
 
 def entry_separators(item):
     """The punctuation one entry line prints between its parts, in order.
@@ -596,16 +622,23 @@ def entry_separators(item):
     space this extension writes is the question a check asks of it, and a
     reader that stripped it could not be asked.
 
-    Read from the item's own children in document order, so the sequence is
+    Read from the item's own content in document order, so the sequence is
     the order a reader meets the marks in: the run in front of the locators
     span, then the runs inside it between one numbered link and the next, then
     the run in front of each cross-reference span.
+
+    The content is walked through any element that is not a nested list, as
+    `own_nodes` walks it for the record builder (M092), so an entry line a
+    writer wraps in a `<p>` yields the same pairs as one sitting directly in
+    the `<li>`. The term, locators and cross-reference spans are not entered,
+    since their own text is no separator. `_line_pieces` states where the walk
+    and `own_nodes` part.
     """
     pairs = []
     pending = None
     seen_locators = False
     seen_xref = False
-    for child in item.children:
+    for child in _line_pieces(item):
         if isinstance(child, str):
             pending = (pending or '') + child
             continue

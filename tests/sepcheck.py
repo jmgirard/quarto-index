@@ -30,6 +30,11 @@ expected there. The code point and not the character itself, because the
 fixtures print Arabic punctuation and a manifest sitting in a file of English
 would otherwise turn on two marks a reader cannot tell apart.
 
+A row whose fields are not tab-separated is refused as a manifest defect,
+never read as a rendering one: a depth must be ASCII digits, a slot may carry
+no whitespace, and no word of a term may be shaped like a slot. The refusal is
+one FAIL line and exit 1.
+
 The five sites are htmlindex's own constants, which name what a mark sits
 between: S1 term to locators, S2 locator to locator, S3 locators to the first
 cross-reference, S4 term to the first cross-reference where the entry has
@@ -94,15 +99,34 @@ def read_manifest(path):
             if len(fields) < 3:
                 raise ValueError(f'{where}: an entry row is a depth, a term '
                                  f'and at least one slot')
+            depth = fields[0]
+            if not (depth.isascii() and depth.isdigit()):
+                raise ValueError(f'{where}: depth {depth!r} is not a number '
+                                 f'written in ASCII digits; a row\'s fields '
+                                 f'are separated by tabs')
+            # A space where the tab after the term belongs joins the first slot
+            # into the term, which may itself hold spaces. A word of the term
+            # shaped like a slot is that join.
+            for word in fields[1].split():
+                site, eq, _ = word.partition('=')
+                if eq and site in SITES:
+                    raise ValueError(f'{where}: term {fields[1]!r} carries the '
+                                     f'slot {word!r}; a row\'s fields are '
+                                     f'separated by tabs')
             slots = []
             for field in fields[2:]:
+                # A space where a tab belongs joins two slots into one field.
+                if any(ch.isspace() for ch in field):
+                    raise ValueError(f'{where}: slot {field!r} carries '
+                                     f'whitespace; a row\'s fields are '
+                                     f'separated by tabs')
                 site, _, glyph = field.partition('=')
                 if site not in SITES:
                     raise ValueError(f'{where}: {site!r} is no printed '
                                      f'position; they are '
                                      f'{", ".join(SITES)}')
                 slots.append((site, _codepoint(glyph, where)))
-            sections[-1][1].append((int(fields[0]), fields[1], slots))
+            sections[-1][1].append((int(depth), fields[1], slots))
     if not sections:
         raise ValueError(f'{path}: the manifest states no section at all, so '
                          f'this comparison would pass over nothing')
@@ -170,7 +194,8 @@ def compare(sections, expected, label):
     slots = sum(len(slots) for _, _, _, slots in wanted)
     print(f'ok   {label}: {len(wanted)} entry line(s) across '
           f'{len(expected)} section(s) print the stated glyph at all {slots} '
-          f'printed position(s), each followed by exactly one space')
+          f'printed position(s), each followed by exactly one whitespace '
+          f'character')
     return 0
 
 
@@ -179,7 +204,14 @@ def main(argv):
         print(__doc__, file=sys.stderr)
         return 2
     mode, artifact, prefix, manifest_path, label = argv
-    expected = read_manifest(manifest_path)
+    # A malformed or unreadable manifest is this check's own input failing,
+    # reported as that rather than as a rendering defect (M092).
+    try:
+        expected = read_manifest(manifest_path)
+    except (OSError, ValueError) as bad:
+        print(f'FAIL: {label}: the manifest cannot be used: {bad}',
+              file=sys.stderr)
+        return 1
     if mode == 'html':
         sections = htmlindex.index_sections(htmlindex.parse(artifact), prefix)
     elif mode == 'epub':

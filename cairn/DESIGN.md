@@ -1489,7 +1489,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   (`two.html#qi-mark-1` on the capture — observed 2026-09-10), though the
   M063 T2 self-test's contrast rests on it. Its one fragment check,
   `tests/fragments.py resolve` over the index page, passes while every
-  fragment-carrying locator on the page resolves and at least one exists, and
+  fragment-carrying locator on the page names an id its page holds exactly
+  once, no locator leaves the site, and at least one fragment exists, and
   `Bramble` losing its anchor leaves `Aardvark`'s (corrected M088). — M088 plan
   gate
 

@@ -90,6 +90,8 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
 - 2026-09-10: claim audit: not owed — internal tier
 - 2026-09-10: status → review.
 - 2026-09-10: review pass 1 in progress — AC1/AC2 evidenced and ticked, `cairn_validate` passed; AC3's suite runs and the three-lens review still running.
+- 2026-09-10: step-7 approval: m088-link-check-deletions approved for merge, with F1/F2/F4/F5 fixed first and F3 rejected; suite and self-test re-run before push.
+- 2026-09-10: gate fix-now — M063 T2 self-test pass line no longer claims the unasserted anchor contrast (F1), M078-AC3 sweep's fail label names M064-AC2 too (F2), `m085_epub_plant` comment accounts for the clean repack (F4), KI273's pass condition completed (F5); `bash -n` clean.
 
 ## Decisions
 
@@ -111,3 +113,5 @@ Independent review (three lenses, fresh context; dispositions pending the gate):
 - [O] F3: :11265-11268, the same section-to-page widening on the old-store leg (identical today: index.html carries only `alpha`); its fail text names less than `fragments.py resolve` refuses.
 - [O] F4: :24072-24075, the comment says "every plant here rewrites a locator", but the `clean` plant rewrites nothing.
 - [O] F5: `cairn/DESIGN.md` KI273's pass condition leaves out two things `fragments.py resolve` also refuses: an id on more than one element, and a locator leaving the site.
+
+Dispositions at the gate (2026-09-10): F1, F2, F4, F5 fix now; F3 rejected — the section-to-page widening is the plan's own choice (Tasks T1) and reads the same set on today's fixture, and its fail text understates rather than overstates. No finding meets the return floor: none fails a criterion.

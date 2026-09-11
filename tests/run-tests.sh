@@ -8976,7 +8976,7 @@ for M061_PASS in one two; do
   HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
     python3 tests/fragments.py resolve \
       "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" five.html \
-    || fail "M078-AC3 (render $M061_PASS: every fragment any locator on the index page carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
+    || fail "M078-AC3 and M064-AC2 (render $M061_PASS: every fragment any locator on the index page carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
   # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
   # that states WHERE each locator points and what each cross-reference names.
   # four.qmd writes sixteen marks in fourteen forms, every one of them settled
@@ -11328,7 +11328,7 @@ MANIFEST
   check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
     "$HTML_SECTION_ID-alpha" Bramble "two.html" \
     "M063 T2 self-test (the refused record's chapter is recovered from its source, so its locator loses the anchor the record carried)"
-  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store costs the book the anchor a locator the run above links by — the term is read back out of its chapter's source and links to that chapter's page alone — which is what a validator that ignores a field nothing reads does not do"
+  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do; that the run above links it by the record's anchor instead is asserted nowhere"
 fi
 
 # Back to a store every record of which was written by the chapter it belongs
@@ -24070,9 +24070,10 @@ if [ "${1:-}" = "--self-test" ]; then
   # above would be the repacking and not the plant inside it.
   # -------------------------------------------------------------------------
   # One expected count stands for both commands. `links` counts every link it
-  # skipped and `unique` only the fragment-carrying ones, and every plant here
-  # rewrites a locator `locators.py` offers only with its `#fragment`, which
-  # each rewrite keeps, so on these plants the two counts are one number.
+  # skipped and `unique` only the fragment-carrying ones. The clean repack
+  # carries no leaving link, and every other plant rewrites a locator
+  # `locators.py` offers only with its `#fragment`, which the rewrite keeps, so
+  # on these plants the two counts are one number.
   m085_epub_plant() {   # <slug> <label> <count> [<pattern> <replacement>]
     local slug="$1" label="$2" count="$3"
     shift 3

@@ -4778,6 +4778,11 @@ does not hold, a pattern matching nothing, a pattern matching more than once
 one place), or a substitution leaving the text as it was would each produce a
 publication the check passes for a reason that is not the one the plant
 claims.
+
+`--every` rewrites every run the pattern matches instead of requiring exactly
+one, for a plant whose claim is about all of them (M087). A pattern matching
+nothing is still refused, and so is a substitution leaving the text as it was;
+the count of runs rewritten is printed, so a caller can see how many it reached.
 """
 
 import re
@@ -4786,8 +4791,11 @@ import zipfile
 
 
 def main(argv):
-    if len(argv) not in (2, 5):
-        print('usage: plant.py <src.epub> <dest.epub> '
+    every = bool(argv) and argv[0] == '--every'
+    if every:
+        argv = argv[1:]
+    if len(argv) not in (2, 5) or (every and len(argv) != 5):
+        print('usage: plant.py [--every] <src.epub> <dest.epub> '
               '[<member> <pattern> <replacement>]', file=sys.stderr)
         return 2
     src, dest = argv[0], argv[1]
@@ -4805,14 +4813,14 @@ def main(argv):
                 if info.filename == member:
                     text = data.decode('utf-8')
                     found = len(re.findall(pattern, text))
-                    if found != 1:
+                    if not every and found != 1:
                         print(f'FAIL: {member} carries {found} run(s) matching '
                               f'{pattern!r}, not the one this plant aims at, '
                               f'so what it planted is not what it claims',
                               file=sys.stderr)
                         return 1
                     planted, hits = re.subn(pattern, replacement, text,
-                                            count=1)
+                                            count=0 if every else 1)
                     if not hits:
                         print(f'FAIL: {member} carries no run matching '
                               f'{pattern!r}, so this plant changed nothing',
@@ -4823,6 +4831,9 @@ def main(argv):
                               f'it as it was, so a green below would be the '
                               f'unplanted publication', file=sys.stderr)
                         return 1
+                    if every:
+                        print(f'planted {hits} run(s) matching {pattern!r} '
+                              f'in {member}')
                     data = planted.encode('utf-8')
                 out.writestr(info, data)
     return 0
@@ -24136,6 +24147,39 @@ if [ "${1:-}" = "--self-test" ]; then
   m085_epub_plant network-path \
     'M085 T7 self-test: an index locator rewritten to an href opening `//`' \
     1 1 "href=\"$M085_LOCATOR1_RE\"" "href=\"//example.invalid/$M085_LOCATOR1\""
+
+  # M087 AC4 — the refusal each EPUB command gives when EVERY link inside a
+  # generated index section leaves the publication. Every index locator of the
+  # member is rewritten to an `https:` href with its `#fragment` kept: without
+  # the fragment `unique` refuses on its no-fragment branch instead, which is
+  # not the refusal planted here. Each command is read by its own refusal text
+  # and by printing exactly one FAIL line, never by exit status alone — with
+  # its all-leave refusal removed `unique` still exits 1, on that other branch.
+  M087_PLANTED=$(python3 "$M083W/plant.py" --every "$M085_SRC" \
+    "$M085W/allout.epub" "$M085_MEMBER" \
+    'href="([^":/?#]+\.xhtml#[^"]+)"' 'href="https://example.invalid/\1"') \
+    || fail "M087-AC4: the publication could not be rewritten to carry only index locators that leave it (the plant's own message is above)"
+  M087_PLANTED_COUNT=$(printf '%s' "$M087_PLANTED" | sed -n 's/^planted \([0-9][0-9]*\) run(s) .*/\1/p')
+  [ -n "$M087_PLANTED_COUNT" ] \
+    || fail "M087-AC4: the plant printed no count of the locators it rewrote, so the refusals below cannot be held to that count"
+
+  m087_refusal() {   # <command> <refusal text> [<command args>...]
+    local cmd="$1" refusal="$2" out rc
+    shift 2
+    out=$(python3 tests/epubcheck.py "$cmd" "$M085W/allout.epub" "$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -eq 1 ] \
+      || { printf '%s\n' "$out" >&2; fail "M087-AC4 ($cmd): the command exits $rc over a publication every index link of which leaves it, not 1"; }
+    printf '%s' "$out" | grep -qF -- "$refusal" \
+      || { printf '%s\n' "$out" >&2; fail "M087-AC4 ($cmd): the command is red, but not with the refusal it gives when every index link leaves the publication — <<$refusal>>"; }
+    [ "$(printf '%s\n' "$out" | grep -c '^FAIL:')" -eq 1 ] \
+      || { printf '%s\n' "$out" >&2; fail "M087-AC4 ($cmd): the command prints a failure beside its all-links-leave refusal"; }
+    pass "M087-AC4 ($cmd): over a publication whose $M087_PLANTED_COUNT index locators all leave it, the command exits 1 with its all-links-leave refusal and no other failure"
+  }
+  m087_refusal links \
+    "every one of the $M087_PLANTED_COUNT link(s) inside a generated index section leaves the publication, so the resolving below would pass over an empty set" \
+    "$HTML_SECTION_ID"
+  m087_refusal unique \
+    "every one of the $M087_PLANTED_COUNT fragment-carrying link(s) inside a generated index section leaves the publication, so this check resolved none of them"
 fi
 
 # ---------------------------------------------------------------------------

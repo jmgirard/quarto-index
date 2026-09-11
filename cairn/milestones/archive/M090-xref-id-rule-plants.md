@@ -10,13 +10,11 @@ which now takes the module it substitutes into (default `html.lua`): `contestabl
 false in `passes.lua` (red on `rho` keeping `xref-dup`), the outrank clause dropped from
 `keepable_author_ids` (red on the `chi` locator), and `assign_anchors` giving up an
 uncontested cross-reference id (red on `xref-solo`/`upsilon`). The M084 T2 self-test and its
-`text_keyed`/`grouped` helpers are removed; the leg's own grouping read stays, its comment
-saying no rendered case reaches a group of two. KI274 and KI275 added; KI276 (T3's pinned
-line is also printed under T2) added at hygiene.
+`text_keyed`/`grouped` helpers are removed; the leg's own grouping read stays. KI274 and
+KI275 added; KI276 (T3's pinned line is also printed under T2) added at hygiene.
 
 **Decisions:** none milestone-local; the plan gate's two choices (delete rather than harden
-the M084 self-test; record the refusal-wording gap rather than add a fourth plant) are in
-the work log (git).
+the M084 self-test; record the refusal-wording gap rather than add a plant) are in git.
 
 **Review:** pass 1, three-lens fan-out; suite 1455 checks, 0 FAIL, all four criteria
 verified. History and prior-review lenses found nothing. Three wording findings, all fixed

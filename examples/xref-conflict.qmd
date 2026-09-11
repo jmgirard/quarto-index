@@ -94,3 +94,14 @@ therefore stay plain text: [rho]{.index see="Note: on birds"}.
 
 The genuine two-level target, which must be a link:
 [sigma]{.index see="Note!on birds"}.
+
+# Entries the targets name
+
+Each target above other than `sigma`'s and `rho`'s names one of these entries,
+marked with no visible text. `sigma`'s names the entry `pi` marks, and `rho`'s
+stays unresolved on purpose.
+[]{.index entry="Elsewhere"} []{.index entry="Here"} []{.index entry="There"}
+[]{.index entry="Elsewhere Again"} []{.index entry="One Way"}
+[]{.index entry="Another Way"} []{.index entry="Aye Two"}
+[]{.index entry="Bee Two"} []{.index entry="Shallow"} []{.index entry="Afar"}
+[]{.index entry="Same"} []{.index entry="% & # _ { } \\ ~ ^ $ @ | !! \" < >"}

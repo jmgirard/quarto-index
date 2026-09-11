@@ -1,0 +1,41 @@
+---
+title: "quarto-index per-document state, index declarations"
+# Smart typography is off for the reason every other probe turns it off: the
+# marks below are compared byte for byte between two renders, and a rendered
+# curly quote would be one more thing standing between the emitted output and
+# the state that produced it.
+from: markdown-smart
+filters:
+  - index
+  - ../tests/state-pollute.lua
+---
+
+# What this fixture is for
+
+This fixture declares no index, which is what makes the cells `indexes.lua`
+owns readable. A document that declares one has its own declaration read over
+whatever was left behind, so a leaked name, title or word would leave nothing
+for the comparison to see. It is rendered twice off one tree, once with the
+pollution filter above switched on and once with it off, and the two renders'
+output and warnings must agree byte for byte.
+
+# The marks
+
+**A mark naming an index nothing declares.** [Named]{.index index="leaked"}
+draws the report saying so and files in the one index this document has. A
+leaked title table answers to that name instead, so both the report and the
+entry move.
+
+**A cross-reference**, so that the word printed in front of a target is on the
+page: [Alpha]{.index see="Beta"} points at [Beta]{.index}.
+
+**A term marked twice**, so that the mark printed between two locators is on
+the page: [Twice]{.index} here, and [Twice]{.index} again here.
+
+**A term that files under no letter**, so that the heading over that group is
+on the page: [%percent]{.index}.
+
+::: {.qi-index-here}
+:::
+
+Prose after the marker, so the index has something to sit in front of.

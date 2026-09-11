@@ -7,14 +7,16 @@ reads was polluted — the vacuity M23's lesson names. This driver settles it th
 only way that settles it: each reset, and then each individual cell inside one,
 is removed in turn and the comparison is required to FAIL.
 
-  AC3  four probes varying the defect's location and its FORM: each module's
-       whole reset emptied of what it restores, and — the form axis —
-       latex.lua's reset left in place with one cell alone dropped from it.
-  AC4  one probe per cell, sixteen of them, each cell alone dropped and put
-       back. `range_pair_found` is the seventeenth and is expected to PASS:
-       `finish_ranges` assigns it wholesale on every document, so no earlier
-       document's value can survive into it. It is probed too, and its passing
-       is the recorded evidence for that claim.
+  AC3  one probe per module, its whole reset emptied of what it restores, and
+       — the form axis — latex.lua's reset left in place with one cell alone
+       dropped from it. The indexes.lua probe drops the six cells that reset
+       clears and keeps the two lines installing the unnamed index and the
+       `read(doc.meta)` call: a document with no index to file a mark in fails
+       to render, which is not a comparison moving.
+  AC4  one probe per cell in CELLS, each cell alone dropped and put back. The
+       cells EXEMPT names are expected to PASS, each for the reason recorded
+       there; they are probed too, and their passing is the evidence for those
+       reasons.
 
 A probe stops at the first fixture and format whose comparison fails, and the
 report names which artifact moved — a `.tex`, an HTML page, or the warning
@@ -45,6 +47,8 @@ RENDER = ['quarto', 'render']
 # most cells move the rich fixture's LaTeX, so most probes cost one pair.
 PAIRS = [('state-reuse', 'latex', 'tex'),
          ('state-reuse', 'html', 'html'),
+         ('state-reuse-indexes', 'latex', 'tex'),
+         ('state-reuse-indexes', 'html', 'html'),
          ('state-reuse-plain', 'latex', 'tex'),
          ('state-reuse-plain', 'html', 'html'),
          ('state-reuse-empty', 'latex', 'tex'),
@@ -71,11 +75,34 @@ CELLS = [
     ('principal_ordinals', 'latex', 'principal_ordinals = 0'),
     ('principal_emitted', 'latex', 'M["principal_emitted"] = false'),
     ('sort_keys', 'sortkeys', 'qi_core.empty(sort_keys)'),
+    ('order', 'indexes', 'qi_core.empty(order)'),
+    ('titles', 'indexes', 'qi_core.empty(titles)'),
+    ('doc_labels', 'indexes', 'qi_core.empty(doc_labels)'),
+    ('index_labels', 'indexes', 'qi_core.empty(index_labels)'),
+    ('language_words', 'indexes', 'language_words = nil'),
+    ('declared', 'indexes', 'declared = false'),
 ]
 
-# The one cell whose reset cannot be load-bearing, and why. Probed like every
-# other; its PASSING is what the criterion records.
-EXEMPT = 'range_pair_found'
+# What indexes.lua's reset restores, without the two lines that install the
+# unnamed index over them: the whole-module probe drops these and leaves the
+# document an index to file a mark in.
+INDEXES_RESTORES = [statement for _, module, statement in CELLS
+                    if module == 'indexes']
+
+# The cells whose reset cannot be load-bearing, and why. Each is probed like
+# every other; its PASSING is what the criterion records.
+EXEMPT = {
+    'range_pair_found':
+        'finish_ranges assigns it wholesale on every document, so nothing '
+        'survives into one',
+    'language_words':
+        "read assigns it on every document, from the lang: that document "
+        'declares',
+    'index_labels':
+        'read assigns every declared index its own map, nil included, and '
+        'label is asked only for the index a mark files in, which is a '
+        'declared name or the unnamed cell no declaration can name',
+}
 
 
 def module_path(name):
@@ -86,7 +113,7 @@ def reset_body(lines):
     """The 0-based line numbers of the statements inside `reset`."""
     start = None
     for i, line in enumerate(lines):
-        if line.strip() == 'local function reset()':
+        if line.strip().startswith('local function reset('):
             start = i
             break
     if start is None:
@@ -194,6 +221,9 @@ def probes():
            "latex.lua's whole reset restores nothing")
     yield ('reset:sortkeys', 'sortkeys', None,
            "sortkeys.lua's whole reset restores nothing")
+    yield ('reset:indexes', 'indexes', INDEXES_RESTORES,
+           "indexes.lua's reset emptied of the six cells it clears, its two "
+           "installation lines and its read call kept")
     yield ('reset:latex-one-cell', 'latex', ['principal_ordinals = 0'],
            "latex.lua's reset kept, principal_ordinals alone dropped from it")
     for name, module, statement in CELLS:
@@ -215,7 +245,8 @@ def main(argv):
         for label, module, statements, description in probes():
             if wanted and label not in wanted:
                 continue
-            exempt = label == 'cell:' + EXEMPT
+            exempt = (EXEMPT.get(label[len('cell:'):])
+                      if label.startswith('cell:') else None)
             drop = statements
             if drop is None:
                 lines = open(module_path(module), encoding='utf-8').read().split('\n')
@@ -227,9 +258,8 @@ def main(argv):
                 restore(module, original)
             if exempt:
                 if moved is None:
-                    print('ok   %-28s no comparison moves — finish_ranges assigns '
-                          'it wholesale on every document, so nothing survives '
-                          'into one (expected)' % label)
+                    print('ok   %-28s no comparison moves — %s (expected)'
+                          % (label, exempt))
                 else:
                     failures.append('%s was expected to move nothing and moved '
                                     '%s' % (label, moved))
@@ -245,7 +275,7 @@ def main(argv):
         print('\nFAIL: M26-AC3/M26-AC4:\n  ' + '\n  '.join(failures), file=sys.stderr)
         return 1
     print('\nok   M26-AC3/M26-AC4: every probe moved a comparison, except the '
-          'one cell recorded as unable to')
+          'cells recorded as unable to')
     return 0
 
 

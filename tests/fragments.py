@@ -25,6 +25,13 @@
   outside <html> <container-id> <id>...
       The same, except each listed id sits outside that element.
 
+  outside-heading <html> <section-id> <id>...
+      The element carrying <section-id> is on the page exactly once, and each
+      listed id is on the page exactly once, inside that element and neither
+      on nor within the first heading element among its children. The heading
+      is found by element, since Quarto puts a heading's id on the section
+      wrapping it and none on the heading.
+
 The section, anchor and entry prefixes are read from HTML_SECTION_ID,
 HTML_ANCHOR_PREFIX and HTML_ENTRY_PREFIX in the environment, as every other
 reader of the generated sections reads them, so the domain here is the same
@@ -132,11 +139,52 @@ def containment(path, container, wanted, want_inside):
     return 0
 
 
+HEADINGS = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+
+
+def outside_heading(path, section, wanted):
+    doc = H.parse(path)
+    name = os.path.basename(path)
+    if H.count_id(doc, section) != 1:
+        return fail('%s carries the id %r %d time(s), want exactly 1'
+                    % (name, section, H.count_id(doc, section)))
+    box = H.find_id(doc, section)
+    heading = next((n for n in box.children
+                    if isinstance(n, H.Node) and n.tag in HEADINGS), None)
+    if heading is None:
+        return fail('%s: the element %r has no heading element among its '
+                    'children, so there is no heading to be outside of'
+                    % (name, section))
+    # The heading's own id counts, which `containment` never reads for its
+    # container: `walk` yields descendants only.
+    on_heading = {n.attrs['id'] for n in [heading, *H.walk(heading)]
+                  if n.attrs.get('id')}
+    within = {n.attrs['id'] for n in H.walk(box) if n.attrs.get('id')}
+    for identifier in wanted:
+        count = H.count_id(doc, identifier)
+        if count != 1:
+            return fail('%s carries the id %r %d time(s), want exactly 1'
+                        % (name, identifier, count))
+        if identifier in on_heading:
+            return fail('%s: the id %r sits on or within the <%s> heading of '
+                        'the element %r' % (name, identifier, heading.tag,
+                                            section))
+        if identifier not in within:
+            return fail('%s: the id %r sits outside the element %r'
+                        % (name, identifier, section))
+    print('ok   %s: %d id(s) each on the page once, inside the element %r and '
+          'outside its <%s> heading: %s'
+          % (name, len(wanted), section, heading.tag, ' '.join(wanted)))
+    return 0
+
+
 def main(argv):
     if len(argv) == 4 and argv[1] == 'resolve':
         return resolve(argv[2], argv[3])
     if len(argv) >= 5 and argv[1] in ('inside', 'outside'):
         return containment(argv[2], argv[3], argv[4:], argv[1] == 'inside')
+    if len(argv) >= 5 and argv[1] == 'outside-heading':
+        return outside_heading(argv[2], argv[3], argv[4:])
     raise SystemExit(__doc__)
 
 

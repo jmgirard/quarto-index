@@ -827,12 +827,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   one, and why it reinstalls the single unnamed index rather than leaving the
   tables empty: a module that acquired an index only once a declaration was read
   would hand a nil key to every accumulator keyed by one. M26's probe resets and
-  proves the fifteen cells `tests/stateprobe.py`'s `CELLS` enumerates. The six
-  `indexes.lua` resets — `order`, `titles`, `declared`, `language_words`, and
-  M56's `doc_labels` and `index_labels` — are outside it:
-  `tests/state-pollute.lua` never calls `qi_indexes.read` and no fixture the
-  probe drives declares an index, so removing any of the six from `reset` would
-  show no difference to compare. — M01 review R16, widened through M03
+  proves the cells `tests/stateprobe.py`'s `CELLS` enumerates, the six
+  `indexes.lua` resets among them since M095 (corrected M095):
+  `tests/state-pollute.lua` reads a declaration of two labelled indexes through
+  `qi_indexes.reset` after its drive, and no state-reuse fixture declares one,
+  which is what leaves those cells readable at all. Four of the six move a
+  comparison: `order`, `doc_labels` and `declared` on `state-reuse`, and
+  `titles` on `examples/state-reuse-indexes.qmd`, whose mark naming an index
+  nothing declares is the one read of `titles` a fixture reaches. Two cannot.
+  `read` assigns `language_words` on every document, and it assigns an
+  `index_labels` map only to a declared name, never to the unnamed index a
+  mark with no declared name files in, which is the only index these fixtures
+  have. `EXEMPT` records both reasons and their passing is the
+  evidence for them. — M01 review R16, widened through M03
   P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory corrected
   M38; the arrival history and the cell count "19", stale since M56, retired
   2026-09-04 with git holding both; absorbs KI179 (a reused state would print
@@ -1307,10 +1314,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   with the index style's delimiter. The entries for `'` and `` ` `` likewise
   print as the right and left single quotation marks, which is what those ASCII
   positions hold in a T1 text font. — M30 T1
-- **KI72.** The incidental `see=`/`see-also=` targets in `examples/demo.qmd`
-  and `examples/xref-conflict.qmd` do not all name terms each file indexes;
-  M14 pins their expected report counts instead. — M14 plan gate, narrowed
-  M091
 - **KI74.** That a registered page actually prints emphasized is exercised only
   by M20's T9 checks and by no acceptance criterion, the criteria set having
   been held rather than widened, so the last leg of that chain has no criterion
@@ -1456,15 +1459,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   every plant keeps its locator's fragment, so no plant shows `unique` leaving
   uncounted a fragment-less leaving link that `links` skips (corrected M088).
   — M087 review O3
-- **KI273.** The M063-AC2 old-store leg in `tests/run-tests.sh` never asserts
-  that `Bramble` links by the anchor two.qmd's record carries
-  (`two.html#qi-mark-1` on the capture — observed 2026-09-10), though the
-  M063 T2 self-test's contrast rests on it. Its one fragment check,
-  `tests/fragments.py resolve` over the index page, passes while every
-  fragment-carrying locator on the page names an id its page holds exactly
-  once, no locator leaves the site, and at least one fragment exists, and
-  `Bramble` losing its anchor leaves `Aardvark`'s (corrected M088). — M088 plan
-  gate
 - **KI274.** The M079-AC1 leg in `tests/run-tests.sh` groups the minted
   anchors on the spans printing each contested cross-reference term written
   outside a heading and requires exactly one per group, a clause no rendered
@@ -1776,3 +1770,25 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   mutant drew no write-failure report or drew one with the wrong cause. Its
   ERROR probe counts one `ERROR (` line and does not check that the line is
   four.qmd's. — M094 review F6
+- **KI284.** The `reset:indexes` whole-module probe in `tests/stateprobe.py`
+  builds its drop list from `CELLS` rather than from the reset body, as the
+  other three whole-module probes do, because it has to keep the two
+  installation lines and the `read` call. A seventh cell added to
+  `indexes.lua`'s `reset` and not to `CELLS` therefore gets no per-cell probe
+  and stays restored under the module probe, so both run green. — M095 review
+  F3
+- **KI285.** The `Bramble` check's negative control in `tests/run-tests.sh`
+  reuses the `m063-refuseold` capture rather than planting a changed href on
+  the page the check reads. It is red for the right reason today, but it shows
+  the check red on another page, not red on this one with this href moved.
+  — M095 review F7
+- **KI286.** `outside-heading` in `tests/fragments.py` requires the container
+  to carry the named id and to have some `h1`-`h6` as a direct child. It does
+  not require the container to be a `<section>` or the heading to be an `<h2>`,
+  which is the shape M095-AC3 names. A Quarto change to a `<div>` wrapper or a
+  different heading level would leave the check green on a page the criterion
+  no longer describes. — M095 review F8
+- **KI287.** The M26 leg's comment in `tests/run-tests.sh` stated a count of
+  cells and of the cells a fixture reaches. M095 replaced both with "some" and
+  "the cells its marks fill" rather than recomputing them, so the leg says less
+  about its own domain than it did. — M095 review F14

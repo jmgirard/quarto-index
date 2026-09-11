@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M095 | Three candidate rows' unasserted fixture facts get checks | planned | — | normal | milestones/M095-suite-pins-three-rows.md |
+| M095 | Three candidate rows' unasserted fixture facts get checks | review | — | normal | milestones/M095-suite-pins-three-rows.md |
 | M094 | A failed store write or source read reports its own cause | done | — | normal | milestones/archive/M094-store-failure-causes.md |
 | M093 | The label and language paths are exercised where no render reached them | done | M092 | normal | milestones/archive/M093-label-language-coverage.md |
 | M092 | The label and separator checks fail on the defects they name | done | — | normal | milestones/archive/M092-label-checks-discriminate.md |
@@ -21,6 +21,7 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- Close the four check gaps M095 left: the whole-module index probe reading the cell list rather than the reset body, `Bramble`'s negative control reusing another capture, `outside-heading` not pinning the container and heading elements, and the M26 leg's deleted counts. Promote on a seventh index cell, or with any other pass over the state probe — added 2026-09-11 — M095 review — KI284-KI287
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Resolve a root-relative index href in the EPUB and HTML readers, which join it to the linking page's directory and then report it as naming nothing, and the percent-encoded shape that slips past `htmlindex.leaves_publication`, the one test M085 gave all four readers; promote on a fixture or an author writing either — added 2026-09-07, narrowed 2026-09-10 — M083 review, M085 — KI120, KI266
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248

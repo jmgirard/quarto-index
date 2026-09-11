@@ -412,6 +412,14 @@ read -r -d '' DEMO_ENTRIES <<'MANIFEST' || true
 1	Custom Entry
 1	Top!Middle!Leaf
 1	Ghost!Sub
+1	Felines
+1	Pets
+1	Birds!Owls
+1	Wow"!Hey
+1	Vulpes
+1	Spirits
+1	Aye
+1	Bee
 1	"!Bang leads
 1	Wow"!Really
 1	Trail bang"!
@@ -545,8 +553,9 @@ HTML_PRINCIPAL_CLASS='qi-principal'
 #   6. Locators: one per locator-contributing mark on that entry, in document
 #      order. A cross-reference mark contributes none.
 #   7. Cross-reference targets join with `: ` and are hyperlinked exactly when
-#      the target's LEVEL LIST is an entry in this index. No target in
-#      demo.qmd names an entry, so every row here is `plain`; the linked and
+#      the target's LEVEL LIST is an entry in this index. Every target in
+#      demo.qmd names an entry that one of its invisible marks writes, so
+#      every cross-reference row here is a link. The plain and
 #      colliding-string cases live in xref-conflict.qmd (M03-AC4).
 # ---------------------------------------------------------------------------
 read -r -d '' DEMO_HTML_INDEX <<'MANIFEST' || true
@@ -561,24 +570,30 @@ letter	A
 0	A!B	1
 0	Alpha	0
 1	Beta	1
+0	Aye	1
 letter	B
-0	bang	0	see-plain Wow!Hey
+0	bang	0	see-link Wow!Hey
 0	bang ! quote "	1
-0	both	0	see-plain Aye	also-plain Bee
+0	Bee	1
+0	Birds	0
+1	Owls	1
+0	both	0	see-link Aye	also-link Bee
 0	bs \ tilde ~ caret ^	1
 letter	C
 0	café naïve	1
 0	Canids	0
-1	Foxes	0	see-plain Vulpes
-0	cats	0	see-plain Felines
+1	Foxes	0	see-link Vulpes
+0	cats	0	see-link Felines
 0	Custom Entry	1
 letter	D
-0	dogs	0	also-plain Pets
+0	dogs	0	also-link Pets
 0	dollar $ at @ bar |	1
+letter	F
+0	Felines	1
 letter	G
 0	Ghost	0
 1	Sub	1
-0	Ghosts	0	also-plain Spirits
+0	Ghosts	0	also-link Spirits
 0	Grüße	0
 1	Straße	1
 letter	L
@@ -589,12 +604,14 @@ letter	O
 2	Three	0
 3	Four	0
 4	Five	1
-0	owls	0	see-plain Birds: Owls
+0	owls	0	see-link Birds: Owls
 letter	P
 0	pandoc	3
 0	pct % amp & hash #	1
+0	Pets	1
 letter	S
 0	Specials % & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Spirits	1
 letter	T
 0	Top	0
 1	Middle	0
@@ -602,7 +619,10 @@ letter	T
 0	Trail bang!	1
 letter	U
 0	us _ brace { }	1
+letter	V
+0	Vulpes	1
 letter	W
+0	Wow!Hey	1
 0	Wow!Really	1
 MANIFEST
 
@@ -2428,7 +2448,7 @@ done
 section 'M03-AC2 / M03-AC3 — the generated HTML index, its anchors and its links.'
 check_html_index_manifest "$CAPTURE_ROOT/demo-html/demo.html" "$DEMO_HTML_INDEX" "M03-AC2"
 check_letter_sweep "$CAPTURE_ROOT/demo-html/demo.html" "M07-AC3 (demo)" \
-  $'Symbols\nA\nB\nC\nD\nG\nL\nO\nP\nS\nT\nU\nW'
+  $'Symbols\nA\nB\nC\nD\nF\nG\nL\nO\nP\nS\nT\nU\nV\nW'
 
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" python3 - "$CAPTURE_ROOT/demo-html/demo.html" \
@@ -2649,50 +2669,71 @@ pass "M02-AC5: the composed-entry report names each of the eight contested entri
 # ---------------------------------------------------------------------------
 # M03-AC4 — cross-references in a generated HTML index.
 # Manifest 1f, same oracle rule and same row format as manifest 1e. The
-# fixture holds all three shapes the criterion names: a target that resolves
-# (sigma), one that does not (kappa, lambda, mu, rho), and the colliding
-# string — rho's SINGLE level `Note: on birds` prints exactly like sigma's
-# TWO levels `Note`/`on birds`, and only sigma may link. `kappa` carries a
-# locator AND a cross-reference, which makeindex rejects but HTML does not.
+# fixture holds all three shapes the criterion names. Targets that resolve:
+# sigma's, which names the two-level entry `pi` marks, and every other target
+# but rho's, each of those naming an entry the fixture's last section marks
+# with no visible text. One that does not: rho's.
+# And the colliding string: rho's SINGLE level `Note: on birds` prints exactly
+# like sigma's TWO levels `Note`/`on birds`, and only sigma's may link. `kappa`
+# carries a locator AND a cross-reference, which makeindex rejects but HTML
+# does not.
 # ---------------------------------------------------------------------------
 section 'M03-AC4 — cross-references in a generated HTML index.'
 read -r -d '' XREF_HTML_INDEX <<'MANIFEST' || true
+letter	Symbols
+0	% & # _ { } \ ~ ^ $ @ | ! " < >	1
+letter	A
+0	Afar	1
+0	Another Way	1
+0	Aye Two	1
+letter	B
+0	Bee Two	1
 letter	C
-0	chi	1	see-plain % & # _ { } \ ~ ^ $ @ | ! " < >
+0	chi	1	see-link % & # _ { } \ ~ ^ $ @ | ! " < >
 letter	D
 0	Deep	0
-1	Level	1	see-plain Shallow
+1	Level	1	see-link Shallow
+letter	E
+0	Elsewhere	1
+0	Elsewhere Again	1
+letter	H
+0	Here	1
 letter	K
-0	kappa	2	see-plain Elsewhere
+0	kappa	2	see-link Elsewhere
 letter	L
-0	lambda	0	see-plain Here	also-plain There
+0	lambda	0	see-link Here	also-link There
 letter	M
-0	mu	0	see-plain Same
+0	mu	0	see-link Same
 letter	N
 0	Note	0
 1	on birds	1
 0	nu	2
+letter	O
+0	One Way	1
 letter	P
-0	phi	1	see-plain Aye Two	also-plain Bee Two
+0	phi	1	see-link Aye Two	also-link Bee Two
 letter	R
 0	rho	0	see-plain Note: on birds
 letter	S
+0	Same	1
+0	Shallow	1
 0	sigma	0	see-link Note: on birds
 letter	T
-0	tau	1	also-plain Elsewhere Again
+0	tau	1	also-link Elsewhere Again
+0	There	1
 0	Tree	0
 1	Branch	0
 2	Cedar	0
-3	Dogwood	1	see-plain Afar
+3	Dogwood	1	see-link Afar
 2	Maple	0
 3	Holly	1
 letter	U
-0	upsilon	0	see-plain One Way	see-plain Another Way
+0	upsilon	0	see-link One Way	see-link Another Way
 MANIFEST
 
 check_html_index_manifest "$CAPTURE_ROOT/conflict-html/xref-conflict.html" "$XREF_HTML_INDEX" "M03-AC4"
 check_letter_sweep "$CAPTURE_ROOT/conflict-html/xref-conflict.html" "M07-AC3 (cross-references)" \
-  $'C\nD\nK\nL\nM\nN\nP\nR\nS\nT\nU'
+  $'Symbols\nA\nB\nC\nD\nE\nH\nK\nL\nM\nN\nO\nP\nR\nS\nT\nU'
 
 # The token above says sigma's target is A link; this says it is the RIGHT
 # link. A cross-reference pointing at some other entry would satisfy the
@@ -8344,6 +8385,33 @@ check_book_terms "$CAPTURE_ROOT/place-second/_book" \
   "$PLACE_TERMS_WARM"
 check_extension_warning_count "$WORK/place-second.log" 2 \
   "M063-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
+# M095-AC3: where `Quoin` links on the record route, by value. four.qmd marks
+# it in its `abstract:`, and a front-matter mark in an HTML book chapter files
+# one locator, the chapter's page with no fragment (D-048). The term check
+# above holds only its page, section and text, so a record route that gave it
+# a fragment would pass there.
+check_entry_locators "$CAPTURE_ROOT/place-second/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Quoin "four.html" \
+  "M095-AC3 (the record route files Quoin's front-matter mark as the chapter's page)"
+if [ "${1:-}" = "--self-test" ]; then
+  # The same page with every `four.html` locator given the fragment Quoin's
+  # author wrote, Quoin's among them: the value a route carrying front-matter
+  # ids would print.
+  M095_QUOIN="$WORK/m095-quoin-five.html"
+  sed 's|href="four\.html"|href="four.html#quoin-passage"|g' \
+    "$CAPTURE_ROOT/place-second/_book/five.html" > "$M095_QUOIN"
+  cmp -s "$M095_QUOIN" "$CAPTURE_ROOT/place-second/_book/five.html" \
+    && fail "M095-AC3 self-test: the Quoin plant changed nothing, so the case below is about the unplanted page"
+  if M095_OUT=$( ( check_entry_locators "$M095_QUOIN" "$HTML_SECTION_ID-gamma" \
+                     Quoin "four.html" "M095-AC3 probe" ) 2>&1 ); then
+    fail "M095-AC3 self-test: the Quoin check passed on a page where Quoin links to four.html#quoin-passage"
+  fi
+  case "$M095_OUT" in
+    *"'Quoin' links to <<four.html#quoin-passage>>"*) : ;;
+    *) fail "M095-AC3 self-test: the Quoin check failed on the planted page, but not by naming the href it read (<<$M095_OUT>>)" ;;
+  esac
+  pass "M095-AC3 self-test: the Quoin check is red on a page where Quoin's href carries a fragment, naming that href"
+fi
 
 # ...and neither render draws either of the two reports M063 retired. Asserted
 # against the sentences those reports carried rather than against a key still
@@ -8960,6 +9028,15 @@ for M061_PASS in one two; do
     python3 tests/fragments.py resolve \
       "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" five.html \
     || fail "M078-AC3 and M064-AC2 (render $M061_PASS: every fragment any locator on the index page carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
+  # M095-AC3: where four.qmd's heading mark lands on its own page. Its author
+  # wrote `mullion-passage` on a mark inside a `##` heading, and the render
+  # moves the id out of the heading into the section Quarto wraps it in. The
+  # sweep above passes wherever on four.html the id sits once, so this is what
+  # says it left the heading and stayed in the section.
+  python3 tests/fragments.py outside-heading \
+      "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/four.html" \
+      a-mullion-in-a-heading mullion-passage \
+    || fail "M095-AC3 (render $M061_PASS: mullion-passage sits once in its heading's section and outside the heading; tests/fragments.py's own FAIL line is above)"
   # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
   # that states WHERE each locator points and what each cross-reference names.
   # four.qmd writes sixteen marks in fourteen forms, every one of them settled
@@ -9000,6 +9077,59 @@ done
 pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all nineteen of its entries, the sixteen that live only in the unwritable record linking to that chapter's page — after it the id their author wrote, where they wrote one — and every locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
 
 if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M095-AC3 — the heading-mark check against three copies of four.html, each
+  # with `mullion-passage` MOVED rather than copied, since a copy fails the
+  # once-on-the-page clause before containment is read. Onto the `<h2>`, which
+  # a reader counting only a container's descendants would miss. Into the
+  # `<h2>`, the shape the render moves the id out of. Out of the section.
+  # -------------------------------------------------------------------------
+  M095_FOUR="$CAPTURE_ROOT/place-blocked-one/_book/four.html"
+  if ! python3 - "$M095_FOUR" "$WORK" <<'M095PLANTPY'
+import os, sys
+page, work = sys.argv[1:3]
+src = open(page, encoding='utf-8').read()
+span = '<span id="mullion-passage"></span>'
+section = '<section id="a-mullion-in-a-heading"'
+if src.count(span) != 1 or src.count(section) != 1:
+    sys.exit(f'FAIL: M095-AC3 self-test: {page} carries the id span '
+             f'{src.count(span)} time(s) and the section {src.count(section)} '
+             f'time(s), want 1 each, so no plant below moves what it means to')
+base = src.replace(span, '', 1)
+start = base.index(section)
+h2 = base.index('<h2', start)
+h2_end = base.index('>', h2)
+plants = {
+    'onto': base[:h2 + 3] + ' id="mullion-passage"' + base[h2 + 3:],
+    'into': base[:h2_end + 1] + span + base[h2_end + 1:],
+    'out': base[:start] + span + base[start:],
+}
+for name, text in plants.items():
+    with open(os.path.join(work, f'm095-four-{name}.html'), 'w',
+              encoding='utf-8') as out:
+        out.write(text)
+print(f'ok   M095-AC3 self-test: three heading-mark plants built from {page}')
+M095PLANTPY
+  then
+    fail "M095-AC3 self-test: the heading-mark plants could not be built (their own FAIL line is above)"
+  fi
+  for M095_PLANT in "onto:sits on or within the <h2> heading" \
+                    "into:sits on or within the <h2> heading" \
+                    "out:sits outside the element"; do
+    M095_NAME="${M095_PLANT%%:*}"
+    M095_WANT="${M095_PLANT#*:}"
+    if M095_OUT=$(python3 tests/fragments.py outside-heading \
+                    "$WORK/m095-four-$M095_NAME.html" \
+                    a-mullion-in-a-heading mullion-passage 2>&1); then
+      fail "M095-AC3 self-test: the heading-mark check passed on four.html with mullion-passage moved $M095_NAME"
+    fi
+    case "$M095_OUT" in
+      *"'mullion-passage' $M095_WANT"*) : ;;
+      *) fail "M095-AC3 self-test: the heading-mark check failed with mullion-passage moved $M095_NAME, but not by saying it $M095_WANT (<<$M095_OUT>>)" ;;
+    esac
+  done
+  pass "M095-AC3 self-test: the heading-mark check is red on four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
+
   # -------------------------------------------------------------------------
   # M063 T7 — the same held store path against a copy of the tree whose only
   # change restores the superseded rule, and nothing else moved. Under it
@@ -11292,13 +11422,22 @@ check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
   "M063-AC2 (five.qmd has no chapter after it and reads only valid records, so it has nothing to say)"
 # Every fragment a locator on the index page carries names an id the page it
 # links to holds exactly once. It does not say which locators carry one, so
-# this is no check of the anchor M063 T2's self-test contrasts with: that
-# `Bramble` links by the anchor two.qmd's record carries is asserted nowhere
-# here.
+# the anchor M063 T2's self-test contrasts with is asserted by value below.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
   python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html \
   || fail "M063-AC2 (an upgraded store: every fragment any locator on index.html carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
+# M095-AC3: `Bramble` links by the anchor two.qmd's record carries. The value
+# is derived from the source: a minted `qi-mark-<n>` is numbered per chapter in
+# document order over the marks that mint one, skipping marks that carry an id
+# of the author's own, which keep it, and stepping over any number already
+# taken on the page (html.lua's `until not taken[...]`). two.qmd carries no
+# such id, so nothing shifts the count. `Bramble` is the first anchoring mark
+# two.qmd writes, so `qi-mark-1`. index.qmd renders first and reads that
+# record, the only thing carrying the anchor.
+check_entry_locators "$CAPTURE_ROOT/place-oldstore/_book/index.html" \
+  "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
+  "M095-AC3 (an upgraded store: Bramble links by the anchor two.qmd's record carries)"
 pass "M063-AC2: over a store whose records all stand at the current version and carry the three fields this milestone retired — one of them holding a value the superseded validator would have refused — a whole-book render prints the same sections and every one of the terms the fixture marks, and the book's last chapter reading those records on its own says nothing at all"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -11361,7 +11500,18 @@ MANIFEST
   check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
     "$HTML_SECTION_ID-alpha" Bramble "two.html" \
     "M063 T2 self-test (the refused record's chapter is recovered from its source, so its locator loses the anchor the record carried)"
-  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do; that the run above links it by the record's anchor instead is asserted nowhere"
+  # M095-AC3's Bramble check against this render, where Bramble's href lost
+  # the anchor: the plant that changes the href that check reads.
+  if M095_OUT=$( ( check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
+                     "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
+                     "M095-AC3 probe" ) 2>&1 ); then
+    fail "M095-AC3 self-test: the Bramble check passed on a render whose Bramble links to two.html alone"
+  fi
+  case "$M095_OUT" in
+    *"'Bramble' links to <<two.html>>"*) : ;;
+    *) fail "M095-AC3 self-test: the Bramble check failed on the refused-record render, but not by naming the href it read (<<$M095_OUT>>)" ;;
+  esac
+  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do, and the M095-AC3 check that the run above links it by the record's anchor is red here, naming the anchorless href"
 fi
 
 # Back to a store every record of which was written by the chapter it belongs
@@ -14081,18 +14231,17 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  the two non-ASCII targets against their own marks; and
 #                  `see="A!"`, its empty level dropped, against `A`. 0.
 #   demo           8 attributes (Felines, Pets, Birds!Owls, Wow!!Hey, Vulpes,
-#                  Spirits, Aye, Bee). The file's entries are its visible terms
-#                  plus `Canids!Foxes`, `Ghosts`, `Wow!!Really`, `Top!Middle!
-#                  Leaf` and the escaping entries; no target is among them, and
-#                  `Wow!!Hey` parses to the single level `Wow!Hey`, which
-#                  `Wow!!Really` does not spell. 8.
+#                  Spirits, Aye, Bee). The file's `Targets` paragraph writes
+#                  one invisible mark per target, each spelling the target as
+#                  written, so every target names a path a mark indexes. 0.
 #   dangling-xref  9 attributes, of which 2 name `Cats`, which the file
 #                  indexes. 7.
-#   xref-conflict  15 attributes after M15 extended it. Only
-#                  `see="Note!on birds"` names an entry the file marks;
-#                  `see="Note: on birds"` is a single level that merely prints
-#                  the same way (the M02 shape), and the other thirteen name
-#                  nothing. 14.
+#   xref-conflict  15 attributes after M15 extended it. `see="Note!on birds"`
+#                  names the entry `pi` marks. The thirteen others besides
+#                  `rho`'s name twelve distinct targets, and the file's last
+#                  section writes one invisible mark for each. Only
+#                  `see="Note: on birds"`, a single level that merely prints
+#                  like `pi`'s two (the M02 shape), names nothing. 1.
 #   html-index     5 attributes: `see="A!B"` four times, which names the file's
 #                  one entry, and `see="A: B"` once, which does not. 1.
 #   fold-xref      7 attributes. Judged here on the levels the author wrote,
@@ -14206,7 +14355,7 @@ examples/book-scopes/last.qmd	1
 examples/book/sub/two.qmd	1
 examples/content.qmd	0
 examples/dangling-xref.qmd	7
-examples/demo.qmd	8
+examples/demo.qmd	0
 examples/empty-levels.qmd	0
 examples/fold-xref-both.qmd	0
 examples/fold-xref-empty.qmd	0
@@ -14240,8 +14389,9 @@ examples/range-misuse.qmd	0
 examples/range.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
+examples/state-reuse-indexes.qmd	0
 examples/state-reuse.qmd	1
-examples/xref-conflict.qmd	14
+examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
 MANIFEST
 
@@ -14299,6 +14449,13 @@ check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING_INDEX" 0 "M14 (corp
 check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING_INDEX" 1 "M14 (corpus, examples/book-scopes)"
 check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING" 0 "M14 (corpus, examples/book-scopes, not the one-namespace shape)"
 check_warning_count "$WORK/corpus-xref-escaping.log" "$WARN_DANGLING_INDEX" 0 "M14 (corpus, examples/xref-escaping, which declares no index to name)"
+# The one report xref-conflict.qmd still draws is `rho`'s. Its target is the
+# single level `Note: on birds`, which prints like the two-level entry `pi`
+# marks and names nothing the file indexes. The count above says one report is
+# drawn, and this says which.
+check_warning_count "$WORK/corpus-xref-conflict.log" \
+  "$(dangling_report see 'term "rho"' 'Note: on birds' document)" 1 \
+  "M095-AC2 (corpus, examples/xref-conflict: the one report names rho's target)"
 pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
 # The fold fixtures render here, ahead of M15's residue sweep: one of them has
@@ -14372,23 +14529,40 @@ pass "M15-AC1: the fixture that could not build now renders to PDF, with neither
 #   Maple, …   that twin: the same depth and the same shape of sort key, with
 #              no cross-reference to contest the key. One plain mark: 1.
 #   upsilon    two DIFFERENT see= targets, no plain mark, as lambda: 0.
+#   Afar, …    the twelve entries the fixture's last section marks with no
+#              visible text, one per distinct target the marks above name
+#              other than `sigma`'s and `rho`'s. Each is one plain mark on one
+#              page: 1. The one spelled with every escaped character opens
+#              with a symbol, so it prints ahead of every letter.
 #
 # Printed in collation order with each sub-entry under its parent, which is the
 # order pdfindex reconstructs, so a column break cannot reorder these rows.
 read -r -d '' CONFLICT_PDF_INDEX <<'MANIFEST' || true
+0	% & # _ { } \ ~ ^ $ @ | ! " < >	1
+0	Afar	1
+0	Another Way	1
+0	Aye Two	1
+0	Bee Two	1
 0	chi, see % & # _ { } \ ~ ^ $ @ | ! " < >	1
 0	Deep	0
 1	Level, see Shallow	1
+0	Elsewhere	1
+0	Elsewhere Again	1
+0	Here	1
 0	kappa, see Elsewhere	2
 0	lambda, see Here; see also There	0
 0	mu, see Same	0
 0	Note	0
 1	on birds	1
 0	nu	1
+0	One Way	1
 0	phi, see Aye Two; see also Bee Two	1
 0	rho, see Note: on birds	0
+0	Same	1
+0	Shallow	1
 0	sigma, see Note: on birds	0
 0	tau, see also Elsewhere Again	1
+0	There	1
 0	Tree	0
 1	Branch	0
 2	Cedar, Dogwood, see Afar	1
@@ -17622,16 +17796,23 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # break on anything but what it is about (D-012 records why this is not the
 # merge-base oracle D-004 refused).
 #
-# Warnings are compared as well as output. Five of the seventeen cells are read
-# by nothing but a report, so a comparison over emitted bytes alone would leave
-# them unbound; the extension's own warnings are cut out of each render's log
-# with the pattern set the zero-warning controls above already use.
+# Warnings are compared as well as output. Some cells are read by nothing but
+# a report, so a comparison over emitted bytes alone would leave them unbound;
+# the extension's own warnings are cut out of each render's log with the
+# pattern set the zero-warning controls above already use.
 #
-# Three fixtures rather than one, because a leaked value moves nothing in a
-# document that sets the same cell itself: the rich fixture reaches the
-# fourteen cells that carry values, the one-mark fixture is the only place a
-# leaked "this document used the principal subsystem" flag shows, and the
-# mark-free fixture is the only place a leaked count of marks seen shows.
+# Four fixtures rather than one, because a leaked value moves nothing in a
+# document that sets the same cell itself: the rich fixture reaches the cells
+# its marks fill, the one-mark fixture is the only place a leaked "this
+# document used the principal subsystem" flag shows, the mark-free fixture is
+# the only place a leaked count of marks seen shows, and the index-declaration
+# fixture is the only place a leaked index TITLE shows. None of the four
+# declares an index, which is what leaves the declaration cells readable at
+# all; what the fourth adds is a mark naming an index nothing declares, and
+# that lookup is the only read of `titles` a fixture can reach. The other
+# declaration cells move on the rich fixture. Which cells each reset owns is
+# `CELLS` in tests/stateprobe.py, which the per-cell probes enumerate, and
+# which fixture each cell actually moves is that script's own output.
 # ---------------------------------------------------------------------------
 section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 state_reuse_pair() {
@@ -17666,6 +17847,8 @@ state_reuse_pair() {
 
 state_reuse_pair state-reuse latex tex 4
 state_reuse_pair state-reuse html html 2
+state_reuse_pair state-reuse-indexes latex tex 1
+state_reuse_pair state-reuse-indexes html html 1
 state_reuse_pair state-reuse-plain latex tex 0
 state_reuse_pair state-reuse-plain html html 0
 state_reuse_pair state-reuse-empty latex tex 1

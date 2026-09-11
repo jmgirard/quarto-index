@@ -1,4 +1,4 @@
--- Test-only. Never shipped: it lives under tests/ and is named by the three
+-- Test-only. Never shipped: it lives under tests/ and is named by the four
 -- state-reuse fixtures alone.
 --
 -- M26's oracle. Each fixture is rendered twice off one tree with this filter
@@ -20,7 +20,8 @@ for key, value in pairs(package.loaded) do
   local name = tostring(key):match("/index/modules/([%a_]+)$")
   if name then qi[name] = value end
 end
-for _, name in ipairs({ "core", "passes", "marks", "latex", "sortkeys" }) do
+for _, name in ipairs({ "core", "passes", "marks", "latex", "sortkeys",
+                        "indexes" }) do
   if qi[name] == nil then
     error("tests/state-pollute.lua: no loaded module named " .. name ..
           "; this filter must be listed AFTER the index extension, or it "
@@ -38,7 +39,7 @@ local function mark(text, attributes)
 end
 
 -- One synthetic document, built so that every cell it fills collides with what
--- one of the three fixtures produces on its own. The comment on each mark says
+-- one of the four fixtures produces on its own. The comment on each mark says
 -- which cell its value is aimed at; a mark whose value matched the fixture's
 -- would leave that cell's probe unable to tell a reset from its absence.
 local marks = {
@@ -113,6 +114,53 @@ if not ok then
   error("tests/state-pollute.lua: the synthetic drive failed (" ..
         tostring(err) .. "), so nothing was polluted and every comparison it "
         .. "backs would pass vacuously")
+end
+
+-- The cells indexes.lua owns are settled BEFORE any mark is recorded, so they
+-- are filled AFTER the drive above rather than before it: a declaration in
+-- place during the drive would file every synthetic mark in a named index, and
+-- the accumulators keyed by an index would then hold nothing the next
+-- document's own keys collide with.
+--
+-- Filled through `reset`, which is the door the filter itself uses: it empties
+-- the cells and reads the declaration below, leaving exactly what a document
+-- declaring two labelled indexes leaves. The fixture that reads them declares
+-- none, so the names, titles, document labels and declared flag left here are
+-- all values no fixture installs for itself. Two cells are not like that and
+-- cannot be: `read` assigns `language_words` on every document, and it assigns
+-- an `index_labels` map only to a DECLARED name, never to the unnamed index a
+-- fixture's marks file in. `EXEMPT` in tests/stateprobe.py records both, and
+-- their probes are expected to pass.
+local declaration = pandoc.MetaList({
+  pandoc.MetaMap({
+    name = pandoc.MetaString("leaked"),
+    title = pandoc.MetaString("Leaked index"),
+    ["index-labels"] = pandoc.MetaMap({
+      ["see"] = pandoc.MetaString("leaked per-index see"),
+    }),
+  }),
+  pandoc.MetaMap({
+    name = pandoc.MetaString("leaked-second"),
+    title = pandoc.MetaString("Second leaked index"),
+  }),
+})
+local meta = pandoc.Meta({
+  ["indexes"] = declaration,
+  ["index-labels"] = pandoc.MetaMap({
+    ["symbols"] = pandoc.MetaString("Leaked symbols"),
+    ["see"] = pandoc.MetaString("leaked see"),
+    ["separator"] = pandoc.MetaString(" LEAKED "),
+  }),
+})
+qi.core.warn = function() end
+local indexes_ok, indexes_err = pcall(function()
+  qi.indexes.reset({ meta = meta })
+end)
+qi.core.warn = real_warn
+if not indexes_ok then
+  error("tests/state-pollute.lua: the index declaration could not be read (" ..
+        tostring(indexes_err) .. "), so the cells indexes.lua owns hold "
+        .. "nothing and every comparison they back would pass vacuously")
 end
 
 return {}

@@ -103,13 +103,13 @@ stays open.
       each for `Quoin` and `Bramble` and three for `mullion-passage`. Rewrite
       the comment above the old-store `resolve` call (minor amendment
       2026-09-11).
-- [ ] T4: KI10 fixture. Add a probe fixture that declares no index and
+- [x] T4: KI10 fixture. Add a probe fixture that declares no index and
       carries a mark naming an undeclared index and a cross-reference mark.
       Extend `tests/state-pollute.lua` so that, after its existing drive, it
       reads a declaration of two labelled indexes through
       `qi_indexes.reset`, so each of the six cells holds a value that differs
       from the fixture's own (minor amendment 2026-09-11).
-- [ ] T5: KI10 probe. Add the six cells to `CELLS` in `tests/stateprobe.py`
+- [x] T5: KI10 probe. Add the six cells to `CELLS` in `tests/stateprobe.py`
       with module `indexes`, and a whole-module `reset:indexes` probe. Show
       each probe moving when its restore is deleted, or record why it cannot.
       `order` and `titles` are emptied again by `read` when a fixture
@@ -117,7 +117,7 @@ stays open.
       `EXEMPT` holds one name today and becomes a set if more than one cell
       joins it. Rewrite KI10's inventory
       sentence and the cell count the M26 leg states.
-- [ ] T6: Strike KI72, KI273 and KI10 from `cairn/DESIGN.md` per D-013, or
+- [x] T6: Strike KI72, KI273 and KI10 from `cairn/DESIGN.md` per D-013, or
       narrow any part a task leaves open, marked `narrowed M095`. KI273's
       entry names only `Bramble`. The `Quoin` and `mullion-passage` items
       came from its ROADMAP row, which this plan removes, so the archive
@@ -136,6 +136,7 @@ stays open.
 - 2026-09-11: re-audit: AC3 (full) — the corrected wording read `Bramble`'s expected anchor from an extension-written record at an unclear time (now derived from source as `qi-mark-1`), read "whose `five.html` carries" as a filter (captures now named), and left `Quoin`'s value unstated (now `four.html`). This second line is the stop, so the corrected wording goes to the user.
 - 2026-09-11: T1/T2 edits in, unticked: 8 invisible marks in `demo.qmd` and 12 in `xref-conflict.qmd` with their gallery copies, `DEMO_ENTRIES`, `DEMO_HTML_INDEX`, `XREF_HTML_INDEX`, `CONFLICT_PDF_INDEX`, both letter sweeps, corpus rows 0 and 1, and a check naming `rho`'s report. Scratch renders match the HTML, conflict PDF and demo PDF manifests. The suite has not run.
 - 2026-09-11: amendment adopted at the user's selection: AC3 now states `Quoin`'s href value, names the `place-blocked-one` and `place-blocked-two` captures, holds `mullion-passage` inside its section and outside its `<h2>`, derives `Bramble`'s `two.html#qi-mark-1` from source, and requires five plants. Scope's KI273 item reads "outside its heading". T3's wording follows.
+- 2026-09-11: the seven new probes ran and `tests/stateprobe.py` exited 0. `reset:indexes`, `order`, `doc_labels` and `declared` each move a `state-reuse` comparison, `titles` moves the new `state-reuse-indexes` fixture, and `index_labels` and `language_words` hold as expected-to-pass with their reasons in `EXEMPT`. The control passed with the new fixture in `PAIRS`. T4, T5 and T6 ticked, KI72 and KI273 struck from DESIGN and KI10 corrected there.
 - 2026-09-11: `tests/run-tests.sh --self-test` ran clean at 8f0869d: 1511 checks, exit 0. It covers AC1's demo legs, AC2's corpus counts (0 and 1) and AC3's three assertions with their five plants. The AC2 report-identity check prints nothing when it passes, so it was read separately: its needle matches the captured corpus log once, and a needle naming `sigma` is refused. T1, T2 and T3 ticked.
 - 2026-09-11: T3 edits in, unticked: `tests/fragments.py` gains `outside-heading`, and the suite gains the `Quoin`, `mullion-passage` (both captures) and `Bramble` checks with their five plants. On an earlier run's `four.html` the new mode passes, and it fails on each of three scratch plants with its own message. The suite has not run.
 

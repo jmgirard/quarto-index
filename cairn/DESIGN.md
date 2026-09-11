@@ -827,12 +827,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   one, and why it reinstalls the single unnamed index rather than leaving the
   tables empty: a module that acquired an index only once a declaration was read
   would hand a nil key to every accumulator keyed by one. M26's probe resets and
-  proves the fifteen cells `tests/stateprobe.py`'s `CELLS` enumerates. The six
-  `indexes.lua` resets — `order`, `titles`, `declared`, `language_words`, and
-  M56's `doc_labels` and `index_labels` — are outside it:
-  `tests/state-pollute.lua` never calls `qi_indexes.read` and no fixture the
-  probe drives declares an index, so removing any of the six from `reset` would
-  show no difference to compare. — M01 review R16, widened through M03
+  proves the cells `tests/stateprobe.py`'s `CELLS` enumerates, the six
+  `indexes.lua` resets among them since M095 (corrected M095):
+  `tests/state-pollute.lua` reads a declaration of two labelled indexes through
+  `qi_indexes.reset` after its drive, and `examples/state-reuse-indexes.qmd`
+  declares none, so a leaked `order`, `titles`, `doc_labels` or `declared`
+  moves a comparison. Two of the six cannot. `read` assigns `language_words` on
+  every document, and it assigns every declared index its own `index_labels`
+  map, nil included, so `EXEMPT` records both reasons and their passing is the
+  evidence for them. — M01 review R16, widened through M03
   P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory corrected
   M38; the arrival history and the cell count "19", stale since M56, retired
   2026-09-04 with git holding both; absorbs KI179 (a reused state would print

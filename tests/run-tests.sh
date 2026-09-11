@@ -4318,7 +4318,9 @@ else:
 # printing one string are two entries here and not one. Grouped by the printed
 # string, and the group read whole — a term whose marks carry two minted
 # anchors is two destinations for one name, which a first-wins map reported as
-# one and this counts as the two it is (M084 T1).
+# one and this counts as the two it is (M084 T1). No rendered case reaches a
+# group of two: on the fixture the group for each term read here holds one
+# anchor, so no plant holds this clause either (KI274; M090 T5).
 minted = {}
 for printed, name in H.minted_anchors(doc, prefix):
     minted.setdefault(printed, []).append(name)
@@ -4414,135 +4416,11 @@ python3 "$WORK/id-collision-ids.py" \
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M084 T2 — the minted-anchor read, shown to tell apart what the read it
-  # replaces could not.
-  #
-  # The check above asks, of each cross-reference mark that gives up its
-  # author's id, whether the span printing that mark's term carries a minted
-  # anchor instead. It used to ask that of a map built as
-  # `minted.setdefault(H.text(el).strip(), name)` — keyed by the string a
-  # minted anchor's element prints, first one winning. Two marks printing one
-  # string are two anchors and one entry in such a map, so a page where one of
-  # them kept a contested id and the other did not read as a page where both
-  # were fine.
-  #
-  # `H.minted_anchors` returns a pair per ELEMENT, so the same page reads as
-  # the two anchors it is. Both reads are run here over one hand-written page:
-  # what is under test is a READER, and an input taken from the artifact it
-  # reads is blind in the dimension it is taken from, so the markup is written
-  # out by hand rather than taken off a render (the M080-AC2 shape). The
-  # replaced read is spelled out below rather than imported: this milestone
-  # deletes it, so there is nothing left to import it from.
-  #
-  # Two pages, not one. The second prints a different string on each mark —
-  # the shape every mark of the fixture has — and the two reads must agree
-  # about it, or the difference on the first page would be the two reads
-  # simply being different rather than this one case telling them apart.
-  # -------------------------------------------------------------------------
-  python3 - "$HTML_ANCHOR_PREFIX" <<'PY'
-import sys
-sys.path.insert(0, 'tests')
-import htmlindex as H
-
-prefix = sys.argv[1]
-errs = []
-
-
-def text_keyed(doc):
-    """The read `minted_anchors` replaces, as it stood at M083."""
-    minted = {}
-    for name in H.all_ids(doc):
-        if name.startswith(prefix):
-            el = H.find_id(doc, name)
-            if el is not None:
-                minted.setdefault(H.text(el).strip(), name)
-    return minted
-
-
-def grouped(doc):
-    """The repaired read, grouped by the string each anchor's element prints."""
-    out = {}
-    for printed, name in H.minted_anchors(doc, prefix):
-        out.setdefault(printed, []).append(name)
-    return out
-
-
-FIRST, SECOND = prefix + 'a', prefix + 'b'
-PAGE = ('<body><p><span id="%s" class="index">%s</span> and '
-        '<span id="%s" class="index">%s</span> and '
-        '<span id="author-kept" class="index">solo</span></p></body>')
-shared = H.parse_text(PAGE % (FIRST, 'shared', SECOND, 'shared'))
-apart = H.parse_text(PAGE % (FIRST, 'first', SECOND, 'second'))
-
-# 1. The repaired read names both marks.
-got = grouped(shared).get('shared', [])
-if sorted(got) != sorted([FIRST, SECOND]):
-    errs.append('over a page carrying two minted anchors on spans printing '
-                'one string, the repaired read names %r; want both %r and %r'
-                % (got, FIRST, SECOND))
-
-# 2. The read it replaces loses one of them, which is the defect: a map keyed
-#    by the printed string holds one name for that string, whichever it met
-#    first, and the other anchor is nowhere in what it returns.
-kept = text_keyed(shared)
-name = kept.get('shared')
-if name is None:
-    errs.append('the replaced read found no minted anchor at all on that '
-                'page, so it fails there for a reason that is not the one '
-                'this case is about')
-elif name not in (FIRST, SECOND):
-    errs.append('the replaced read names %r for that string, which is neither '
-                'of the two anchors the page carries' % name)
-elif len(got) < 2:
-    errs.append('the page as written carries %d minted anchor(s) on spans '
-                'printing that string, so the replaced read lost nothing and '
-                'this case tells the two reads apart in nothing' % len(got))
-else:
-    lost = [n for n in (FIRST, SECOND) if n != name]
-    if [n for n in lost if n in kept.values()]:
-        errs.append('the replaced read still reports %r somewhere in its '
-                    'result, so it lost no anchor here' % lost)
-
-# 3. Neither read may see a name this extension did not mint.
-for label, read in (('repaired', grouped(shared)), ('replaced', kept)):
-    if 'solo' in read:
-        errs.append('the %s read reports %r for the span carrying an '
-                    "author's own id, which this extension did not mint"
-                    % (label, read['solo']))
-
-# 4. The control: with a string of its own on each mark, the two reads agree,
-#    so the difference above is this case and not the two reads at large.
-control_new = grouped(apart)
-control_old = text_keyed(apart)
-if sorted(control_new) != sorted(control_old):
-    errs.append('over a page printing a different string on each mark the two '
-                'reads report different terms (%r against %r), so the '
-                'difference on the shared-string page is not about that page'
-                % (sorted(control_new), sorted(control_old)))
-for term in sorted(control_new):
-    if control_new[term] != [control_old.get(term)]:
-        errs.append('over that page the two reads disagree about %r: the '
-                    'repaired one names %r and the replaced one %r'
-                    % (term, control_new[term], control_old.get(term)))
-if len(control_new) != 2:
-    errs.append('the control page yields %d term(s) under the repaired read, '
-                'want the 2 its two marks print' % len(control_new))
-
-if errs:
-    print('FAIL: M084 T2 self-test: ' + '; '.join(errs), file=sys.stderr)
-    sys.exit(1)
-print('ok   M084 T2 self-test: over a page carrying two minted anchors on '
-      'spans printing one string the repaired read names both (%s and %s) and '
-      'the read it replaces names one; over a page printing a different string '
-      'on each mark the two agree on both terms'
-      % (FIRST, SECOND))
-PY
-fi
-
-if [ "${1:-}" = "--self-test" ]; then
-  # -------------------------------------------------------------------------
   # M081 T4 and M082 T4 — a planted defect per repair, the first plants over
-  # the id census.
+  # the id census. Ten plants run through the helper below: the six this
+  # comment explains, M084 T6's over the census's CDATA read, and M090's three
+  # over the cross-reference id rules, each of the last four explained where it
+  # is called.
   #
   # One substitution per repair, each undoing that repair alone: the census
   # reads a construct a browser makes a comment as markup again, it ends a
@@ -4570,13 +4448,16 @@ if [ "${1:-}" = "--self-test" ]; then
   M081W="$WORK/m081census"
   rm -rf "$M081W"
 
-  m081_census_plant() {   # <slug> <label> <expected substring> <perl substitution>
-    local slug="$1" label="$2" want="$3" sub="$4"
+  # The fifth argument names the module the substitution is aimed at, under
+  # `_extensions/index/modules/`; left off, it is `html.lua`, where the census
+  # lives. M090's plants undo rules written in `passes.lua` as well.
+  m081_census_plant() {   # <slug> <label> <expected substring> <perl substitution> [module]
+    local slug="$1" label="$2" want="$3" sub="$4" module="${5:-html.lua}"
     local dir="$M081W/$slug"
     mkdir -p "$dir"
     cp examples/id-collision.qmd examples/dot.png "$dir/"
     cp -R _extensions "$dir/_extensions"
-    local filter="$dir/_extensions/index/modules/html.lua"
+    local filter="$dir/_extensions/index/modules/$module"
     perl -0777 -e '
       my ($sub) = @ARGV;
       my $text = do { local $/; <STDIN> };
@@ -4584,12 +4465,12 @@ if [ "${1:-}" = "--self-test" ]; then
       die "the substitution could not be applied (a compile error, or a death inside it): $@" if $@;
       die "the substitution matched nothing\n" unless $n;
       print $text;
-    ' "$sub" < "$filter" > "$dir/html-spliced" \
-      || fail "$label: the substitution aimed at the census could not be applied (its own message is above)"
-    if cmp -s "$filter" "$dir/html-spliced"; then
-      fail "$label: the substitution reported a match and the census is unchanged, so the render below would be reported as a check failing to matter when the fault is this mutation's"
+    ' "$sub" < "$filter" > "$dir/spliced" \
+      || fail "$label: the substitution aimed at $module could not be applied (its own message is above)"
+    if cmp -s "$filter" "$dir/spliced"; then
+      fail "$label: the substitution reported a match and $module is unchanged, so the render below would be reported as a check failing to matter when the fault is this mutation's"
     fi
-    mv "$dir/html-spliced" "$filter"
+    mv "$dir/spliced" "$filter"
     ( cd "$dir" && quarto render id-collision.qmd --to html ) \
       > "$WORK/m081-$slug.log" 2>&1 \
       || { tail -20 "$WORK/m081-$slug.log" >&2; fail "$label: the fixture failed to render with the repair undone; IP2 forbids any of this taking a render down"; }
@@ -4601,7 +4482,7 @@ if [ "${1:-}" = "--self-test" ]; then
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "$label: the check passed a page rendered with the repair undone, so its green says nothing about that repair"; }
     printf '%s' "$out" | grep -qF -- "$want" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the mutated census, but not with <<$want>> — that failure is not this check catching this defect"; }
+      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the mutated copy, but not with <<$want>> — that failure is not this check catching this defect"; }
     pass "$label: the check is red on <<$want>>"
   }
 
@@ -4665,6 +4546,35 @@ if [ "${1:-}" = "--self-test" ]; then
     'M084 T6 self-test: the census running a `<![CDATA[` to its `]]>` rather than to its first `>`' \
     'ids carried by more than one element: between-cdata' \
     's{        local close = text:find\(">", lt \+ 2, true\)\n}{        local close\n        if text:sub(lt, lt + 8) == "<![CDATA[" then\n          local marked = text:find("]]>", lt + 9, true)\n          close = marked ~= nil and (marked + 2) or nil\n        else\n          close = text:find(">", lt + 2, true)\n        end\n}'
+
+  # M090 T2-T4. The three rules M079 gave cross-reference marks, each undone
+  # alone in a copy of the extension and held to the same check. A
+  # cross-reference mark carrying an author's id is tagged so that it contests
+  # that id (`contestable_xref`, `passes.lua`); a mark filing a locator keeps a
+  # name it shares with a cross-reference mark whichever is written first
+  # (`keepable_author_ids`); and a cross-reference mark whose name nothing else
+  # carries keeps it (`assign_anchors`). Each expected line names that plant's
+  # own case: `rho` giving up `xref-dup`, the `chi` locator, the `upsilon`
+  # control. The T2 and T4 lines are printed by no other plant here; the T3
+  # line is not so placed, because untagging `phi` (T2) also leaves `chi`
+  # yielding `twin-xref`, and every line the check prints under T3 it prints
+  # under T2 as well (observed 2026-09-10, M090 review F1). T3's red holds the
+  # check to that rule's case; it does not tell T3's defect from T2's.
+  m081_census_plant xref-untagged \
+    'M090 T2 self-test: a cross-reference mark no longer tagged to contest its author-written id' \
+    "the contested id 'xref-dup' is still on the span printing 'rho'" \
+    's{local contestable_xref = #xrefs > 0 and not page_only}{local contestable_xref = false and #xrefs > 0 and not page_only}' \
+    passes.lua
+
+  m081_census_plant outrank-dropped \
+    'M090 T3 self-test: a locator mark no longer outranking a cross-reference mark for a shared name' \
+    "the locator for 'chi' names" \
+    's{if standing == nil or \(anchoring and not standing\.anchoring\) then}{if standing == nil then}'
+
+  m081_census_plant xref-always-yields \
+    'M090 T4 self-test: a cross-reference mark giving up its author-written id when nothing contests it' \
+    "the uncontested id 'xref-solo' is on 'nothing', not on the span printing 'upsilon'" \
+    's{if span\.identifier ~= "" and keeper\[span\.identifier\] ~= pending then}{if span.identifier ~= "" and (keeper[span.identifier] ~= pending or (record and record.anchorless)) then}'
 fi
 
 # ---------------------------------------------------------------------------

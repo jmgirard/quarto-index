@@ -1488,6 +1488,19 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   once, no locator leaves the site, and at least one fragment exists, and
   `Bramble` losing its anchor leaves `Aardvark`'s (corrected M088). — M088 plan
   gate
+- **KI274.** The M079-AC1 leg in `tests/run-tests.sh` groups the minted
+  anchors on the spans printing each contested cross-reference term written
+  outside a heading and requires exactly one per group, a clause no rendered
+  case reaches: on the fixture each of those groups holds one anchor
+  (`rho`, `sigma`, `phi` — observed 2026-09-10), so reverting the grouping
+  to first-wins or weakening exactly-one to at-least-one leaves the leg green,
+  and no plant holds it. M090 removed the M084 self-test that exercised a copy
+  of the read rather than the leg's own. — M084 review F1, M090 plan gate
+- **KI275.** Nothing in the suite tells a cross-reference mark's refusal
+  report from a locator mark's. `html.lua`'s `assign_anchors` writes two
+  wordings, and the M079-AC1 leg reads only the text both share, so a change
+  giving a cross-reference mark the locator wording — telling its author an
+  index link moved when none did — ships green. — M090 plan gate
 
 ### The repo and its packaging
 

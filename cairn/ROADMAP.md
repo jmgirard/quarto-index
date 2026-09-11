@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M090 | M079's cross-reference id rules each turn the id-collision leg red | in-progress | — | normal | milestones/M090-xref-id-rule-plants.md |
+| M090 | M079's cross-reference id rules each turn the id-collision leg red | review | — | normal | milestones/M090-xref-id-rule-plants.md |
 | M089 | Two book-fixture hygiene gaps close | done | — | normal | milestones/archive/M089-book-fixture-hygiene.md |
 | M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |
 | M087 | The link readers call the one link test and use the href it judged | done | — | normal | milestones/archive/M087-one-link-test-call.md |

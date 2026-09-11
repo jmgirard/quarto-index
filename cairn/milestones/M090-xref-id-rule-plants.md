@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M090: M079's cross-reference id rules each turn the id-collision leg red
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -92,32 +92,32 @@ entries for the gaps the gate chose to record.
      cites; an insertion, removal, or reorder renumbers the labels and the
      Coverage lines together. -->
 
-- [ ] T1: Give `m081_census_plant` (`tests/run-tests.sh:4573`) the module file
+- [x] T1: Give `m081_census_plant` (`tests/run-tests.sh:4573`) the module file
       it substitutes into, which it now hardcodes as `modules/html.lua`
       (`:4579`); the seven existing plants keep what they plant and expect.
-- [ ] T2: Plant AC1 through the helper: `contestable_xref`
+- [x] T2: Plant AC1 through the helper: `contestable_xref`
       (`passes.lua:624`) made false. Expect a whole leg message naming
       `xref-dup` (e.g. its "is on 2 element(s), want 1" line, `:4222`), not
       the bare id.
-- [ ] T3: Plant AC2: the outrank clause at `html.lua:847` removed so the
+- [x] T3: Plant AC2: the outrank clause at `html.lua:847` removed so the
       first holder stands. Expect a message long enough to be the `chi` case
       (e.g. "the locator for 'chi' names", `:4279`) — bare `chi` matches too
       much.
-- [ ] T4: Plant AC3: `assign_anchors` (`html.lua:885`) refusing an anchorless
+- [x] T4: Plant AC3: `assign_anchors` (`html.lua:885`) refusing an anchorless
       mark's id whatever `keeper` says. Expect the `xref-solo` control message
       (`:4374`).
-- [ ] T5: Remove the M084 T2 self-test (`tests/run-tests.sh:4415-4540`);
+- [x] T5: Remove the M084 T2 self-test (`tests/run-tests.sh:4415-4540`);
       `grep -n 'M084 T2\|def text_keyed\|def grouped' tests/run-tests.sh`
       prints nothing, and `minted.setdefault(printed, []).append(name)` is
       still in the leg. Keep the leg's grouping read (`:4322-4335`) and amend
       its comment (`:4316-4321`) to say no rendered case reaches a term with
       two minted anchors and no plant holds that clause.
-- [ ] T6: Add two entries under `DESIGN.md`'s acceptance-suite coverage gaps:
+- [x] T6: Add two entries under `DESIGN.md`'s acceptance-suite coverage gaps:
       the leg's grouped exactly-one clause is reached by no rendered case and
       held by no plant (M084 review F1); and no check tells the
       cross-reference refusal wording from the locator one
       (`html.lua:907-913`), so a swap between them ships green.
-- [ ] T7: Run `tests/run-tests.sh --self-test` alone (never two at once);
+- [x] T7: Run `tests/run-tests.sh --self-test` alone (never two at once);
       the unplanted control and each new plant print their pass lines, and
       the run exits 0.
 
@@ -140,6 +140,8 @@ entries for the gaps the gate chose to record.
 - 2026-09-10: implement started on branch m090-xref-id-rule-plants; no question gate, the plan leaving no implementation choice open.
 - 2026-09-10: T1-T6 edits written, unticked pending the `--self-test` run: helper takes a module argument; three plants each probed first in a scratch copy (unplanted control green, each plant red with its pinned line); M084 T2 self-test removed; KI274/KI275 added.
 - 2026-09-10: claim audit: not owed — internal tier
+- 2026-09-10: T1-T7 ticked against one `tests/run-tests.sh --self-test` run at f3e60b6's tree (1455 checks, 0 FAIL, exit 0): the unmutated-copy control green; M090 T2/T3/T4 plants each red on their pinned line; no M084 T2 line; T5's grep prints nothing and the leg's grouping read stays (line 4326). T2-T4 were checked off together with T1 and T5-T6 on that one run rather than a run per task, each run taking over 13 minutes.
+- 2026-09-10: implement complete; status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

@@ -14385,6 +14385,7 @@ examples/range-misuse.qmd	0
 examples/range.qmd	0
 examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
+examples/state-reuse-indexes.qmd	0
 examples/state-reuse.qmd	1
 examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
@@ -17791,16 +17792,20 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # break on anything but what it is about (D-012 records why this is not the
 # merge-base oracle D-004 refused).
 #
-# Warnings are compared as well as output. Five of the seventeen cells are read
-# by nothing but a report, so a comparison over emitted bytes alone would leave
-# them unbound; the extension's own warnings are cut out of each render's log
-# with the pattern set the zero-warning controls above already use.
+# Warnings are compared as well as output. Some cells are read by nothing but
+# a report, so a comparison over emitted bytes alone would leave them unbound;
+# the extension's own warnings are cut out of each render's log with the
+# pattern set the zero-warning controls above already use.
 #
-# Three fixtures rather than one, because a leaked value moves nothing in a
-# document that sets the same cell itself: the rich fixture reaches the
-# fourteen cells that carry values, the one-mark fixture is the only place a
-# leaked "this document used the principal subsystem" flag shows, and the
-# mark-free fixture is the only place a leaked count of marks seen shows.
+# Four fixtures rather than one, because a leaked value moves nothing in a
+# document that sets the same cell itself: the rich fixture reaches the cells
+# its marks fill, the one-mark fixture is the only place a leaked "this
+# document used the principal subsystem" flag shows, the mark-free fixture is
+# the only place a leaked count of marks seen shows, and the fixture that
+# declares no index is the only place a leaked declaration shows, a document
+# declaring one reading its own over whatever was left behind. Which cells
+# each reset owns is `CELLS` in tests/stateprobe.py, which the per-cell probes
+# enumerate.
 # ---------------------------------------------------------------------------
 section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 state_reuse_pair() {
@@ -17835,6 +17840,8 @@ state_reuse_pair() {
 
 state_reuse_pair state-reuse latex tex 4
 state_reuse_pair state-reuse html html 2
+state_reuse_pair state-reuse-indexes latex tex 1
+state_reuse_pair state-reuse-indexes html html 1
 state_reuse_pair state-reuse-plain latex tex 0
 state_reuse_pair state-reuse-plain html html 0
 state_reuse_pair state-reuse-empty latex tex 1

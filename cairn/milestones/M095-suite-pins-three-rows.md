@@ -82,19 +82,19 @@ stays open.
 
 ## Tasks
 
-- [ ] T1: KI72 fixtures. List every target in both files from the attribute
+- [x] T1: KI72 fixtures. List every target in both files from the attribute
       values (`examples/demo.qmd` lines 37-51, `examples/xref-conflict.qmd`
       lines 32-96). Write one invisible mark per distinct incidental target,
       as M091 did (minor amendment 2026-09-11). Keep `rho`'s target. An added
       mark must not contest a cross-reference mark's key (M15).
-- [ ] T2: KI72 suite. Set the corpus rows (near lines 14019 and 14054) to 0
+- [x] T2: KI72 suite. Set the corpus rows (near lines 14019 and 14054) to 0
       and 1 and rewrite their derivation comments (near lines 13900-13912).
       Update `DEMO_HTML_INDEX`, `XREF_HTML_INDEX`, `DEMO_ENTRIES`,
       `XREF_ENTRIES` (near line 705), `CONFLICT_PDF_INDEX` and `PDF_TERMS`
       for the entries that now link or are added, deriving from the source,
       never from the render. Add a check that the one remaining report names
       `Note: on birds`.
-- [ ] T3: KI273. Add an `hrefs` check for `Quoin` on the `place-second`
+- [x] T3: KI273. Add an `hrefs` check for `Quoin` on the `place-second`
       render. Add a `tests/fragments.py outside-heading` mode, which finds a
       section's child heading by element, and call it for `mullion-passage`
       in `a-mullion-in-a-heading` on `four.html` in both `place-blocked`
@@ -136,6 +136,7 @@ stays open.
 - 2026-09-11: re-audit: AC3 (full) — the corrected wording read `Bramble`'s expected anchor from an extension-written record at an unclear time (now derived from source as `qi-mark-1`), read "whose `five.html` carries" as a filter (captures now named), and left `Quoin`'s value unstated (now `four.html`). This second line is the stop, so the corrected wording goes to the user.
 - 2026-09-11: T1/T2 edits in, unticked: 8 invisible marks in `demo.qmd` and 12 in `xref-conflict.qmd` with their gallery copies, `DEMO_ENTRIES`, `DEMO_HTML_INDEX`, `XREF_HTML_INDEX`, `CONFLICT_PDF_INDEX`, both letter sweeps, corpus rows 0 and 1, and a check naming `rho`'s report. Scratch renders match the HTML, conflict PDF and demo PDF manifests. The suite has not run.
 - 2026-09-11: amendment adopted at the user's selection: AC3 now states `Quoin`'s href value, names the `place-blocked-one` and `place-blocked-two` captures, holds `mullion-passage` inside its section and outside its `<h2>`, derives `Bramble`'s `two.html#qi-mark-1` from source, and requires five plants. Scope's KI273 item reads "outside its heading". T3's wording follows.
+- 2026-09-11: `tests/run-tests.sh --self-test` ran clean at 8f0869d: 1511 checks, exit 0. It covers AC1's demo legs, AC2's corpus counts (0 and 1) and AC3's three assertions with their five plants. The AC2 report-identity check prints nothing when it passes, so it was read separately: its needle matches the captured corpus log once, and a needle naming `sigma` is refused. T1, T2 and T3 ticked.
 - 2026-09-11: T3 edits in, unticked: `tests/fragments.py` gains `outside-heading`, and the suite gains the `Quoin`, `mullion-passage` (both captures) and `Bramble` checks with their five plants. On an earlier run's `four.html` the new mode passes, and it fails on each of three scratch plants with its own message. The suite has not run.
 
 ## Decisions

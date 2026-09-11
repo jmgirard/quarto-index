@@ -1307,10 +1307,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   with the index style's delimiter. The entries for `'` and `` ` `` likewise
   print as the right and left single quotation marks, which is what those ASCII
   positions hold in a T1 text font. — M30 T1
-- **KI72.** The incidental `see=`/`see-also=` targets in `examples/demo.qmd`
-  and `examples/xref-conflict.qmd` do not all name terms each file indexes;
-  M14 pins their expected report counts instead. — M14 plan gate, narrowed
-  M091
 - **KI74.** That a registered page actually prints emphasized is exercised only
   by M20's T9 checks and by no acceptance criterion, the criteria set having
   been held rather than widened, so the last leg of that chain has no criterion
@@ -1456,15 +1452,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   every plant keeps its locator's fragment, so no plant shows `unique` leaving
   uncounted a fragment-less leaving link that `links` skips (corrected M088).
   — M087 review O3
-- **KI273.** The M063-AC2 old-store leg in `tests/run-tests.sh` never asserts
-  that `Bramble` links by the anchor two.qmd's record carries
-  (`two.html#qi-mark-1` on the capture — observed 2026-09-10), though the
-  M063 T2 self-test's contrast rests on it. Its one fragment check,
-  `tests/fragments.py resolve` over the index page, passes while every
-  fragment-carrying locator on the page names an id its page holds exactly
-  once, no locator leaves the site, and at least one fragment exists, and
-  `Bramble` losing its anchor leaves `Aardvark`'s (corrected M088). — M088 plan
-  gate
 - **KI274.** The M079-AC1 leg in `tests/run-tests.sh` groups the minted
   anchors on the spans printing each contested cross-reference term written
   outside a heading and requires exactly one per group, a clause no rendered

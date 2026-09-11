@@ -46,7 +46,7 @@ the M062 and M063 checks around those reports fail on the defects they name.
 
 ## Acceptance criteria
 
-- [ ] AC1: In the M063-AC3 leg of `tests/run-tests.sh`, where a directory
+- [x] AC1: In the M063-AC3 leg of `tests/run-tests.sh`, where a directory
       holds `four.qmd`'s record path, the write-failure report's
       parenthesized cause carries the text that `io.open` returned (`Is a
       directory` on this machine), not a nil-index fault. After SGR escapes
@@ -54,15 +54,15 @@ the M062 and M063 checks around those reports fail on the defects they name.
       logs matches `ERROR \(`.
 - [x] AC2: No function under `_extensions/index/modules/` calls the global
       `error`, as a `grep -n 'error('` over those modules at review reads.
-- [ ] AC3: `check_extension_warning_count` counts a warning line that starts
+- [x] AC3: `check_extension_warning_count` counts a warning line that starts
       with an SGR escape before `(W) `. The M063-AC3 anchored count over the
       render with the held record reads the same figure as the raw `(W) `
       count beside it.
-- [ ] AC4: In a book render over `examples/book-placement/`, a mark refiled
+- [x] AC4: In a book render over `examples/book-placement/`, a mark refiled
       from an undeclared index name prints inside the section of the book's
       first declared index. A leg asserts this and fails when the refiled
       mark is removed from the record that the section reads.
-- [ ] AC5: The active profile's verify command, `tests/run-tests.sh
+- [x] AC5: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
 ## Coverage
@@ -125,6 +125,7 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: suite run 2 failed M24-AC3 because the M094 T2 mutant render had no capture call after it. The call is added, the audit corrections and a tighter `got 1` glob are applied, and suite run 3 is running.
 - 2026-09-11: suite run 3 of `tests/run-tests.sh --self-test` exited 0 with all 1504 checks passed. The M094 T2, T3 and T4 plants each went red for their named defect. T1 to T8 are ticked and status is review.
 - 2026-09-11: review checkpoint: AC2 grep evidence, the consistency gate and nine diff-bug findings are recorded, and AC2 is ticked. Review suite run 1 stopped at M069-AC1 on a Quarto Deno segmentation fault. Run 2 is running, and AC1, AC3, AC4 and AC5 stay unticked until it reads clean.
+- 2026-09-11: review suite run 2 exited 0 with all 1504 checks passed. AC1 to AC5 have evidence lines and are ticked. This is the pre-gate checkpoint, and the nine diff-bug findings go to the merge gate for triage.
 
 ## Decisions
 
@@ -141,6 +142,25 @@ Evidence:
   there after 416 checks. This is the same crash as implement's suite run 1. The run passed the M094 T2 and
   T3 plants and every M064-AC5 check, and it did not reach the M062 legs. It
   counts as evidence for no criterion.
+- Review suite run 2 of `tests/run-tests.sh --self-test` exited 0 with "All
+  checks passed (1504 checks)", no line opening `FAIL` and no crash.
+- AC1: in both M063-AC3 renders (`place-blocked-one.log` and
+  `place-blocked-two.log`), the write-failure report's cause reads
+  `four.qmd.qi.json: Is a directory`. After SGR stripping, those two logs and
+  the two M064-AC5 logs each hold 0 lines matching `ERROR (`. The suite's
+  `m094_check_cause` and `check_no_quarto_error` passed at both legs, and the
+  M094 T2 plant went red on each check with the raise restored.
+- AC3: in both M063-AC3 held-record logs, the anchored patterns read 7
+  warning lines after SGR stripping. The raw `(W) ` count beside them is also
+  7. Both were counted by hand with `/usr/bin/grep` and by the suite's two
+  checks at that leg. The shipped render no longer writes an escape before a
+  `(W)` line, so the M094 T3 plant carries the escape case. It reads 6 to
+  the anchored patterns alone and 7 to `check_extension_warning_count`.
+- AC4: `M094-AC4` passed for the whole-book render and for the index.qmd
+  control. In each, `Escutcheon` prints in the `qi-index-alpha` section of
+  `index.html`. The M094 T4 plant dropped that mark from five.qmd's record,
+  and the assertion went red naming the term.
+- AC5: this is suite run 2 above, run alone with no other suite invocation.
 
 Consistency gate: `cairn_validate.py` exits 0 with every check passing. No
 principle text changed, so `cairn_impact.py` does not apply. The `generic`

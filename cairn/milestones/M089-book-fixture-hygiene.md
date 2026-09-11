@@ -24,9 +24,9 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 
 ## Acceptance criteria
 
-- [ ] AC1: The root `.gitignore` ignores each of the 22 paths under `examples/` that `refs/probes/m073-swept` records: `git check-ignore --no-index --non-matching -v` over the paths `git show --name-only --format= refs/probes/m073-swept -- examples` lists prints one line per path and no line opening `::`, the marker for a path no rule ignores.
-- [ ] AC2: The ignore rules hide no tracked file: `git ls-files -ci --exclude-standard` prints nothing.
-- [ ] AC3: `m069_cold_chapter` in `tests/run-tests.sh` removes its copy's `_book` before the `quarto render` it runs, as `m069_tree` removes its own.
+- [x] AC1: The root `.gitignore` ignores each of the 22 paths under `examples/` that `refs/probes/m073-swept` records: `git check-ignore --no-index --non-matching -v` over the paths `git show --name-only --format= refs/probes/m073-swept -- examples` lists prints one line per path and no line opening `::`, the marker for a path no rule ignores.
+- [x] AC2: The ignore rules hide no tracked file: `git ls-files -ci --exclude-standard` prints nothing.
+- [x] AC3: `m069_cold_chapter` in `tests/run-tests.sh` removes its copy's `_book` before the `quarto render` it runs, as `m069_tree` removes its own.
 - [ ] AC4: `tests/run-tests.sh` exits 0 on the branch head.
 
 ## Coverage
@@ -56,7 +56,15 @@ Close the two suite-hygiene gaps the HTML book fixtures leave open: pages a rend
 - 2026-09-10: T2 — `m069_cold_chapter` removes `"$M061W/$slug/_book"` with the store, comment rewritten to say why; KI231 struck from DESIGN.md. Suite run for T1–T2 is T3's.
 - 2026-09-10: T3 — on cea788b, `tests/run-tests.sh` exit 0 (779 checks), then `tests/run-tests.sh --self-test` exit 0 (1453 checks), run one after the other with no edit between; neither run left a page or `site_libs/` beside any `examples/book*/` project.
 - 2026-09-10: claim audit: not owed — internal tier
+- 2026-09-10: review in progress (checkpoint): AC1–AC3 evidenced and ticked, consistency gate clean; AC4's suite run and the three reviewers still running.
 
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-09-10 on 7286864, the branch head; `main` and `origin/main` agree and the branch contains both.
+
+- AC1: `git show --name-only --format= refs/probes/m073-swept -- examples` lists 22 paths; piped to `git check-ignore --no-index --non-matching -v --stdin` it prints 22 lines, none opening `::` (5 matched by `.gitignore:36` `examples/book*/*.html`, 17 by `.gitignore:37` `examples/book*/site_libs/`), exit 0.
+- AC2: `git ls-files -ci --exclude-standard` prints nothing, exit 0.
+- AC3: read at 7286864, `tests/run-tests.sh:10762` runs `rm -rf "$M061W/$slug/.quarto/$STORE_DIR" "$M061W/$slug/_book"` before the `quarto render "$chapter" --to html` at `:10764`, the same `rm -rf` line `m069_tree` runs at `:10798`.
+- Consistency gate: `cairn_validate.py` exit 0, every check PASS or OK; no DESIGN.md principle changed (the DESIGN.md diff strikes KI231 only), so `cairn_impact` is skipped; the `generic` profile names no toolchain checks. `git grep KI231` finds it only in this milestone file.

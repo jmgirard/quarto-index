@@ -157,6 +157,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: status set to review.
 - 2026-09-11: review gate: all seven criteria evidenced. The maintainer chose fix now for R1-R3, R5, R7, R9 and R10, so approval is asked again after a re-run. No status change.
 - 2026-09-11: gate fixes landed: R1 term-slot refusal and plant, R3 missing-key and not-a-map plants, R5 write guard and two plants, R7/R9/R10 wording. R2 not changed: the loop greps the script's own constants, so a cut-down needle such as "index" matches 5 lines of that log whatever index it names. Scratch probes green under Python 3.9.6 and 3.14.7. Suite run pending.
+- step-7 approval: m092-label-checks-discriminate approved for merge
 
 ## Decisions
 
@@ -193,3 +194,4 @@ Gate triage by the maintainer on 2026-09-11:
 - Rejected: R6, because stricter manifest input is the milestone's intent. R8, because the Python FAIL line still prints and the run still exits nonzero.
 
 Gate fixes, re-verified: `tests/run-tests.sh --self-test` ran at ba1d9fb on 2026-09-11. It exited 0 with "All checks passed (1474 checks)", no `FAIL` line and no traceback. Each of the five added plants printed its ok line. They cover a missing twin `.tex`, an unwritable diff file, a space after a term, a missing `xref-separator`, and a block that is not a map. No ok line of the first run is missing from this one. R2 was not changed, because its claim does not hold. The loop greps the script's own constants, so a cut-down needle fails there whatever index it names. R2 goes back to the maintainer as a reject.
+- Final triage: the maintainer accepted R2 as rejected, for the reason above.

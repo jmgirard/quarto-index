@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (M087 done and archived: the suite's link readers call `htmlindex.leaves_publication` directly and split the stripped href it judged, and both EPUB all-links-leave refusals have a plant. Pass 1 found no criterion failing; two comments fixed before merge, KI271/KI272 filed under one candidate row, three findings rejected. M084's row pruned under terminal-row retention. LESSONS.md is still at both caps and check-design.md 6 bytes under its own, so neither gained a line.)_
+_Last hygiene check: 2026-09-10 (M088 done and archived: `check_locator_fragments` deleted for `fragments.py resolve`, `m085_epub_plant` down to one count, KI271 struck and KI272 corrected; four wording findings fixed before merge, one rejected. M085's row pruned under terminal-row retention. LESSONS.md still at both caps, so no line added.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,10 +10,9 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M088 | Two link-check defects M087's review filed close by deletion | review | — | normal | milestones/M088-link-check-deletions.md |
+| M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |
 | M087 | The link readers call the one link test and use the href it judged | done | — | normal | milestones/archive/M087-one-link-test-call.md |
 | M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
-| M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

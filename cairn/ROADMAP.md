@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-11 (M094 archived, KI280-KI283 added from its review, M091 row pruned, no lesson or decision entry.)_
+_Last hygiene check: 2026-09-11 (M095 archived, KI284-KI287 added from its review under one clustered candidate row, M092 row pruned, no lesson or decision entry.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M095 | Three candidate rows' unasserted fixture facts get checks | review | — | normal | milestones/M095-suite-pins-three-rows.md |
+| M095 | Three candidate rows' unasserted fixture facts get checks | done | — | normal | milestones/archive/M095-suite-pins-three-rows.md |
 | M094 | A failed store write or source read reports its own cause | done | — | normal | milestones/archive/M094-store-failure-causes.md |
 | M093 | The label and language paths are exercised where no render reached them | done | M092 | normal | milestones/archive/M093-label-language-coverage.md |
-| M092 | The label and separator checks fail on the defects they name | done | — | normal | milestones/archive/M092-label-checks-discriminate.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

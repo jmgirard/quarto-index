@@ -48,12 +48,12 @@ section per document → its row (KI264). `epubcheck.py links` over
       one line, and it names `tests/htmlindex.py`.
 - [x] AC2: For each row of `M085_HREF_SHAPES` in `tests/run-tests.sh`,
       `htmlindex.leaves_publication` returns the row's verdict.
-- [ ] AC3: `htmlindex.resolve_href('index.html', ' ch1.xhtml#frag')` returns
+- [x] AC3: `htmlindex.resolve_href('index.html', ' ch1.xhtml#frag')` returns
       `('ch1.xhtml', 'frag')`; and over a copy of the captured `demo.epub` in
       which one of its index locators is given a leading space,
       `epubcheck.py links` and `epubcheck.py unique` each exit 0 with no link
       counted as leaving the publication.
-- [ ] AC4: Over a copy of the captured `demo.epub` in which every href inside
+- [x] AC4: Over a copy of the captured `demo.epub` in which every href inside
       a generated index section is prefixed with `https://example.invalid/`,
       the rest of the href, its `#fragment` included, kept after the prefix,
       `epubcheck.py links` and `epubcheck.py unique` each exit 1 with the
@@ -123,6 +123,10 @@ Review pass 1, 2026-09-10. Branch contains `origin/main` (b870082, no new commit
 
 - AC1: `git grep -n '^def leaves_publication' -- 'tests/*.py'` printed one line, `tests/htmlindex.py:867:def leaves_publication(href):`.
 - AC2: the 14 rows of `M085_HREF_SHAPES` (9 `leaves`, 5 `stays`), cut from `tests/run-tests.sh` and read by a scratch script outside the suite, each got their row's verdict from `htmlindex.leaves_publication` under Python 3.9.6 and 3.14.7, no mismatches.
+- AC3: `htmlindex.resolve_href('index.html', ' ch1.xhtml#frag')` returned `('ch1.xhtml', 'frag')` under 3.9.6 and 3.14.7. Over a scratch copy of the suite's captured `demo.epub` (`tests/.work/cap/demo-epub/demo.epub`) with its first index locator in `EPUB/text/ch005.xhtml` rewritten to `" ch003.xhtml#qi-mark-7"` by `plant.py`, `epubcheck.py links` exited 0 ("all 25 of 25 … resolve; 0 link(s) skipped as leaving the publication") and `epubcheck.py unique` exited 0 ("0 fragment-carrying link(s) leave the publication"), under both Pythons.
+- AC4: over a scratch copy of the same `demo.epub` with `plant.py --every` rewriting each `href="<file>.xhtml#<frag>"` in `EPUB/text/ch005.xhtml` to `https://example.invalid/<file>.xhtml#<frag>` (25 runs planted; none of the prefixed hrefs lost its `#`), `epubcheck.py links` exited 1 with "every one of the 25 link(s) inside a generated index section leaves the publication, so the resolving below would pass over an empty set" and `epubcheck.py unique` exited 1 with "every one of the 25 fragment-carrying link(s) inside a generated index section leaves the publication, so this check resolved none of them"; each printed exactly one `FAIL:` line, under 3.9.6 and 3.14.7. The `links` refusal's 25 is the section's link count, so every link inside the section was rewritten.
+- Suite: `tests/run-tests.sh --self-test` over the branch head passed, 1455 checks, 0 FAIL lines, including `M087-AC2`, both `M087-AC3` legs, `M087-AC4 (links)`, `M087-AC4 (unique)` and the four two-count `M085 T7` plants.
+- Consistency gate: `cairn_validate.py` passed (all checks) over the recorded evidence; no principle changed, so `cairn_impact.py` skipped; the `generic` profile names no toolchain checks.
 
 Independent review (three lenses; executable surface touched). Dispositions are set at the merge gate.
 

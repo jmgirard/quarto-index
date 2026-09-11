@@ -1,6 +1,6 @@
 # M088: Two link-check defects M087's review filed close by deletion
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -73,7 +73,7 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
       because every plant keeps its locator's fragment. Correct KI272 in place
       (marked `corrected M088`) to the gap left: no plant shows `unique`
       leaving uncounted a fragment-less leaving link that `links` skips.
-- [ ] T3: Run `tests/run-tests.sh`, then `tests/run-tests.sh --self-test`,
+- [x] T3: Run `tests/run-tests.sh`, then `tests/run-tests.sh --self-test`,
       sequentially, with no edit to `tests/run-tests.sh` while either is in
       flight (LESSONS M073).
 
@@ -86,6 +86,9 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
 - 2026-09-10: plan gate left `Bramble`'s old-store anchor unpinned (KI273, recovered-locator candidate row) over pinning it with `check_entry_locators` because pinning extends a shipped check; falsified by the record route losing that anchor with the suite green.
 - 2026-09-10: T1 done — `check_locator_fragments` and its M064-AC2 call deleted, the old-store leg runs `fragments.py resolve` over index.html (passes on today's capture: 2 locators, 2 fragments), three comments rewritten, KI271 struck, KI273 corrected to the page-wide check; `bash -n` clean, full suite deferred to T3 as planned.
 - 2026-09-10: T2 done — `m085_epub_plant` takes one `<count>` read by both greps and its pass line, its four calls pass one count each, the comment says why one number serves (`locators.py` offers only fragment-carrying locators), KI272 corrected in place; `bash -n` clean.
+- 2026-09-10: T3 done — `tests/run-tests.sh` passed (779 checks, 0 FAIL), then `tests/run-tests.sh --self-test` passed (1453 checks, 0 FAIL), run one after the other with no edit in flight; the four M085 T7 plants report 0/0, 0/0, 1/1, 1/1.
+- 2026-09-10: claim audit: not owed — internal tier
+- 2026-09-10: status → review.
 
 ## Decisions
 

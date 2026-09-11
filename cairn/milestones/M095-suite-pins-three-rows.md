@@ -42,16 +42,16 @@ stays open.
 
 ## Acceptance criteria
 
-- [ ] AC1: Rendered to gfm, `examples/demo.qmd` draws no dangling-target
+- [x] AC1: Rendered to gfm, `examples/demo.qmd` draws no dangling-target
       report, as the M14 corpus row for that file in `tests/run-tests.sh`
       reads. Its HTML index manifest, its LaTeX `\index{}` manifests, its PDF
       terms manifest and the gallery checks (`tests/gallerycheck.py`) pass
       with the entries that now link.
-- [ ] AC2: Rendered to gfm, `examples/xref-conflict.qmd` draws exactly one
+- [x] AC2: Rendered to gfm, `examples/xref-conflict.qmd` draws exactly one
       dangling-target report, and it names `Note: on birds`, as its M14
       corpus row and a report-identity check read. Its HTML and PDF index
       manifests pass.
-- [ ] AC3: The `place-second` record-route leg asserts that `Quoin`'s href
+- [x] AC3: The `place-second` record-route leg asserts that `Quoin`'s href
       on `five.html` is `four.html`. In each of the captures
       `place-blocked-one` and `place-blocked-two`, a leg asserts that
       `four.html` carries `mullion-passage` once, inside the `<section>`
@@ -63,13 +63,13 @@ stays open.
       href it reads. The `mullion-passage` assertion fails under each of three
       plants that move the id rather than copy it: onto the `<h2>`, into the
       `<h2>`, and out of the section.
-- [ ] AC4: For each of the six `indexes.lua` cells, `tests/stateprobe.py`
+- [x] AC4: For each of the six `indexes.lua` cells, `tests/stateprobe.py`
       either finds that deleting that cell's restore statement from `reset`
       changes the compared output of a probe fixture, or holds the cell as
       expected to pass with the reason stated, as it holds
       `range_pair_found`. A cell that `read` always reassigns
       (`language_words`, `indexes.lua` near line 333) is one such reason.
-- [ ] AC5: The active profile's verify command, `tests/run-tests.sh
+- [x] AC5: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
 ## Coverage
@@ -142,7 +142,103 @@ stays open.
 - 2026-09-11: the seven new probes ran and `tests/stateprobe.py` exited 0. `reset:indexes`, `order`, `doc_labels` and `declared` each move a `state-reuse` comparison, `titles` moves the new `state-reuse-indexes` fixture, and `index_labels` and `language_words` hold as expected-to-pass with their reasons in `EXEMPT`. The control passed with the new fixture in `PAIRS`. T4, T5 and T6 ticked, KI72 and KI273 struck from DESIGN and KI10 corrected there.
 - 2026-09-11: `tests/run-tests.sh --self-test` ran clean at 8f0869d: 1511 checks, exit 0. It covers AC1's demo legs, AC2's corpus counts (0 and 1) and AC3's three assertions with their five plants. The AC2 report-identity check prints nothing when it passes, so it was read separately: its needle matches the captured corpus log once, and a needle naming `sigma` is refused. T1, T2 and T3 ticked.
 - 2026-09-11: T3 edits in, unticked: `tests/fragments.py` gains `outside-heading`, and the suite gains the `Quoin`, `mullion-passage` (both captures) and `Bramble` checks with their five plants. On an earlier run's `four.html` the new mode passes, and it fails on each of three scratch plants with its own message. The suite has not run.
+- 2026-09-11: review evidence gathered at 18f0202. All five criteria ticked against fresh runs. `tests/run-tests.sh --self-test` ran clean at 1515 checks. `tests/stateprobe.py` ran clean over the seven new probes. The two corpus logs were read back for the 0 and 1 report counts and for rho's target. `cairn_validate.py` passed. The `generic` profile names no toolchain checks, and no principle changed. Three fresh-context lenses ran. The blame-history and prior-review lenses found nothing. The diff-bug lens returned 15 ranked findings, each checked against the code before it was recorded.
 
 ## Decisions
 
 ## Review
+
+
+Reviewed 2026-09-11 at 18f0202. No driving RR, so no projection-vs-outcome
+pairs are due. Default branch `main` had not moved, so the branch needed no
+merge before evidence was gathered.
+
+### Acceptance-criteria evidence
+
+- AC1: `tests/run-tests.sh --self-test` at 18f0202. `tests/.work/corpus-demo.log`
+  holds 0 dangling-target reports, and the M14 corpus row for that file reads 0.
+  The demo HTML index manifest matched all 65 rows in order (M03-AC2). The
+  LaTeX manifest matched 38 rows against 40 `\index` commands (AC1/AC4). The
+  PDF index heading was found with its 10 derived terms listed (AC6). The
+  gallery checks passed: 75 fixtures declared once each, 10 shown, 172 HTML
+  entries and 65 PDF entries matched (M41-AC1 to M41-AC5).
+- AC2: same run. `tests/.work/corpus-xref-conflict.log` holds exactly 1
+  dangling-target report, and its target string is `Note: on birds`, read back
+  from that log after the run. The M14 corpus row for the file reads 1. The
+  HTML index manifest matched all 49 rows in order (M03-AC4), and the fixture
+  built to PDF with no rejection from the index tool (M15-AC1).
+- AC3: same run. `Quoin` on `five.html` links to `four.html`. A `--self-test`
+  plant that rewrites that href to `four.html#quoin-passage` turns the check
+  red, and the failure names the href it read. `four.html` carries
+  `mullion-passage` once, inside `a-mullion-in-a-heading` and outside its
+  `<h2>`, in both the `place-blocked-one` and `place-blocked-two` captures.
+  Three plants that move the id turn that check red, one per plant, each
+  naming where the id sits. `Bramble` on `index.html` links to
+  `two.html#qi-mark-1`. The M063 T2 self-test render, where the record is
+  refused, turns the `Bramble` check red and names the anchorless href.
+- AC4: `python3 tests/stateprobe.py` over the seven new probes, exit 0. The
+  control passed. `reset:indexes`, `cell:order` and `cell:declared` each moved
+  `state-reuse/latex output`. `cell:doc_labels` moved `state-reuse/html
+  output`. `cell:titles` moved `state-reuse-indexes/latex output`.
+  `cell:index_labels` and `cell:language_words` held as expected to pass, each
+  printing the reason `EXEMPT` records.
+- AC5: `tests/run-tests.sh --self-test` at 18f0202 reported `All checks passed
+  (1515 checks)` and exited 0.
+
+### Consistency gate
+
+`cairn_validate.py` passed all 16 checks with 7 advisories clean. The active
+profile is `generic`, whose `consistency-gate` slot names no toolchain checks.
+No `DESIGN.md` principle changed, so `cairn_impact.py` did not run.
+
+### Independent review
+
+The diff touches executable files, so all three lenses ran in fresh context.
+The blame-history lens and the prior-review lens each reported no findings. The
+prior-review probe found no inline review threads on the repo, so that lens
+read the archived `## Review` sections only. The diff-bug lens reported 15
+findings, ranked. Each claim below was checked against the code before it was
+recorded here.
+
+Corrected on the branch before merge:
+
+- F1: the M26 leg comment in `tests/run-tests.sh` gave the wrong reason for the
+  fourth fixture. All four state-reuse fixtures declare no index. What makes
+  `state-reuse-indexes.qmd` carry the probe is its mark naming an undeclared
+  index, which is what makes a leaked `titles` visible.
+- F2: `DESIGN.md` KI10 carried the same wrong reason, and credited four cells
+  to the new fixture. Only `titles` moves on it.
+- F4: the new comment in `tests/state-pollute.lua` claimed every value it
+  installs differs from the fixture's. That is false for `language_words` and
+  for the unnamed index's `index_labels`, which are the two exempt cells.
+- F5: `DESIGN.md` KI10 dropped the half of the `index_labels` reason that
+  carries it, the unnamed index no declaration can name.
+- F6: `tests/state-pollute.lua` still said three state-reuse fixtures name it.
+  Four do.
+- F9: the anchor-numbering comment omitted that a minted number also steps over
+  a number already taken on the page.
+- F10: `demo.qmd` is shown on the gallery, and its new sentence ended in a
+  colon in front of marks that print nothing.
+- F11: the M03-AC4 comment read as though every resolving target names an entry
+  the last section marks. `sigma`'s names the entry `pi` marks.
+- F12: the `language_words` exemption reason printed as a sentence cut off at
+  `lang:`.
+
+Filed as follow-up work:
+
+- F3: `reset:indexes` builds its drop list from `CELLS` rather than from the
+  reset body, so a seventh cell added to `reset` and not to `CELLS` leaves both
+  probes green.
+- F7: the `Bramble` negative control reuses the `m063-refuseold` capture rather
+  than planting a changed href on the page the check reads.
+- F8: `outside-heading` does not require the container to be a `<section>` or
+  the heading to be an `<h2>`, which AC3 names.
+- F14: the M26 leg's cell counts were deleted rather than recomputed.
+
+Rejected:
+
+- F13: AC1 requires the PDF terms manifest to pass, and it passed. The manifest
+  holds visible-text terms only, so the new invisible marks never reach it. The
+  clause carries no evidence, but it does not fail.
+- F15: KI10 is marked `corrected M095` rather than `narrowed M095`. The entry
+  was corrected in place, which is what the record-correction rule asks for.

@@ -24831,8 +24831,13 @@ pass "M56-AC5: each of the four unusable writings draws exactly its own whole me
 # rather than about a second copy of it. `diff` exits 1 on a difference and 2 on
 # trouble, and the two are reported apart: a missing capture is not a
 # declaration that reached the back-end.
+#
+# The diff file is opened before `diff` runs: a redirect that fails also exits
+# 1, and would read as a difference (M092 review).
 check_tex_identical() {
   local fixture_tex="$1" twin_tex="$2" diffout="$3" label="$4" rc
+  { : > "$diffout"; } 2>/dev/null \
+    || fail "$label: cannot write the diff to $diffout, so nothing is known about the LaTeX back-end"
   diff -u "$fixture_tex" "$twin_tex" > "$diffout" 2>&1 && rc=0 || rc=$?
   case "$rc" in
     0) ;;
@@ -24958,6 +24963,17 @@ M092BLANKPY
     "differs from $M56W/drifted.tex, so an index-labels: declaration reached" \
     check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
       "$M56W/drifted.tex" "$M56W/drifted.diff" "M56 probe"
+  # Its two other failures, each reported apart from a difference (M092
+  # review): a capture that is not there, and a diff file it cannot write.
+  m56_planted 'a twin .tex that does not exist' \
+    "diff could not compare $CAPTURE_ROOT/index-labels-latex/index-labels.tex with $M56W/absent.tex (exit 2)" \
+    check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+      "$M56W/absent.tex" "$M56W/absent.diff" "M56 probe"
+  m56_planted 'a diff file in a directory that does not exist' \
+    "cannot write the diff to $M56W/absent-dir/out.diff" \
+    check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+      "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
+      "$M56W/absent-dir/out.diff" "M56 probe"
 
   # The labels fixture's two zero totals, each against a copy of its log
   # carrying one warning of this extension's more (M092).
@@ -25622,8 +25638,9 @@ pass "M58-AC3: one render prints the second index's own separator inside that in
 # naming the key or the level be reworded away. No zero control sits beside
 # them: both messages name the `figures` index, which
 # examples/index-separators.qmd does not declare, so a zero count over its log
-# could not fail (M092). A filter reporting every document is held by the
-# document-level controls in the M56 and M59 blocks.
+# could not fail (M092). A filter reporting every document is held by the zero
+# totals over the logs of the fixtures that write no unusable shape: M58-AC1's
+# silence count over the separators log, and the labels fixture's two in M56.
 M58_MISUSE_EMPTY_SEP='index-labels: in the entry declaring the index named "figures" gives the key "separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 M58_MISUSE_EMPTY_XREF='index-labels: in the entry declaring the index named "figures" gives the key "xref-separator" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
 for needle in "$M58_MISUSE_EMPTY_SEP" "$M58_MISUSE_EMPTY_XREF"; do
@@ -25780,6 +25797,14 @@ if [ "${1:-}" = "--self-test" ]; then
     || fail "M58 T9 self-test: planting a space between depth and term changed no row"
   m092_manifest_refused 'a manifest with a space for the tab after a depth' \
     "$M58W/spacedepth.txt" "is not a number written in ASCII digits"
+  # A space for the tab after the term joins the first slot into the term,
+  # which may itself hold spaces, so it is refused by the slot's shape.
+  printf '%s\n' "$M58_SEPARATORS" | sed 's/^0	Azurite	S1=/0	Azurite S1=/' \
+    > "$M58W/spaceterm.txt"
+  grep -q '^0	Azurite S1=' "$M58W/spaceterm.txt" \
+    || fail "M58 T9 self-test: planting a space between term and slot changed no row"
+  m092_manifest_refused 'a manifest with a space for the tab after a term' \
+    "$M58W/spaceterm.txt" "term 'Azurite S1=U+060C' carries the slot 'S1=U+060C'"
 
   # The separator reader, on copies of two captured pages whose every entry
   # line is wrapped in a `<p>`, the shape a writer emitting the list loose
@@ -25853,6 +25878,32 @@ M092KEYPY
   m58_planted 'a separators fixture whose index-labels: block sets a third key' \
     'sets the key "see", which is not one of separator, xref-separator' \
     derive_labels_twin "$M58W/thirdkey.qmd" examples/index-separators-twin.qmd \
+      1 "M58 probe" "separator xref-separator"
+  # The key check's other two branches (M092 review): a block missing one of
+  # the two keys, and a block that is not a map at all.
+  python3 - examples/index-separators.qmd "$M58W" <<'M092KEYSPY'
+import sys
+src, outdir = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+key_line = '  xref-separator: "؛"\n'
+block = '  separator: "،"\n' + key_line
+for needle in (key_line, block):
+    if text.count(needle) != 1:
+        print(f'FAIL: M092 plant: {src} carries {text.count(needle)} copies of '
+              f'{needle!r}, where it is written with 1', file=sys.stderr)
+        sys.exit(1)
+open(f'{outdir}/missingkey.qmd', 'w', encoding='utf-8').write(
+    text.replace(key_line, ''))
+open(f'{outdir}/scalarblock.qmd', 'w', encoding='utf-8').write(
+    text.replace('index-labels:\n' + block, 'index-labels: "،"\n'))
+M092KEYSPY
+  m58_planted 'a separators fixture whose index-labels: block does not set xref-separator' \
+    'does not set the key "xref-separator"' \
+    derive_labels_twin "$M58W/missingkey.qmd" examples/index-separators-twin.qmd \
+      1 "M58 probe" "separator xref-separator"
+  m58_planted 'a separators fixture whose index-labels: value is not a map' \
+    'is not a map, where it is written to set separator, xref-separator' \
+    derive_labels_twin "$M58W/scalarblock.qmd" examples/index-separators-twin.qmd \
       1 "M58 probe" "separator xref-separator"
 
   # And the twin's manifest against the declaring render, which is the

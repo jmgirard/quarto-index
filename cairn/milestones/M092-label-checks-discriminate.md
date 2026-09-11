@@ -156,6 +156,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - claim audit: not owed — internal tier
 - 2026-09-11: status set to review.
 - 2026-09-11: review gate: all seven criteria evidenced. The maintainer chose fix now for R1-R3, R5, R7, R9 and R10, so approval is asked again after a re-run. No status change.
+- 2026-09-11: gate fixes landed: R1 term-slot refusal and plant, R3 missing-key and not-a-map plants, R5 write guard and two plants, R7/R9/R10 wording. R2 not changed: the loop greps the script's own constants, so a cut-down needle such as "index" matches 5 lines of that log whatever index it names. Scratch probes green under Python 3.9.6 and 3.14.7. Suite run pending.
 
 ## Decisions
 

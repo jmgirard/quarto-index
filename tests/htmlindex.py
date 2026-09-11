@@ -592,9 +592,13 @@ LINE_PART_CLASSES = ('qi-term', 'qi-locators', 'qi-xref')
 def _line_pieces(node):
     """An entry line's text runs and part spans, in document order.
 
-    The descent is `own_nodes`': a nested list is a sub-entry's and is skipped.
-    Any other element that is not one of the line's part spans is a wrapper and
-    is walked through.
+    Like `own_nodes`, a nested list is a sub-entry's and is skipped, and any
+    other element that is not one of the line's part spans is walked through.
+    Unlike `own_nodes`, the walk yields text runs as well as elements, and a
+    walked-through element yields none of its own: its text joins the run
+    around it. So `<b>!</b>` between the term and the locators makes that run
+    `!, `, where a reader of the item's direct children alone ended the run at
+    the `<b>`. This extension writes no such element inside an entry line.
     """
     for child in node.children:
         if isinstance(child, str):
@@ -623,11 +627,12 @@ def entry_separators(item):
     span, then the runs inside it between one numbered link and the next, then
     the run in front of each cross-reference span.
 
-    The content is walked the way `own_nodes` walks it for the record builder
-    (M092): through any element that is not a nested list, so an entry line a
+    The content is walked through any element that is not a nested list, as
+    `own_nodes` walks it for the record builder (M092), so an entry line a
     writer wraps in a `<p>` yields the same pairs as one sitting directly in
     the `<li>`. The term, locators and cross-reference spans are not entered,
-    since their own text is no separator.
+    since their own text is no separator. `_line_pieces` states where the walk
+    and `own_nodes` part.
     """
     pairs = []
     pending = None

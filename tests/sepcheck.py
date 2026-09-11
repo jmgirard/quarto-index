@@ -30,6 +30,11 @@ expected there. The code point and not the character itself, because the
 fixtures print Arabic punctuation and a manifest sitting in a file of English
 would otherwise turn on two marks a reader cannot tell apart.
 
+A row whose fields are not tab-separated is refused as a manifest defect,
+never read as a rendering one: a depth must be ASCII digits, a slot may carry
+no whitespace, and no word of a term may be shaped like a slot. The refusal is
+one FAIL line and exit 1.
+
 The five sites are htmlindex's own constants, which name what a mark sits
 between: S1 term to locators, S2 locator to locator, S3 locators to the first
 cross-reference, S4 term to the first cross-reference where the entry has
@@ -99,6 +104,15 @@ def read_manifest(path):
                 raise ValueError(f'{where}: depth {depth!r} is not a number '
                                  f'written in ASCII digits; a row\'s fields '
                                  f'are separated by tabs')
+            # A space where the tab after the term belongs joins the first slot
+            # into the term, which may itself hold spaces. A word of the term
+            # shaped like a slot is that join.
+            for word in fields[1].split():
+                site, eq, _ = word.partition('=')
+                if eq and site in SITES:
+                    raise ValueError(f'{where}: term {fields[1]!r} carries the '
+                                     f'slot {word!r}; a row\'s fields are '
+                                     f'separated by tabs')
             slots = []
             for field in fields[2:]:
                 # A space where a tab belongs joins two slots into one field.

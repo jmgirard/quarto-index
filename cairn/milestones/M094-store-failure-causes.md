@@ -52,7 +52,7 @@ the M062 and M063 checks around those reports fail on the defects they name.
       directory` on this machine), not a nil-index fault. After SGR escapes
       are stripped, no line of that render's log or of the M064-AC5 leg's
       logs matches `ERROR \(`.
-- [ ] AC2: No function under `_extensions/index/modules/` calls the global
+- [x] AC2: No function under `_extensions/index/modules/` calls the global
       `error`, as a `grep -n 'error('` over those modules at review reads.
 - [ ] AC3: `check_extension_warning_count` counts a warning line that starts
       with an SGR escape before `(W) `. The M063-AC3 anchored count over the
@@ -124,7 +124,55 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: claim audit: 51 claims read, 7 corrected — CHANGELOG.md, _extensions/index/modules/book.lua, tests/run-tests.sh
 - 2026-09-11: suite run 2 failed M24-AC3 because the M094 T2 mutant render had no capture call after it. The call is added, the audit corrections and a tighter `got 1` glob are applied, and suite run 3 is running.
 - 2026-09-11: suite run 3 of `tests/run-tests.sh --self-test` exited 0 with all 1504 checks passed. The M094 T2, T3 and T4 plants each went red for their named defect. T1 to T8 are ticked and status is review.
+- 2026-09-11: review checkpoint: AC2 grep evidence, the consistency gate and nine diff-bug findings are recorded, and AC2 is ticked. Review suite run 1 stopped at M069-AC1 on a Quarto Deno segmentation fault. Run 2 is running, and AC1, AC3, AC4 and AC5 stay unticked until it reads clean.
 
 ## Decisions
 
 ## Review
+
+Reviewed 2026-09-11 on `m094-store-failure-causes` at 0d0506d. The branch
+contains `origin/main` (93e8bd7), so no sync merge was needed.
+
+Evidence:
+- AC2: `grep -n 'error(' _extensions/index/modules/*.lua` over the 11 modules
+  exits 1 with no match.
+- In review suite run 1 of `tests/run-tests.sh --self-test`, Quarto's Deno
+  binary crashed with a segmentation fault at M069-AC1, and the run stopped
+  there after 416 checks. This is the same crash as implement's suite run 1. The run passed the M094 T2 and
+  T3 plants and every M064-AC5 check, and it did not reach the M062 legs. It
+  counts as evidence for no criterion.
+
+Consistency gate: `cairn_validate.py` exits 0 with every check passing. No
+principle text changed, so `cairn_impact.py` does not apply. The `generic`
+profile names no toolchain checks.
+
+Independent review (three fresh reviewers):
+- Blame-history lens: no findings.
+- Prior-review lens: no findings. The GitHub probe found no review threads.
+- Diff-bug lens: no correctness defect in `book.lua`. Nine findings, most
+  severe first:
+  - F1. `check_extension_warning_count` and `check_no_quarto_error`
+    (`tests/run-tests.sh:2237-2261`) guard with `[ -f ]` only. A log that
+    exists and cannot be read makes `perl` fail inside `|| true`, so the count
+    reads 0 and every zero expectation passes. Before M094, `grep -c` printed
+    nothing on such a file and the check failed. Verified against the code.
+  - F2. `store_write` ignores the return value of `fh:close()`. A write that
+    fails only at the flush (a full disk) draws no report. The line predates
+    M094.
+  - F3. No leg reaches the write-failure site (old line 346) or the two
+    source-read sites (old 905 and 910). The plan recorded this and set AC2 as
+    a grep instead.
+  - F4. The `CHANGELOG.md` entry says the report names "the failure that
+    stopped the write". Only the open failure (`Is a directory`) is enforced.
+  - F5. `m094_check_cause` matches the English system text `Is a directory`,
+    which another locale or platform prints differently.
+  - F6. The T2 cause probe prints the same message whether the mutant drew no
+    report or drew one with the wrong cause. The ERROR probe counts one line
+    and does not name it.
+  - F7. The T4 plant drops the refiled mark. It does not plant a mark filed
+    in two sections, and `place_refiled_term` does not assert the term is
+    absent from `gamma`.
+  - F8. The T4 plant (`DROPREFILEDPY`) does not re-key `record['sorts']` as
+    `PLACENAMEPY` does. five.qmd's `sorts` is empty today.
+  - F9. A failed T4 render exits before the `cp` that restores five.qmd's
+    record in `examples/book-placement/`.

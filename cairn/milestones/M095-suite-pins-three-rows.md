@@ -145,6 +145,8 @@ stays open.
 - 2026-09-11: review evidence gathered at 18f0202. All five criteria ticked against fresh runs. `tests/run-tests.sh --self-test` ran clean at 1515 checks. `tests/stateprobe.py` ran clean over the seven new probes. The two corpus logs were read back for the 0 and 1 report counts and for rho's target. `cairn_validate.py` passed. The `generic` profile names no toolchain checks, and no principle changed. Three fresh-context lenses ran. The blame-history and prior-review lenses found nothing. The diff-bug lens returned 15 ranked findings, each checked against the code before it was recorded.
 
 - 2026-09-11: gate triage applied at the user's selection. The nine wrong-prose findings are corrected on the branch, in `tests/run-tests.sh`, `tests/state-pollute.lua`, `tests/stateprobe.py`, `examples/demo.qmd` and `DESIGN.md` KI10. The four gaps are filed as KI284 to KI287 with one clustered candidate row. The self-test suite is re-running against the corrected tree, and the merge waits on it.
+- 2026-09-11: the corrected tree re-verified. `tests/run-tests.sh --self-test` ran clean at 1515 checks, exit 0. `tests/stateprobe.py` ran clean over the seven probes. `cairn_validate.py` passed.
+- 2026-09-11: step-7 approval: m095-suite-pins-three-rows approved for merge.
 
 ## Decisions
 
@@ -236,6 +238,11 @@ Filed as follow-up work:
 - F8: `outside-heading` does not require the container to be a `<section>` or
   the heading to be an `<h2>`, which AC3 names.
 - F14: the M26 leg's cell counts were deleted rather than recomputed.
+
+Re-verified after the corrections, at 6db6aad. `tests/run-tests.sh
+--self-test` reported `All checks passed (1515 checks)` and exited 0.
+`tests/stateprobe.py` over the seven probes exited 0, with the same four
+cells moving and the same two holding. `cairn_validate.py` passed again.
 
 Rejected:
 

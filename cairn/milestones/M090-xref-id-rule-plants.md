@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M090: M079's cross-reference id rules each turn the id-collision leg red
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP6   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** internal — acceptance-suite plants and a self-test removal, which no user of the extension runs   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create -->
+- **Branch/PR:** m090-xref-id-rule-plants   <!-- owner: implement (branch) / review (PR URL) · create -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -137,6 +137,8 @@ entries for the gaps the gate chose to record.
 - 2026-09-10: plan gate chose deleting the M084 T2 self-test over hardening it into one shared function with two plants, because it fences a copy of a read no rendered case reaches and hardening adds a checker over a checker; falsified by a rendered case reaching two minted anchors on one printed term.
 - 2026-09-10: plan gate chose recording the undistinguished refusal wordings as a known issue over adding a leg clause and fourth plant, keeping scope to the candidate row; falsified by a swap of the two wordings shipping with the suite green and misleading an author.
 - 2026-09-10: AC4's final removal wording re-audited ([O], reduced, fresh context): no finding; its note that T5's grep checked only the removal led T5 to also check the leg's own read stays.
+- 2026-09-10: implement started on branch m090-xref-id-rule-plants; no question gate, the plan leaving no implementation choice open.
+- 2026-09-10: T1-T6 edits written, unticked pending the `--self-test` run: helper takes a module argument; three plants each probed first in a scratch copy (unplanted control green, each plant red with its pinned line); M084 T2 self-test removed; KI274/KI275 added.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

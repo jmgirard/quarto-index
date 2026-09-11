@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (M086 done and archived: the M24 residue probe plants each residue into every captured page at once and reads one sweep's output for all of them, eight sweeps in place of one per page, its section's timing row 3080 s to 23 s. Pass 1 returned it; pass 2 found no criterion failing — KI33 struck and a guard comment fixed before merge, KI270 filed, eight findings rejected. M083's row pruned under terminal-row retention. LESSONS.md is still at both caps and check-design.md 6 bytes under its own, so neither gained a line.)_
+_Last hygiene check: 2026-09-10 (M087 done and archived: the suite's link readers call `htmlindex.leaves_publication` directly and split the stripped href it judged, and both EPUB all-links-leave refusals have a plant. Pass 1 found no criterion failing; two comments fixed before merge, KI271/KI272 filed under one candidate row, three findings rejected. M084's row pruned under terminal-row retention. LESSONS.md is still at both caps and check-design.md 6 bytes under its own, so neither gained a line.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,10 +10,9 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M087 | The link readers call the one link test and use the href it judged | review | — | normal | milestones/M087-one-link-test-call.md |
+| M087 | The link readers call the one link test and use the href it judged | done | — | normal | milestones/archive/M087-one-link-test-call.md |
 | M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
 | M085 | One answer to whether a link leaves the publication | done | — | normal | milestones/archive/M085-one-href-answer.md |
-| M084 | The id-census AC1 leg tells apart what it claims to | done | M083 | normal | milestones/archive/M084-ac1-leg-instruments.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

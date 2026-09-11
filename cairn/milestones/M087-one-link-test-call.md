@@ -69,7 +69,7 @@ section per document → its row (KI264). `epubcheck.py links` over
 
 ## Tasks
 
-- [ ] T1: Delete `leaves_publication` from `tests/epubcheck.py` (`:251-262`),
+- [x] T1: Delete `leaves_publication` from `tests/epubcheck.py` (`:251-262`),
       `tests/epubindex.py` (`:166-176`) and `tests/sitecheck.py`
       (`:110-121`); their callers (`epubcheck.py:322`, `epubindex.py:212`,
       `sitecheck.py:270`) call `htmlindex.leaves_publication`. Rewrite the
@@ -106,6 +106,8 @@ section per document → its row (KI264). `epubcheck.py links` over
 - 2026-09-10: criteria audit ran in reduced mode (internal tier); four findings, all fixed at the gate: AC1 named "defines" where its grep finds only a top-level `def`, narrowed; AC2 described its leg's failure message (instrument), the leg moved to T2; AC3's general whitespace sentence swept more than its two named cases, narrowed to them; a drafted AC5 (`--self-test` clean) bound the harness, moved to T6. Outside the three questions the reader noted AC4 needed the fragment kept, or `unique` refuses on its no-fragment branch instead; reworded.
 - 2026-09-10: plan gate chose deleting the three per-module `leaves_publication` names and reading `M085_HREF_SHAPES` through the one predicate over keeping the names and driving every shape through each command, because the scope repairs checks M085 shipped and the per-reader name cannot see a change made after its call (F2) — this reverses M085's implementation-gate choice of a named entry per reader, whose stated falsifier F2 is; falsified by a reader regaining a link test of its own that M085's command-level EPUB and site plants do not reach.
 - 2026-09-10: plan gate dropped M085 review F5 (no leg pins the site sweep across the broadened skip): the old and new rule swept the same count at merge (2025 over the staying plant, M085 T7 and review AC4), and a standing leg would have to restate the six-scheme list D-057 declined.
+- 2026-09-10: implement gate chose an every-match mode in `plant.py` for the AC4 copy (one repack, still refusing a pattern matching nothing) over chaining one plant per locator, and the AC3 leg on every run beside M085's two-command leg rather than under `--self-test`.
+- 2026-09-10: T1 done — the three per-module `leaves_publication` names deleted, their callers call `htmlindex.leaves_publication`, docstrings rewritten; `epubcheck.py links`/`unique` over the demo EPUB, `sitecheck.py links` over the site capture and the five readers' imports all pass under Python 3.9.6 and 3.14.7; `tests/run-tests.sh` (with T2, since M085's leg read the deleted names) passed, 779 checks.
 
 ## Decisions
 

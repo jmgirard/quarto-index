@@ -248,20 +248,6 @@ def cmd_absent(argv):
     return 0
 
 
-def leaves_publication(href):
-    """True where an href names something outside the EPUB.
-
-    This module's own name for the suite's one definition of that question
-    (`htmlindex.leaves_publication`, D-057), which states the rule and what it
-    does not catch. Kept as a name here rather than called through, so that the
-    agreement leg in `tests/run-tests.sh` reads this reader at its own call
-    site: a reader that stopped consulting the shared definition shows up there
-    as a verdict disagreeing with the other three, where a leg calling the
-    shared definition four times could not see it.
-    """
-    return htmlindex.leaves_publication(href)
-
-
 def cmd_unique(argv):
     """No document repeats an id, and every index link lands on a unique one.
 
@@ -319,7 +305,7 @@ def cmd_unique(argv):
             target, _, fragment = href.partition('#')
             if not fragment:
                 continue
-            if leaves_publication(href):
+            if htmlindex.leaves_publication(href):
                 outside += 1
                 continue
             fragments += 1

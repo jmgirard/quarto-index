@@ -1,13 +1,13 @@
 # M095: Three candidate rows' unasserted fixture facts get checks
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — `examples/demo.qmd` is shown on the docs site's gallery page, so its source and rendered index change for readers
-- **Branch/PR:** —
+- **Branch/PR:** m095-suite-pins-three-rows
 
 ## Goal
 

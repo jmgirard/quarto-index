@@ -26357,6 +26357,179 @@ M59PLANTPY
 fi
 
 # ---------------------------------------------------------------------------
+# M093 — every non-ASCII character `BLANKS` lists is refused as a label value.
+#
+# `BLANKS` in `indexes.lua` lists 27 characters that print nothing a reader can
+# see, and before this leg only U+00A0 and U+200B reached a render. A
+# transposed code point in the list, `\u{2007}` written `\u{2070}` say, would
+# have shipped a visible glyph as a blank, or a blank as a word, in silence.
+# The four ASCII entries (tab, newline, return, space) get no value here:
+# YAML and Pandoc trim them before the filter reads one, so what reaches it is
+# the empty string and the report is the empty value's.
+#
+# ORACLE — the 23 characters are named below by their Unicode character names,
+# the list `BLANKS` held when M093 was planned, and `unicodedata.lookup` turns
+# each name into its character. Nothing is read from `indexes.lua`: a list
+# derived from the module under test would be blind to the transposition this
+# leg is about. The document is generated rather than committed, one
+# double-quoted YAML scalar per value, since an unquoted blank arrives trimmed.
+# Five indexes, `blanks1` to `blanks5`, each writing all five label keys in
+# the order `symbols`, `see`, `see-also`, `separator`, `xref-separator`: the
+# 23 blanks take the first 23 of those 25 places, in the order listed, and the
+# last two take two visible non-ASCII characters that must draw nothing. Every
+# report names its index and its key, so each of the 23 is told apart by the
+# place it was written.
+# ---------------------------------------------------------------------------
+section 'M093 — every non-ASCII character `BLANKS` lists is refused as a label value.'
+M093W="$WORK/m093"
+rm -rf "$M093W"
+mkdir -p "$M093W"
+
+# One scratch document directory with the extension copied in, holding the
+# generated document and, for a planted tree, an edited copy of the module.
+m093_tree() {   # <slug>
+  rm -rf "$M093W/$1"
+  mkdir -p "$M093W/$1/_extensions"
+  cp -R "$QI_EXT_DIR" "$M093W/$1/_extensions/index"
+}
+
+m093_tree real
+python3 - "$M093W/real/blanks.qmd" "$M093W/blanks-places.tsv" <<'M093BLANKSPY' \
+  || fail "M093-AC4: the blank-value document was not generated as named (its own FAIL line is above)"
+import sys, unicodedata
+import yaml
+doc_path, places_path = sys.argv[1:3]
+BLANK_NAMES = [
+    'NO-BREAK SPACE', 'SOFT HYPHEN',
+    'EN QUAD', 'EM QUAD', 'EN SPACE', 'EM SPACE',
+    'THREE-PER-EM SPACE', 'FOUR-PER-EM SPACE', 'SIX-PER-EM SPACE',
+    'FIGURE SPACE', 'PUNCTUATION SPACE', 'THIN SPACE', 'HAIR SPACE',
+    'ZERO WIDTH SPACE', 'ZERO WIDTH NON-JOINER', 'ZERO WIDTH JOINER',
+    'LINE SEPARATOR', 'PARAGRAPH SEPARATOR',
+    'NARROW NO-BREAK SPACE', 'MEDIUM MATHEMATICAL SPACE', 'WORD JOINER',
+    'IDEOGRAPHIC SPACE', 'ZERO WIDTH NO-BREAK SPACE',
+]
+VISIBLE_NAMES = ['MIDDLE DOT', 'SECTION SIGN']
+KEYS = ['symbols', 'see', 'see-also', 'separator', 'xref-separator']
+label = 'M093-AC4 (generated fixture)'
+blanks = [unicodedata.lookup(n) for n in BLANK_NAMES]
+visible = [unicodedata.lookup(n) for n in VISIBLE_NAMES]
+if len(blanks) != 23 or len(set(blanks)) != 23 or min(map(ord, blanks)) < 0x80:
+    print(f'FAIL: {label}: the name list gives {len(set(blanks))} distinct '
+          f'character(s), the lowest U+{min(map(ord, blanks)):04X}, where it '
+          f'names 23 distinct characters outside ASCII', file=sys.stderr)
+    sys.exit(1)
+values = blanks + visible
+places = [(f'blanks{i // 5 + 1}', KEYS[i % 5]) for i in range(len(values))]
+lines = ['---', 'title: "Blank label values"', 'indexes:']
+for i, (name, key) in enumerate(places):
+    if i % 5 == 0:
+        lines += [f'  - name: {name}', f'    title: Index {name}',
+                  '    index-labels:']
+    lines.append(f'      {key}: "\\u{ord(values[i]):04X}"')
+lines += ['filters:', '  - index', '---', '',
+          'Every label value above is one character.', '']
+with open(doc_path, 'w', encoding='utf-8') as out:
+    out.write('\n'.join(lines))
+# Read back what was written, through a YAML parser rather than the string
+# built above, so a place holding anything but the character named for it is
+# found here and not as a count below.
+text = open(doc_path, encoding='utf-8').read()
+meta = yaml.safe_load(text.split('---\n')[1])
+read = [(entry['name'], key, entry['index-labels'][key])
+        for entry in meta['indexes'] for key in KEYS]
+wanted = [(name, key, value) for (name, key), value in zip(places, values)]
+if read != wanted:
+    print(f'FAIL: {label}: {doc_path} does not hold the 25 values named for '
+          f'its 25 places', file=sys.stderr)
+    sys.exit(1)
+with open(places_path, 'w', encoding='utf-8') as out:
+    for (name, key), kind, cname in zip(
+            places, ['blank'] * 23 + ['visible'] * 2,
+            BLANK_NAMES + VISIBLE_NAMES):
+        out.write(f'{name}\t{key}\t{kind}\t{cname}\n')
+print(f'ok   {label}: {doc_path} holds the 23 named blank characters and the '
+      f'2 named visible ones, each read back from its double-quoted scalar at '
+      f'the index and key it is written under')
+M093BLANKSPY
+[ -s "$M093W/blanks-places.tsv" ] \
+  || fail "M093-AC4: generating the blank-value document wrote no list of its places (its own FAIL line is above)"
+[ "$(awk -F'\t' '$3 == "blank"' "$M093W/blanks-places.tsv" | wc -l | tr -d ' ')" = "23" ] \
+  || fail "M093-AC4: the generated document's place list does not name 23 blank values, so the counts below would read another domain"
+
+# The report one place draws, spelled once and used by the counts and the
+# plant alike.
+m093_blank_report() {   # <index name> <key>
+  printf 'index-labels: in the entry declaring the index named "%s" gives the key "%s" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one' "$1" "$2"
+}
+
+( cd "$M093W/real" && quarto render blanks.qmd --to html ) \
+  > "$WORK/m093-blanks-html.log" 2>&1 \
+  || { tail -20 "$WORK/m093-blanks-html.log" >&2; fail "M093-AC4: the generated blank-value document failed to render to HTML"; }
+capture "$M093W/real/blanks.qmd" html "m093-blanks-html"
+
+while IFS=$'\t' read -r name key kind cname; do
+  if [ "$kind" = "blank" ]; then want=1; else want=0; fi
+  check_warning_count "$WORK/m093-blanks-html.log" \
+    "$(m093_blank_report "$name" "$key")" "$want" \
+    "M093-AC4 ($cname under $name $key)"
+done < "$M093W/blanks-places.tsv"
+check_extension_warning_count "$WORK/m093-blanks-html.log" 23 \
+  "M093-AC4 (total)"
+pass "M093-AC4: each of the 23 non-ASCII characters BLANKS lists, written alone as a double-quoted label value, draws one report naming the index and key it is written under, and the two visible non-ASCII values draw none"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M093 T4 — the plant. A copy of the extension whose `BLANKS` keeps only its
+  # ASCII entries renders the same document, and each of the 23 counts above
+  # is shown red over that render: every character is then a visible word, so
+  # a list with any one of them transposed is a list this leg reads.
+  # -------------------------------------------------------------------------
+  m093_tree planted
+  cp "$M093W/real/blanks.qmd" "$M093W/planted/blanks.qmd"
+  python3 - "$M093W/planted/_extensions/index/modules/indexes.lua" <<'M093PLANTPY' \
+    || fail "M093 T4 self-test: planting BLANKS without its 23 non-ASCII entries failed (its own FAIL line is above)"
+import re, sys
+path = sys.argv[1]
+src = open(path, encoding='utf-8').read()
+start = src.find('local BLANKS = {\n')
+end = src.find('\n}\n', start)
+if start < 0 or end < 0:
+    print(f'FAIL: M093 T4 plant: {path} carries no `local BLANKS = {{` table '
+          f'closed by a `}}` line', file=sys.stderr)
+    sys.exit(1)
+entries = re.findall(r'"\\u\{([0-9A-F]{4})\}"', src[start:end])
+kept = [e for e in entries if int(e, 16) < 0x80]
+if len(entries) - len(kept) != 23:
+    print(f'FAIL: M093 T4 plant: the BLANKS table in {path} carries '
+          f'{len(entries) - len(kept)} entries outside ASCII, where the plant '
+          f'removes 23', file=sys.stderr)
+    sys.exit(1)
+table = 'local BLANKS = {\n  ' + ', '.join(f'"\\u{{{e}}}"' for e in kept) + ','
+open(path, 'w', encoding='utf-8').write(src[:start] + table + src[end:])
+M093PLANTPY
+  ( cd "$M093W/planted" && quarto render blanks.qmd --to html ) \
+    > "$WORK/m093-blanks-planted.log" 2>&1 \
+    || { tail -20 "$WORK/m093-blanks-planted.log" >&2; fail "M093 T4 self-test: the blank-value document failed to render against the planted extension"; }
+  capture "$M093W/planted/blanks.qmd" html "m093-blanks-planted"
+  while IFS=$'\t' read -r name key kind cname; do
+    [ "$kind" = "blank" ] || continue
+    out=$(check_warning_count "$WORK/m093-blanks-planted.log" \
+            "$(m093_blank_report "$name" "$key")" 1 "M093 probe" 2>&1) \
+      && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || fail "M093 T4 self-test: the count for $cname under $name $key passed over a BLANKS without that character, so its green above says nothing"
+    case "$out" in
+      *"expected 1 occurrence"*"got 0"*) ;;
+      *) fail "M093 T4 self-test: the count for $cname under $name $key failed over the planted render, but not for that reason (<<$out>>)" ;;
+    esac
+  done < "$M093W/blanks-places.tsv"
+  check_extension_warning_count "$WORK/m093-blanks-planted.log" 0 \
+    "M093 T4 self-test (the planted render reports nothing)"
+  pass "M093 T4 self-test: over a BLANKS holding only its ASCII entries, each of the 23 counts goes red with none of its report, and the render reports nothing at all"
+fi
+
+# ---------------------------------------------------------------------------
 # M070 — which chapter sources the recovery route reads, and how much of each
 # one it reads. Two edges, one fixture.
 #

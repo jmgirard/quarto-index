@@ -100,7 +100,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       words are copied from the reference page, not from the render.
 - [x] T3: KI196. Capture `examples/index-labels-clash.qmd` to EPUB. Repeat the
       M59-AC4 clash, no-clash and total counts over that log.
-- [ ] T4: KI197. Write one double-quoted fixture value per non-ASCII `BLANKS`
+- [x] T4: KI197. Write one double-quoted fixture value per non-ASCII `BLANKS`
       character, generated from a list of Unicode character names in the
       suite (`unicodedata.lookup`). Assert one report per character, each
       identified by the index and key it names. Show that the fixture's
@@ -137,6 +137,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - re-audit: AC6 (full) — the wording holds, and today's code fails it while a fixed copy passes. One finding: under `en_US.UTF-8`, `lang: es-êê` prints Spanish index words today and English after the fix (render confirmed). KI185's "Both outcomes print English" is false for that tag. Optional: assert the lowercased bytes too.
 - 2026-09-11: amendment gate. The second re-audit line is the stop, so the user decided. AC6 takes the `fr_FR.ISO8859-1` wording, and Scope Out records the `es-êê` output change. T6 also asserts the lowercased bytes and adds a `CHANGELOG.md` entry. T7 strikes KI185, whose false sentence this log records. The probes run through `quarto pandoc lua`, so the suite needs no separate `pandoc` binary.
 - 2026-09-11: T2 and T3 done in one commit, because both edit `tests/run-tests.sh`. T2 adds `examples/book-lang/`, three chapters with `lang: it` and an undeclared index. The M57 block renders it to HTML and EPUB against manifests copied from ledger rows W-IT1 to W-IT4, and two plants hold it to the English words. The first run failed M14's target roster, which did not list the two chapters. They are listed at 0, since every target resolves in the book. T3 captures the clash fixture to EPUB and repeats the three M59-AC4 counts, with three plants. `tests/run-tests.sh --self-test` passed 1490 checks.
+- 2026-09-11: T4 done. A new M093 section generates a document under `$WORK` from 23 Unicode names, five indexes of five keys each, with MIDDLE DOT and SECTION SIGN in the last two places. It reads each value back through PyYAML before counting one report per blank place and none per visible one, 23 in total. The plant renders against a copy whose `BLANKS` keeps its 4 ASCII entries, and all 23 counts go red. The first run failed M075's section scan, because the banner had no closing rule and no `section` call. `site/examples.qmd` gains a sentence naming `examples/book-lang/` (T2). `tests/run-tests.sh --self-test` passed 1493 checks.
 
 ## Decisions
 

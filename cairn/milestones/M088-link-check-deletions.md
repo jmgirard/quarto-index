@@ -99,3 +99,14 @@ Pass 1, 2026-09-10. Branch cut from `origin/main` at bf01f30, which has not move
 
 - AC1: `grep -c check_locator_fragments tests/run-tests.sh` prints 0. The old-store leg runs from `place_render place-oldstore ` (:11243) to `pass "M063-AC2: over a store whose records all stand` (:11269); between them `links by an anchor` matches 0 lines, and `python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html || fail …` (:11265-11268) stands where the diff removes the `check_locator_fragments … index.html` call.
 - AC2: `m085_epub_plant` (:24076) reads `<slug> <label> <count>` and shifts 3; the `links` grep (:24089) matches `; $count link(s) skipped as leaving the publication` and the `unique` grep (:24093) `; $count fragment-carrying link(s) leave the publication`, both on the one `$count`. Its four calls (:24098-24109) pass one count each: clean 0, staying 0, scheme 1, network-path 1.
+- Consistency gate: `cairn_validate.py` exit 0, every check PASS/OK; no IP/GP text changed, so `cairn_impact` skipped; the generic profile names no toolchain checks.
+
+Independent review (three lenses, fresh context; dispositions pending the gate):
+
+- [S] prior-review: no finding. The only PR-comment probe returned `[]`; the M063/M064/M078/M085/M087 archives hold nothing the diff reintroduces.
+- [S] blame-history: no finding. `check_locator_fragments` had one commit before this deletion (M064); `m085_epub_plant`'s two counts date from M087's split of M085's one.
+- [O] F1: `tests/run-tests.sh:11331`, the M063 T2 self-test pass line, says the refused run costs "the anchor a locator the run above links by", while the old-store leg's rewritten comment (:11260-11264) says that anchor is asserted nowhere; the removed check was what backed the contrast.
+- [O] F2: :8966-8980, the sweep's comment now carries "M064-AC2's fragment clause with it" but its `|| fail` label names M078-AC3 alone, and its domain widened from the `gamma` section to the whole page (identical today: five.html carries only `gamma`).
+- [O] F3: :11265-11268, the same section-to-page widening on the old-store leg (identical today: index.html carries only `alpha`); its fail text names less than `fragments.py resolve` refuses.
+- [O] F4: :24072-24075, the comment says "every plant here rewrites a locator", but the `clean` plant rewrites nothing.
+- [O] F5: `cairn/DESIGN.md` KI273's pass condition leaves out two things `fragments.py resolve` also refuses: an id on more than one element, and a locator leaving the site.

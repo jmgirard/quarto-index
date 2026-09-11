@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2026-09-11)
+
+No record 0.3.0 wrote is refused by this version, so a book keeps its terms
+without being rendered again. One change reaches rendered output, in HTML and
+EPUB: an id written on an index mark that another element of the page also
+carries is now given up by the mark, which takes a minted `qi-mark-` id and is
+reported, where before the page kept that name on two elements in silence. A
+link written to such a name can now land on the other element. Deciding
+whether a name is taken now reads raw HTML as markup rather than searching it
+for `id=`. Both are described below.
 
 ### Output
 
@@ -56,11 +65,14 @@
   alike, both back-ends being the one code path.
 
 - Two marks stay outside the rule above, and one route reads its result from
-  outside. A mark this filter cannot index at all — no visible text and no
-  `entry=` — is left exactly as you wrote it, id and all, so a name it shares
-  with something else is still on two elements and nothing is reported; so is
-  a mark written in a book chapter's front matter, whose id the filter leaves
-  alone because it cannot see which of the title-block fields Quarto prints.
+  outside. A mark this filter cannot index but keeps — no `entry=`, and content
+  with no text in it, such as an image with empty alt text — is left as you
+  wrote it, id and all, so a name it shares with something else is still on two
+  elements and nothing is reported (in a heading its id is moved out after the
+  heading, as every mark's is); a mark with no content and no `entry=` is
+  removed, id with it. A mark written in a book chapter's front matter keeps a
+  contested id the same way, unreported: the filter leaves its id alone because
+  it cannot see which of the title-block fields Quarto prints.
   And in a book, a chapter read back from its own source rather than from a
   record is settled against no rendered page: a mark there is treated like any
   other when that chapter itself renders, but the index link built for it names

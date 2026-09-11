@@ -5,6 +5,7 @@ _Last hygiene check: 2026-09-11 (M091 archived; KI277 added from its review; M08
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
+_Released 0.4.0 2026-09-11._
 
 ## Milestones
 

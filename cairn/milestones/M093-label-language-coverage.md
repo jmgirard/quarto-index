@@ -143,6 +143,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: T8: `tests/run-tests.sh --self-test` passed 1499 checks at the T7 commit.
 - claim audit: 53 claims read, 3 corrected — CHANGELOG.md, _extensions/index/modules/indexes.lua, _extensions/index/modules/languages.lua, examples/book-lang/, examples/index-labels-misuse.qmd, site/examples.qmd, tests/run-tests.sh
 - 2026-09-11: the claim audit corrected three suite comments. The probes load modules through plain Lua `require` from the working directory, not through Quarto's own `require`. The `subtag` and `miss` controls are M57-AC2's alone. Most blanks written unquoted arrive trimmed, not all. It also fixed three older lines the new work made stale, in the M14 fail text, an `indexes.lua` comment and the misuse fixture's prose. The same reader re-read all six, and all six hold. A later suite run stopped on a Deno segmentation fault while rendering `resolving-xref.qmd` to gfm, which this branch does not touch. The rerun passed 1499 checks.
+- step-7 approval: m093-label-language-coverage approved for merge (2026-09-11). The gate accepted the finding dispositions: fix F2 to F5 on the branch, F1 to Known issues, reject F6.
 
 ## Decisions
 
@@ -165,3 +166,5 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - F4 (`indexes.lua:182` comment line is 110 columns in an 80-column block): proposed fix now.
 - F5 (`examples/index-labels-misuse.qmd` prose lines 52 and 59 wrap unevenly): proposed fix now.
 - F6 (no plant puts a dangling report into the book-lang logs): proposed reject. The 0 extension-warning count over both logs turns red on any such report.
+- Gate triage, 2026-09-11: the user accepted every proposed disposition. F2 to F5 are fixed on the branch. F1 goes to Known issues at hygiene. F6 is rejected for the reason above.
+- F2 fix: a probe under `en_US.UTF-8` shows `lang: es-êê` heading an undeclared index `Índice alfabético` on `main` and `Index` on the branch. The entry now names the heading.

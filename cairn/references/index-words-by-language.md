@@ -108,8 +108,9 @@ been printed, and the table is only ever consulted after they are not enough.
 
 - Every `Ship` row lands in `_extensions/index/modules/languages.lua`, in the
   row for its language.
-- `W-DE4` lands nowhere: the German row ships three keys, and the fourth falls
-  through to the English word at the printing site.
+- `W-DE4` lands nowhere: the German row ships `see`, `see-also` and a heading
+  but no `symbols`, which falls through to the English word at the printing
+  site (corrected M093: the row keeps its heading apart from its words).
 - The choice to author this table rather than read pandoc's translation files
   or shell out to `pandoc` at render time is `D-035`, taken before this page
   existed; nothing here reopens it.

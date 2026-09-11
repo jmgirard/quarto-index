@@ -179,9 +179,10 @@ local index_labels = {}
 -- The words of the shipped language table's row this document's `lang:`
 -- resolves to, or nil where it resolves to none. The row's heading is not
 -- in this table: `label` looks up whatever key it is handed here, so a label
--- key spelled `title` would otherwise print the index heading (M093). One cell rather than a lookup per word:
--- the resolution is a fact about the document, settled once when the metadata
--- is read, and a per-word lookup would re-answer it for every entry printed.
+-- key spelled `title` would otherwise print the index heading (M093). One
+-- cell rather than a lookup per word: the resolution is a fact about the
+-- document, settled once when the metadata is read, and a per-word lookup
+-- would re-answer it for every entry printed.
 local language_words = nil
 
 -- One `index-labels:` map, at whichever level it was written. Returns the

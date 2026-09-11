@@ -6968,6 +6968,13 @@ check_warning_count "$WORK/xref-latex.log" \
   'see= on term "Xe01" has no usable target text' 1 "M02-AC3"
 pass "M02-AC3: an empty target level and an unusable target each warn once"
 
+# Every target names a path the fixture's last section marks, so neither
+# dangling-target wording is drawn. The gfm half is the corpus manifest's row
+# for this file and the per-index zero beside the book rows.
+check_warning_count "$WORK/xref-latex.log" "$WARN_DANGLING" 0 "M02-AC3 (no target dangles, latex)"
+check_warning_count "$WORK/xref-latex.log" "$WARN_DANGLING_INDEX" 0 "M02-AC3 (no target dangles, latex, per-index shape)"
+pass "M02-AC3: no cross-reference target in the probe dangles in the LaTeX render, in either report wording"
+
 # Compile, and require makeindex to accept every probe entry. Counted by
 # construction from the fixture's own shape, never read back from the run.
 mkdir -p "$WORK/xref" && cp "$CAPTURE_ROOT/xref-latex/xref-escaping.tex" "$WORK/xref/"
@@ -6983,8 +6990,12 @@ capture examples/xref-escaping.qmd pdf "xref-pdf"
 # special set four times over — single-level see, single-level see-also,
 # dual-target, and once inside the SOURCE entry of a cross-reference — plus
 # two non-ASCII targets, the empty-level probe (one cross-reference) and the
-# unusable probe (one plain entry).
-XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 4 + 2 + 2 ))
+# unusable probe (one plain entry). Then one plain entry per distinct target
+# path, from the section that makes every target resolve: the 94 x 2
+# multi-level targets are 188 distinct paths; the single, see-also and dual
+# probes name the same 16 characters, so 16; all 16 SOURCE-entry probes name
+# `Tgt`, so 1; the two non-ASCII targets, 2; and `see="A!"` names `A`, 1.
+XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 4 + 2 + 2 + (0x7F - 0x21) * 2 + 16 + 1 + 2 + 1 ))
 grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escaping.ilg" \
   || { grep -E 'accepted|rejected' "$WORK/xref/xref-escaping.ilg" >&2; fail "M02-AC3: makeindex did not accept all $XREF_MARKS cross-reference probe entries"; }
 
@@ -13877,11 +13888,15 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #
 #   xref-escaping  272 target attributes, of which one is written `see=""`
 #                  and is dropped with "has no usable target text" before any
-#                  target exists to resolve. The other 271 name level paths
-#                  built by construction from the printable ASCII range
-#                  (`L1!x!L3` and its rotations); the file indexes only its
-#                  visible probe labels (`x00`, `a00`, ...), so none resolves.
-#                  271.
+#                  target exists to resolve. The other 271 name 208 distinct
+#                  paths, and the file's last section writes one invisible
+#                  mark per path: the 188 multi-level targets built from the
+#                  printable ASCII range (`L1!x!L3` and its rotations) each
+#                  resolve against the mark spelling that path; the 64
+#                  special-character targets, single and dual, against the 16
+#                  one-level marks; the 16 SOURCE-entry probes against `Tgt`;
+#                  the two non-ASCII targets against their own marks; and
+#                  `see="A!"`, its empty level dropped, against `A`. 0.
 #   demo           8 attributes (Felines, Pets, Birds!Owls, Wow!!Hey, Vulpes,
 #                  Spirits, Aye, Bee). The file's entries are its visible terms
 #                  plus `Canids!Foxes`, `Ghosts`, `Wow!!Really`, `Top!Middle!
@@ -13991,9 +14006,6 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  nothing in the file marks and is there to be reported — it
 #                  is the report M26's pollution filter silences by leaving
 #                  that path in the set the next document resolves against. 1.
-#
-# Reconciling xref-escaping's corpus so its targets resolve is its own piece of
-# work and is a ROADMAP candidate; this milestone pins what it reports.
 # ---------------------------------------------------------------------------
 section 'The corpus reconciliation the report forces. Every example that writes a'
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
@@ -14040,7 +14052,7 @@ examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
 examples/state-reuse.qmd	1
 examples/xref-conflict.qmd	14
-examples/xref-escaping.qmd	271
+examples/xref-escaping.qmd	0
 MANIFEST
 
 printf '%s\n' "$DANGLING_CORPUS" > "$WORK/dangling-corpus.txt"
@@ -14095,6 +14107,7 @@ check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, ex
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING_INDEX" 0 "M14 (corpus, examples/book-order, which declares no index to name)"
 check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING_INDEX" 1 "M14 (corpus, examples/book-scopes)"
 check_warning_count "$WORK/book-scopes.log" "$WARN_DANGLING" 0 "M14 (corpus, examples/book-scopes, not the one-namespace shape)"
+check_warning_count "$WORK/corpus-xref-escaping.log" "$WARN_DANGLING_INDEX" 0 "M14 (corpus, examples/xref-escaping, which declares no index to name)"
 pass "M14: every example's dangling-target report count matches its pinned expectation, in a format with no index back-end, and the book chapters' counts add up to what their books report"
 
 # The fold fixtures render here, ahead of M15's residue sweep: one of them has

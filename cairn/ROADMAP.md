@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M091 | The cross-reference escaping probe's targets name terms it indexes | planned | — | normal | milestones/M091-xref-probe-targets-resolve.md |
+| M091 | The cross-reference escaping probe's targets name terms it indexes | in-progress | — | normal | milestones/M091-xref-probe-targets-resolve.md |
 | M090 | M079's cross-reference id rules each turn the id-collision leg red | done | — | normal | milestones/archive/M090-xref-id-rule-plants.md |
 | M089 | Two book-fixture hygiene gaps close | done | — | normal | milestones/archive/M089-book-fixture-hygiene.md |
 | M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |

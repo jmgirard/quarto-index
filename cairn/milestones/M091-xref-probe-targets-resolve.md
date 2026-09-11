@@ -1,13 +1,13 @@
 # M091: The cross-reference escaping probe's targets name terms it indexes
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — `examples/xref-escaping.qmd` is a test fixture the gallery lists under `not-shown:`, and the count manifest is the suite's own
-- **Branch/PR:** —
+- **Branch/PR:** m091-xref-probe-targets-resolve
 
 ## Goal
 
@@ -82,8 +82,9 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
       one copy each, remove the added mark for a multi-level path, for a
       single-level special-character path whose character leads no added
       multi-level path (a target also resolves as a prefix), and for a
-      non-ASCII path, render each to gfm, and read exactly one report naming
-      the removed target. Record the four results in the work log. Never run
+      non-ASCII path, render each to gfm, and read one report per target
+      naming the removed path — four for the special character, which its
+      single, see-also and two dual forms each name. Record the four results in the work log. Never run
       while the suite runs.
 - [ ] T4: Narrow KI72 in `cairn/DESIGN.md` ("The acceptance suite: coverage
       gaps") to the incidental targets this milestone leaves in
@@ -98,6 +99,12 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 - 2026-09-11: plan gate chose reconciling the probe over dropping KI72 as settled by the pinned 271 because no fixture tests a target carrying special characters resolving; falsified by a fixture shown already testing that resolution.
 - 2026-09-11: plan gate chose hidden marks naming each target over rewriting the targets to name the probe's own labels because rewriting removes the characters the probe exists to carry; falsified by an M02-AC3 leg found passing only because an added entry supplies the text it reads.
 - 2026-09-11: plan gate chose a one-off logged discrimination probe over a permanent `--self-test` plant because the suite is already long-running and heavily planted; falsified by the zero count going vacuous in a later change with no run failing.
+- 2026-09-11: implement started; question gate skipped, the plan fixing the mark shape, placement and figures.
+- 2026-09-11: T1: 208 invisible marks under "Targets the probe resolves", one per distinct target path, generated from the attribute values; before the edit the gfm render's 271 quoted targets matched the 271 source-derived paths in order, and no added path equals a cross-reference mark's source entry.
+- 2026-09-11: T2: `XREF_MARKS` 256 → 464 with its arithmetic, corpus row 271 → 0 with the derivation comment rewritten, candidate comment deleted, zero counts added for both wordings over the LaTeX log and the per-index wording over the gfm corpus log.
+- 2026-09-11: T3 amended (minor): a special character is named by four targets, so removing its mark draws four reports, not one.
+- 2026-09-11: T3 probe (scratch copies, gfm): unedited 0 reports; `L1!%!L3` removed → 1 naming it; `%` removed → 4 naming `%`; `café naïve` removed → 1 naming it; per-index wording 0 in all four. Scratch LaTeX render of the edited fixture: 0 reports, makeindex 464 accepted, 0 rejected.
+- 2026-09-11: T4: KI72 narrowed to the incidental targets in `examples/demo.qmd` and `examples/xref-conflict.qmd`.
 
 ## Decisions
 

@@ -90,7 +90,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       map in `examples/index-labels-misuse.qmd`. Add needles naming that
       index beside the M56 misuse counts, with the arithmetic shown in the
       comment. Re-derive the misuse render's total extension-warning count.
-- [ ] T2: KI189. Add a small book under `examples/` that declares `lang: it`,
+- [x] T2: KI189. Add a small book under `examples/` that declares `lang: it`,
       rather than editing a book other legs pin. It needs an entry in the
       non-letter group for `symbols` and cross-reference marks for `see` and
       `see-also`. A book goes in no `site/gallery.yml` list, because
@@ -98,7 +98,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       it to HTML and EPUB through `capture`, and read each index with
       `tests/htmlindex.py` and `tests/epubindex.py` against a manifest whose
       words are copied from the reference page, not from the render.
-- [ ] T3: KI196. Capture `examples/index-labels-clash.qmd` to EPUB. Repeat the
+- [x] T3: KI196. Capture `examples/index-labels-clash.qmd` to EPUB. Repeat the
       M59-AC4 clash, no-clash and total counts over that log.
 - [ ] T4: KI197. Write one double-quoted fixture value per non-ASCII `BLANKS`
       character, generated from a list of Unicode character names in the
@@ -136,6 +136,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - re-audit: AC6 (full) — five findings, all fixed in the second wording. The locale clause named every locale, but the probe tests one. The byte escape needed a gloss. `:lower()` turns 0xC3 into 0xE3, so "carries those bytes" was open to dispute. The outcome token was not quoted. T6 still named the `\233` precondition.
 - re-audit: AC6 (full) — the wording holds, and today's code fails it while a fixed copy passes. One finding: under `en_US.UTF-8`, `lang: es-êê` prints Spanish index words today and English after the fix (render confirmed). KI185's "Both outcomes print English" is false for that tag. Optional: assert the lowercased bytes too.
 - 2026-09-11: amendment gate. The second re-audit line is the stop, so the user decided. AC6 takes the `fr_FR.ISO8859-1` wording, and Scope Out records the `es-êê` output change. T6 also asserts the lowercased bytes and adds a `CHANGELOG.md` entry. T7 strikes KI185, whose false sentence this log records. The probes run through `quarto pandoc lua`, so the suite needs no separate `pandoc` binary.
+- 2026-09-11: T2 and T3 done in one commit, because both edit `tests/run-tests.sh`. T2 adds `examples/book-lang/`, three chapters with `lang: it` and an undeclared index. The M57 block renders it to HTML and EPUB against manifests copied from ledger rows W-IT1 to W-IT4, and two plants hold it to the English words. The first run failed M14's target roster, which did not list the two chapters. They are listed at 0, since every target resolves in the book. T3 captures the clash fixture to EPUB and repeats the three M59-AC4 counts, with three plants. `tests/run-tests.sh --self-test` passed 1490 checks.
 
 ## Decisions
 

@@ -13932,6 +13932,11 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   book-order     `index.qmd` points at `Late`, marked in the second chapter:
 #                  0. `later chapter.qmd` points at `Nowhere At All`, marked
 #                  nowhere: 1.
+#   book-lang      `one.qmd` writes `see="Kestrel"` and `last.qmd` writes
+#                  `see-also="Kestrel"`, and `index.qmd` marks `Kestrel`, so
+#                  both resolve across the book: 0 and 0 (M093). The book's
+#                  own HTML and EPUB renders are read for silence in the
+#                  M093 leg of the M57 block, which renders them.
 #   content        2 attributes, both on marks with no source entry at all —
 #                  an image mark and an empty one — so neither is indexed and
 #                  neither target is ever resolved. 0.
@@ -14009,6 +14014,8 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 # ---------------------------------------------------------------------------
 section 'The corpus reconciliation the report forces. Every example that writes a'
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
+examples/book-lang/last.qmd	0
+examples/book-lang/one.qmd	0
 examples/book-order/index.qmd	0
 examples/book-order/later chapter.qmd	1
 examples/book-scopes/index.qmd	0
@@ -14094,7 +14101,8 @@ done <<< "$DANGLING_CORPUS"
 
 # The book chapters' rows are per chapter, but the report is drawn once for
 # the whole book, so what they must add up to is what each book render emits.
-# Three books carry targets and each reports one, which is what the sum states.
+# Four books carry targets. Three report one each and examples/book-lang,
+# whose every target resolves, reports none, which is what the sum states.
 # The SHAPE differs between them, and that is the point of reading both:
 # examples/book declares three indexes, so its target is judged inside one of
 # them and the report names it; examples/book-order declares none, has one
@@ -25396,6 +25404,77 @@ for f in $M57_RESOLVER_FIXTURES; do
 done
 pass "M57-AC7: across the exact hit, the subtag hit, the miss and the malformed value, every line the language adds to the .tex is Quarto's and none is this filter's"
 
+# M093 — the same words in a BOOK. Every fixture above is one document, so the
+# index a book aggregates took no language path: in HTML each chapter is its
+# own Pandoc process and the marker chapter prints what the others recorded,
+# and in EPUB the whole book is one process. examples/book-lang/ declares
+# `lang: it` in its project file and writes no index word of its own.
+#
+# ORACLE — derived by hand from examples/book-lang/ and from the Italian rows
+# of `cairn/references/index-words-by-language.md`, never copied from a
+# render: `Indice analitico` (W-IT1), `vedi` (W-IT2), `vedi anche` (W-IT3),
+# `Simboli` (W-IT4). The book declares no index, so its one section is the
+# undeclared `qi-index`, headed with the table's word (D-038), placed by the
+# marker in last.qmd after the `site-index` heading. `#numerals` files under no
+# ASCII letter; `Kestrel` is marked once, in index.qmd; `Falcon` (one.qmd) and
+# `Merlin` (last.qmd) carry no locator and each names `Kestrel`, which the book
+# marks, so each prints as a link behind its word. The EPUB rows are the same
+# rows, the section row carrying no following id for the reason manifest 10
+# gives.
+read -r -d '' M093_BOOK_IT_HTML <<'MANIFEST' || true
+section	qi-index	h1	Indice analitico	site-index
+letter	Simboli
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link vedi Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link vedi anche Kestrel
+MANIFEST
+read -r -d '' M093_BOOK_IT_EPUB <<'MANIFEST' || true
+section	qi-index	h1	Indice analitico
+letter	Simboli
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link vedi Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link vedi anche Kestrel
+MANIFEST
+
+M093_BOOK_DIR="examples/book-lang"
+rm -rf "$M093_BOOK_DIR/_book" "$M093_BOOK_DIR/.quarto"
+( cd "$M093_BOOK_DIR" && quarto render --to html ) > "$WORK/book-lang-html.log" 2>&1 \
+  || { tail -30 "$WORK/book-lang-html.log" >&2; fail "M093-AC2: the Italian book failed to render to HTML"; }
+capture --project "$M093_BOOK_DIR" html "book-lang-html"
+check_book_sections "$CAPTURE_ROOT/book-lang-html/_book" \
+  "M093-AC2 (only last.qmd carries a marker, so only its page prints the section)" \
+  "$(printf 'index.html\t-\nlast.html\tqi-index\tIndice analitico\none.html\t-')"
+check_index_sections "$CAPTURE_ROOT/book-lang-html/_book/last.html" \
+  "$M093_BOOK_IT_HTML" "M093-AC2 (HTML book)" counts labels
+check_extension_warning_count "$WORK/book-lang-html.log" 0 \
+  "M093-AC2 (HTML book, silence)"
+pass "M093-AC2: the HTML book declaring lang: it prints Simboli, vedi and vedi anche, under the heading Indice analitico, in the index its last chapter aggregates"
+
+rm -rf "$M093_BOOK_DIR/_book" "$M093_BOOK_DIR/.quarto"
+( cd "$M093_BOOK_DIR" && quarto render --to epub ) > "$WORK/book-lang-epub.log" 2>&1 \
+  || { tail -30 "$WORK/book-lang-epub.log" >&2; fail "M093-AC2: the Italian book failed to render to EPUB"; }
+capture --project "$M093_BOOK_DIR" epub "book-lang-epub"
+M093_BOOK_EPUB=$(find "$CAPTURE_ROOT/book-lang-epub/_book" -maxdepth 1 -name '*.epub' | head -1)
+[ -n "$M093_BOOK_EPUB" ] && [ -s "$M093_BOOK_EPUB" ] \
+  || fail "M093-AC2: the Italian book's EPUB render left no .epub under $CAPTURE_ROOT/book-lang-epub/_book"
+printf '%s\n' "$M093_BOOK_IT_EPUB" > "$WORK/book-lang-epub-index.txt"
+python3 tests/epubcheck.py sections "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/book-lang-epub-index.txt" --labels \
+  || fail "M093-AC2: the Italian book's EPUB does not print the Italian words the manifest states (its own FAIL line is above)"
+python3 tests/epubcheck.py links "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
+  || fail "M093-AC2: a link inside the Italian book EPUB's index section names nothing in the publication (its own FAIL line is above)"
+check_extension_warning_count "$WORK/book-lang-epub.log" 0 \
+  "M093-AC2 (EPUB book, silence)"
+pass "M093-AC2: the EPUB of the same book prints Simboli, vedi and vedi anche, under the heading Indice analitico"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M57 T6 — a planted defect per new check, each shown red on an artifact or
@@ -25500,6 +25579,29 @@ if [ "${1:-}" = "--self-test" ]; then
     'expected 0 warning(s)' \
     check_extension_warning_count "$WORK/index-labels-misuse-html.log" 0 \
       "M57 probe"
+
+  # The Italian book's two manifests, each against its render held to the same
+  # rows with the English words: a comparison blind to the printed word, or a
+  # book that took no language path, would pass these (M093).
+  printf '%s\n' "$M093_BOOK_IT_HTML" \
+    | sed -e 's/Indice analitico/Index/' -e 's/^letter	Simboli$/letter	Symbols/' \
+          -e 's/ vedi anche / see also /' -e 's/ vedi / see /' \
+    > "$M57W/book-english-html.txt"
+  grep -qF 'see also Kestrel' "$M57W/book-english-html.txt" \
+    && ! grep -qE 'vedi|Simboli|analitico' "$M57W/book-english-html.txt" \
+    || fail "M093 T2 self-test: the English copy of the Italian book manifest still carries an Italian word, or carries no English one, so the plant is not the defect it names"
+  m57_planted 'an Italian HTML book held to the manifest stating the English words' \
+    'do not match the manifest' \
+    check_index_sections "$CAPTURE_ROOT/book-lang-html/_book/last.html" \
+      "$(cat "$M57W/book-english-html.txt")" "M57 probe" counts labels
+  printf '%s\n' "$M093_BOOK_IT_EPUB" \
+    | sed -e 's/Indice analitico/Index/' -e 's/^letter	Simboli$/letter	Symbols/' \
+          -e 's/ vedi anche / see also /' -e 's/ vedi / see /' \
+    > "$M57W/book-english-epub.txt"
+  m57_planted 'an Italian EPUB book held to the manifest stating the English words' \
+    'does not match the manifest' \
+    python3 tests/epubcheck.py sections "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
+      "$M57W/book-english-epub.txt" --labels
 fi
 
 
@@ -26113,6 +26215,24 @@ MANIFEST
 check_index_sections "$M59_CLASH_HTML" "$M59_CLASH_SECTIONS" "M59-AC4 (print)"
 pass "M59-AC4: the index whose non-letter word one of its own letter groups also heads draws exactly one whole report naming that word and that index, the index in the same document whose word heads no letter group draws none, and both indexes still print both of their groups"
 
+# The same three counts over an EPUB render of the same document (M093). The
+# changelog says the clash report fires for HTML and EPUB, and until this leg
+# only the HTML render was read. The counts are the HTML leg's, derived the
+# same way: one document, one Pandoc process, the same two indexes.
+quarto render examples/index-labels-clash.qmd --to epub \
+  > "$WORK/index-labels-clash-epub.log" 2>&1 \
+  || { tail -20 "$WORK/index-labels-clash-epub.log" >&2; fail "M093-AC3: index-labels-clash.qmd failed to render to EPUB"; }
+capture examples/index-labels-clash.qmd epub "index-labels-clash-epub"
+[ -s "$CAPTURE_ROOT/index-labels-clash-epub/index-labels-clash.epub" ] \
+  || fail "M093-AC3: the clash fixture's EPUB render captured no .epub, so the log below may be the log of a render that built nothing"
+check_warning_count "$WORK/index-labels-clash-epub.log" "$M59_CLASH" 1 \
+  "M093-AC3"
+check_warning_count "$WORK/index-labels-clash-epub.log" "$M59_NOCLASH" 0 \
+  "M093-AC3 (silence)"
+check_extension_warning_count "$WORK/index-labels-clash-epub.log" 1 \
+  "M093-AC3 (total)"
+pass "M093-AC3: rendered to EPUB, the clash fixture draws the letter-clash report exactly once, naming the minerals index, and draws no report for the fossils index"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M59 T7 — a planted defect per new clause. Each is a SINGLE substitution on
@@ -26170,6 +26290,25 @@ if [ "${1:-}" = "--self-test" ]; then
   m59_planted 'a render that printed two groups under one heading in silence' \
     'expected 1 occurrence' \
     check_warning_count "$M59W/clash.log" "$M59_CLASH" 1 "M59 probe"
+  # The EPUB leg's three counts, each against a copy of the EPUB log carrying
+  # its own defect (M093): the report gone, the report for the index that has
+  # no clash added, and one message of this extension's that is no clash
+  # report added.
+  m59_drop_message "$WORK/index-labels-clash-epub.log" "$M59W/clash-epub.log" \
+    "$M59_CLASH"
+  m59_planted 'an EPUB render that printed two groups under one heading in silence' \
+    'expected 1 occurrence' \
+    check_warning_count "$M59W/clash-epub.log" "$M59_CLASH" 1 "M59 probe"
+  cp "$WORK/index-labels-clash-epub.log" "$M59W/noclash-epub.log"
+  printf '%s\n' "(W) $M59_NOCLASH" >> "$M59W/noclash-epub.log"
+  m59_planted 'an EPUB render that reported a clash in the index whose word heads no letter group' \
+    'expected 0 occurrence' \
+    check_warning_count "$M59W/noclash-epub.log" "$M59_NOCLASH" 0 "M59 probe"
+  cp "$WORK/index-labels-clash-epub.log" "$M59W/other-epub.log"
+  printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/other-epub.log"
+  m59_planted 'an EPUB clash render reporting one message that is not a clash report' \
+    'expected 1 warning(s)' \
+    check_extension_warning_count "$M59W/other-epub.log" 1 "M59 probe"
 
   # The silence half, against copies of the clash log carrying what the render
   # must not (M092): the report the `fossils` index would draw, and one warning

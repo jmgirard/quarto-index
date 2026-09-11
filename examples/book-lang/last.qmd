@@ -1,0 +1,8 @@
+# Last chapter
+
+A further cross-reference to the same term: [Merlin]{.index see-also="Kestrel"}.
+
+## Where the index goes {#site-index}
+
+::: {.qi-index-here}
+:::

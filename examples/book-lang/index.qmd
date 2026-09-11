@@ -1,0 +1,7 @@
+# Opening
+
+This book declares its language as Italian and never writes an index word of
+its own, so every word the index prints for itself comes from the language
+table.
+
+The term both cross-references in this book point at: [Kestrel]{.index}.

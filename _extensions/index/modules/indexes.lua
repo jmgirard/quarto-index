@@ -329,7 +329,7 @@ local function read(meta)
   -- declares no index is exactly the document most likely to write `index-labels:`
   -- at all, since it has no index entry to write one in (D-036).
   -- The language table, before anything else the metadata says: the untitled
-  -- heading installed below is one of its words, and it has to be in place
+  -- heading installed below is its row's `title`, and it has to be in place
   -- before a declaration can replace the whole title table.
   local row = qi_languages.resolve(meta and meta.lang or nil)
   language_words = row ~= nil and row.words or nil

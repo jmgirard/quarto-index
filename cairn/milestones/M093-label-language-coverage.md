@@ -1,6 +1,6 @@
 # M093: The label and language paths are exercised where no render reached them
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M092
 - **Driving RR:** —
@@ -123,7 +123,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       entry for the `es-êê` change that Scope Out names.
 - [x] T7: Strike KI183, KI184, KI185, KI187, KI188, KI189, KI196 and KI197 from
       `cairn/DESIGN.md` per D-013.
-- [ ] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
+- [x] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
 
 ## Work log
 
@@ -140,6 +140,9 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: T4 done. A new M093 section generates a document under `$WORK` from 23 Unicode names, five indexes of five keys each, with MIDDLE DOT and SECTION SIGN in the last two places. It reads each value back through PyYAML before counting one report per blank place and none per visible one, 23 in total. The plant renders against a copy whose `BLANKS` keeps its 4 ASCII entries, and all 23 counts go red. The first run failed M075's section scan, because the banner had no closing rule and no `section` call. `site/examples.qmd` gains a sentence naming `examples/book-lang/` (T2). `tests/run-tests.sh --self-test` passed 1493 checks.
 - 2026-09-11: T5 and T6 done in one commit, because both edit `languages.lua`. Each language row now holds `words` and a separate `title`. `indexes.lua` reads `row.words` into the cell `label` reads and `row.title` into the untitled heading. `OUTCOMES` is gone, and its token list moves into `resolve`'s comment. `TITLE_KEY` and its export are gone. `well_formed` tests `[A-Za-z]` and `[A-Za-z0-9]`. Two `quarto pandoc lua` probes run in the M57 block. The title probe printed `Indice analitico` before the change, and the tags gave `miss` and `subtag`. Two plants restore each defect in a copy of the modules. CHANGELOG gains an Unreleased Output entry for `es-êê`. `tests/run-tests.sh --self-test` passed 1499 checks.
 - 2026-09-11: T7 done. KI183, KI184, KI185, KI187, KI188, KI189, KI196 and KI197 are struck from `cairn/DESIGN.md`. No candidate row, lesson or other file named any of them. KI185's false sentence "Both outcomes print English" goes with its entry, as the amendment-gate line above records.
+- 2026-09-11: T8: `tests/run-tests.sh --self-test` passed 1499 checks at the T7 commit.
+- claim audit: 53 claims read, 3 corrected — CHANGELOG.md, _extensions/index/modules/indexes.lua, _extensions/index/modules/languages.lua, examples/book-lang/, examples/index-labels-misuse.qmd, site/examples.qmd, tests/run-tests.sh
+- 2026-09-11: the claim audit corrected three suite comments. The probes load modules through plain Lua `require` from the working directory, not through Quarto's own `require`. The `subtag` and `miss` controls are M57-AC2's alone. Most blanks written unquoted arrive trimmed, not all. It also fixed three older lines the new work made stale, in the M14 fail text, an `indexes.lua` comment and the misuse fixture's prose. The same reader re-read all six, and all six hold. A later suite run stopped on a Deno segmentation fault while rendering `resolving-xref.qmd` to gfm, which this branch does not touch. The rerun passed 1499 checks.
 
 ## Decisions
 

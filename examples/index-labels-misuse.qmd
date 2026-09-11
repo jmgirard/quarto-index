@@ -48,7 +48,8 @@ filters:
 ---
 
 Every `index-labels:` written in this document is written wrongly, and each
-place writes a different mistake. The document's own map names a key this
+place writes a mistake of its own, the third index repeating two of the
+document's so that each is reported where it was written. The document's own map names a key this
 extension does not print, gives a key it does print an empty value, gives
 another a non-breaking space — a character a reader cannot see — and writes a
 third as a list. Of the four indexes it declares, the first two write no map at

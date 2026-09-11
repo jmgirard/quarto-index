@@ -14108,7 +14108,7 @@ done <<< "$DANGLING_CORPUS"
 # them and the report names it; examples/book-order declares none, has one
 # namespace, and keeps the wording it has always drawn (D-021).
 [ "$BOOK_EXPECTED_TOTAL" = "3" ] \
-  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but the three book fixtures report one each"
+  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but three of the four book fixtures report one each and examples/book-lang reports none"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING_INDEX" 1 "M14/M55-AC4 (corpus, examples/book)"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 0 "M14/M55-AC4 (corpus, examples/book, not the one-namespace shape)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"
@@ -25476,8 +25476,9 @@ check_extension_warning_count "$WORK/book-lang-epub.log" 0 \
 pass "M093-AC2: the EPUB of the same book prints Simboli, vedi and vedi anche, under the heading Indice analitico"
 
 # M093 — two module probes, run through Quarto's own Pandoc (`quarto pandoc
-# lua`) from a modules directory, so the modules load exactly as the filter
-# requires them and the suite needs no second Pandoc on PATH. Each probe
+# lua`) from a modules directory, so the modules load under the `require` names
+# the filter uses, found from the working directory rather than through
+# Quarto's own `require`, and the suite needs no second Pandoc on PATH. Each probe
 # prints one line per question and the shell holds the whole output to what
 # is stated here by hand. A probe that cannot run is a failure, never a skip.
 #
@@ -25490,7 +25491,7 @@ pass "M093-AC2: the EPUB of the same book prints Simboli, vedi and vedi anche, u
 # to `%a`, and so do both after `:lower()`, which is what `resolve` hands its
 # test. The two tags carrying them are refused as `malformed`. `es-ES` and
 # `sw` are the controls that the locale leaves ordinary tags alone: `subtag`
-# and `miss`, as M57-AC2 and M57-AC3 state them.
+# and `miss`, the two outcomes M57-AC2 states for `fr-CA` and `sw`.
 m093_lua_probe() {   # <modules dir> <probe script> <label>
   local dir="$1" script="$2" label="$3"
   ( cd "$dir" && quarto pandoc lua "$script" ) 2>&1 \
@@ -26484,7 +26485,9 @@ fi
 # each name into its character. Nothing is read from `indexes.lua`: a list
 # derived from the module under test would be blind to the transposition this
 # leg is about. The document is generated rather than committed, one
-# double-quoted YAML scalar per value, since an unquoted blank arrives trimmed.
+# double-quoted YAML scalar per value, since a `\u` escape is read only inside
+# double quotes, and most of these characters written literally and unquoted
+# arrive trimmed.
 # Five indexes, `blanks1` to `blanks5`, each writing all five label keys in
 # the order `symbols`, `see`, `see-also`, `separator`, `xref-separator`: the
 # 23 blanks take the first 23 of those 25 places, in the order listed, and the

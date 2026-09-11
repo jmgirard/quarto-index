@@ -41,7 +41,7 @@ index section in `epubcheck.py unique` → KI264's row.
 - [x] AC2: `m085_epub_plant` takes one expected count, and every call holds
       both `epubcheck.py links`' skipped count and `epubcheck.py unique`'s
       leaving count to it.
-- [ ] AC3: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
+- [x] AC3: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` both pass.
 
 ## Coverage
 
@@ -99,6 +99,7 @@ Pass 1, 2026-09-10. Branch cut from `origin/main` at bf01f30, which has not move
 
 - AC1: `grep -c check_locator_fragments tests/run-tests.sh` prints 0. The old-store leg runs from `place_render place-oldstore ` (:11243) to `pass "M063-AC2: over a store whose records all stand` (:11269); between them `links by an anchor` matches 0 lines, and `python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html || fail …` (:11265-11268) stands where the diff removes the `check_locator_fragments … index.html` call.
 - AC2: `m085_epub_plant` (:24076) reads `<slug> <label> <count>` and shifts 3; the `links` grep (:24089) matches `; $count link(s) skipped as leaving the publication` and the `unique` grep (:24093) `; $count fragment-carrying link(s) leave the publication`, both on the one `$count`. Its four calls (:24098-24109) pass one count each: clean 0, staying 0, scheme 1, network-path 1.
+- AC3: on HEAD 9a4494f (`tests/run-tests.sh` as of b24af65, unchanged since), `tests/run-tests.sh` exited 0 with 779 checks and 0 FAIL, then `tests/run-tests.sh --self-test` exited 0 with 1453 checks and 0 FAIL, run one after the other with no edit to the script in flight. The old-store leg's new call printed 2 locators across 1 section, 2 fragments, 2 pages read; the four M085 T7 plants passed at 0/0, 0/0, 1/1, 1/1.
 - Consistency gate: `cairn_validate.py` exit 0, every check PASS/OK; no IP/GP text changed, so `cairn_impact` skipped; the generic profile names no toolchain checks.
 
 Independent review (three lenses, fresh context; dispositions pending the gate):

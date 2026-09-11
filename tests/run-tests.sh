@@ -11427,10 +11427,11 @@ HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
   python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html \
   || fail "M063-AC2 (an upgraded store: every fragment any locator on index.html carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
 # M095-AC3: `Bramble` links by the anchor two.qmd's record carries. The value
-# is derived from the source: `Bramble` is the first mark two.qmd writes, and a
-# chapter numbers the anchors it mints by a mark's position in its source (the
-# M065 gamma rows state the same rule), so `qi-mark-1`. index.qmd renders first
-# and reads that record, the only thing carrying the anchor.
+# is derived from the source: a chapter numbers the anchors it mints per
+# chapter in document order, skipping a mark that carries an id of its author's
+# own, and `Bramble` is the first anchoring mark two.qmd writes, so
+# `qi-mark-1`. index.qmd renders first and reads that record, the only thing
+# carrying the anchor.
 check_entry_locators "$CAPTURE_ROOT/place-oldstore/_book/index.html" \
   "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
   "M095-AC3 (an upgraded store: Bramble links by the anchor two.qmd's record carries)"

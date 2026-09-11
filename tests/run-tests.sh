@@ -24677,6 +24677,17 @@ check_extension_warning_count "$WORK/index-labels-twin-latex.log" 0 \
   "M56-AC4 (twin, LaTeX)"
 pass "M56-AC4: the twin prints Symbols, see and see also and draws no message at all, though Quarto writes a labels: map into its metadata"
 
+# The declaring fixture's own total, in both formats (M092). The misuse
+# messages are held absent from its log one needle at a time, which says
+# nothing about a report no needle names: a valid `index-labels:` drawing a
+# spurious report would pass them, and in LaTeX it would not touch the `.tex`
+# either. Every declaration this fixture writes is usable, so it draws nothing.
+check_extension_warning_count "$WORK/index-labels-html.log" 0 \
+  "M092 (labels fixture, HTML)"
+check_extension_warning_count "$WORK/index-labels-latex.log" 0 \
+  "M092 (labels fixture, LaTeX)"
+pass "M092: the fixture declaring all three words draws no message from this extension in HTML or in LaTeX"
+
 # AC4's other half — a fixture that declares nothing renders exactly the index
 # it rendered before this milestone. examples/letter-groups.qmd is held to
 # LETTER_GROUPS_INDEX above, unchanged and with no row edited.
@@ -24861,6 +24872,16 @@ if [ "${1:-}" = "--self-test" ]; then
     "differs from $M56W/drifted.tex, so an index-labels: declaration reached" \
     check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
       "$M56W/drifted.tex" "$M56W/drifted.diff" "M56 probe"
+
+  # The labels fixture's two zero totals, each against a copy of its log
+  # carrying one warning of this extension's more (M092).
+  for fmt in html latex; do
+    cp "$WORK/index-labels-$fmt.log" "$M56W/extra-$fmt.log"
+    printf '%s\n' "(W) $M56_MISUSE_UNKNOWN" >> "$M56W/extra-$fmt.log"
+    m56_planted "the labels fixture's $fmt log carrying one message" \
+      'expected 0 warning(s)' \
+      check_extension_warning_count "$M56W/extra-$fmt.log" 0 "M56 probe"
+  done
 
   # Each whole-message assertion, against the log of the fixture that writes no
   # unusable shape: a message asserted by a prefix short enough to match

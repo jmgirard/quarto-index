@@ -146,6 +146,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: amendment (user selection at the implement gate): AC3 and Scope widened to the M56-AC5 `notes`/`sources` controls and both M58-AC4 `figures` controls, which read fixtures that declare none of those indexes. T3 names the four deletions.
 - re-audit: AC3 (reduced) — nothing (the reader asked that Scope and T3 name the two added loops, and both now do)
 - 2026-09-11: T1 checkpoint: `check_tex_identical` serves M56-AC6, M58-AC6 and the M56 plant, and reports a diff exit 2 apart from a difference. Isolated probe: green on both real pairs, the plant red on a one-line drift and red on an inverted-case mutant. Suite run pending.
+- 2026-09-11: T2 checkpoint: zero totals over the labels fixture's HTML and LaTeX logs, and a plant per log appending one extension warning. Isolated probe over the last run's logs: both pins green (the logs hold 0 extension warnings each), both plants red with `expected 0 warning(s)`. Suite run pending.
 
 ## Decisions
 

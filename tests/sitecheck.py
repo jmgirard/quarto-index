@@ -1,4 +1,4 @@
-"""Five checks over the documentation website and the README that points at it
+"""Checks over the documentation website and the README that points at it
 (M40).
 
   rendered <site-src> <captured-site>
@@ -54,6 +54,15 @@
       tracked `.qmd` under site/ plus README.md, enumerated by `git ls-files`
       rather than written down, and asserted non-empty so a collapsed
       enumeration reads as collapsed and not as a pass.
+
+  prerelease-absent <sentence-file> [overlay]
+      No tracked page a reader meets carries a sentence of the retired
+      pre-release warning. The same rows, the same domain and the same sweep
+      as `phrase-absent`, differing in two ways: the comparison is
+      case-SENSITIVE, and the report names M44-AC1, the criterion the sweep
+      serves. M096 moved this sweep here from an inline copy in
+      tests/run-tests.sh, so that one definition holds the enumeration, the
+      README test, the floor, the row reading and the comparison.
 
   prose <old-readme> <new-readme> <site-dir> [overlay]
       No documentation prose was lost in the move. For every line the old README
@@ -480,30 +489,48 @@ def flatten(text):
     the prose was wrapped in: a leading `>` is stripped from each line first,
     because without it every `>` opening a continuation line lands mid-sentence
     in the flattened text and only a sentence occupying a whole line could ever
-    be found (the M41 lesson, extended M45; the same normalization the inline
-    pre-release sweep in tests/run-tests.sh states for the same reason).
+    be found (the M41 lesson, extended M45). The retired-sentence sweep that
+    tests/run-tests.sh once stated for itself reaches this function too, since
+    M096 merged the two copies.
     """
     return ' '.join(re.sub(r'(?m)^[ \t]*>[ \t]?', '', text).split())
 
 
-def read_rows(path, what):
+def read_rows(path, what, listed_as=None):
     """`label<TAB>text` rows from a file, or (None, message) on a bad list.
+
+    `what` names a row's text half in the report; `listed_as` names the list,
+    defaulting to `what`. The two differ where the list has a name of its own:
+    the retired-sentence list carries sentences.
 
     A row with no tab is REPORTED rather than unpacked: a ValueError out of
     the split would abort naming no file and no phrase, which is not this
     module's failure convention.
+
+    A row whose text half flattens to nothing is REFUSED for the same reason
+    the empty list above is: the empty string is a substring of every page
+    body, so such a row holds a page to nothing and reports every page swept
+    (M096).
     """
+    listed_as = listed_as or what
     lines = [l.rstrip('\n') for l in open(path, encoding='utf-8') if l.strip()]
     if not lines:
-        return None, f'the {what} list at {path} is empty, so this check ' \
+        return None, f'the {listed_as} list at {path} is empty, so this check ' \
                      f'{"holds the page to nothing" if what == "claim" else "forbids nothing"}'
     malformed = [l for l in lines if '\t' not in l]
     if malformed:
-        return None, (f'the {what} list at {path} carries a row with no tab '
-                      f'separating its label from its text, so what it names '
-                      f'is not readable:\n'
+        return None, (f'the {listed_as} list at {path} carries a row with no '
+                      f'tab separating its label from its {what}, so what it '
+                      f'names is not readable:\n'
                       + '\n'.join(f'  <<{l}>>' for l in malformed))
-    return [l.split('\t', 1) for l in lines], None
+    rows = [l.split('\t', 1) for l in lines]
+    empty = [l for l, (_label, text) in zip(lines, rows) if not flatten(text)]
+    if empty:
+        return None, (f'the {listed_as} list at {path} carries a row with '
+                      f'nothing after its tab, so its {what} is the empty '
+                      f'string, which every page carries:\n'
+                      + '\n'.join(f'  <<{l}>>' for l in empty))
+    return rows, None
 
 
 def swept_domain():
@@ -524,15 +551,60 @@ def swept_domain():
         return None, ('README.md is not tracked in this repository, so the '
                       'domain named by this check is not the domain it swept')
     # A stated floor, not one read off the enumeration, which would be blind
-    # in exactly the dimension it derives. Eleven is ten documentation pages
-    # plus README, well under the twenty-one the site carries, so ordinary
-    # page churn never trips it and a collapsed enumeration does (M46).
+    # in exactly the dimension it derives. It sits below the domain the site
+    # carries, so ordinary page churn never trips it and a collapsed
+    # enumeration does (M46); each run prints the live size (M096).
     if len(domain) < DOMAIN_FLOOR:
         return None, (f'the sweep enumerated {len(domain)} file(s); the '
                       f'domain is every tracked page under site/ plus '
                       f'README.md, and fewer than {DOMAIN_FLOOR} means the '
                       f'enumeration collapsed')
     return domain, None
+
+
+def sweep_rows(rows, overlay=None, fold=False):
+    """((hits, domain), None), or (None, message) on anything that stops it.
+
+    One sweep of the `swept_domain` for every row, used by every mode that
+    forbids a sentence on a page a reader meets. A hit is one report line
+    naming the file and the row that matched. With `fold`, both sides are
+    lowercased: a forbidden fragment opening a sentence is capitalized.
+
+    A file the domain names and the sweep cannot read is a failure of the
+    sweep rather than a skipped file, because a sweep that silently drops a
+    page reports a clean domain it never covered.
+    """
+    domain, problem = swept_domain()
+    if problem:
+        return None, problem
+    hits, unreadable = [], []
+    for path in domain:
+        source = path
+        if overlay and os.path.isfile(os.path.join(overlay, path)):
+            source = os.path.join(overlay, path)
+        # A tracked page git names but the working tree does not hold is
+        # reported, not raised: an OSError out of the read would abort naming
+        # no domain and no sentence, which is not this module's failure
+        # convention (M46).
+        try:
+            text_read = open(source, encoding='utf-8').read()
+        except OSError as exc:
+            unreadable.append(f'  {path}: {exc.strerror}')
+            continue
+        body = flatten(text_read)
+        if fold:
+            body = body.lower()
+        for label, text in rows:
+            needle = flatten(text)
+            if fold:
+                needle = needle.lower()
+            if needle in body:
+                hits.append(f'  {path} ({label}): <<{text}>>')
+    if unreadable:
+        return None, (f'{len(unreadable)} of the {len(domain)} file(s) in the '
+                      f'swept domain could not be read, so the sweep does not '
+                      f'cover the domain it names:\n' + '\n'.join(unreadable))
+    return (hits, domain), None
 
 
 def fail_m52(message):
@@ -567,31 +639,14 @@ def check_phrase_absent(phrase_path, overlay=None):
     rows, problem = read_rows(phrase_path, 'phrase')
     if problem:
         return fail_m52(problem)
-    domain, problem = swept_domain()
+    # Case-folded: a forbidden phrase is a fragment of a sentence, and the
+    # same fragment opening one is capitalized. A case-SENSITIVE sweep for
+    # `two back-ends` read `Two back-ends ship` as clean, on the first line of
+    # README.md and of the site's landing page (M52 review F1).
+    swept, problem = sweep_rows(rows, overlay, fold=True)
     if problem:
         return fail_m52(problem)
-    still, unreadable = [], []
-    for path in domain:
-        source = path
-        if overlay and os.path.isfile(os.path.join(overlay, path)):
-            source = os.path.join(overlay, path)
-        try:
-            text_read = open(source, encoding='utf-8').read()
-        except OSError as exc:
-            unreadable.append(f'  {path}: {exc.strerror}')
-            continue
-        # Case-folded: a forbidden phrase is a fragment of a sentence, and
-        # the same fragment opening one is capitalized. A case-SENSITIVE
-        # sweep for `two back-ends` read `Two back-ends ship` as clean, on
-        # the first line of README.md and of the site's landing page (M52
-        # review F1).
-        body = flatten(text_read).lower()
-        still += [f'  {path} ({label}): <<{phrase}>>'
-                  for label, phrase in rows if flatten(phrase).lower() in body]
-    if unreadable:
-        return fail_m52(f'{len(unreadable)} of the {len(domain)} file(s) in the '
-                    f'swept domain could not be read, so the sweep does not '
-                    f'cover the domain it names:\n' + '\n'.join(unreadable))
+    still, domain = swept
     if still:
         return fail_m52(f'a page a reader meets carries a forbidden phrase; '
                     f'swept {len(domain)} file(s):\n' + '\n'.join(still))
@@ -603,6 +658,37 @@ def check_phrase_absent(phrase_path, overlay=None):
     return 0
 
 
+def check_prerelease_absent(sentence_path, overlay=None):
+    """No page a reader meets carries a retired pre-release sentence.
+
+    Reported under M44-AC1, the criterion the sweep serves, rather than under
+    this module's own label: a FAIL line naming the wrong milestone sends a
+    reader to the wrong criterion.
+
+    Case-SENSITIVE, where `check_phrase_absent` folds. The two copies this
+    sweep had until M096 differed here, and preserving the retired-sentence
+    copy's comparison is what keeps the merge silent on the unmutated
+    repository.
+    """
+    rows, problem = read_rows(sentence_path, 'sentence', 'retired-sentence')
+    if problem:
+        return fail(problem, 'M44-AC1')
+    swept, problem = sweep_rows(rows, overlay, fold=False)
+    if problem:
+        return fail(problem, 'M44-AC1')
+    still, domain = swept
+    if still:
+        return fail(f'the retired pre-release warning is back on a page a '
+                    f'reader meets; swept {len(domain)} file(s):\n'
+                    + '\n'.join(still), 'M44-AC1')
+    print(f'ok   M44-AC1: none of the {len(rows)} retired pre-release '
+          f'sentence(s) is present in any of the {len(domain)} file(s) swept '
+          f'— every tracked page under site/ plus README.md, enumerated by '
+          f'`git ls-files` — compared with blockquote markers stripped and '
+          f'whitespace flattened on both sides')
+    return 0
+
+
 MODES = {
     'rendered': (check_rendered, 2),
     'links': (check_links, 1),
@@ -611,6 +697,7 @@ MODES = {
     'prose': (check_prose, 3),
     'claims': (check_claims, 2),
     'phrase-absent': (check_phrase_absent, 1),
+    'prerelease-absent': (check_prerelease_absent, 1),
 }
 
 

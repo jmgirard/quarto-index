@@ -1805,10 +1805,13 @@ printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
 # carry it back. 0.1.0 was tagged 2026-08-26, so a reader who meets either of
 # these sentences is being told something false.
 #
-# This check reads its OWN domain: `git ls-files 'site/*.qmd'` plus README.md,
-# enumerated here and nowhere else, so a site page added later is swept without
-# anyone remembering to add it. It replaces the claim-container registry's
-# `README_PRERELEASE_STALE` row, retired with the registry at M46 (D-027).
+# The check reads a discovered domain: `git ls-files 'site/*.qmd'` plus
+# README.md, so a site page added later is swept without anyone remembering to
+# add it. That enumeration, the README test, the floor, the row reading and the
+# comparison all live in tests/sitecheck.py, which the `phrase-absent` sweep
+# over the same domain reaches by the same functions (M096). This check
+# replaces the claim-container registry's `README_PRERELEASE_STALE` row,
+# retired with the registry at M46 (D-027).
 #
 # TWO sentences, not the retired blockquote's four. The other two — that
 # breaking changes are recorded in the changelog, and that from the first
@@ -1816,13 +1819,15 @@ printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
 # are still TRUE, and forbidding them would report a legitimate future
 # stability sentence as the retired warning coming back (M44).
 #
-# Normalization, stated here and nowhere else. Both sides are flattened to
-# single-spaced text — a sentence that comes back re-wrapped at a different
-# column is still the same sentence — and a leading blockquote marker is
-# stripped from each line first, because the retired block was a blockquote:
-# without it every `>` starting a continuation line lands mid-sentence in the
-# flattened text, and only the one sentence that occupied a whole line could
-# ever be found. The plants below cover both shapes.
+# Normalization is tests/sitecheck.py's `flatten`, which that module states.
+# Both sides are flattened to single-spaced text — a sentence that comes back
+# re-wrapped at a different column is still the same sentence — and a leading
+# blockquote marker is stripped from each line first, because the retired block
+# was a blockquote: without it every `>` starting a continuation line lands
+# mid-sentence in the flattened text, and only the one sentence that occupied a
+# whole line could ever be found. The plants below cover both shapes. The
+# comparison is case-SENSITIVE where `phrase-absent`'s folds; the two modes
+# differ there and nowhere else.
 #
 # The optional OVERLAY is tests/sitecheck.py's handle, for the same reason: a
 # check over a tracked set is shown to fail on the defect it names only if the
@@ -1836,101 +1841,15 @@ PRERELEASE_RETIRED=(
   $'fluid syntax\tUntil the first tagged release the marking syntax is fluid and may change without a deprecation cycle.'
 )
 printf '%s\n' "${PRERELEASE_RETIRED[@]}" > "$WORK/prerelease-retired.txt"
+# The sweep itself is tests/sitecheck.py's `prerelease-absent` mode. Until
+# M096 a copy of it stood here, and the two had drifted: the enumeration, the
+# README test, the floor, the row reading and the comparison now have one
+# definition, beside the `phrase-absent` sweep they share a domain with. The
+# path is absolute because three self-test cases below run this check from
+# inside another directory.
+PRERELEASE_SWEEP="$PWD/tests/sitecheck.py"
 check_prerelease_absent() {
-python3 - "$1" "${2:-}" <<'M44PY'
-import os
-import re
-import subprocess
-import sys
-
-
-def flat(text):
-    return ' '.join(re.sub(r'(?m)^[ \t]*>[ \t]?', '', text).split())
-
-
-lines = [l.rstrip('\n') for l in open(sys.argv[1], encoding='utf-8')
-         if l.strip()]
-if not lines:
-    sys.exit('FAIL: M44-AC1: the retired-sentence list is empty, so this '
-             'check forbids nothing')
-# A row is `label<TAB>sentence`. One without the tab is reported, not raised:
-# unpacking it would abort with a ValueError naming no file and no sentence,
-# which is not this check's failure convention (M46).
-malformed = [l for l in lines if '\t' not in l]
-if malformed:
-    print('FAIL: M44-AC1: the retired-sentence list carries a row with no tab '
-          'separating its label from its sentence, so what it forbids is not '
-          'readable:', file=sys.stderr)
-    print('\n'.join(f'  <<{l}>>' for l in malformed), file=sys.stderr)
-    sys.exit(1)
-rows = [l.split('\t', 1) for l in lines]
-overlay = sys.argv[2]
-
-# `-z` and a NUL split, never the newline-separated default: `git ls-files`
-# C-quotes a path holding a non-ASCII byte or a newline, so a tracked
-# `site/naïve.qmd` printed as `"site/na\303\257ve.qmd"` and the suffix
-# filter that read the default output discarded it with no report — a page
-# carrying a retired sentence swept past at exit 0, and the printed count read
-# exactly as a complete sweep would (M46). `-z` writes the path's own bytes.
-# README.md is enumerated by the same command rather than appended, so the
-# reported domain size counts nothing the repository does not track.
-listed = subprocess.run(['git', 'ls-files', '-z', '--', 'site/*.qmd',
-                         'README.md'], capture_output=True, text=True)
-if listed.returncode != 0:
-    print(f'FAIL: M44-AC1: `git ls-files` exited {listed.returncode}, so the '
-          f'domain this check sweeps was never enumerated:', file=sys.stderr)
-    print(listed.stderr.rstrip('\n'), file=sys.stderr)
-    sys.exit(1)
-domain = [p for p in listed.stdout.split('\0') if p]
-if 'README.md' not in domain:
-    sys.exit('FAIL: M44-AC1: README.md is not tracked in this repository, so '
-             'the domain named by this check is not the domain it swept')
-# The enumeration is asserted non-empty rather than assumed: a `git ls-files`
-# that goes empty must read as empty and not as a pass (M16). The floor is a
-# stated number and not one read off the enumeration, which would be blind in
-# exactly the dimension it derives; eleven is ten documentation pages plus
-# README, well under the twenty-one the site carries, so ordinary page churn
-# never trips it and a collapsed enumeration does (M46).
-FLOOR = 11
-if len(domain) < FLOOR:
-    sys.exit(f'FAIL: M44-AC1: the sweep enumerated {len(domain)} file(s); the '
-             f'domain is every tracked page under site/ plus README.md, and '
-             f'fewer than {FLOOR} means the enumeration collapsed')
-
-still = []
-unreadable = []
-for path in domain:
-    source = path
-    if overlay and os.path.isfile(os.path.join(overlay, path)):
-        source = os.path.join(overlay, path)
-    # A tracked page git names but the working tree does not hold is reported,
-    # not raised: an OSError out of the read would abort naming no domain and
-    # no sentence, which is not this check's failure convention (M46).
-    try:
-        text_read = open(source, encoding='utf-8').read()
-    except OSError as exc:
-        unreadable.append(f'  {path}: {exc.strerror}')
-        continue
-    body = flat(text_read)
-    still += [f'  {path} ({label}): <<{text}>>'
-              for label, text in rows if flat(text) in body]
-if unreadable:
-    print(f'FAIL: M44-AC1: {len(unreadable)} of the {len(domain)} file(s) in '
-          f'the swept domain could not be read, so the sweep does not cover '
-          f'the domain it names:', file=sys.stderr)
-    print('\n'.join(unreadable), file=sys.stderr)
-    sys.exit(1)
-if still:
-    print(f'FAIL: M44-AC1: the retired pre-release warning is back on a page a '
-          f'reader meets; swept {len(domain)} file(s):', file=sys.stderr)
-    print('\n'.join(still), file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M44-AC1: neither of the {len(rows)} retired pre-release sentences '
-      f'is present in any of the {len(domain)} file(s) swept — every tracked '
-      f'page under site/ plus README.md, enumerated by `git ls-files` — '
-      f'compared with blockquote markers stripped and whitespace flattened on '
-      f'both sides')
-M44PY
+  python3 "$PRERELEASE_SWEEP" prerelease-absent "$1" ${2:+"$2"}
 }
 check_prerelease_absent "$WORK/prerelease-retired.txt" \
   || fail "M44-AC1: a page a reader meets carries a sentence of the retired pre-release warning (its own FAIL line is above)"
@@ -20073,6 +19992,70 @@ M40OLD
     'a row with no tab separating its label from its sentence' \
     check_prerelease_absent "$M40W/prerelease-untabbed.txt"
 
+  # A row whose SENTENCE half is empty. Until M096 it flattened to the empty
+  # string, which is a substring of every page body, so the sweep reported
+  # every file in the domain as carrying the retired warning — the loudest
+  # possible way for a check to say nothing.
+  printf 'an empty sentence half\t\n' > "$M40W/prerelease-emptyhalf.txt"
+  m40_planted 'a retired-sentence row with nothing after its tab, which before M096 matched every page in the domain' \
+    'carries a row with nothing after its tab' \
+    check_prerelease_absent "$M40W/prerelease-emptyhalf.txt"
+
+  # The three remaining branches of the sweep, which no case reached until
+  # M096: `git ls-files` exiting non-zero, README.md untracked, and a page the
+  # domain names that cannot be read. The enumeration is git's, so each is
+  # planted by running the same check somewhere else — the way the collapsed
+  # domain above is — rather than by editing this repository.
+  m096_scratch_repo() {   # <dir> <site pages> <readme: yes|no>
+    local dir="$1" pages="$2" readme="$3" i=1
+    rm -rf "$dir"; mkdir -p "$dir/site"
+    while [ "$i" -le "$pages" ]; do
+      printf '# page %s\n' "$i" > "$dir/site/p$i.qmd"
+      i=$((i + 1))
+    done
+    if [ "$readme" = yes ]; then printf '# scratch\n' > "$dir/README.md"; fi
+    ( cd "$dir" && git init -q . && git add -A \
+        && git -c user.email=t@t -c user.name=t commit -qm scratch ) > /dev/null
+  }
+
+  # `git ls-files` exits non-zero where there is no repository to enumerate.
+  # The directory is made OUTSIDE this checkout: a directory under it is
+  # inside this repository, where the command succeeds and returns nothing,
+  # which is a different branch of the sweep.
+  M096NOREPO=$(mktemp -d)
+  git -C "$M096NOREPO" rev-parse --git-dir > /dev/null 2>&1 \
+    && fail "M40 self-test: $M096NOREPO is inside a git repository, so the case below would be about an empty enumeration and not about git ls-files failing"
+  m096_sweep_no_repo() { ( cd "$M096NOREPO" && check_prerelease_absent "$M44LIST" ); }
+  m40_planted 'a directory that is not a git repository, where the enumeration the whole sweep rests on cannot run at all' \
+    'so the domain this check sweeps was never enumerated' \
+    m096_sweep_no_repo
+  rmdir "$M096NOREPO"
+
+  # README.md untracked, with eleven site pages so the domain clears the floor
+  # and the README test is what the sweep stops on.
+  m096_scratch_repo "$M40W/noreadme" 11 no
+  [ -e "$M40W/noreadme/README.md" ] \
+    && fail "M40 self-test: the scratch repository holds a README.md, so the case below would not be about README.md being untracked"
+  m096_sweep_no_readme() { ( cd "$M40W/noreadme" && check_prerelease_absent "$M44LIST" ); }
+  m40_planted 'a repository tracking eleven documentation pages and no README, whose domain clears the floor and is still not the domain this check names' \
+    'README.md is not tracked in this repository' \
+    m096_sweep_no_readme
+
+  # A page the domain names that cannot be read: tracked, and then removed
+  # from the working tree. `git ls-files` still lists it, so the sweep is
+  # handed a path whose bytes are gone.
+  m096_scratch_repo "$M40W/unreadable" 11 yes
+  rm "$M40W/unreadable/site/p1.qmd"
+  [ "$( ( cd "$M40W/unreadable" && git ls-files 'site/p1.qmd' ) )" = 'site/p1.qmd' ] \
+    || fail "M40 self-test: git no longer lists site/p1.qmd in the scratch repository, so the case below would be about a page the domain does not name"
+  m096_sweep_unreadable() { ( cd "$M40W/unreadable" && check_prerelease_absent "$M44LIST" ); }
+  m40_planted 'a repository whose domain names a page the working tree no longer holds, which a sweep that skipped it would report as a covered domain' \
+    'could not be read, so the sweep does not cover the domain it names' \
+    m096_sweep_unreadable
+  m40_planted 'that same unreadable page, which the report has to name rather than counting' \
+    '  site/p1.qmd:' \
+    m096_sweep_unreadable
+
   # The output-directory pin, planted on a copy of the project file whose
   # output directory is renamed — the shape that would leave the removal of
   # site/_site clearing a directory the render does not write into.
@@ -20150,7 +20133,7 @@ M40OLD
   m40_planted 'the second retired sentence restored into the site front page, re-wrapped across a line break at a different column' \
     'site/index.qmd (fluid syntax)' \
     check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-wrapped"
-  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href reaching above the capture through a symlink inside it (beside one through a symlink that stays inside, which must still resolve), a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, and a sentence row carrying no tab; and the site project file's output-directory pin on a copy whose output directory is renamed"
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href reaching above the capture through a symlink inside it (beside one through a symlink that stays inside, which must still resolve), a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, a sentence row carrying no tab, a sentence row with nothing after its tab, a directory that is no git repository, a repository tracking no README, and a repository whose domain names a page the working tree no longer holds — that last one asserted twice, on the report covering the domain and on the page it names; and the site project file's output-directory pin on a copy whose output directory is renamed"
 fi
 
 # ---------------------------------------------------------------------------

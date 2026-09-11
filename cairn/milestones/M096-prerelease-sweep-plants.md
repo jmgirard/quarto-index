@@ -2,7 +2,7 @@
      section ownership". A phase skill never rewrites another phase's section. -->
 # M096: The pre-release sweep fails on the defects it names, from one definition
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -96,8 +96,32 @@ deleting the unmeasured page count from the floor's comment.
 - 2026-09-11: criteria audit ran in reduced mode (internal tier), fresh-context [O] reader; returned findings on all four drafted criteria — AC1's grep named a byte-string present in neither file, AC2 counted a green control as a failure clause and bound a plant-matrix property, AC3's second sentence bound the plant and duplicated AC2, AC4 bound the floor and the checker's own prose over an unenumerated domain. All five clear-answer findings fixed at the gate; AC4 dropped as a criterion and its repair moved to T5.
 - 2026-09-11: plan gate chose planting the branches the sweep already names over restoring the report and containment clauses M46 withdrew, because planting leaves every promise unchanged and needs no superseding decision, where restoring needs one and cost M46 four review rounds; falsified by a planted branch proving unreachable without widening the sweep's promise.
 - 2026-09-11: plan gate chose merging the sweep's two copies over leaving both and planting each, because one definition gives each plant one target and deletes the drift; falsified by the merge changing what the sweep reports on the unmutated repository.
+- 2026-09-11: branch m096-prerelease-sweep-plants cut from main, status in-progress.
+- 2026-09-11: question gate posed one open choice, the merged sweep's case comparison. The user asked the session to decide. The Decisions entry below records it.
+- 2026-09-11: CHECKPOINT, no task ticked. T1-T5 are written and each of the four new branches was shown red by hand against scratch repositories. The full `tests/run-tests.sh --self-test` run that must be clean before any box is ticked was still in flight when the turn ended.
 - 2026-09-11: plan gate chose deleting the floor comment's unmeasured page count over teaching the check to fail on drift, because the drift threshold would be invented here rather than derived; falsified by a live domain growing past the floor with the run's printed size going unread.
 
 ## Decisions
+
+### 2026-09-11: the merged retired-sentence sweep compares case-sensitively
+
+**Context.** The two copies of the sweep differed in one way beyond their
+labels. The inline copy in `tests/run-tests.sh` compared case-sensitively. Its
+sibling `phrase-absent` in `tests/sitecheck.py` folds case. M52 review F1
+changed that sibling, after a case-sensitive sweep read `Two back-ends ship` as
+clean on the first line of README.md and of the site's landing page.
+
+**Decision.** `prerelease-absent` compares case-sensitively. The two modes
+share one definition of the enumeration, the README test, the floor, the row
+reading and the sweep itself. They differ in the fold flag and in the label the
+report names. The question gate posed the choice and the user asked the session
+to decide.
+
+**Consequences.** The merged sweep reports on the unmutated repository exactly
+what the inline copy reported. That is the falsifier the plan gate named for
+merging. A retired sentence restored with a different opening capital still
+slips past, where the sibling sweep over the same domain catches it. That is a
+finding about today's behavior, so it belongs in the Known issues at this
+milestone's post-merge hygiene rather than in a criterion here.
 
 ## Review

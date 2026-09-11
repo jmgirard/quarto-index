@@ -10,6 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M091 | The cross-reference escaping probe's targets name terms it indexes | planned | — | normal | milestones/M091-xref-probe-targets-resolve.md |
 | M090 | M079's cross-reference id rules each turn the id-collision leg red | done | — | normal | milestones/archive/M090-xref-id-rule-plants.md |
 | M089 | Two book-fixture hygiene gaps close | done | — | normal | milestones/archive/M089-book-fixture-hygiene.md |
 | M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |
@@ -25,7 +26,7 @@ _Released 0.3.0 2026-09-05._
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - Suite-run shape follow-ups (clustered): parallel independent legs; a named-subset run, blocked until the three whole-run accumulator sweeps declare their own domains; per-render rather than per-section timing. Promote on a section growing past a couple of minutes, or on M075's section profile proving too coarse — added 2026-09-03, clustered 2026-09-06 — M075 plan gate — KI238, KI241-KI245
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
-- Reconcile the example corpus so its probe `see=`/`see-also=` targets name terms the fixture indexes — added 2026-08-19 — M14 plan gate — KI72
+- Point the incidental cross-reference targets in `examples/demo.qmd` and `examples/xref-conflict.qmd` at terms each file indexes, leaving the `xref-conflict` target that dangles on purpose; promote on an author reporting the gallery demo's cross-references lead nowhere, or with any other pass over either fixture's index manifests — added 2026-09-11 — M091 plan gate — KI72
 - M32 check follow-ups (clustered): make the marker-less plants read the captured artifact, promoted with any other suite-wide capture sweep; and narrow the HTML-cost check to the bibliography's own wrapper, promoted on that fixture growing a footnote or a Citation block — added 2026-08-24, clustered 2026-08-27 — M32 review R2-F9, R2-F14 — KI108, KI109
 - Make the acceptance suite and its PDF comparison version-portable, and give the matrix its missing legs; promote the comparison on an extraction shown engine-neutral across the two engines, the legs with it or sooner on the restored PDF leg running a clean schedule cycle, the unreproduced floor-leg failure on a recurrence — added 2026-08-26 — M43/M51/M52 — KI110, KI111, KI112, KI113, KI114
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out

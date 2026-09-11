@@ -39,6 +39,11 @@ Each closed entry is struck from `cairn/DESIGN.md`.
   report for an empty value is the same report.
 - A change to what an author sees printed or reported is not expected. If a
   task shows one, it goes through the amendment gate.
+- One change passed that gate on 2026-09-11. Under a locale whose `%a` reads
+  bytes above 0x7F as letters, `en_US.UTF-8` on macOS among them, a `lang:`
+  tag with a non-ASCII letter in a later subtag, such as `es-êê`, printed its
+  primary subtag's words. After T6 it prints English, as the C locale did.
+  `CHANGELOG.md` records the change.
 
 ## Acceptance criteria
 
@@ -62,10 +67,10 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       no `TITLE_KEY`, as a `grep` of both modules at review reads. After
       `read` of metadata that declares `lang: it`, `label(nil, "title", fb)`
       returns `fb`.
-- [ ] AC6: Under a locale in which `("\233"):match("%a")` succeeds,
-      `resolve` in `languages.lua` returns its malformed outcome for a tag
-      whose primary subtag carries byte 0xE9, and for a tag whose later
-      subtag carries it.
+- [ ] AC6: Under `fr_FR.ISO8859-1`, a locale in which
+      `("\195\170"):match("^%a%a$")` succeeds (bytes 0xC3 0xAA, the UTF-8
+      `ê`), `resolve` in `languages.lua` returns `nil` and the token
+      `"malformed"` for the tag written `êê` and for the tag written `es-êê`.
 - [ ] AC7: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
@@ -110,10 +115,12 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       `label(nil, "title", fb)`. Do not add a source scan to the suite
       (D-011).
 - [ ] T6: KI185. Replace `%a` and `%w` in `well_formed` (`languages.lua` near
-      lines 111-115) with `[A-Za-z]` and `[A-Za-z0-9]`. Add a `pandoc lua`
-      probe that calls `os.setlocale("fr_FR.ISO8859-1")`, first asserts that
-      `("\233"):match("%a")` succeeds, then calls `resolve` on the two tags.
-      The probe fails loudly if the locale is missing and never skips.
+      lines 111-115) with `[A-Za-z]` and `[A-Za-z0-9]`. Add a `quarto pandoc
+      lua` probe that calls `os.setlocale("fr_FR.ISO8859-1")`, first asserts
+      that `("\195\170"):match("^%a%a$")` succeeds and that the lowercased
+      pair does too, then calls `resolve` on `êê` and `es-êê`. The probe fails
+      loudly if the locale is missing and never skips. Add the `CHANGELOG.md`
+      entry for the `es-êê` change that Scope Out names.
 - [ ] T7: Strike KI183, KI184, KI185, KI187, KI188, KI189, KI196 and KI197 from
       `cairn/DESIGN.md` per D-013.
 - [ ] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
@@ -125,6 +132,10 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: plan gate chose fixing KI185 with a locale-switching `pandoc lua` probe over leaving it open, because the switch was shown to part `%a` on byte 0xE9 on this machine; falsified by the probe's locale missing on a machine that runs the suite.
 - 2026-09-11: implement started on branch `m093-label-language-coverage`. Question gate: T5 splits each `languages.lua` row into a `words` table and a `title` field, rather than filtering keys in `indexes.lua`. T4's generated fixture fills the last two of its 25 key slots with visible non-ASCII words that must draw no report.
 - 2026-09-11: T1 done. The `figures` map in the misuse fixture writes the document map's unknown `symbol` and empty `see`. Two per-index needles, four self-test plants that swap the index phrase for the document's, and the misuse total re-derived from 18 to 20. `tests/run-tests.sh --self-test` passed 1478 checks.
+- 2026-09-11: AC6 as planned did not fail on today's code. `pandoc.utils.stringify` turns a raw 0xE9 byte into U+FFFD, so both planned tags already returned `malformed` under `quarto pandoc lua` (pandoc 3.10). The mini gate chose the UTF-8 tags `êê` and `es-êê`. Under `fr_FR.ISO8859-1` they return `miss` and `subtag` today.
+- re-audit: AC6 (full) — five findings, all fixed in the second wording. The locale clause named every locale, but the probe tests one. The byte escape needed a gloss. `:lower()` turns 0xC3 into 0xE3, so "carries those bytes" was open to dispute. The outcome token was not quoted. T6 still named the `\233` precondition.
+- re-audit: AC6 (full) — the wording holds, and today's code fails it while a fixed copy passes. One finding: under `en_US.UTF-8`, `lang: es-êê` prints Spanish index words today and English after the fix (render confirmed). KI185's "Both outcomes print English" is false for that tag. Optional: assert the lowercased bytes too.
+- 2026-09-11: amendment gate. The second re-audit line is the stop, so the user decided. AC6 takes the `fr_FR.ISO8859-1` wording, and Scope Out records the `es-êê` output change. T6 also asserts the lowercased bytes and adds a `CHANGELOG.md` entry. T7 strikes KI185, whose false sentence this log records. The probes run through `quarto pandoc lua`, so the suite needs no separate `pandoc` binary.
 
 ## Decisions
 

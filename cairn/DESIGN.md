@@ -866,13 +866,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   acceptable is unsettled; M03's AC3 scope note defers it. — M03 review F4/F9
 - **KI16.** The book sidecar store is never pruned, so a renamed or removed
   chapter leaves its record forever. Harmless today: reads are filtered by the
-  current chapter list and validated against a store version. — M05 review F4
-- **KI17.** The store's declared-key map is written in `pairs` order, so an
-  identical chapter's record is byte-unstable between renders. Read as a map, so
-  no ordering effect. — M06 review pass 2 F11
-- **KI18.** A book page rendered but absent from `book.render` (via
-  `project: render:`) gets its own per-chapter index rather than contributing to
-  the book's. — M05 review F13
+  current chapter list and validated against a store version. Pruning is
+  rejected, since Quarto profiles share one store (D-058). — M05 review F4
 - **KI19.** A range spanning two chapters of an HTML book indexes each half on
   its own, and the book reports it. — D-009
 - **KI20.** The two range traversals number a mark identically but can still

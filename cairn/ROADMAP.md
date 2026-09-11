@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (M088 done and archived: `check_locator_fragments` deleted for `fragments.py resolve`, `m085_epub_plant` down to one count, KI271 struck and KI272 corrected; four wording findings fixed before merge, one rejected. M085's row pruned under terminal-row retention. LESSONS.md still at both caps, so no line added.)_
+_Last hygiene check: 2026-09-10 (plan gate on the sidecar-store row, no milestone planned: pruning rejected as D-058; KI17 struck, `pandoc.json.encode` sorting object keys on Pandoc 3.10 and 3.11; KI18 struck, Quarto 1.10.18 writing a page outside the chapter list as a standalone page beside the project with no index section; the row removed.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -29,7 +29,6 @@ _Released 0.3.0 2026-09-05._
 - Remove `_book` before rendering in `m069_cold_chapter` as its sibling `m069_tree` does, so a change to how `$M061W/base` is built cannot leave `check_book_sections` reading a stale one; promote with any other suite-hygiene pass over the m069 legs — added 2026-09-03 — M069 review F8 — KI231
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Reconcile the example corpus so its probe `see=`/`see-also=` targets name terms the fixture indexes — added 2026-08-19 — M14 plan gate — KI72
-- Book sidecar-store follow-ups (clustered): prune records for chapters no longer in the book; give the declared-key map a stable order; decide what a page outside `book.render` should do — added 2026-08-17, clustered 2026-08-22 — M05 review F4/F13, M06 review pass 2 F11 — KI16, KI17, KI18
 - M32 check follow-ups (clustered): make the marker-less plants read the captured artifact, promoted with any other suite-wide capture sweep; and narrow the HTML-cost check to the bibliography's own wrapper, promoted on that fixture growing a footnote or a Citation block — added 2026-08-24, clustered 2026-08-27 — M32 review R2-F9, R2-F14 — KI108, KI109
 - Make the acceptance suite and its PDF comparison version-portable, and give the matrix its missing legs; promote the comparison on an extraction shown engine-neutral across the two engines, the legs with it or sooner on the restored PDF leg running a clean schedule cycle, the unreproduced floor-leg failure on a recurrence — added 2026-08-26 — M43/M51/M52 — KI110, KI111, KI112, KI113, KI114
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out

@@ -1,6 +1,6 @@
 # M095: Three candidate rows' unasserted fixture facts get checks
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -122,7 +122,7 @@ stays open.
       entry names only `Bramble`. The `Quoin` and `mullion-passage` items
       came from its ROADMAP row, which this plan removes, so the archive
       summary records all three.
-- [ ] T7: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
+- [x] T7: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
 
 ## Work log
 
@@ -138,6 +138,7 @@ stays open.
 - 2026-09-11: amendment adopted at the user's selection: AC3 now states `Quoin`'s href value, names the `place-blocked-one` and `place-blocked-two` captures, holds `mullion-passage` inside its section and outside its `<h2>`, derives `Bramble`'s `two.html#qi-mark-1` from source, and requires five plants. Scope's KI273 item reads "outside its heading". T3's wording follows.
 - 2026-09-11: the claim audit returned three corrections. Two landed in `tests/stateprobe.py`: the indexes probe keeps the `read(doc.meta)` call as well as the two installation lines, and the `index_labels` reason names the unnamed cell no declaration can name. The third landed in `tests/run-tests.sh` once the run ended: a chapter numbers the anchors it mints per chapter in document order, skipping a mark that carries an id of its author's own, and `Bramble` is the first anchoring mark `two.qmd` writes. The re-read found corrections one and two supported and named a residual imprecision in the third, whose phrasing it supplied and which now stands.
 - 2026-09-11: claim audit: 58 claims read, 3 corrected — tests/stateprobe.py, tests/run-tests.sh
+- 2026-09-11: `tests/run-tests.sh --self-test` ran clean on the finished tree at 748a180: 1515 checks, exit 0, the two new `state-reuse-indexes` pairs among them. T7 ticked and the status set to review.
 - 2026-09-11: the seven new probes ran and `tests/stateprobe.py` exited 0. `reset:indexes`, `order`, `doc_labels` and `declared` each move a `state-reuse` comparison, `titles` moves the new `state-reuse-indexes` fixture, and `index_labels` and `language_words` hold as expected-to-pass with their reasons in `EXEMPT`. The control passed with the new fixture in `PAIRS`. T4, T5 and T6 ticked, KI72 and KI273 struck from DESIGN and KI10 corrected there.
 - 2026-09-11: `tests/run-tests.sh --self-test` ran clean at 8f0869d: 1511 checks, exit 0. It covers AC1's demo legs, AC2's corpus counts (0 and 1) and AC3's three assertions with their five plants. The AC2 report-identity check prints nothing when it passes, so it was read separately: its needle matches the captured corpus log once, and a needle naming `sigma` is refused. T1, T2 and T3 ticked.
 - 2026-09-11: T3 edits in, unticked: `tests/fragments.py` gains `outside-heading`, and the suite gains the `Quoin`, `mullion-passage` (both captures) and `Bramble` checks with their five plants. On an earlier run's `four.html` the new mode passes, and it fails on each of three scratch plants with its own message. The suite has not run.

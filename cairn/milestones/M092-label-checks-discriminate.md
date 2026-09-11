@@ -129,7 +129,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       unknown slot name and one with a space for a tab, and reword the ok and
       FAIL lines. Run the reader's
       probes under the oldest and newest Python in reach (LESSONS, M082).
-- [ ] T7: Strike KI180, KI181, KI182, KI186, KI190, KI191, KI192, KI193,
+- [x] T7: Strike KI180, KI181, KI182, KI186, KI190, KI191, KI192, KI193,
       KI194 and KI195 from `cairn/DESIGN.md` per D-013. No ROADMAP row names
       any of them.
 - [ ] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
@@ -151,6 +151,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: T4 checkpoint: `derive_labels_twin` parses front matter with PyYAML and compares body text, with an optional exact key set passed at M58-AC2. Isolated probe: both real derivations green, the three drift plants and the third-key plant red for their stated reasons, the blank-line copy green where the old walker on `main` fails it. Suite run pending.
 - 2026-09-11: T5 checkpoint: `m57_tex_ledger` drops the diff's first two lines by position. Plant: a synthetic pair differing in `--` against `++` fails with 2 unclassified lines, where the filter on `main` reports the pair identical. The four real ledgers classify the same 44, 30, 9 and 9 lines as before. Suite run pending.
 - 2026-09-11: T6 checkpoint: `entry_separators` walks through non-list wrappers as `own_nodes` does. `sepcheck.py` reports an unreadable or malformed manifest as one FAIL line with exit 1, rejects whitespace in a slot and a non-ASCII-digit depth, and its ok line says "whitespace character". Plants: unknown slot `S9`, a space between two slots, a space after a depth, and `<p>`-wrapped copies of the separators and resolving-xref pages. Isolated probe under Python 3.9.6 and 3.14.7: M58-AC1/AC3/AC4/AC7 green, all plants as stated. With `main`'s modules the wrapped copy loses Azurite's separators and the S9 manifest prints a traceback. Suite run pending.
+- 2026-09-11: T7 done: KI180, KI181, KI182, KI186 and KI190-KI195 deleted from `cairn/DESIGN.md`. A grep finds none of the ten labels there, no ROADMAP row names them, and `cairn_validate` passes.
 
 ## Decisions
 

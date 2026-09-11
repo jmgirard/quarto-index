@@ -1534,21 +1534,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   hypothetical since M57: three of the four languages it ships spell `see also`
   as two words, so every non-English manifest it added carries the fold
   (corrected M057). — M56 review F5, M57 review F12
-- **KI180.** AC6's `.tex` comparison is proved able to fail by a plant that
-  re-implements the comparison inline rather than calling the real check, so
-  an inverted condition or swapped paths in the real check would still let the
-  self-test print its pass line. Every other M56 plant goes through
-  `m56_planted`. — M56 review F9
-- **KI181.** Nothing pins the total extension-warning count for
-  `examples/index-labels.qmd` in either format — the twin's logs are pinned at
-  zero and the misuse needles are pinned absent, but a valid `index-labels:`
-  drawing a spurious report, in LaTeX especially where it would not touch the
-  `.tex`, passes the whole M56 block. — M56 review F10
-- **KI182.** `derive_labels_twin` ends a block at the first blank line, but a
-  blank line inside an `index-labels:` map is legal YAML; with one present the
-  derivation check fails with "drifted apart" on a fixture pair that is in
-  fact correct, naming the wrong cause. — M56 review F12; citation corrected
-  2026-09-10, `m56_derive` having become `derive_labels_twin` at M058
 - **KI183.** The unknown-key and empty-value reports are exercised only at the
   document level: the misuse fixture writes both per-key shapes there and only
   the not-a-map shape per index, so a defect in how those two messages name an
@@ -1564,9 +1549,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   whose meaning follows the C locale. Both outcomes print English, so nothing
   visible diverges; the `miss`/`malformed` distinction the module treats as
   load-bearing becomes machine-dependent. — M57 review F4
-- **KI186.** `m57_tex_ledger` filters diff headers by prefix, so a differing
-  line whose own body is `--` or `++` arrives as `---`/`+++` and is discarded
-  unclassified. No LaTeX preamble line has that shape today. — M57 review F5
 - **KI187.** `indexes.lua` exports `TITLE_KEY`, which nothing outside the module
   reads — the surface `languages.lua:158-161` argues against in the same diff.
   — M57 review F6
@@ -1578,36 +1560,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   single documents, so the aggregated book index — several Pandoc processes in
   HTML, one in EPUB — takes no language path in the suite. The Italian row's
   four words are exercised by no fixture at all. — M57 review F2, F11
-- **KI190.** `entry_separators` (`tests/htmlindex.py`) reads `item.children`
-  where the record builder beside it reads `own_nodes(item)`, which recurses
-  through non-list children. A Pandoc version emitting the index list loose,
-  wrapping each entry line in a `<p>`, would leave `locators` and `xrefs`
-  reading correctly while `separators` came back empty — a failure attributed
-  to the extension rather than to the reader. — M58 review F6
-- **KI191.** `tests/sepcheck.py` raises `ValueError` on a malformed manifest
-  where its own docstring promises a `FAIL:` line and exit 1, so a bad slot
-  name or a stray space instead of a tab is reported by `check_separators` as
-  a rendering defect, with a traceback where a diagnosis should be. The
-  self-test's no-section probe matches its marker inside that traceback. —
-  M58 review F7
-- **KI192.** `derive_labels_twin` counts the `index-labels:` blocks it deletes,
-  never the keys inside them, so M58's AC2 premise — that the block sets
-  `separator` and `xref-separator` and no other key — is fenced by nothing: a
-  third key added to the fixture's block leaves every check green. — M58
-  review F8
-- **KI193.** `tests/sepcheck.py`'s `ok` line and the AC1 pass message both say
-  "exactly one space" where the check accepts any single whitespace character,
-  deliberately, so an HTML writer's newline passes. The docstring states this;
-  the two green lines do not, and a U+00A0 after a separator would be reported
-  as "exactly one space". — M58 review F11
-- **KI194.** Ten of the twelve zero-expectation controls M59 added cannot fail.
-  The needles name the index `strata`, `minerals`, `fossils` and entries 5-8 of
-  an `indexes:` list, none of which `examples/index-labels.qmd` declares, so no
-  filter behavior could put those strings in its log; only the two
-  document-level controls discriminate. — M59 review F1
-- **KI195.** No planted defect fences the silence half of the letter-clash
-  report: neither the zero-count on the message the `fossils` index would draw
-  nor the clash render's total of 1 has been shown red. — M59 review F9
 - **KI196.** The changelog says the letter-clash report fires for HTML and
   EPUB. The dispatch supports it — `builds_ast_index` is `is_html() or
   is_epub()` — but `examples/index-labels-clash.qmd` is rendered to HTML only,

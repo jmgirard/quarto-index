@@ -1490,6 +1490,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   no standing plant tells the two apart: swapping the two arguments at a call,
   or reading one of them in both arms, leaves all four plants green. — M087
   review O3
+- **KI273.** The M063-AC2 old-store leg in `tests/run-tests.sh` never asserts
+  that `Bramble` links by the anchor two.qmd's record carries
+  (`two.html#qi-mark-1` on the capture — observed 2026-09-10), though the
+  M063 T2 self-test's contrast rests on it. Its one fragment check passes while
+  any locator in the section carries a resolving fragment, and `Bramble`
+  losing its anchor leaves it one without. — M088 plan gate
 
 ### The repo and its packaging
 

@@ -1,13 +1,13 @@
 # M092: The label and separator checks fail on the defects they name
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — every change is to `tests/run-tests.sh`, `tests/sepcheck.py` or `tests/htmlindex.py`, and no fixture, filter module or page changes
-- **Branch/PR:** —
+- **Branch/PR:** m092-label-checks-discriminate
 
 ## Goal
 
@@ -27,8 +27,9 @@ items are these:
 - `m57_tex_ledger` filters diff headers by position.
 - `entry_separators` walks the same nodes as the record builder.
 - `tests/sepcheck.py` fails cleanly on a malformed manifest, with true wording.
-- The ten M59 zero controls that cannot fail go, and the M59 clash report's
-  silence half gets plants.
+- The zero controls that cannot fail go: fourteen in the M59 block, and two
+  each in the M56-AC5 and M58-AC4 control loops, which the implement gate
+  added. The M59 clash report's silence half gets plants.
 
 A `--self-test` plant of its own defect class shows each repaired check red.
 Each closed entry is struck from `cairn/DESIGN.md`.
@@ -50,7 +51,8 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       `check_extension_warning_count` reads each render's log. A render log
       with one extension warning more fails that count.
 - [ ] AC3: Each zero-expectation control left in the M59 block of
-      `tests/run-tests.sh`, the M59-AC4 control loop included, is
+      `tests/run-tests.sh`, the M59-AC4 control loop included, and each left
+      in the M56-AC5 and M58-AC4 control loops, is
       document-level or names an index or `indexes:` position that the
       fixture it reads declares. The count checks over
       `examples/index-labels-clash.qmd`'s HTML log fail when that log carries
@@ -88,8 +90,9 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 
 - [ ] T1: KI180. Factor the M56-AC6 `diff` (`tests/run-tests.sh` near line
       24755) into a function. Call it from the AC6 leg and from the self-test
-      plant (near line 24840) in place of the inline `diff -q`. The plant
-      asserts the function's own FAIL text.
+      plant (near line 24840) in place of the inline `diff -q`. The M58-AC6
+      comparison (near line 25514) calls it too. The plant asserts the
+      function's own FAIL text.
 - [ ] T2: KI181. Add `check_extension_warning_count` at 0 over
       `$WORK/index-labels-html.log` and over the LaTeX log, beside the M56
       pins near line 24674. Add a `--self-test` plant that appends one
@@ -97,7 +100,10 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - [ ] T3: KI194, KI195. Delete the M59 zero controls that name `strata`,
       `minerals`, `fossils` or `indexes:` entries 5-8: ten in the AC1-AC3
       loops (near lines 25664-25703) and four in the M59-AC4 control loop
-      (near lines 25734-25740). Keep the two document-level controls. Derive the kept set
+      (near lines 25734-25740). Delete the M56-AC5 controls naming `notes`
+      and `sources` (near line 24743) and both M58-AC4 controls, which name
+      `figures` (near line 25494). The M58-AC4 loop keeps no control. Keep
+      the document-level controls. Derive the kept set
       from the fixture's declarations, not by recall. Add two `m59_planted`
       cases on copies of the clash log (near line 25812): one appends a
       no-clash report line, and one appends an extension warning that is not
@@ -108,6 +114,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       under each `indexes:` entry, then compares the fixture's parsed map and
       body with the twin's. Give it an optional expected-key argument, and
       pass `separator xref-separator` at the M58-AC2 call (near line 25367).
+      Each deleted map's keys must equal that set exactly.
       Plants: a blank line inside a copy's map (passes), a third key in a copy
       of the separators fixture (fails and names the key). Keep the existing
       drift plants.
@@ -134,6 +141,10 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: criteria audit (reduced mode, fresh [O] reader) returned four findings, all fixed before the gate: AC3's domain held 14 controls, not 10 (the M59-AC4 loop added to T3); AC3's total plant must add a non-clash warning; AC4 reworded to the parsed comparison and a blank-line copy against the unchanged twin; AC6 names the two malformed-manifest shapes and a copy of a captured index.
 - 2026-09-11: plan gate chose two milestones (M092 checks, M093 coverage and module cleanups) over one 18-item milestone because one would carry about 12 criteria; falsified by the two branches conflicting in `tests/run-tests.sh` badly enough that a combined review would have cost less.
 - 2026-09-11: plan gate chose a parsed-YAML `derive_labels_twin` over patching the line walker or deleting the drift check, because parsing removes the blank-line defect and makes the key check one line without widening the promise; falsified by a twin whose render differs through a front-matter spelling (a comment, quoting, key order) that the parsed comparison cannot see.
+- 2026-09-11: implement started on branch `m092-label-checks-discriminate`.
+- 2026-09-11: implement gate chose an exact key set for the M58-AC2 twin check over a subset check, and chose to have M58-AC6 call the T1 comparison function.
+- 2026-09-11: amendment (user selection at the implement gate): AC3 and Scope widened to the M56-AC5 `notes`/`sources` controls and both M58-AC4 `figures` controls, which read fixtures that declare none of those indexes. T3 names the four deletions.
+- re-audit: AC3 (reduced) — nothing (the reader asked that Scope and T3 name the two added loops, and both now do)
 
 ## Decisions
 

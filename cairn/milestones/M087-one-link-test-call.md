@@ -123,3 +123,16 @@ Review pass 1, 2026-09-10. Branch contains `origin/main` (b870082, no new commit
 
 - AC1: `git grep -n '^def leaves_publication' -- 'tests/*.py'` printed one line, `tests/htmlindex.py:867:def leaves_publication(href):`.
 - AC2: the 14 rows of `M085_HREF_SHAPES` (9 `leaves`, 5 `stays`), cut from `tests/run-tests.sh` and read by a scratch script outside the suite, each got their row's verdict from `htmlindex.leaves_publication` under Python 3.9.6 and 3.14.7, no mismatches.
+
+Independent review (three lenses; executable surface touched). Dispositions are set at the merge gate.
+
+- [S] blame-history: no findings. Noted in passing: all four `m085_epub_plant` calls pass equal counts (same point as O3).
+- [S] prior-review: no findings. `gh api …/pulls/comments` returned none; M083/M084/M085 archived reviews checked, F2/F3/F4/KI269 addressed as planned, F5 and KI268 out of scope as recorded, M083's exactly-once plant refusal intact outside `--every`.
+- [O] diff-bug: no criterion fails; its own scratch runs reproduced AC2 red on four plants and AC3/AC4 over a captured `demo.epub`. Candidates, most severe first:
+  - O1 `tests/run-tests.sh:23933-23934`: the table comment says what commands do with a leaving link is held by the two-command leg and M085's site plants, but the site plants run only under `--self-test` (block opens `:19372`), so a plain run no longer reads the site reader's link test (confirmed).
+  - O2 `tests/run-tests.sh:24063`: the AC3 comment points at "DESIGN.md Known issues" for KI269, which this diff deletes.
+  - O3 `tests/run-tests.sh:24139-24149`: every `m085_epub_plant` call passes equal counts, so no standing call tells the `links` count from the `unique` count (the reason for F3).
+  - O4 `tests/run-tests.sh:24083-24084`: the AC3 plant targets a locator by a regex over the whole member, not the index section; a matching cross-reference before the index would move the plant outside it. Not reachable on today's capture.
+  - O5 `tests/run-tests.sh:1410-1440`: `check_locator_fragments` splits locators at `#` with no strip and no `leaves_publication` call, against `htmlindex.py:869-873`'s "every reader … calls this" (confirmed; code predates this branch).
+  - O6 the milestone's `## Decisions` section is empty though the work log records two gate choices.
+  - O7 minor: `found` computed and unused under `--every` (`:4814`); the both-verdicts message at 0 rows (`:24001`); "Four readers" uncited (`:23928`); the M085 archive summary's "all four readers" wording (history).

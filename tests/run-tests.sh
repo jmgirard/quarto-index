@@ -24099,9 +24099,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # in the publication; and the straight repack green with none, or a count
   # above would be the repacking and not the plant inside it.
   # -------------------------------------------------------------------------
-  m085_epub_plant() {   # <slug> <label> <expected count> [<pattern> <replacement>]
-    local slug="$1" label="$2" count="$3"
-    shift 3
+  # Two expected counts, not one: `links` counts every link it skipped and
+  # `unique` only the fragment-carrying ones, so the two agree on these plants
+  # by the fixture's shape rather than by what either command promises.
+  m085_epub_plant() {   # <slug> <label> <links skipped> <unique leaving> [<pattern> <replacement>]
+    local slug="$1" label="$2" skipped="$3" leaving="$4"
+    shift 4
     local dest="$M085W/$slug.epub" out
     if [ "$#" -eq 2 ]; then
       python3 "$M083W/plant.py" "$M085_SRC" "$dest" "$M085_MEMBER" "$1" "$2" \
@@ -24112,27 +24115,27 @@ if [ "${1:-}" = "--self-test" ]; then
     fi
     out=$(python3 tests/epubcheck.py links "$dest" "$HTML_SECTION_ID" 2>&1) \
       || { printf '%s\n' "$out" >&2; fail "$label: the link check failed a publication this plant leaves valid, so it is red for something that is not a defect"; }
-    printf '%s' "$out" | grep -qF -- "; $count link(s) skipped as leaving the publication" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the link check passed this plant without skipping $count link(s) as leaving the publication, so its green is not this clause reading this plant"; }
+    printf '%s' "$out" | grep -qF -- "; $skipped link(s) skipped as leaving the publication" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the link check passed this plant without skipping $skipped link(s) as leaving the publication, so its green is not this clause reading this plant"; }
     out=$(python3 tests/epubcheck.py unique "$dest" 2>&1) \
       || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check failed a publication the link check just passed"; }
-    printf '%s' "$out" | grep -qF -- "; $count fragment-carrying link(s) leave the publication" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check did not count $count link(s) as leaving the publication, so the two readers are not reading this plant alike"; }
-    pass "$label: both EPUB commands pass and both count $count link(s) as leaving the publication"
+    printf '%s' "$out" | grep -qF -- "; $leaving fragment-carrying link(s) leave the publication" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the id-uniqueness check did not count $leaving fragment-carrying link(s) as leaving the publication, so the two readers are not reading this plant alike"; }
+    pass "$label: both EPUB commands pass, the link check skipping $skipped link(s) and the id-uniqueness check counting $leaving fragment-carrying link(s) as leaving the publication"
   }
 
   m085_epub_plant clean \
     'M085 T7 self-test: a repacked copy of the captured publication, rewritten nowhere' \
-    0
+    0 0
   m085_epub_plant staying \
     'M085 T7 self-test: an index locator rewritten to the same target through `./`' \
-    0 "href=\"$M085_LOCATOR1_RE\"" "href=\"./$M085_LOCATOR1\""
+    0 0 "href=\"$M085_LOCATOR1_RE\"" "href=\"./$M085_LOCATOR1\""
   m085_epub_plant scheme \
     'M085 T7 self-test: an index locator rewritten to an `https:` href' \
-    1 "href=\"$M085_LOCATOR1_RE\"" "href=\"https://example.invalid/$M085_LOCATOR1\""
+    1 1 "href=\"$M085_LOCATOR1_RE\"" "href=\"https://example.invalid/$M085_LOCATOR1\""
   m085_epub_plant network-path \
     'M085 T7 self-test: an index locator rewritten to an href opening `//`' \
-    1 "href=\"$M085_LOCATOR1_RE\"" "href=\"//example.invalid/$M085_LOCATOR1\""
+    1 1 "href=\"$M085_LOCATOR1_RE\"" "href=\"//example.invalid/$M085_LOCATOR1\""
 fi
 
 # ---------------------------------------------------------------------------

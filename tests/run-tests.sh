@@ -24806,19 +24806,37 @@ for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M56-AC5"
 done
+# The same two per-key shapes inside one index's own map (M093). The `figures`
+# entry writes the document map's own unknown key `symbol` and its own empty
+# `see`, so each of these two messages differs from its document-level twin
+# above in the phrase naming where it was written and in nothing else. The
+# counts are that difference, stated per message:
+#   document-level unknown `symbol`   written once, at the top level      1
+#   per-index unknown `symbol`        written once, under `figures`       1
+#   document-level empty `see`        written once, at the top level      1
+#   per-index empty `see`             written once, under `figures`       1
+# A read that named the document for both writings would draw 2 and 0 where
+# these four counts want 1 and 1, so each pair is red either way it is wrong.
+M56_MISUSE_UNKNOWN_INDEX='index-labels: in the entry declaring the index named "figures" sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, separator, xref-separator, so this key sets nothing'
+M56_MISUSE_EMPTY_INDEX='index-labels: in the entry declaring the index named "figures" gives the key "see" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
+for needle in "$M56_MISUSE_UNKNOWN_INDEX" "$M56_MISUSE_EMPTY_INDEX"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
+    "M56-AC5 (per index)"
+done
 # The control: the same message over the fixture that writes NO unusable
 # shape. Without it a filter that reported every document would satisfy the
 # four counts above. Only the two document-level messages are held there: the
-# other two name the `notes` and `sources` indexes, which
-# examples/index-labels.qmd does not declare, so no filter behavior could put
-# either in its log and a zero count over it could not fail (M092).
+# other two name the `notes` and `sources` indexes, and the two per-index
+# messages the `figures` index, none of which examples/index-labels.qmd
+# declares, so no filter behavior could put any of them in its log and a zero
+# count over it could not fail (M092).
 for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY"; do
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M56-AC5 (control)"
 done
 check_index_sections "$M56_MISUSE_HTML" "$M56_MISUSE_SECTIONS" \
   "M56-AC5 (fallback)" counts labels
-pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, and every word falls back to the English one — the pin on the WHOLE of what that render reports is in the M59 block below, which reads the same log"
+pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, the unknown key and the empty word written again under the figures index each draw their own message naming that index, and every word falls back to the English one — the pin on the WHOLE of what that render reports is in the M59 block below, which reads the same log"
 
 # AC6 — no declaration reaches the LaTeX back-end. The whole `.tex` of the
 # fixture against the whole `.tex` of the twin, which the derivation above
@@ -24996,6 +25014,45 @@ M092BLANKPY
       || fail "M56 T4 self-test: a misuse message matches the log of the fixture that writes no unusable shape $out time(s)"
   done
   pass "M56 T4 self-test: none of the four whole messages matches the log of the fixture that writes no unusable shape"
+
+  # The two per-index messages, against a copy of the misuse log in which each
+  # names the document where the render named `figures` (M093): the report a
+  # read that lost the index's phrase would draw. Both counts over each copy
+  # are shown red, the per-index one at 0 and its document-level twin at 2.
+  python3 - "$WORK/index-labels-misuse-html.log" "$M56W" <<'M093WHEREPY'
+import sys
+src, outdir = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+index = 'in the entry declaring the index named "figures" '
+document = "in this document's metadata "
+for slug, tail in (('unknown', 'sets the key "symbol",'),
+                   ('empty', 'gives the key "see" a value')):
+    needle = index + tail
+    if text.count(needle) != 1:
+        print(f'FAIL: M093 plant: {src} carries {text.count(needle)} copies of '
+              f'<<{needle}>>, where the render draws 1', file=sys.stderr)
+        sys.exit(1)
+    open(f'{outdir}/where-{slug}.log', 'w', encoding='utf-8').write(
+        text.replace(needle, document + tail))
+M093WHEREPY
+  [ -s "$M56W/where-unknown.log" ] && [ -s "$M56W/where-empty.log" ] \
+    || fail "M093 T1 self-test: planting a per-index message that names the document wrote no log (its own FAIL line is above)"
+  m56_planted 'a per-index unknown-key report naming the document rather than its index' \
+    'expected 1 occurrence' \
+    check_warning_count "$M56W/where-unknown.log" "$M56_MISUSE_UNKNOWN_INDEX" 1 \
+      "M56 probe"
+  m56_planted 'a second document-level unknown-key report where the figures index wrote the key' \
+    'got 2' \
+    check_warning_count "$M56W/where-unknown.log" "$M56_MISUSE_UNKNOWN" 1 \
+      "M56 probe"
+  m56_planted 'a per-index empty-value report naming the document rather than its index' \
+    'expected 1 occurrence' \
+    check_warning_count "$M56W/where-empty.log" "$M56_MISUSE_EMPTY_INDEX" 1 \
+      "M56 probe"
+  m56_planted 'a second document-level empty-value report where the figures index wrote the value' \
+    'got 2' \
+    check_warning_count "$M56W/where-empty.log" "$M56_MISUSE_EMPTY" 1 \
+      "M56 probe"
 fi
 
 
@@ -25437,9 +25494,9 @@ if [ "${1:-}" = "--self-test" ]; then
       "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" "M57 probe"
 
   # The silence assertions, against a log that is not silent: the misuse
-  # fixture reports eighteen times, the total the M59 block below derives per
+  # fixture reports twenty times, the total the M59 block below derives per
   # writing site, so a warning count blind to its own log would pass here.
-  m57_planted 'a log carrying eighteen messages held to a count of zero' \
+  m57_planted 'a log carrying twenty messages held to a count of zero' \
     'expected 0 warning(s)' \
     check_extension_warning_count "$WORK/index-labels-misuse-html.log" 0 \
       "M57 probe"
@@ -25937,14 +25994,15 @@ fi
 #                    list                                                    4
 #   entry 1 notes    the whole map written as a string                       1
 #   entry 2 sources  the whole map written as a list                         1
-#   entry 3 figures  two empty punctuation values                            2
+#   entry 3 figures  an unknown key `symbol`, an empty `see`, and two empty
+#                    punctuation values                                      4
 #   entry 4 strata   a `symbols` that is a zero-width space, a `see` written
 #                    as a nested map                                         2
 #   entries 5-8      four entries refused as declarations -- no `name:`, an
 #                    empty one, a name that is no section id, a repeated
 #                    name -- each drawing its own refusal and the further
 #                    message that its label map sets no word            4 x 2
-#                                                                    total 18
+#                                                                    total 20
 # ---------------------------------------------------------------------------
 section 'M59 — every unusable `index-labels:` value is reported and falls back'
 
@@ -26005,11 +26063,11 @@ done
 pass "M59-AC3: each of the four refusal branches an indexes: entry carrying a label map can reach draws its own whole refusal message and, beside it, the whole further message saying that map sets no word"
 
 # The total, which is what makes the counts above a statement about the WHOLE
-# render rather than about eighteen lines somewhere in it. Derived in the
+# render rather than about twenty lines somewhere in it. Derived in the
 # table at the head of this block.
-check_extension_warning_count "$WORK/index-labels-misuse-html.log" 18 \
+check_extension_warning_count "$WORK/index-labels-misuse-html.log" 20 \
   "M59-AC1/AC2/AC3 (total)"
-pass "M59-AC1/AC2/AC3: those eighteen messages are the whole of what the misuse render reports"
+pass "M59-AC1/AC2/AC3: those twenty messages are the whole of what the misuse render reports"
 
 # AC4 — the letter clash, and the index in the same document that has none.
 quarto render examples/index-labels-clash.qmd --to html \
@@ -26133,8 +26191,8 @@ if [ "${1:-}" = "--self-test" ]; then
   cp "$WORK/index-labels-misuse-html.log" "$M59W/extra.log"
   printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/extra.log"
   m59_planted 'a render reporting one message more than the fixture derives' \
-    'expected 18 warning(s)' \
-    check_extension_warning_count "$M59W/extra.log" 18 "M59 probe"
+    'expected 20 warning(s)' \
+    check_extension_warning_count "$M59W/extra.log" 20 "M59 probe"
 
   # The printed-heading manifest, against a page whose non-letter group is
   # headed `Symbols` after all -- the render a back-end that ignored the

@@ -850,7 +850,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   silent there for the same reason. A book chapter's recovery route matches
   that: `recovered_markers` reads the parsed blocks alone too. A MARK written
   there is a different case and is indexed by both routes (corrected M070). —
-  M08 review R4/Q2
+  M08 review R4/Q2; routed from candidates 2026-09-11, the row added
+  2026-08-17
 - **KI12.** `resolve_markers` rebuilds every Blocks list in every format whether
   or not a marker exists. The LaTeX byte-diff that proved that output-neutral
   was deleted at M16 (D-004), so neither back-end has byte-level evidence for it
@@ -863,10 +864,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   filter layer: Quarto normalizes a link target either way — verified, the
   filter emitted `later%20chapter.html` and output carried `later chapter.html`,
   matching Quarto's own `./later chapter.html` — so a chapter filename
-  containing `#` or `?` yields a broken locator. — M05 review F11
+  containing `#` or `?` yields a broken locator. — M05 review F11; routed from
+  candidates 2026-09-11, the row added 2026-08-16
 - **KI15.** A mark's attribute values ride into pass-through formats on the span
   itself (`data-see` and its siblings in gfm). Whether that markup residue is
-  acceptable is unsettled; M03's AC3 scope note defers it. — M03 review F4/F9
+  acceptable is unsettled; M03's AC3 scope note defers it. — M03 review F4/F9;
+  routed from candidates 2026-09-11, the row added 2026-08-17
 - **KI16.** The book sidecar store is never pruned, so a renamed or removed
   chapter leaves its record forever. Harmless today: reads are filtered by the
   current chapter list and validated against a store version. Pruning is
@@ -1500,7 +1503,7 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   — M17 review I
 - **KI78.** Windows checkouts without symlink support break
   `examples/_extensions`, and `site/_extensions` since M40. — M01 review R18,
-  extended M40
+  extended M40; routed from candidates 2026-09-11, the row added 2026-08-16
 
 - **KI166.** In a book that declares several indexes, a chapter's own pairing
   reports now name the index rather than the chapter — "closes a range this

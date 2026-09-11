@@ -139,6 +139,7 @@ entries for the gaps the gate chose to record.
 - 2026-09-10: AC4's final removal wording re-audited ([O], reduced, fresh context): no finding; its note that T5's grep checked only the removal led T5 to also check the leg's own read stays.
 - 2026-09-10: implement started on branch m090-xref-id-rule-plants; no question gate, the plan leaving no implementation choice open.
 - 2026-09-10: T1-T6 edits written, unticked pending the `--self-test` run: helper takes a module argument; three plants each probed first in a scratch copy (unplanted control green, each plant red with its pinned line); M084 T2 self-test removed; KI274/KI275 added.
+- 2026-09-10: claim audit: not owed — internal tier
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

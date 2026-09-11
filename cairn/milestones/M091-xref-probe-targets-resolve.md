@@ -116,6 +116,7 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 - 2026-09-11: mini gate on the re-audit's findings: user chose the revised AC2 wording (space excluded, positions as a per-attribute union, the probe groups named in place of the count).
 - re-audit: AC2 (reduced) — nothing on the three questions; noted, not adopted: the single/dual comparison reads the `.tex` `\index` argument rather than the PDF, and the typeset leg checks the string's presence in the index text rather than an exact entry
 - 2026-09-11: AC2 amended (substantive, user-approved): "every printable ASCII character" → "from `!` to `~` (0x21-0x7E)"; "at all three level positions" → "its targets under each attribute use all three level positions"; "its 16 exact cross-reference strings typeset" → "each of its 16 see, 16 see-also, 16 dual-target, 16 special-character-source and 2 non-ASCII probes typesets its exact cross-reference string". Status → review.
+- 2026-09-11: step-7 approval: m091-xref-probe-targets-resolve approved for merge (F1 to a Known issues entry at hygiene; F2-F4 rejected).
 
 ## Decisions
 
@@ -135,3 +136,5 @@ Fresh run 2026-09-11 on `23ba362` (default branch unmoved since the cut): `tests
 - F2: the gfm zero count has no in-suite discrimination: with the row at 0, nothing proves the fixture's gfm log still carries filter warnings (the LaTeX half is covered by the Xe00/Xe01 counts of 1 on the same log); the plan gate accepted this with a one-off probe.
 - F3: "invisible" is loose for gfm: each mark is emitted as a raw empty `<span class="index" data-entry="…">`, hidden only once the HTML renders.
 - F4: nothing guards the mark list against a later probe target being added without its mark, beyond the corpus zero counts (LaTeX still catches it).
+
+**Triage at the gate (2026-09-11).** F1 → follow-up: a DESIGN.md Known issues entry at hygiene, the gap being shared with the book-row checks, so one helper-level fix covers all. F2 → rejected: the plan gate chose the one-off probe over a permanent plant, its falsifier logged. F3 → rejected: the marks are invisible in the rendered output, which is what the fixture's prose describes. F4 → rejected: the zero counts, the LaTeX one included, are the guard. No finding meets the return floor.

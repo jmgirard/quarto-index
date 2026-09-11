@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-10 (plan gate on the sidecar-store row, no milestone planned: pruning rejected as D-058; KI17 struck, `pandoc.json.encode` sorting object keys on Pandoc 3.10 and 3.11; KI18 struck, Quarto 1.10.18 writing a page outside the chapter list as a standalone page beside the project with no index section; the row removed.)_
+_Last hygiene check: 2026-09-10 (M089 done: book-fixture pages and `site_libs/` ignored, `m069_cold_chapter` clears its `_book`; KI231 struck; M086 row pruned.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -10,10 +10,9 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M089 | Two book-fixture hygiene gaps close | review | — | normal | milestones/M089-book-fixture-hygiene.md |
+| M089 | Two book-fixture hygiene gaps close | done | — | normal | milestones/archive/M089-book-fixture-hygiene.md |
 | M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |
 | M087 | The link readers call the one link test and use the href it judged | done | — | normal | milestones/archive/M087-one-link-test-call.md |
-| M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

@@ -7456,8 +7456,9 @@ pass "M05-AC6: the missing-marker report fires exactly once in a full render, na
 # own record, so a record planted in the last chapter is read by the two
 # chapters ahead of it and by no other. 2 is therefore neither one report for
 # the book nor one per chapter rendered (3) — the two readings a two-chapter
-# fixture cannot tell apart. For AC3 that is the whole of what the count
-# separates; the note beside its count names the rule it does not.
+# fixture cannot tell apart. For AC3 the count also rules out the gate
+# reverting to `if builds then`; the note beside its count says so, and names
+# the rule it does not separate.
 # ---------------------------------------------------------------------------
 section 'M062-AC2/AC3 — a book with NO placement marker anywhere still says when it'
 NOMARKER_STORE="$NOMARKER_DIR/.quarto/$STORE_DIR"
@@ -7550,9 +7551,8 @@ nomarker_named nomarker-undeclared \
   "M062-AC3"
 check_store_reports "$WORK/nomarker-undeclared.log" \
   "M062-AC3 (refiled for its name, not refused for its version; nor refused for its shape)"
-# The term two.qmd marks still prints in the document content of two.html,
-# which is where M05-AC6 requires every marked term of this book to be. That
-# page renders from two.qmd's own source, so the term prints there whether or
+# The term two.qmd marks still prints in the document content of two.html.
+# That page renders from two.qmd's own source, so the term prints there whether or
 # not the planted record is refiled: this reads that the plant cost the
 # chapter's own page nothing, and says nothing about where a refiled mark goes.
 # This book builds no index section, so that is asserted over
@@ -8802,8 +8802,8 @@ fi
 #
 # Seven warning lines, and the pattern-set helper below counts all seven. The
 # write-failure report gives as its cause the text `io.open` returned for the
-# held path, `Is a directory` on the render this leg was written against
-# (2026-09-11), and Quarto prints no ERROR line beside it (M094-AC1). The raw
+# held path, that path followed by `: Is a directory` on the render this leg
+# was written against (2026-09-11), and Quarto prints no ERROR line beside it (M094-AC1). The raw
 # count of warning lines is asserted alongside.
 #
 # The unreadable report is drawn from inside `store_read`, once per rendering
@@ -8821,8 +8821,8 @@ m061_block_record() {   # <chapter file> <store directory> <label>
 }
 
 # M094-AC1 — the write-failure report for four.qmd's held path, read off the
-# report's own line rather than anywhere in the log: its cause is the path
-# `io.open` was refused, then the text it returned.
+# report's own line rather than anywhere in the log: its cause is the text
+# `io.open` returned, which is the refused path followed by `: Is a directory`.
 m094_check_cause() {   # <logfile> <label>
   local logfile="$1" label="$2" line
   line=$( { grep -F -- "$WARN_STORE_UNWRITABLE four.qmd (" "$logfile" || true; } )
@@ -9037,12 +9037,13 @@ if [ "${1:-}" = "--self-test" ]; then
   ( cd "$M061W/m094-raise" && quarto render --to html ) \
     > "$WORK/m094-raise.log" 2>&1 \
     || { tail -30 "$WORK/m094-raise.log" >&2; fail "M094 T2 self-test: the mutated render failed; the case below is about what the report and the log say, not about a broken render"; }
+  capture --project "$M061W/m094-raise" html "m094-raise"
   if M094_OUT=$( ( check_no_quarto_error "$WORK/m094-raise.log" \
                      "M094 T2 probe" ) 2>&1 ); then
     fail "M094 T2 self-test: with the raise restored the ERROR-line check passed, so its green above says nothing"
   fi
   case "$M094_OUT" in
-    *"M094 T2 probe: expected 0 ERROR line(s)"*"got 1"*) : ;;
+    *"M094 T2 probe: expected 0 ERROR line(s)"*"got 1") : ;;
     *) fail "M094 T2 self-test: the ERROR-line check failed on the mutated render, but not by counting its one ERROR line (<<$M094_OUT>>)" ;;
   esac
   if M094_OUT=$( ( m094_check_cause "$WORK/m094-raise.log" \
@@ -9057,8 +9058,9 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # -------------------------------------------------------------------------
   # M094 T3 — a warning line that opens with a colour escape is still counted.
-  # The render above no longer writes one, so the escape is planted into a copy
-  # of its log at the head of four.qmd's write-failure report.
+  # The shipped filter's M063-AC3 render no longer writes one, so the escape is
+  # planted into a copy of that render's log, place-blocked-one.log, at the
+  # head of four.qmd's write-failure report.
   # -------------------------------------------------------------------------
   perl -pe 's/^(?=\(W\) could not record index marks for four\.qmd )/\e[39m/' \
     "$WORK/place-blocked-one.log" > "$WORK/m094-sgr.log"
@@ -9568,8 +9570,9 @@ pass "M065-AC5: a whole-book render in which one chapter's record carries a vers
 #
 #   20 recovery + 5 write-failure + 2 marker-position = 27 warning lines.
 #
-# The named counts account for all 27, and the raw count of warning lines is
-# asserted alongside them.
+# The named counts account for 25, the recovery and write-failure reports.
+# The raw count of warning lines, asserted alongside them, holds all 27, the
+# two marker-position reports among them.
 # ---------------------------------------------------------------------------
 section '...and the store DIRECTORY itself replaced by a regular file, so no record'
 m065_break_store() {   # <store directory> <label>

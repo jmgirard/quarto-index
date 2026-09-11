@@ -15,8 +15,8 @@
 - In an HTML book, the report that a chapter's index marks were not recorded
   now names the failure that stopped the write. For example, it names
   `Is a directory` where a directory holds the chapter's record path. Before
-  this change, the report named a Lua fault from the line after the failed
-  open, and Quarto printed an `ERROR` line above the report.
+  this change, the report named a Lua fault from the write that followed the
+  failed open. Quarto also printed an `ERROR` line above the report.
 
 ## 0.4.0 (2026-09-11)
 

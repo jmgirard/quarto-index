@@ -336,8 +336,9 @@ end
 -- A failure this function foresees is RETURNED as its cause rather than
 -- raised. Quarto's filter runtime replaces the global `error` with a logger
 -- that prints an `ERROR` line and returns, so a raise from inside the guard
--- does not unwind: execution runs on past it and the report names whatever
--- fault comes next. `pcall` stays for the faults nobody foresaw.
+-- does not unwind: execution runs on past it, and the report then names
+-- whatever fault comes next or, where nothing faults, is not drawn at all.
+-- `pcall` stays for the faults nobody foresaw.
 local function store_write(ctx, record)
   local path = store_path(ctx, ctx.file)
   local ok, err = pcall(function()

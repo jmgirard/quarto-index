@@ -120,6 +120,9 @@ the M062 and M063 checks around those reports fail on the defects they name.
 - 2026-09-11: plan chose returning failure values beside `pcall` over calling Quarto's saved `builtin_error_function`, because that name is internal to Quarto's filter runtime; falsified by a Quarto release whose runtime also changes `pcall` or the return path.
 - 2026-09-11: implement started on m094-store-failure-causes; question gate skipped, the plan left no implementation choice open.
 - 2026-09-11: checkpoint, T1-T7 edits written and not yet verified: a scratch render with four.qmd's record path held shows no ERROR line and the cause `...four.qmd.qi.json: Is a directory`; the strip moves three pinned counts over the prior run's logs, M063-AC3 6 to 7, M064-AC5 6 to 7, and M064-AC3 10 to 12, which the plan did not name (set under T3); `tests/run-tests.sh --self-test` is running, boxes stay unticked until it reads clean.
+- 2026-09-11: suite run 1 stopped at M06-AC3 when Quarto's Deno binary crashed with a segmentation fault rendering sort-escaping.qmd to gfm. The same render then exited 0 three times out of three, so the crash was transient. Every leg M094 touches had passed before it.
+- 2026-09-11: claim audit: 51 claims read, 7 corrected — CHANGELOG.md, _extensions/index/modules/book.lua, tests/run-tests.sh
+- 2026-09-11: suite run 2 failed M24-AC3 because the M094 T2 mutant render had no capture call after it. The call is added, the audit corrections and a tighter `got 1` glob are applied, and suite run 3 is running.
 
 ## Decisions
 

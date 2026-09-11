@@ -1479,11 +1479,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   for it, and `tests/epubcheck.py links` prints only a count; an author who
   writes an `https:` locator by accident is told one link was skipped and has
   no way to find it. Decided by D-057 rather than wrong. — M085 review F9
-- **KI272.** Every call of `m085_epub_plant` in `tests/run-tests.sh` passes the
-  same number for the `links` skipped count and the `unique` leaving count, so
-  no standing plant tells the two apart: swapping the two arguments at a call,
-  or reading one of them in both arms, leaves all four plants green. — M087
-  review O3
+- **KI272.** `m085_epub_plant` in `tests/run-tests.sh` holds the `links`
+  skipped count and the `unique` leaving count to one expected number, and
+  every plant keeps its locator's fragment, so no plant shows `unique` leaving
+  uncounted a fragment-less leaving link that `links` skips (corrected M088).
+  — M087 review O3
 - **KI273.** The M063-AC2 old-store leg in `tests/run-tests.sh` never asserts
   that `Bramble` links by the anchor two.qmd's record carries
   (`two.html#qi-mark-1` on the capture — observed 2026-09-10), though the

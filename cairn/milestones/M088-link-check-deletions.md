@@ -66,7 +66,7 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
       `Bramble`'s anchor (KI273). Re-read every comment and message naming the
       removed check or its label (LESSONS M038). Strike KI271 in
       `cairn/DESIGN.md`.
-- [ ] T2: Collapse `m085_epub_plant` (:24115-24138) to `<slug> <label> <count>
+- [x] T2: Collapse `m085_epub_plant` (:24115-24138) to `<slug> <label> <count>
       [<pattern> <replacement>]`, the one count read by both greps and its pass
       line, and its four calls (:24140-24151) to one count each. Rewrite the
       two-count comment (:24115-24117) to say the one count stands for both
@@ -85,6 +85,7 @@ Line numbers are as of the plan commit; T1's deletion moves T2's up.
 - 2026-09-10: plan gate chose one expected count in `m085_epub_plant` over adding a plant whose two counts differ because it shrinks a check M085/M087 shipped rather than extending it; falsified by `unique` counting a fragment-less leaving link, or `links` ceasing to count one, with the suite green.
 - 2026-09-10: plan gate left `Bramble`'s old-store anchor unpinned (KI273, recovered-locator candidate row) over pinning it with `check_entry_locators` because pinning extends a shipped check; falsified by the record route losing that anchor with the suite green.
 - 2026-09-10: T1 done — `check_locator_fragments` and its M064-AC2 call deleted, the old-store leg runs `fragments.py resolve` over index.html (passes on today's capture: 2 locators, 2 fragments), three comments rewritten, KI271 struck, KI273 corrected to the page-wide check; `bash -n` clean, full suite deferred to T3 as planned.
+- 2026-09-10: T2 done — `m085_epub_plant` takes one `<count>` read by both greps and its pass line, its four calls pass one count each, the comment says why one number serves (`locators.py` offers only fragment-carrying locators), KI272 corrected in place; `bash -n` clean.
 
 ## Decisions
 

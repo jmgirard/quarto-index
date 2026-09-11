@@ -1,6 +1,6 @@
 # M091: The cross-reference escaping probe's targets name terms it indexes
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -39,12 +39,15 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
       `check_warning_count` in `tests/run-tests.sh` reads 0 for
       `WARN_DANGLING` and for `WARN_DANGLING_INDEX` over each render's log.
 - [ ] AC2: `examples/xref-escaping.qmd` still covers every printable ASCII
-      character as its own target level under both `see=` and `see-also=`, at
-      all three level positions; each of its 16 special-character probes
-      renders its target identically in single and dual form; its empty-level
-      and unusable-target probes each warn once; makeindex rejects 0 of its
-      entries; and its 16 exact cross-reference strings typeset in its PDF
-      index — each as read by the M02-AC3 legs of `tests/run-tests.sh`.
+      character from `!` to `~` (0x21-0x7E) as its own target level under both
+      `see=` and `see-also=`, and its targets under each attribute use all
+      three level positions; each of its 16 special-character probes renders
+      its target identically in single and dual form; its empty-level and
+      unusable-target probes each warn once; makeindex rejects 0 of its
+      entries; and each of its 16 see, 16 see-also, 16 dual-target, 16
+      special-character-source and 2 non-ASCII probes typesets its exact
+      cross-reference string in its PDF index — each as read by the M02-AC3
+      legs of `tests/run-tests.sh`.
 - [ ] AC3: The active profile's verify command, `tests/run-tests.sh
       --self-test`, runs clean.
 
@@ -108,6 +111,11 @@ and LaTeX logs; a one-off discrimination probe; KI72 narrowed to what remains.
 - 2026-09-11: T5: `tests/run-tests.sh --self-test` clean, 1456 checks, exit 0, 14m27s; T1-T4 ticked on the same run.
 - 2026-09-11: T5 run surfaced that AC2's "16 exact cross-reference strings" names a set the M02-AC3 typeset leg does not read: it reads 66, a count unchanged on main.
 - claim audit: not owed — internal tier
+- 2026-09-11: mini gate on AC2's count: user chose correcting "16 exact cross-reference strings" to 66.
+- re-audit: AC2 (reduced) — bounded promise: "every printable ASCII character" includes the space no leg checks, and "at all three level positions" reads per character where the leg checks the union per attribute; instrument: "66 exact strings" is the manifest's row count, not a fixture property; proportionality: nothing
+- 2026-09-11: mini gate on the re-audit's findings: user chose the revised AC2 wording (space excluded, positions as a per-attribute union, the probe groups named in place of the count).
+- re-audit: AC2 (reduced) — nothing on the three questions; noted, not adopted: the single/dual comparison reads the `.tex` `\index` argument rather than the PDF, and the typeset leg checks the string's presence in the index text rather than an exact entry
+- 2026-09-11: AC2 amended (substantive, user-approved): "every printable ASCII character" → "from `!` to `~` (0x21-0x7E)"; "at all three level positions" → "its targets under each attribute use all three level positions"; "its 16 exact cross-reference strings typeset" → "each of its 16 see, 16 see-also, 16 dual-target, 16 special-character-source and 2 non-ASCII probes typesets its exact cross-reference string". Status → review.
 
 ## Decisions
 

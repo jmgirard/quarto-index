@@ -26,7 +26,7 @@ which this plan absorbs and removes.
   `see="Note: on birds"` in `examples/xref-conflict.qmd` dangles on purpose
   and stays.
 - KI273. The `Quoin` href on the record route, `mullion-passage` sitting
-  outside the index section, and `Bramble`'s record anchor on the old-store
+  outside its heading, and `Bramble`'s record anchor on the old-store
   page.
 - KI10. The `indexes.lua` cells `order`, `titles`, `declared`,
   `language_words`, `doc_labels` and `index_labels` join the M26 state
@@ -51,13 +51,18 @@ stays open.
       dangling-target report, and it names `Note: on birds`, as its M14
       corpus row and a report-identity check read. Its HTML and PDF index
       manifests pass.
-- [ ] AC3: The `place-second` record-route leg asserts `Quoin`'s href by
-      value. A leg over the recovered `four.html` asserts with
-      `tests/fragments.py outside` that `mullion-passage` sits outside
-      `title-block-header`, as the M071-AC3 legs do for a body mark. The
-      M063-AC2 old-store leg asserts that `Bramble` links to the anchor that
-      `two.qmd`'s record carries. Each assertion fails under a `--self-test`
-      plant that changes the value it reads.
+- [ ] AC3: The `place-second` record-route leg asserts that `Quoin`'s href
+      on `five.html` is `four.html`. In each of the captures
+      `place-blocked-one` and `place-blocked-two`, a leg asserts that
+      `four.html` carries `mullion-passage` once, inside the `<section>`
+      carrying `a-mullion-in-a-heading`, and neither on nor within that
+      section's child `<h2>`. The `place-oldstore` leg asserts that
+      `Bramble`'s href on `index.html` is `two.html#qi-mark-1`, the anchor of
+      `two.qmd`'s first mark, derived from the source. Each of the Quoin and
+      Bramble assertions fails under a `--self-test` plant that changes the
+      href it reads. The `mullion-passage` assertion fails under each of three
+      plants that move the id rather than copy it: onto the `<h2>`, into the
+      `<h2>`, and out of the section.
 - [ ] AC4: For each of the six `indexes.lua` cells, `tests/stateprobe.py`
       either finds that deleting that cell's restore statement from `reset`
       changes the compared output of a probe fixture, or holds the cell as
@@ -79,10 +84,9 @@ stays open.
 
 - [ ] T1: KI72 fixtures. List every target in both files from the attribute
       values (`examples/demo.qmd` lines 37-51, `examples/xref-conflict.qmd`
-      lines 32-96). Point each incidental target at a term the file already
-      indexes where the target's own characters are not what a probe tests.
-      Otherwise add an invisible mark for it, as M091 did. Keep `rho`'s
-      target. An added mark must not contest a cross-reference mark's key (M15).
+      lines 32-96). Write one invisible mark per distinct incidental target,
+      as M091 did (minor amendment 2026-09-11). Keep `rho`'s target. An added
+      mark must not contest a cross-reference mark's key (M15).
 - [ ] T2: KI72 suite. Set the corpus rows (near lines 14019 and 14054) to 0
       and 1 and rewrite their derivation comments (near lines 13900-13912).
       Update `DEMO_HTML_INDEX`, `XREF_HTML_INDEX`, `DEMO_ENTRIES`,
@@ -90,19 +94,21 @@ stays open.
       for the entries that now link or are added, deriving from the source,
       never from the render. Add a check that the one remaining report names
       `Note: on birds`.
-- [ ] T3: KI273. Add an `hrefs` check for `Quoin` on the `place-second` render
-      (near lines 8293-8299). Add a `tests/fragments.py outside` call for
-      `mullion-passage` against `title-block-header` on `four.html` (near line
-      8898). `four.html` carries no index section. Read the M078 review
-      findings F3 and F11 first to confirm this is the containment they meant.
-      Add an `htmlindex.py` read of `Bramble`'s href on the old-store page
-      (near line 11189) against the id read from `two.qmd`'s stored record.
-      Add one plant each. Rewrite the comment near lines 11184-11188.
-- [ ] T4: KI10 fixture. Add a probe fixture that declares `indexes:`,
-      `index-labels:` and a non-default `lang:`. Extend
-      `tests/state-pollute.lua` so that it reads a different declaration
-      through `qi_indexes.reset`, so each of the six cells holds a value that
-      differs from the fixture's own.
+- [ ] T3: KI273. Add an `hrefs` check for `Quoin` on the `place-second`
+      render. Add a `tests/fragments.py outside-heading` mode, which finds a
+      section's child heading by element, and call it for `mullion-passage`
+      in `a-mullion-in-a-heading` on `four.html` in both `place-blocked`
+      captures. Check `Bramble`'s href on the `place-oldstore` page against
+      `two.html#qi-mark-1`, derived from `two.qmd`'s mark order. Add one plant
+      each for `Quoin` and `Bramble` and three for `mullion-passage`. Rewrite
+      the comment above the old-store `resolve` call (minor amendment
+      2026-09-11).
+- [ ] T4: KI10 fixture. Add a probe fixture that declares no index and
+      carries a mark naming an undeclared index and a cross-reference mark.
+      Extend `tests/state-pollute.lua` so that, after its existing drive, it
+      reads a declaration of two labelled indexes through
+      `qi_indexes.reset`, so each of the six cells holds a value that differs
+      from the fixture's own (minor amendment 2026-09-11).
 - [ ] T5: KI10 probe. Add the six cells to `CELLS` in `tests/stateprobe.py`
       with module `indexes`, and a whole-module `reset:indexes` probe. Show
       each probe moving when its restore is deleted, or record why it cannot.
@@ -129,6 +135,8 @@ stays open.
 - 2026-09-11: re-audit: AC3 (full) — "the recovered `four.html`" named no capture, one plant stood in for three defect forms (id onto, into and out of the heading's section), and `fragments.py` containment never counts the container's own id. Wording corrected.
 - 2026-09-11: re-audit: AC3 (full) — the corrected wording read `Bramble`'s expected anchor from an extension-written record at an unclear time (now derived from source as `qi-mark-1`), read "whose `five.html` carries" as a filter (captures now named), and left `Quoin`'s value unstated (now `four.html`). This second line is the stop, so the corrected wording goes to the user.
 - 2026-09-11: T1/T2 edits in, unticked: 8 invisible marks in `demo.qmd` and 12 in `xref-conflict.qmd` with their gallery copies, `DEMO_ENTRIES`, `DEMO_HTML_INDEX`, `XREF_HTML_INDEX`, `CONFLICT_PDF_INDEX`, both letter sweeps, corpus rows 0 and 1, and a check naming `rho`'s report. Scratch renders match the HTML, conflict PDF and demo PDF manifests. The suite has not run.
+- 2026-09-11: amendment adopted at the user's selection: AC3 now states `Quoin`'s href value, names the `place-blocked-one` and `place-blocked-two` captures, holds `mullion-passage` inside its section and outside its `<h2>`, derives `Bramble`'s `two.html#qi-mark-1` from source, and requires five plants. Scope's KI273 item reads "outside its heading". T3's wording follows.
+- 2026-09-11: T3 edits in, unticked: `tests/fragments.py` gains `outside-heading`, and the suite gains the `Quoin`, `mullion-passage` (both captures) and `Bramble` checks with their five plants. On an earlier run's `four.html` the new mode passes, and it fails on each of three scratch plants with its own message. The suite has not run.
 
 ## Decisions
 

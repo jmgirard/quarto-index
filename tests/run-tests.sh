@@ -8384,6 +8384,33 @@ check_book_terms "$CAPTURE_ROOT/place-second/_book" \
   "$PLACE_TERMS_WARM"
 check_extension_warning_count "$WORK/place-second.log" 2 \
   "M063-AC2 (the placement fixture's second render emitted a warning this suite cannot name; its two are the marker-position reports)"
+# M095-AC3: where `Quoin` links on the record route, by value. four.qmd marks
+# it in its `abstract:`, and a front-matter mark in an HTML book chapter files
+# one locator, the chapter's page with no fragment (D-048). The term check
+# above holds only its page, section and text, so a record route that gave it
+# a fragment would pass there.
+check_entry_locators "$CAPTURE_ROOT/place-second/_book/five.html" \
+  "$HTML_SECTION_ID-gamma" Quoin "four.html" \
+  "M095-AC3 (the record route files Quoin's front-matter mark as the chapter's page)"
+if [ "${1:-}" = "--self-test" ]; then
+  # The same page with every `four.html` locator given the fragment Quoin's
+  # author wrote, Quoin's among them: the value a route carrying front-matter
+  # ids would print.
+  M095_QUOIN="$WORK/m095-quoin-five.html"
+  sed 's|href="four\.html"|href="four.html#quoin-passage"|g' \
+    "$CAPTURE_ROOT/place-second/_book/five.html" > "$M095_QUOIN"
+  cmp -s "$M095_QUOIN" "$CAPTURE_ROOT/place-second/_book/five.html" \
+    && fail "M095-AC3 self-test: the Quoin plant changed nothing, so the case below is about the unplanted page"
+  if M095_OUT=$( ( check_entry_locators "$M095_QUOIN" "$HTML_SECTION_ID-gamma" \
+                     Quoin "four.html" "M095-AC3 probe" ) 2>&1 ); then
+    fail "M095-AC3 self-test: the Quoin check passed on a page where Quoin links to four.html#quoin-passage"
+  fi
+  case "$M095_OUT" in
+    *"'Quoin' links to <<four.html#quoin-passage>>"*) : ;;
+    *) fail "M095-AC3 self-test: the Quoin check failed on the planted page, but not by naming the href it read (<<$M095_OUT>>)" ;;
+  esac
+  pass "M095-AC3 self-test: the Quoin check is red on a page where Quoin's href carries a fragment, naming that href"
+fi
 
 # ...and neither render draws either of the two reports M063 retired. Asserted
 # against the sentences those reports carried rather than against a key still
@@ -9000,6 +9027,15 @@ for M061_PASS in one two; do
     python3 tests/fragments.py resolve \
       "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book" five.html \
     || fail "M078-AC3 and M064-AC2 (render $M061_PASS: every fragment any locator on the index page carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
+  # M095-AC3: where four.qmd's heading mark lands on its own page. Its author
+  # wrote `mullion-passage` on a mark inside a `##` heading, and the render
+  # moves the id out of the heading into the section Quarto wraps it in. The
+  # sweep above passes wherever on four.html the id sits once, so this is what
+  # says it left the heading and stayed in the section.
+  python3 tests/fragments.py outside-heading \
+      "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/four.html" \
+      a-mullion-in-a-heading mullion-passage \
+    || fail "M095-AC3 (render $M061_PASS: mullion-passage sits once in its heading's section and outside the heading; tests/fragments.py's own FAIL line is above)"
   # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
   # that states WHERE each locator points and what each cross-reference names.
   # four.qmd writes sixteen marks in fourteen forms, every one of them settled
@@ -9040,6 +9076,59 @@ done
 pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would occupy is held by a directory, two consecutive whole-book renders are identical — each prints the index no marker names in the book's last chapter carrying all nineteen of its entries, the sixteen that live only in the unwritable record linking to that chapter's page — after it the id their author wrote, where they wrote one — and every locator's fragment naming an id its page holds, and each draws the same seven warnings and exits 0"
 
 if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M095-AC3 — the heading-mark check against three copies of four.html, each
+  # with `mullion-passage` MOVED rather than copied, since a copy fails the
+  # once-on-the-page clause before containment is read. Onto the `<h2>`, which
+  # a reader counting only a container's descendants would miss. Into the
+  # `<h2>`, the shape the render moves the id out of. Out of the section.
+  # -------------------------------------------------------------------------
+  M095_FOUR="$CAPTURE_ROOT/place-blocked-one/_book/four.html"
+  if ! python3 - "$M095_FOUR" "$WORK" <<'M095PLANTPY'
+import os, sys
+page, work = sys.argv[1:3]
+src = open(page, encoding='utf-8').read()
+span = '<span id="mullion-passage"></span>'
+section = '<section id="a-mullion-in-a-heading"'
+if src.count(span) != 1 or src.count(section) != 1:
+    sys.exit(f'FAIL: M095-AC3 self-test: {page} carries the id span '
+             f'{src.count(span)} time(s) and the section {src.count(section)} '
+             f'time(s), want 1 each, so no plant below moves what it means to')
+base = src.replace(span, '', 1)
+start = base.index(section)
+h2 = base.index('<h2', start)
+h2_end = base.index('>', h2)
+plants = {
+    'onto': base[:h2 + 3] + ' id="mullion-passage"' + base[h2 + 3:],
+    'into': base[:h2_end + 1] + span + base[h2_end + 1:],
+    'out': base[:start] + span + base[start:],
+}
+for name, text in plants.items():
+    with open(os.path.join(work, f'm095-four-{name}.html'), 'w',
+              encoding='utf-8') as out:
+        out.write(text)
+print(f'ok   M095-AC3 self-test: three heading-mark plants built from {page}')
+M095PLANTPY
+  then
+    fail "M095-AC3 self-test: the heading-mark plants could not be built (their own FAIL line is above)"
+  fi
+  for M095_PLANT in "onto:sits on or within the <h2> heading" \
+                    "into:sits on or within the <h2> heading" \
+                    "out:sits outside the element"; do
+    M095_NAME="${M095_PLANT%%:*}"
+    M095_WANT="${M095_PLANT#*:}"
+    if M095_OUT=$(python3 tests/fragments.py outside-heading \
+                    "$WORK/m095-four-$M095_NAME.html" \
+                    a-mullion-in-a-heading mullion-passage 2>&1); then
+      fail "M095-AC3 self-test: the heading-mark check passed on four.html with mullion-passage moved $M095_NAME"
+    fi
+    case "$M095_OUT" in
+      *"'mullion-passage' $M095_WANT"*) : ;;
+      *) fail "M095-AC3 self-test: the heading-mark check failed with mullion-passage moved $M095_NAME, but not by saying it $M095_WANT (<<$M095_OUT>>)" ;;
+    esac
+  done
+  pass "M095-AC3 self-test: the heading-mark check is red on four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
+
   # -------------------------------------------------------------------------
   # M063 T7 — the same held store path against a copy of the tree whose only
   # change restores the superseded rule, and nothing else moved. Under it
@@ -11332,13 +11421,19 @@ check_extension_warning_count "$WORK/place-oldstore-fifth.log" 0 \
   "M063-AC2 (five.qmd has no chapter after it and reads only valid records, so it has nothing to say)"
 # Every fragment a locator on the index page carries names an id the page it
 # links to holds exactly once. It does not say which locators carry one, so
-# this is no check of the anchor M063 T2's self-test contrasts with: that
-# `Bramble` links by the anchor two.qmd's record carries is asserted nowhere
-# here.
+# the anchor M063 T2's self-test contrasts with is asserted by value below.
 HTML_SECTION_ID="$HTML_SECTION_ID" HTML_ANCHOR_PREFIX="$HTML_ANCHOR_PREFIX" \
 HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
   python3 tests/fragments.py resolve "$CAPTURE_ROOT/place-oldstore/_book" index.html \
   || fail "M063-AC2 (an upgraded store: every fragment any locator on index.html carries names an id the page it names holds; tests/fragments.py's own FAIL line is above)"
+# M095-AC3: `Bramble` links by the anchor two.qmd's record carries. The value
+# is derived from the source: `Bramble` is the first mark two.qmd writes, and a
+# chapter numbers the anchors it mints by a mark's position in its source (the
+# M065 gamma rows state the same rule), so `qi-mark-1`. index.qmd renders first
+# and reads that record, the only thing carrying the anchor.
+check_entry_locators "$CAPTURE_ROOT/place-oldstore/_book/index.html" \
+  "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
+  "M095-AC3 (an upgraded store: Bramble links by the anchor two.qmd's record carries)"
 pass "M063-AC2: over a store whose records all stand at the current version and carry the three fields this milestone retired — one of them holding a value the superseded validator would have refused — a whole-book render prints the same sections and every one of the terms the fixture marks, and the book's last chapter reading those records on its own says nothing at all"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -11401,7 +11496,18 @@ MANIFEST
   check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
     "$HTML_SECTION_ID-alpha" Bramble "two.html" \
     "M063 T2 self-test (the refused record's chapter is recovered from its source, so its locator loses the anchor the record carried)"
-  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do; that the run above links it by the record's anchor instead is asserted nowhere"
+  # M095-AC3's Bramble check against this render, where Bramble's href lost
+  # the anchor: the plant that changes the href that check reads.
+  if M095_OUT=$( ( check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
+                     "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
+                     "M095-AC3 probe" ) 2>&1 ); then
+    fail "M095-AC3 self-test: the Bramble check passed on a render whose Bramble links to two.html alone"
+  fi
+  case "$M095_OUT" in
+    *"'Bramble' links to <<two.html>>"*) : ;;
+    *) fail "M095-AC3 self-test: the Bramble check failed on the refused-record render, but not by naming the href it read (<<$M095_OUT>>)" ;;
+  esac
+  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do, and the M095-AC3 check that the run above links it by the record's anchor is red here, naming the anchorless href"
 fi
 
 # Back to a store every record of which was written by the chapter it belongs

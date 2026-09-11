@@ -1815,3 +1815,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   says nothing about any of them. KI229 and D-053 name the last-chapter shape
   alone, and the `m074-quiet` leg renders that one. The parse it pays is
   KI227's, as KI229's is. — M074 review F6
+- **KI278.** `derive_labels_twin` compares front matter as PyYAML parses it,
+  which reads YAML 1.1 and keeps the last of two duplicate keys. So a twin
+  writing `yes` where the fixture writes `true` passes as the same document,
+  and so does a fixture whose `index-labels:` map sets `separator` twice. The
+  plan recorded the blind spot for quoting, comments and key order only.
+  — M092 review R4

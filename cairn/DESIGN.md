@@ -1534,40 +1534,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   hypothetical since M57: three of the four languages it ships spell `see also`
   as two words, so every non-English manifest it added carries the fold
   (corrected M057). — M56 review F5, M57 review F12
-- **KI183.** The unknown-key and empty-value reports are exercised only at the
-  document level: the misuse fixture writes both per-key shapes there and only
-  the not-a-map shape per index, so a defect in how those two messages name an
-  index goes unseen. — M56 review F14
-- **KI184.** `languages.lua`'s `OUTCOMES` table is read by nothing — not the
-  module, the suite or the site. Its comment justifies it as what stops a check
-  from naming its own outcomes while a fourth goes unexercised, but the suite's
-  coverage is `M57_RESOLVER_FIXTURES`, four strings hard-coded in shell with no
-  link to it, so adding a fifth outcome to the resolver fails no check. — M57
-  review F3
-- **KI185.** `well_formed` matches subtags with `%a` and `%w`, against the
-  convention `html.lua:69-70` states verbatim: `[A-Za-z]` rather than `%a`,
-  whose meaning follows the C locale. Both outcomes print English, so nothing
-  visible diverges; the `miss`/`malformed` distinction the module treats as
-  load-bearing becomes machine-dependent. — M57 review F4
-- **KI187.** `indexes.lua` exports `TITLE_KEY`, which nothing outside the module
-  reads — the surface `languages.lua:158-161` argues against in the same diff.
-  — M57 review F6
-- **KI188.** `label()` consults the language row for whatever key it is handed,
-  and `TITLE_KEY`'s string value shares a table with the three label keys. No
-  call site passes `"title"` today, so a future printing site adding a `title`
-  label key would silently pick up the index heading. — M57 review F7
-- **KI189.** No book fixture declares `lang:`. All six language fixtures are
-  single documents, so the aggregated book index — several Pandoc processes in
-  HTML, one in EPUB — takes no language path in the suite. The Italian row's
-  four words are exercised by no fixture at all. — M57 review F2, F11
-- **KI196.** The changelog says the letter-clash report fires for HTML and
-  EPUB. The dispatch supports it — `builds_ast_index` is `is_html() or
-  is_epub()` — but `examples/index-labels-clash.qmd` is rendered to HTML only,
-  so nothing would catch that sentence becoming false. — M59 review F3
-- **KI197.** 25 of the 27 entries in `BLANKS` are unexercised by any render;
-  only U+00A0 and U+200B reach one. A transposed code point in the list — say
-  `\u{2007}` written as `\u{2070}`, a visible glyph — would ship silently.
-  — M59 review F6
 - **KI205.** A chapter of an HTML book whose record is ABSENT is read as absent
   in every chapter that carries no placement marker and is not the book's last
   — the chapters M069's gate leaves out (D-045). Such a chapter prints no index

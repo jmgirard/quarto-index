@@ -121,7 +121,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       pair does too, then calls `resolve` on `êê` and `es-êê`. The probe fails
       loudly if the locale is missing and never skips. Add the `CHANGELOG.md`
       entry for the `es-êê` change that Scope Out names.
-- [ ] T7: Strike KI183, KI184, KI185, KI187, KI188, KI189, KI196 and KI197 from
+- [x] T7: Strike KI183, KI184, KI185, KI187, KI188, KI189, KI196 and KI197 from
       `cairn/DESIGN.md` per D-013.
 - [ ] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
 
@@ -139,6 +139,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: T2 and T3 done in one commit, because both edit `tests/run-tests.sh`. T2 adds `examples/book-lang/`, three chapters with `lang: it` and an undeclared index. The M57 block renders it to HTML and EPUB against manifests copied from ledger rows W-IT1 to W-IT4, and two plants hold it to the English words. The first run failed M14's target roster, which did not list the two chapters. They are listed at 0, since every target resolves in the book. T3 captures the clash fixture to EPUB and repeats the three M59-AC4 counts, with three plants. `tests/run-tests.sh --self-test` passed 1490 checks.
 - 2026-09-11: T4 done. A new M093 section generates a document under `$WORK` from 23 Unicode names, five indexes of five keys each, with MIDDLE DOT and SECTION SIGN in the last two places. It reads each value back through PyYAML before counting one report per blank place and none per visible one, 23 in total. The plant renders against a copy whose `BLANKS` keeps its 4 ASCII entries, and all 23 counts go red. The first run failed M075's section scan, because the banner had no closing rule and no `section` call. `site/examples.qmd` gains a sentence naming `examples/book-lang/` (T2). `tests/run-tests.sh --self-test` passed 1493 checks.
 - 2026-09-11: T5 and T6 done in one commit, because both edit `languages.lua`. Each language row now holds `words` and a separate `title`. `indexes.lua` reads `row.words` into the cell `label` reads and `row.title` into the untitled heading. `OUTCOMES` is gone, and its token list moves into `resolve`'s comment. `TITLE_KEY` and its export are gone. `well_formed` tests `[A-Za-z]` and `[A-Za-z0-9]`. Two `quarto pandoc lua` probes run in the M57 block. The title probe printed `Indice analitico` before the change, and the tags gave `miss` and `subtag`. Two plants restore each defect in a copy of the modules. CHANGELOG gains an Unreleased Output entry for `es-êê`. `tests/run-tests.sh --self-test` passed 1499 checks.
+- 2026-09-11: T7 done. KI183, KI184, KI185, KI187, KI188, KI189, KI196 and KI197 are struck from `cairn/DESIGN.md`. No candidate row, lesson or other file named any of them. KI185's false sentence "Both outcomes print English" goes with its entry, as the amendment-gate line above records.
 
 ## Decisions
 

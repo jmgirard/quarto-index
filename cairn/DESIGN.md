@@ -1501,6 +1501,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   wordings, and the M079-AC1 leg reads only the text both share, so a change
   giving a cross-reference mark the locator wording — telling its author an
   index link moved when none did — ships green. — M090 plan gate
+- **KI276.** The M090 T3 plant in `tests/run-tests.sh` (a locator mark no
+  longer outranking a cross-reference mark) pins "the locator for 'chi'
+  names", which the M079-AC1 leg also prints under the T2 plant (a
+  cross-reference mark left untagged); every line the leg prints under T3 it
+  prints under T2 too (observed 2026-09-10), so T3's red does not tell its
+  defect from T2's. — M090 review F1
 
 ### The repo and its packaging
 

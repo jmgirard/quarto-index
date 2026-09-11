@@ -1,6 +1,6 @@
 # M092: The label and separator checks fail on the defects they name
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -88,16 +88,16 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 
 ## Tasks
 
-- [ ] T1: KI180. Factor the M56-AC6 `diff` (`tests/run-tests.sh` near line
+- [x] T1: KI180. Factor the M56-AC6 `diff` (`tests/run-tests.sh` near line
       24755) into a function. Call it from the AC6 leg and from the self-test
       plant (near line 24840) in place of the inline `diff -q`. The M58-AC6
       comparison (near line 25514) calls it too. The plant asserts the
       function's own FAIL text.
-- [ ] T2: KI181. Add `check_extension_warning_count` at 0 over
+- [x] T2: KI181. Add `check_extension_warning_count` at 0 over
       `$WORK/index-labels-html.log` and over the LaTeX log, beside the M56
       pins near line 24674. Add a `--self-test` plant that appends one
       extension warning line to a copy of each log.
-- [ ] T3: KI194, KI195. Delete the M59 zero controls that name `strata`,
+- [x] T3: KI194, KI195. Delete the M59 zero controls that name `strata`,
       `minerals`, `fossils` or `indexes:` entries 5-8: ten in the AC1-AC3
       loops (near lines 25664-25703) and four in the M59-AC4 control loop
       (near lines 25734-25740). Delete the M56-AC5 controls naming `notes`
@@ -108,7 +108,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       cases on copies of the clash log (near line 25812): one appends a
       no-clash report line, and one appends an extension warning that is not
       a clash report.
-- [ ] T4: KI182, KI192. Rewrite `derive_labels_twin` (near line 24403). It
+- [x] T4: KI182, KI192. Rewrite `derive_labels_twin` (near line 24403). It
       splits the front matter from the body and parses the front matter with
       PyYAML (D-030). It deletes `index-labels` at the document level and
       under each `indexes:` entry, then compares the fixture's parsed map and
@@ -118,10 +118,10 @@ Each closed entry is struck from `cairn/DESIGN.md`.
       Plants: a blank line inside a copy's map (passes), a third key in a copy
       of the separators fixture (fails and names the key). Keep the existing
       drift plants.
-- [ ] T5: KI186. In `m57_tex_ledger` (near line 25163), filter only the two
+- [x] T5: KI186. In `m57_tex_ledger` (near line 25163), filter only the two
       header lines of the unified diff, by position. Add a plant over a
       synthetic `.tex` pair whose differing line is `--`.
-- [ ] T6: KI190, KI191, KI193. Route `entry_separators` (`tests/htmlindex.py`
+- [x] T6: KI190, KI191, KI193. Route `entry_separators` (`tests/htmlindex.py`
       near line 589) through the `own_nodes` walk. Add a self-test that wraps
       each entry line of a copy of a captured index in `<p>` and compares the
       separators. In `main()` of `tests/sepcheck.py`, catch the manifest
@@ -132,7 +132,7 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - [x] T7: Strike KI180, KI181, KI182, KI186, KI190, KI191, KI192, KI193,
       KI194 and KI195 from `cairn/DESIGN.md` per D-013. No ROADMAP row names
       any of them.
-- [ ] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
+- [x] T8: Run `tests/run-tests.sh --self-test` sequentially and read it clean.
       Do not edit the suite while a run is in flight (LESSONS, M073).
 
 ## Work log
@@ -152,6 +152,9 @@ Each closed entry is struck from `cairn/DESIGN.md`.
 - 2026-09-11: T5 checkpoint: `m57_tex_ledger` drops the diff's first two lines by position. Plant: a synthetic pair differing in `--` against `++` fails with 2 unclassified lines, where the filter on `main` reports the pair identical. The four real ledgers classify the same 44, 30, 9 and 9 lines as before. Suite run pending.
 - 2026-09-11: T6 checkpoint: `entry_separators` walks through non-list wrappers as `own_nodes` does. `sepcheck.py` reports an unreadable or malformed manifest as one FAIL line with exit 1, rejects whitespace in a slot and a non-ASCII-digit depth, and its ok line says "whitespace character". Plants: unknown slot `S9`, a space between two slots, a space after a depth, and `<p>`-wrapped copies of the separators and resolving-xref pages. Isolated probe under Python 3.9.6 and 3.14.7: M58-AC1/AC3/AC4/AC7 green, all plants as stated. With `main`'s modules the wrapped copy loses Azurite's separators and the S9 manifest prints a traceback. Suite run pending.
 - 2026-09-11: T7 done: KI180, KI181, KI182, KI186 and KI190-KI195 deleted from `cairn/DESIGN.md`. A grep finds none of the ten labels there, no ROADMAP row names them, and `cairn_validate` passes.
+- 2026-09-11: T8 done: `tests/run-tests.sh --self-test` at 5b06ed5, run alone with no edits in flight, exit 0, "All checks passed (1469 checks)", no FAIL line. Every new check and plant from T1-T6 printed its ok line. T1-T6 ticked on this run.
+- claim audit: not owed — internal tier
+- 2026-09-11: status set to review.
 
 ## Decisions
 

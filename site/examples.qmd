@@ -39,7 +39,9 @@ one per outcome the tag resolver has — an exact tag, a regional tag falling
 back to its language, a tag the table does not cover, and a value that is no
 language tag — plus a language the table covers only in part and one where an
 author's own word sits beside the table's, each of the first four with a twin
-that is itself with the `lang:` line removed.
+that is itself with the `lang:` line removed. `examples/book-lang/` is a
+three-chapter book that declares `lang: it`, so the index it builds from its
+chapters prints the table's Italian words in HTML and in EPUB.
 `examples/index-separators.qmd` declares the punctuation the index prints
 inside an entry — the mark before and between an entry's locators and the mark
 between two cross-references — and `examples/index-separators-twin.qmd` is the

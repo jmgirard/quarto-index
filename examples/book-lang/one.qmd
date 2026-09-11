@@ -1,0 +1,7 @@
+# Second chapter
+
+A term filing under no letter, which puts a group heading over it:
+[#numerals]{.index}.
+
+A cross-reference pointing at a term the first chapter marks:
+[Falcon]{.index see="Kestrel"}.

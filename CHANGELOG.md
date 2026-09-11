@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Output
+
+- A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no
+  longer a language tag under any system locale. The HTML and EPUB index
+  keeps its English words for it, and an index the document does not declare
+  keeps the heading `Index`, as for any other value that is not a language
+  tag. Before this change, a locale that counts such a letter as a letter,
+  `en_US.UTF-8` on macOS among them, printed the words and the heading of the
+  tag's first part, here Spanish, under `Índice alfabético`. A tag written in
+  ASCII letters and digits reads as before.
+
 ## 0.4.0 (2026-09-11)
 
 No record 0.3.0 wrote is refused by this version, so a book keeps its terms

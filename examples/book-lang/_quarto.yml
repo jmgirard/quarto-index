@@ -1,0 +1,31 @@
+# A book that declares `lang:` (M093). Every language fixture before it is a
+# single document, so the index a book aggregates took no language path at
+# all: in HTML each chapter is its own Pandoc process and the chapter carrying
+# the marker prints the words, and in EPUB the whole book is one process.
+#
+# Italian, because no other fixture renders that row of the language table.
+# The index is undeclared, so its heading is the table's word too (D-038).
+#
+# Three chapters, so in HTML most of what the index prints is read from the
+# records of chapters that do not print it: the term both cross-references
+# point at is marked in index.qmd, and the non-letter term and the `see`
+# cross-reference in one.qmd. Only the `see also` cross-reference is marked in
+# last.qmd, beside the marker.
+project:
+  type: book
+
+book:
+  title: "Index Book Fixture In Italian"
+  chapters:
+    - index.qmd
+    - one.qmd
+    - last.qmd
+
+lang: it
+
+format:
+  html: default
+  epub: default
+
+filters:
+  - index

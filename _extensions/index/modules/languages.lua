@@ -22,16 +22,18 @@
 
 local M = {}
 
--- The table, and the four keys a row may set. Three of them -- `symbols`,
--- `see` and `see-also` -- are the keys an author writes under
--- `index-labels:`, spelled the same so one lookup serves both surfaces. The
--- fourth, `title`, is NOT such a key: an author who wants a particular heading
--- writes `title:`, which wins outright, so it names only the default an
--- undeclared document falls back to (D-038).
+-- The table. A row holds two things, kept apart. `words` holds the keys an
+-- author writes under `index-labels:` -- `symbols`, `see` and `see-also` --
+-- spelled the same so one lookup serves both surfaces. `title` is NOT such a
+-- key: an author who wants a particular heading writes `title:`, which wins
+-- outright, so it names only the default an undeclared document falls back to
+-- (D-038). It sits outside `words` because `indexes.label` looks up whatever
+-- key it is handed in that table, and a label key spelled `title` would
+-- otherwise print the index heading (M093).
 --
 -- Keyed by the lowercased BCP-47 tag the row covers -- a primary
 -- subtag here, since no row covers a region -- and holding only the words that
--- ship. A key a row omits is not a gap to report: it is a word two references
+-- ship. A word a row omits is not a gap to report: it is a word two references
 -- did not agree on, and it falls through to the English one, which is why a
 -- partly covered language is an expected state and not a defect (D-035).
 --
@@ -45,52 +47,49 @@ local M = {}
 -- cannot read (ledger row W-DE4).
 local WORDS = {
   es = {
-    ["symbols"] = "Símbolos",
-    ["see"] = "véase",
-    ["see-also"] = "véase también",
-    ["title"] = "Índice alfabético",
+    words = {
+      ["symbols"] = "Símbolos",
+      ["see"] = "véase",
+      ["see-also"] = "véase también",
+    },
+    title = "Índice alfabético",
   },
   fr = {
-    ["symbols"] = "Symboles",
-    ["see"] = "voir",
-    ["see-also"] = "voir aussi",
-    ["title"] = "Index",
+    words = {
+      ["symbols"] = "Symboles",
+      ["see"] = "voir",
+      ["see-also"] = "voir aussi",
+    },
+    title = "Index",
   },
   de = {
-    ["see"] = "siehe",
-    ["see-also"] = "siehe auch",
-    ["title"] = "Index",
+    words = {
+      ["see"] = "siehe",
+      ["see-also"] = "siehe auch",
+    },
+    title = "Index",
   },
   it = {
-    ["symbols"] = "Simboli",
-    ["see"] = "vedi",
-    ["see-also"] = "vedi anche",
-    ["title"] = "Indice analitico",
+    words = {
+      ["symbols"] = "Simboli",
+      ["see"] = "vedi",
+      ["see-also"] = "vedi anche",
+    },
+    title = "Indice analitico",
   },
 }
-
--- What `resolve` did, as a token. Enumerated here rather than left implicit
--- because the LaTeX-neutrality claim is made across ALL of them: a check that
--- named its own three outcomes could satisfy itself while a fourth went
--- unexercised.
---
---   exact      the tag names a row of the table
---   subtag     the tag's primary subtag does, where the whole tag did not
---   miss       a well-formed tag naming no row
---   malformed  no usable tag at all: absent, empty, or not a language tag
---
--- `malformed` and `miss` behave identically -- English, silently -- and are
--- still two tokens, because they are two different things for a check to say
--- it exercised.
-local OUTCOMES = { "exact", "subtag", "miss", "malformed" }
 
 -- Is this a well-formed BCP-47 language tag? Only well-formedness, never
 -- whether the tag names a real language: a tag naming a language this table
 -- omits is a `miss`, which is a normal outcome, and refusing to tell the two
--- apart would collapse the enumeration above.
+-- apart would collapse the four outcomes `resolve` names.
 --
 -- The primary subtag is two to eight letters; every subtag after it is one to
--- eight letters or digits.
+-- eight letters or digits. Letters and digits are the ASCII ranges, written
+-- out, never `%a` or `%w`: those follow the C library's locale, and under a
+-- locale that reads a byte above 0x7F as a letter, `lang: es-êê` resolved to
+-- the Spanish row on one machine and to English on another (M093). BCP-47
+-- tags are ASCII, so the ranges lose no tag.
 --
 -- `_` is read as a separator too, so `es_ES` resolves exactly as `es-ES` does.
 -- Not a kindness: rendering `index-lang-malformed.qmd` with `lang: es_ES` to
@@ -108,11 +107,11 @@ local function well_formed(tag)
   for part in (tag .. "-"):gmatch("([^%-]*)%-") do
     subtags = subtags + 1
     if first then
-      if not part:match("^%a%a%a?%a?%a?%a?%a?%a?$") then
+      if not part:match("^[A-Za-z][A-Za-z][A-Za-z]?[A-Za-z]?[A-Za-z]?[A-Za-z]?[A-Za-z]?[A-Za-z]?$") then
         return false
       end
       first = false
-    elseif not part:match("^%w%w?%w?%w?%w?%w?%w?%w?$") then
+    elseif not part:match("^[A-Za-z0-9][A-Za-z0-9]?[A-Za-z0-9]?[A-Za-z0-9]?[A-Za-z0-9]?[A-Za-z0-9]?[A-Za-z0-9]?[A-Za-z0-9]?$") then
       return false
     end
   end
@@ -122,7 +121,16 @@ end
 -- The row this document's language gets, and the outcome that produced it.
 -- Returns nil for every outcome but a hit, so a caller never has to know which
 -- token means "no words": `if row ~= nil` is the whole test, and the token is
--- for a check that wants to say WHICH miss it exercised.
+-- for a check that wants to say WHICH miss it exercised. The four tokens:
+--
+--   exact      the tag names a row of the table
+--   subtag     the tag's primary subtag does, where the whole tag did not
+--   miss       a well-formed tag naming no row
+--   malformed  no usable tag at all: absent, empty, or not a language tag
+--
+-- `malformed` and `miss` behave identically -- English, silently -- and are
+-- still two tokens, because they are two different things for a check to say
+-- it exercised.
 --
 -- `value` is the raw metadata value, not a string: this module does the
 -- stringifying so that a `lang:` written as a list or a map -- neither of which
@@ -155,8 +163,8 @@ local function resolve(value)
 end
 
 -- Exported through the bracket form for the reason indexes.lua's own export
--- block states. One function only: the table, the outcome tokens and the
--- well-formedness test are this module's own workings, and an export nothing
+-- block states. One function only: the table and the well-formedness test are
+-- this module's own workings, and an export nothing
 -- reads is surface to keep in step for nobody (GP5).
 M["resolve"] = resolve
 

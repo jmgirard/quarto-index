@@ -13932,6 +13932,11 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #   book-order     `index.qmd` points at `Late`, marked in the second chapter:
 #                  0. `later chapter.qmd` points at `Nowhere At All`, marked
 #                  nowhere: 1.
+#   book-lang      `one.qmd` writes `see="Kestrel"` and `last.qmd` writes
+#                  `see-also="Kestrel"`, and `index.qmd` marks `Kestrel`, so
+#                  both resolve across the book: 0 and 0 (M093). The book's
+#                  own HTML and EPUB renders are read for silence in the
+#                  M093 leg of the M57 block, which renders them.
 #   content        2 attributes, both on marks with no source entry at all —
 #                  an image mark and an empty one — so neither is indexed and
 #                  neither target is ever resolved. 0.
@@ -14009,6 +14014,8 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 # ---------------------------------------------------------------------------
 section 'The corpus reconciliation the report forces. Every example that writes a'
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
+examples/book-lang/last.qmd	0
+examples/book-lang/one.qmd	0
 examples/book-order/index.qmd	0
 examples/book-order/later chapter.qmd	1
 examples/book-scopes/index.qmd	0
@@ -14094,13 +14101,14 @@ done <<< "$DANGLING_CORPUS"
 
 # The book chapters' rows are per chapter, but the report is drawn once for
 # the whole book, so what they must add up to is what each book render emits.
-# Three books carry targets and each reports one, which is what the sum states.
+# Four books carry targets. Three report one each and examples/book-lang,
+# whose every target resolves, reports none, which is what the sum states.
 # The SHAPE differs between them, and that is the point of reading both:
 # examples/book declares three indexes, so its target is judged inside one of
 # them and the report names it; examples/book-order declares none, has one
 # namespace, and keeps the wording it has always drawn (D-021).
 [ "$BOOK_EXPECTED_TOTAL" = "3" ] \
-  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but the three book fixtures report one each"
+  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but three of the four book fixtures report one each and examples/book-lang reports none"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING_INDEX" 1 "M14/M55-AC4 (corpus, examples/book)"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 0 "M14/M55-AC4 (corpus, examples/book, not the one-namespace shape)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"
@@ -24806,19 +24814,37 @@ for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY" \
   check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
     "M56-AC5"
 done
+# The same two per-key shapes inside one index's own map (M093). The `figures`
+# entry writes the document map's own unknown key `symbol` and its own empty
+# `see`, so each of these two messages differs from its document-level twin
+# above in the phrase naming where it was written and in nothing else. The
+# counts are that difference, stated per message:
+#   document-level unknown `symbol`   written once, at the top level      1
+#   per-index unknown `symbol`        written once, under `figures`       1
+#   document-level empty `see`        written once, at the top level      1
+#   per-index empty `see`             written once, under `figures`       1
+# A read that named the document for both writings would draw 2 and 0 where
+# these four counts want 1 and 1, so each pair is red either way it is wrong.
+M56_MISUSE_UNKNOWN_INDEX='index-labels: in the entry declaring the index named "figures" sets the key "symbol", which names no word this extension prints; the keys are symbols, see, see-also, separator, xref-separator, so this key sets nothing'
+M56_MISUSE_EMPTY_INDEX='index-labels: in the entry declaring the index named "figures" gives the key "see" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one'
+for needle in "$M56_MISUSE_UNKNOWN_INDEX" "$M56_MISUSE_EMPTY_INDEX"; do
+  check_warning_count "$WORK/index-labels-misuse-html.log" "$needle" 1 \
+    "M56-AC5 (per index)"
+done
 # The control: the same message over the fixture that writes NO unusable
 # shape. Without it a filter that reported every document would satisfy the
 # four counts above. Only the two document-level messages are held there: the
-# other two name the `notes` and `sources` indexes, which
-# examples/index-labels.qmd does not declare, so no filter behavior could put
-# either in its log and a zero count over it could not fail (M092).
+# other two name the `notes` and `sources` indexes, and the two per-index
+# messages the `figures` index, none of which examples/index-labels.qmd
+# declares, so no filter behavior could put any of them in its log and a zero
+# count over it could not fail (M092).
 for needle in "$M56_MISUSE_UNKNOWN" "$M56_MISUSE_EMPTY"; do
   check_warning_count "$WORK/index-labels-html.log" "$needle" 0 \
     "M56-AC5 (control)"
 done
 check_index_sections "$M56_MISUSE_HTML" "$M56_MISUSE_SECTIONS" \
   "M56-AC5 (fallback)" counts labels
-pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, and every word falls back to the English one — the pin on the WHOLE of what that render reports is in the M59 block below, which reads the same log"
+pass "M56-AC5: each of the four unusable writings draws exactly its own whole message and none of them, the unknown key and the empty word written again under the figures index each draw their own message naming that index, and every word falls back to the English one — the pin on the WHOLE of what that render reports is in the M59 block below, which reads the same log"
 
 # AC6 — no declaration reaches the LaTeX back-end. The whole `.tex` of the
 # fixture against the whole `.tex` of the twin, which the derivation above
@@ -24996,6 +25022,45 @@ M092BLANKPY
       || fail "M56 T4 self-test: a misuse message matches the log of the fixture that writes no unusable shape $out time(s)"
   done
   pass "M56 T4 self-test: none of the four whole messages matches the log of the fixture that writes no unusable shape"
+
+  # The two per-index messages, against a copy of the misuse log in which each
+  # names the document where the render named `figures` (M093): the report a
+  # read that lost the index's phrase would draw. Both counts over each copy
+  # are shown red, the per-index one at 0 and its document-level twin at 2.
+  python3 - "$WORK/index-labels-misuse-html.log" "$M56W" <<'M093WHEREPY'
+import sys
+src, outdir = sys.argv[1:3]
+text = open(src, encoding='utf-8').read()
+index = 'in the entry declaring the index named "figures" '
+document = "in this document's metadata "
+for slug, tail in (('unknown', 'sets the key "symbol",'),
+                   ('empty', 'gives the key "see" a value')):
+    needle = index + tail
+    if text.count(needle) != 1:
+        print(f'FAIL: M093 plant: {src} carries {text.count(needle)} copies of '
+              f'<<{needle}>>, where the render draws 1', file=sys.stderr)
+        sys.exit(1)
+    open(f'{outdir}/where-{slug}.log', 'w', encoding='utf-8').write(
+        text.replace(needle, document + tail))
+M093WHEREPY
+  [ -s "$M56W/where-unknown.log" ] && [ -s "$M56W/where-empty.log" ] \
+    || fail "M093 T1 self-test: planting a per-index message that names the document wrote no log (its own FAIL line is above)"
+  m56_planted 'a per-index unknown-key report naming the document rather than its index' \
+    'expected 1 occurrence' \
+    check_warning_count "$M56W/where-unknown.log" "$M56_MISUSE_UNKNOWN_INDEX" 1 \
+      "M56 probe"
+  m56_planted 'a second document-level unknown-key report where the figures index wrote the key' \
+    'got 2' \
+    check_warning_count "$M56W/where-unknown.log" "$M56_MISUSE_UNKNOWN" 1 \
+      "M56 probe"
+  m56_planted 'a per-index empty-value report naming the document rather than its index' \
+    'expected 1 occurrence' \
+    check_warning_count "$M56W/where-empty.log" "$M56_MISUSE_EMPTY_INDEX" 1 \
+      "M56 probe"
+  m56_planted 'a second document-level empty-value report where the figures index wrote the value' \
+    'got 2' \
+    check_warning_count "$M56W/where-empty.log" "$M56_MISUSE_EMPTY" 1 \
+      "M56 probe"
 fi
 
 
@@ -25339,6 +25404,149 @@ for f in $M57_RESOLVER_FIXTURES; do
 done
 pass "M57-AC7: across the exact hit, the subtag hit, the miss and the malformed value, every line the language adds to the .tex is Quarto's and none is this filter's"
 
+# M093 — the same words in a BOOK. Every fixture above is one document, so the
+# index a book aggregates took no language path: in HTML each chapter is its
+# own Pandoc process and the marker chapter prints what the others recorded,
+# and in EPUB the whole book is one process. examples/book-lang/ declares
+# `lang: it` in its project file and writes no index word of its own.
+#
+# ORACLE — derived by hand from examples/book-lang/ and from the Italian rows
+# of `cairn/references/index-words-by-language.md`, never copied from a
+# render: `Indice analitico` (W-IT1), `vedi` (W-IT2), `vedi anche` (W-IT3),
+# `Simboli` (W-IT4). The book declares no index, so its one section is the
+# undeclared `qi-index`, headed with the table's word (D-038), placed by the
+# marker in last.qmd after the `site-index` heading. `#numerals` files under no
+# ASCII letter; `Kestrel` is marked once, in index.qmd; `Falcon` (one.qmd) and
+# `Merlin` (last.qmd) carry no locator and each names `Kestrel`, which the book
+# marks, so each prints as a link behind its word. The EPUB rows are the same
+# rows, the section row carrying no following id for the reason manifest 10
+# gives.
+read -r -d '' M093_BOOK_IT_HTML <<'MANIFEST' || true
+section	qi-index	h1	Indice analitico	site-index
+letter	Simboli
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link vedi Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link vedi anche Kestrel
+MANIFEST
+read -r -d '' M093_BOOK_IT_EPUB <<'MANIFEST' || true
+section	qi-index	h1	Indice analitico
+letter	Simboli
+0	#numerals	1
+letter	F
+0	Falcon	0	see-link vedi Kestrel
+letter	K
+0	Kestrel	1
+letter	M
+0	Merlin	0	also-link vedi anche Kestrel
+MANIFEST
+
+M093_BOOK_DIR="examples/book-lang"
+rm -rf "$M093_BOOK_DIR/_book" "$M093_BOOK_DIR/.quarto"
+( cd "$M093_BOOK_DIR" && quarto render --to html ) > "$WORK/book-lang-html.log" 2>&1 \
+  || { tail -30 "$WORK/book-lang-html.log" >&2; fail "M093-AC2: the Italian book failed to render to HTML"; }
+capture --project "$M093_BOOK_DIR" html "book-lang-html"
+check_book_sections "$CAPTURE_ROOT/book-lang-html/_book" \
+  "M093-AC2 (only last.qmd carries a marker, so only its page prints the section)" \
+  "$(printf 'index.html\t-\nlast.html\tqi-index\tIndice analitico\none.html\t-')"
+check_index_sections "$CAPTURE_ROOT/book-lang-html/_book/last.html" \
+  "$M093_BOOK_IT_HTML" "M093-AC2 (HTML book)" counts labels
+check_extension_warning_count "$WORK/book-lang-html.log" 0 \
+  "M093-AC2 (HTML book, silence)"
+pass "M093-AC2: the HTML book declaring lang: it prints Simboli, vedi and vedi anche, under the heading Indice analitico, in the index its last chapter aggregates"
+
+rm -rf "$M093_BOOK_DIR/_book" "$M093_BOOK_DIR/.quarto"
+( cd "$M093_BOOK_DIR" && quarto render --to epub ) > "$WORK/book-lang-epub.log" 2>&1 \
+  || { tail -30 "$WORK/book-lang-epub.log" >&2; fail "M093-AC2: the Italian book failed to render to EPUB"; }
+capture --project "$M093_BOOK_DIR" epub "book-lang-epub"
+M093_BOOK_EPUB=$(find "$CAPTURE_ROOT/book-lang-epub/_book" -maxdepth 1 -name '*.epub' | head -1)
+[ -n "$M093_BOOK_EPUB" ] && [ -s "$M093_BOOK_EPUB" ] \
+  || fail "M093-AC2: the Italian book's EPUB render left no .epub under $CAPTURE_ROOT/book-lang-epub/_book"
+printf '%s\n' "$M093_BOOK_IT_EPUB" > "$WORK/book-lang-epub-index.txt"
+python3 tests/epubcheck.py sections "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/book-lang-epub-index.txt" --labels \
+  || fail "M093-AC2: the Italian book's EPUB does not print the Italian words the manifest states (its own FAIL line is above)"
+python3 tests/epubcheck.py links "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
+  || fail "M093-AC2: a link inside the Italian book EPUB's index section names nothing in the publication (its own FAIL line is above)"
+check_extension_warning_count "$WORK/book-lang-epub.log" 0 \
+  "M093-AC2 (EPUB book, silence)"
+pass "M093-AC2: the EPUB of the same book prints Simboli, vedi and vedi anche, under the heading Indice analitico"
+
+# M093 — two module probes, run through Quarto's own Pandoc (`quarto pandoc
+# lua`) from a modules directory, so the modules load under the `require` names
+# the filter uses, found from the working directory rather than through
+# Quarto's own `require`, and the suite needs no second Pandoc on PATH. Each probe
+# prints one line per question and the shell holds the whole output to what
+# is stated here by hand. A probe that cannot run is a failure, never a skip.
+#
+# AC5: after `read` of metadata declaring `lang: it`, `label(nil, "title", fb)`
+# gives `fb` back, since the heading is not in the table `label` reads. The
+# first line is the control that the language path was taken at all: `see`
+# is a label key the Italian row sets, and it reads `vedi` (W-IT2).
+#
+# AC6: under `fr_FR.ISO8859-1`, both bytes of `ê` (0xC3 0xAA) read as letters
+# to `%a`, and so do both after `:lower()`, which is what `resolve` hands its
+# test. The two tags carrying them are refused as `malformed`. `es-ES` and
+# `sw` are the controls that the locale leaves ordinary tags alone: `subtag`
+# and `miss`, the two outcomes M57-AC2 states for `fr-CA` and `sw`.
+m093_lua_probe() {   # <modules dir> <probe script> <label>
+  local dir="$1" script="$2" label="$3"
+  ( cd "$dir" && quarto pandoc lua "$script" ) 2>&1 \
+    || { printf 'FAIL: %s: the probe exited non-zero\n' "$label" >&2; return 1; }
+}
+m093_probe_matches() {   # <modules dir> <probe script> <expected output> <label>
+  local dir="$1" script="$2" want="$3" label="$4" got
+  got=$(m093_lua_probe "$dir" "$script" "$label") \
+    || { printf '%s\n' "$got" >&2; printf 'FAIL: %s: the probe did not run to its end\n' "$label" >&2; return 1; }
+  if [ "$got" != "$want" ]; then
+    printf 'FAIL: %s: the probe printed <<%s>>, where it should print <<%s>>\n' \
+      "$label" "$got" "$want" >&2
+    return 1
+  fi
+  printf 'ok   %s: the probe printed exactly the stated lines\n' "$label"
+}
+
+M093_LUA="$PWD/$WORK/m093-lua"
+rm -rf "$M093_LUA"
+mkdir -p "$M093_LUA"
+cat > "$M093_LUA/title.lua" <<'M093TITLELUA'
+local indexes = require("./indexes")
+local doc = pandoc.read("---\nlang: it\n---\n", "markdown")
+indexes.read(doc.meta)
+print("see\t" .. indexes.label(nil, "see", "FALLBACK"))
+print("title\t" .. indexes.label(nil, "title", "FALLBACK"))
+M093TITLELUA
+cat > "$M093_LUA/locale.lua" <<'M093LOCALELUA'
+local languages = require("./languages")
+if os.setlocale("fr_FR.ISO8859-1") == nil then
+  io.stderr:write("the locale fr_FR.ISO8859-1 is not installed on this machine, so the probe cannot run\n")
+  os.exit(1)
+end
+local pair = "\195\170"
+if not pair:match("^%a%a$") or not pair:lower():match("^%a%a$") then
+  io.stderr:write("under fr_FR.ISO8859-1 the bytes 0xC3 0xAA do not both read as letters, so the probe tests nothing\n")
+  os.exit(1)
+end
+for _, tag in ipairs({ "\195\170\195\170", "es-\195\170\195\170", "es-ES", "sw" }) do
+  local row, outcome = languages.resolve(tag)
+  print(tag .. "\t" .. (row == nil and "nil" or "row") .. "\t" .. outcome)
+end
+M093LOCALELUA
+M093_TITLE_WANT=$(printf 'see\tvedi\ntitle\tFALLBACK')
+M093_LOCALE_WANT=$(printf 'êê\tnil\tmalformed\nes-êê\tnil\tmalformed\nes-ES\trow\tsubtag\nsw\tnil\tmiss')
+
+m093_probe_matches "$QI_EXT_DIR/modules" "$M093_LUA/title.lua" \
+  "$M093_TITLE_WANT" "M093-AC5 (label reads no heading)" \
+  || fail "M093-AC5: after reading lang: it, label(nil, \"title\", fb) does not give fb back, or the Italian row was not read at all (its own FAIL line is above)"
+pass "M093-AC5: after read of lang: it metadata, label(nil, \"see\", fb) gives vedi and label(nil, \"title\", fb) gives fb"
+m093_probe_matches "$QI_EXT_DIR/modules" "$M093_LUA/locale.lua" \
+  "$M093_LOCALE_WANT" "M093-AC6 (letters are ASCII)" \
+  || fail "M093-AC6: under fr_FR.ISO8859-1, resolve does not refuse a tag written with ê as malformed, or the probe could not run (its own FAIL line is above)"
+pass "M093-AC6: under fr_FR.ISO8859-1, where both bytes of ê read as letters to %a, resolve returns nil and malformed for êê and for es-êê"
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M57 T6 — a planted defect per new check, each shown red on an artifact or
@@ -25437,12 +25645,76 @@ if [ "${1:-}" = "--self-test" ]; then
       "$CAPTURE_ROOT/index-lang-es-latex/index-lang-es.tex" "M57 probe"
 
   # The silence assertions, against a log that is not silent: the misuse
-  # fixture reports eighteen times, the total the M59 block below derives per
+  # fixture reports twenty times, the total the M59 block below derives per
   # writing site, so a warning count blind to its own log would pass here.
-  m57_planted 'a log carrying eighteen messages held to a count of zero' \
+  m57_planted 'a log carrying twenty messages held to a count of zero' \
     'expected 0 warning(s)' \
     check_extension_warning_count "$WORK/index-labels-misuse-html.log" 0 \
       "M57 probe"
+
+  # The Italian book's two manifests, each against its render held to the same
+  # rows with the English words: a comparison blind to the printed word, or a
+  # book that took no language path, would pass these (M093).
+  printf '%s\n' "$M093_BOOK_IT_HTML" \
+    | sed -e 's/Indice analitico/Index/' -e 's/^letter	Simboli$/letter	Symbols/' \
+          -e 's/ vedi anche / see also /' -e 's/ vedi / see /' \
+    > "$M57W/book-english-html.txt"
+  grep -qF 'see also Kestrel' "$M57W/book-english-html.txt" \
+    && ! grep -qE 'vedi|Simboli|analitico' "$M57W/book-english-html.txt" \
+    || fail "M093 T2 self-test: the English copy of the Italian book manifest still carries an Italian word, or carries no English one, so the plant is not the defect it names"
+  m57_planted 'an Italian HTML book held to the manifest stating the English words' \
+    'do not match the manifest' \
+    check_index_sections "$CAPTURE_ROOT/book-lang-html/_book/last.html" \
+      "$(cat "$M57W/book-english-html.txt")" "M57 probe" counts labels
+  printf '%s\n' "$M093_BOOK_IT_EPUB" \
+    | sed -e 's/Indice analitico/Index/' -e 's/^letter	Simboli$/letter	Symbols/' \
+          -e 's/ vedi anche / see also /' -e 's/ vedi / see /' \
+    > "$M57W/book-english-epub.txt"
+  m57_planted 'an Italian EPUB book held to the manifest stating the English words' \
+    'does not match the manifest' \
+    python3 tests/epubcheck.py sections "$M093_BOOK_EPUB" "$HTML_SECTION_ID" \
+      "$M57W/book-english-epub.txt" --labels
+
+  # The two module probes, each against a scratch copy of the modules carrying
+  # the defect its criterion names, and nothing else (M093): the heading put
+  # back into the table `label` reads, and the letter test put back on `%a`
+  # and `%w`.
+  m093_modules_copy() {   # <slug>
+    rm -rf "$M57W/$1"
+    cp -R "$QI_EXT_DIR/modules" "$M57W/$1"
+  }
+  m093_modules_copy heading-in-words
+  m093_modules_copy locale-letters
+  python3 - "$M57W/heading-in-words/indexes.lua" \
+      "$M57W/locale-letters/languages.lua" <<'M093MODPLANTPY' \
+    || fail "M093 T5/T6 self-test: planting a module defect failed (its own FAIL line is above)"
+import sys
+indexes_path, languages_path = sys.argv[1:3]
+def plant(path, old, new):
+    src = open(path, encoding='utf-8').read()
+    if src.count(old) != 1:
+        print(f'FAIL: M093 plant: {path} carries {src.count(old)} copies of '
+              f'<<{old}>>, where the plant replaces 1', file=sys.stderr)
+        sys.exit(1)
+    open(path, 'w', encoding='utf-8').write(src.replace(old, new))
+line = '  language_words = row ~= nil and row.words or nil\n'
+plant(indexes_path, line, line +
+      '  if language_words ~= nil then language_words.title = row.title end\n')
+letter = '[A-Za-z]'
+alnum = '[A-Za-z0-9]'
+first = '"^' + letter * 2 + (letter + '?') * 6 + '$"'
+later = '"^' + alnum + (alnum + '?') * 7 + '$"'
+plant(languages_path, first, '"^%a%a%a?%a?%a?%a?%a?%a?$"')
+plant(languages_path, later, '"^%w%w?%w?%w?%w?%w?%w?%w?$"')
+M093MODPLANTPY
+  m57_planted 'a label table that holds the index heading beside the words' \
+    'where it should print' \
+    m093_probe_matches "$M57W/heading-in-words" "$M093_LUA/title.lua" \
+      "$M093_TITLE_WANT" "M093 probe"
+  m57_planted 'a tag test reading letters through the locale' \
+    'where it should print' \
+    m093_probe_matches "$M57W/locale-letters" "$M093_LUA/locale.lua" \
+      "$M093_LOCALE_WANT" "M093 probe"
 fi
 
 
@@ -25937,14 +26209,15 @@ fi
 #                    list                                                    4
 #   entry 1 notes    the whole map written as a string                       1
 #   entry 2 sources  the whole map written as a list                         1
-#   entry 3 figures  two empty punctuation values                            2
+#   entry 3 figures  an unknown key `symbol`, an empty `see`, and two empty
+#                    punctuation values                                      4
 #   entry 4 strata   a `symbols` that is a zero-width space, a `see` written
 #                    as a nested map                                         2
 #   entries 5-8      four entries refused as declarations -- no `name:`, an
 #                    empty one, a name that is no section id, a repeated
 #                    name -- each drawing its own refusal and the further
 #                    message that its label map sets no word            4 x 2
-#                                                                    total 18
+#                                                                    total 20
 # ---------------------------------------------------------------------------
 section 'M59 — every unusable `index-labels:` value is reported and falls back'
 
@@ -26005,11 +26278,11 @@ done
 pass "M59-AC3: each of the four refusal branches an indexes: entry carrying a label map can reach draws its own whole refusal message and, beside it, the whole further message saying that map sets no word"
 
 # The total, which is what makes the counts above a statement about the WHOLE
-# render rather than about eighteen lines somewhere in it. Derived in the
+# render rather than about twenty lines somewhere in it. Derived in the
 # table at the head of this block.
-check_extension_warning_count "$WORK/index-labels-misuse-html.log" 18 \
+check_extension_warning_count "$WORK/index-labels-misuse-html.log" 20 \
   "M59-AC1/AC2/AC3 (total)"
-pass "M59-AC1/AC2/AC3: those eighteen messages are the whole of what the misuse render reports"
+pass "M59-AC1/AC2/AC3: those twenty messages are the whole of what the misuse render reports"
 
 # AC4 — the letter clash, and the index in the same document that has none.
 quarto render examples/index-labels-clash.qmd --to html \
@@ -26054,6 +26327,24 @@ letter	B
 MANIFEST
 check_index_sections "$M59_CLASH_HTML" "$M59_CLASH_SECTIONS" "M59-AC4 (print)"
 pass "M59-AC4: the index whose non-letter word one of its own letter groups also heads draws exactly one whole report naming that word and that index, the index in the same document whose word heads no letter group draws none, and both indexes still print both of their groups"
+
+# The same three counts over an EPUB render of the same document (M093). The
+# changelog says the clash report fires for HTML and EPUB, and until this leg
+# only the HTML render was read. The counts are the HTML leg's, derived the
+# same way: one document, one Pandoc process, the same two indexes.
+quarto render examples/index-labels-clash.qmd --to epub \
+  > "$WORK/index-labels-clash-epub.log" 2>&1 \
+  || { tail -20 "$WORK/index-labels-clash-epub.log" >&2; fail "M093-AC3: index-labels-clash.qmd failed to render to EPUB"; }
+capture examples/index-labels-clash.qmd epub "index-labels-clash-epub"
+[ -s "$CAPTURE_ROOT/index-labels-clash-epub/index-labels-clash.epub" ] \
+  || fail "M093-AC3: the clash fixture's EPUB render captured no .epub, so the log below may be the log of a render that built nothing"
+check_warning_count "$WORK/index-labels-clash-epub.log" "$M59_CLASH" 1 \
+  "M093-AC3"
+check_warning_count "$WORK/index-labels-clash-epub.log" "$M59_NOCLASH" 0 \
+  "M093-AC3 (silence)"
+check_extension_warning_count "$WORK/index-labels-clash-epub.log" 1 \
+  "M093-AC3 (total)"
+pass "M093-AC3: rendered to EPUB, the clash fixture draws the letter-clash report exactly once, naming the minerals index, and draws no report for the fossils index"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -26112,6 +26403,25 @@ if [ "${1:-}" = "--self-test" ]; then
   m59_planted 'a render that printed two groups under one heading in silence' \
     'expected 1 occurrence' \
     check_warning_count "$M59W/clash.log" "$M59_CLASH" 1 "M59 probe"
+  # The EPUB leg's three counts, each against a copy of the EPUB log carrying
+  # its own defect (M093): the report gone, the report for the index that has
+  # no clash added, and one message of this extension's that is no clash
+  # report added.
+  m59_drop_message "$WORK/index-labels-clash-epub.log" "$M59W/clash-epub.log" \
+    "$M59_CLASH"
+  m59_planted 'an EPUB render that printed two groups under one heading in silence' \
+    'expected 1 occurrence' \
+    check_warning_count "$M59W/clash-epub.log" "$M59_CLASH" 1 "M59 probe"
+  cp "$WORK/index-labels-clash-epub.log" "$M59W/noclash-epub.log"
+  printf '%s\n' "(W) $M59_NOCLASH" >> "$M59W/noclash-epub.log"
+  m59_planted 'an EPUB render that reported a clash in the index whose word heads no letter group' \
+    'expected 0 occurrence' \
+    check_warning_count "$M59W/noclash-epub.log" "$M59_NOCLASH" 0 "M59 probe"
+  cp "$WORK/index-labels-clash-epub.log" "$M59W/other-epub.log"
+  printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/other-epub.log"
+  m59_planted 'an EPUB clash render reporting one message that is not a clash report' \
+    'expected 1 warning(s)' \
+    check_extension_warning_count "$M59W/other-epub.log" 1 "M59 probe"
 
   # The silence half, against copies of the clash log carrying what the render
   # must not (M092): the report the `fossils` index would draw, and one warning
@@ -26133,8 +26443,8 @@ if [ "${1:-}" = "--self-test" ]; then
   cp "$WORK/index-labels-misuse-html.log" "$M59W/extra.log"
   printf '%s\n' "(W) $M59_INVIS_SEEALSO" >> "$M59W/extra.log"
   m59_planted 'a render reporting one message more than the fixture derives' \
-    'expected 18 warning(s)' \
-    check_extension_warning_count "$M59W/extra.log" 18 "M59 probe"
+    'expected 20 warning(s)' \
+    check_extension_warning_count "$M59W/extra.log" 20 "M59 probe"
 
   # The printed-heading manifest, against a page whose non-letter group is
   # headed `Symbols` after all -- the render a back-end that ignored the
@@ -26157,6 +26467,181 @@ M59PLANTPY
   m59_planted 'a page heading its non-letter group Symbols where the author named it A' \
     'do not match the manifest' \
     check_index_sections "$M59W/ignored.html" "$M59_CLASH_SECTIONS" "M59 probe"
+fi
+
+# ---------------------------------------------------------------------------
+# M093 — every non-ASCII character `BLANKS` lists is refused as a label value.
+#
+# `BLANKS` in `indexes.lua` lists 27 characters that print nothing a reader can
+# see, and before this leg only U+00A0 and U+200B reached a render. A
+# transposed code point in the list, `\u{2007}` written `\u{2070}` say, would
+# have shipped a visible glyph as a blank, or a blank as a word, in silence.
+# The four ASCII entries (tab, newline, return, space) get no value here:
+# YAML and Pandoc trim them before the filter reads one, so what reaches it is
+# the empty string and the report is the empty value's.
+#
+# ORACLE — the 23 characters are named below by their Unicode character names,
+# the list `BLANKS` held when M093 was planned, and `unicodedata.lookup` turns
+# each name into its character. Nothing is read from `indexes.lua`: a list
+# derived from the module under test would be blind to the transposition this
+# leg is about. The document is generated rather than committed, one
+# double-quoted YAML scalar per value, since a `\u` escape is read only inside
+# double quotes, and most of these characters written literally and unquoted
+# arrive trimmed.
+# Five indexes, `blanks1` to `blanks5`, each writing all five label keys in
+# the order `symbols`, `see`, `see-also`, `separator`, `xref-separator`: the
+# 23 blanks take the first 23 of those 25 places, in the order listed, and the
+# last two take two visible non-ASCII characters that must draw nothing. Every
+# report names its index and its key, so each of the 23 is told apart by the
+# place it was written.
+# ---------------------------------------------------------------------------
+section 'M093 — every non-ASCII character `BLANKS` lists is refused as a label value.'
+M093W="$WORK/m093"
+rm -rf "$M093W"
+mkdir -p "$M093W"
+
+# One scratch document directory with the extension copied in, holding the
+# generated document and, for a planted tree, an edited copy of the module.
+m093_tree() {   # <slug>
+  rm -rf "$M093W/$1"
+  mkdir -p "$M093W/$1/_extensions"
+  cp -R "$QI_EXT_DIR" "$M093W/$1/_extensions/index"
+}
+
+m093_tree real
+python3 - "$M093W/real/blanks.qmd" "$M093W/blanks-places.tsv" <<'M093BLANKSPY' \
+  || fail "M093-AC4: the blank-value document was not generated as named (its own FAIL line is above)"
+import sys, unicodedata
+import yaml
+doc_path, places_path = sys.argv[1:3]
+BLANK_NAMES = [
+    'NO-BREAK SPACE', 'SOFT HYPHEN',
+    'EN QUAD', 'EM QUAD', 'EN SPACE', 'EM SPACE',
+    'THREE-PER-EM SPACE', 'FOUR-PER-EM SPACE', 'SIX-PER-EM SPACE',
+    'FIGURE SPACE', 'PUNCTUATION SPACE', 'THIN SPACE', 'HAIR SPACE',
+    'ZERO WIDTH SPACE', 'ZERO WIDTH NON-JOINER', 'ZERO WIDTH JOINER',
+    'LINE SEPARATOR', 'PARAGRAPH SEPARATOR',
+    'NARROW NO-BREAK SPACE', 'MEDIUM MATHEMATICAL SPACE', 'WORD JOINER',
+    'IDEOGRAPHIC SPACE', 'ZERO WIDTH NO-BREAK SPACE',
+]
+VISIBLE_NAMES = ['MIDDLE DOT', 'SECTION SIGN']
+KEYS = ['symbols', 'see', 'see-also', 'separator', 'xref-separator']
+label = 'M093-AC4 (generated fixture)'
+blanks = [unicodedata.lookup(n) for n in BLANK_NAMES]
+visible = [unicodedata.lookup(n) for n in VISIBLE_NAMES]
+if len(blanks) != 23 or len(set(blanks)) != 23 or min(map(ord, blanks)) < 0x80:
+    print(f'FAIL: {label}: the name list gives {len(set(blanks))} distinct '
+          f'character(s), the lowest U+{min(map(ord, blanks)):04X}, where it '
+          f'names 23 distinct characters outside ASCII', file=sys.stderr)
+    sys.exit(1)
+values = blanks + visible
+places = [(f'blanks{i // 5 + 1}', KEYS[i % 5]) for i in range(len(values))]
+lines = ['---', 'title: "Blank label values"', 'indexes:']
+for i, (name, key) in enumerate(places):
+    if i % 5 == 0:
+        lines += [f'  - name: {name}', f'    title: Index {name}',
+                  '    index-labels:']
+    lines.append(f'      {key}: "\\u{ord(values[i]):04X}"')
+lines += ['filters:', '  - index', '---', '',
+          'Every label value above is one character.', '']
+with open(doc_path, 'w', encoding='utf-8') as out:
+    out.write('\n'.join(lines))
+# Read back what was written, through a YAML parser rather than the string
+# built above, so a place holding anything but the character named for it is
+# found here and not as a count below.
+text = open(doc_path, encoding='utf-8').read()
+meta = yaml.safe_load(text.split('---\n')[1])
+read = [(entry['name'], key, entry['index-labels'][key])
+        for entry in meta['indexes'] for key in KEYS]
+wanted = [(name, key, value) for (name, key), value in zip(places, values)]
+if read != wanted:
+    print(f'FAIL: {label}: {doc_path} does not hold the 25 values named for '
+          f'its 25 places', file=sys.stderr)
+    sys.exit(1)
+with open(places_path, 'w', encoding='utf-8') as out:
+    for (name, key), kind, cname in zip(
+            places, ['blank'] * 23 + ['visible'] * 2,
+            BLANK_NAMES + VISIBLE_NAMES):
+        out.write(f'{name}\t{key}\t{kind}\t{cname}\n')
+print(f'ok   {label}: {doc_path} holds the 23 named blank characters and the '
+      f'2 named visible ones, each read back from its double-quoted scalar at '
+      f'the index and key it is written under')
+M093BLANKSPY
+[ -s "$M093W/blanks-places.tsv" ] \
+  || fail "M093-AC4: generating the blank-value document wrote no list of its places (its own FAIL line is above)"
+[ "$(awk -F'\t' '$3 == "blank"' "$M093W/blanks-places.tsv" | wc -l | tr -d ' ')" = "23" ] \
+  || fail "M093-AC4: the generated document's place list does not name 23 blank values, so the counts below would read another domain"
+
+# The report one place draws, spelled once and used by the counts and the
+# plant alike.
+m093_blank_report() {   # <index name> <key>
+  printf 'index-labels: in the entry declaring the index named "%s" gives the key "%s" a value with no character a reader can see; that word falls back to the next level it is written at and then to the English one' "$1" "$2"
+}
+
+( cd "$M093W/real" && quarto render blanks.qmd --to html ) \
+  > "$WORK/m093-blanks-html.log" 2>&1 \
+  || { tail -20 "$WORK/m093-blanks-html.log" >&2; fail "M093-AC4: the generated blank-value document failed to render to HTML"; }
+capture "$M093W/real/blanks.qmd" html "m093-blanks-html"
+
+while IFS=$'\t' read -r name key kind cname; do
+  if [ "$kind" = "blank" ]; then want=1; else want=0; fi
+  check_warning_count "$WORK/m093-blanks-html.log" \
+    "$(m093_blank_report "$name" "$key")" "$want" \
+    "M093-AC4 ($cname under $name $key)"
+done < "$M093W/blanks-places.tsv"
+check_extension_warning_count "$WORK/m093-blanks-html.log" 23 \
+  "M093-AC4 (total)"
+pass "M093-AC4: each of the 23 non-ASCII characters BLANKS lists, written alone as a double-quoted label value, draws one report naming the index and key it is written under, and the two visible non-ASCII values draw none"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M093 T4 — the plant. A copy of the extension whose `BLANKS` keeps only its
+  # ASCII entries renders the same document, and each of the 23 counts above
+  # is shown red over that render: every character is then a visible word, so
+  # a list with any one of them transposed is a list this leg reads.
+  # -------------------------------------------------------------------------
+  m093_tree planted
+  cp "$M093W/real/blanks.qmd" "$M093W/planted/blanks.qmd"
+  python3 - "$M093W/planted/_extensions/index/modules/indexes.lua" <<'M093PLANTPY' \
+    || fail "M093 T4 self-test: planting BLANKS without its 23 non-ASCII entries failed (its own FAIL line is above)"
+import re, sys
+path = sys.argv[1]
+src = open(path, encoding='utf-8').read()
+start = src.find('local BLANKS = {\n')
+end = src.find('\n}\n', start)
+if start < 0 or end < 0:
+    print(f'FAIL: M093 T4 plant: {path} carries no `local BLANKS = {{` table '
+          f'closed by a `}}` line', file=sys.stderr)
+    sys.exit(1)
+entries = re.findall(r'"\\u\{([0-9A-F]{4})\}"', src[start:end])
+kept = [e for e in entries if int(e, 16) < 0x80]
+if len(entries) - len(kept) != 23:
+    print(f'FAIL: M093 T4 plant: the BLANKS table in {path} carries '
+          f'{len(entries) - len(kept)} entries outside ASCII, where the plant '
+          f'removes 23', file=sys.stderr)
+    sys.exit(1)
+table = 'local BLANKS = {\n  ' + ', '.join(f'"\\u{{{e}}}"' for e in kept) + ','
+open(path, 'w', encoding='utf-8').write(src[:start] + table + src[end:])
+M093PLANTPY
+  ( cd "$M093W/planted" && quarto render blanks.qmd --to html ) \
+    > "$WORK/m093-blanks-planted.log" 2>&1 \
+    || { tail -20 "$WORK/m093-blanks-planted.log" >&2; fail "M093 T4 self-test: the blank-value document failed to render against the planted extension"; }
+  capture "$M093W/planted/blanks.qmd" html "m093-blanks-planted"
+  while IFS=$'\t' read -r name key kind cname; do
+    [ "$kind" = "blank" ] || continue
+    out=$(check_warning_count "$WORK/m093-blanks-planted.log" \
+            "$(m093_blank_report "$name" "$key")" 1 "M093 probe" 2>&1) \
+      && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || fail "M093 T4 self-test: the count for $cname under $name $key passed over a BLANKS without that character, so its green above says nothing"
+    case "$out" in
+      *"expected 1 occurrence"*"got 0"*) ;;
+      *) fail "M093 T4 self-test: the count for $cname under $name $key failed over the planted render, but not for that reason (<<$out>>)" ;;
+    esac
+  done < "$M093W/blanks-places.tsv"
+  check_extension_warning_count "$WORK/m093-blanks-planted.log" 0 \
+    "M093 T4 self-test (the planted render reports nothing)"
+  pass "M093 T4 self-test: over a BLANKS holding only its ASCII entries, each of the 23 counts goes red with none of its report, and the render reports nothing at all"
 fi
 
 # ---------------------------------------------------------------------------

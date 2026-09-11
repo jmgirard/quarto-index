@@ -24752,12 +24752,27 @@ pass "M56-AC5: each of the four unusable writings draws exactly its own whole me
 # proved is that same file with only its two `index-labels:` blocks removed.
 # `diff` and not a search for the declared words: a difference anywhere in the
 # file fails this, whatever the differing lines say.
-if ! diff -u "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
-             "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
-             > "$WORK/index-labels-tex.diff" 2>&1; then
-  head -40 "$WORK/index-labels-tex.diff" >&2
-  fail "M56-AC6: the labels fixture's .tex differs from its twin's, so an index-labels: declaration reached the LaTeX back-end"
-fi
+#
+# One function, which this check, M58-AC6 below and the self-test plant all
+# call, so the plant's red is a statement about the comparison these checks run
+# rather than about a second copy of it. `diff` exits 1 on a difference and 2 on
+# trouble, and the two are reported apart: a missing capture is not a
+# declaration that reached the back-end.
+check_tex_identical() {
+  local fixture_tex="$1" twin_tex="$2" diffout="$3" label="$4" rc
+  diff -u "$fixture_tex" "$twin_tex" > "$diffout" 2>&1 && rc=0 || rc=$?
+  case "$rc" in
+    0) ;;
+    1) head -40 "$diffout" >&2
+       fail "$label: $fixture_tex differs from $twin_tex, so an index-labels: declaration reached the LaTeX back-end" ;;
+    *) cat "$diffout" >&2
+       fail "$label: diff could not compare $fixture_tex with $twin_tex (exit $rc), so nothing is known about the LaTeX back-end" ;;
+  esac
+}
+
+check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+  "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
+  "$WORK/index-labels-tex.diff" "M56-AC6"
 pass "M56-AC6: the labels fixture and its twin render byte-for-byte identical .tex, so no index-labels: declaration reaches the LaTeX back-end"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -24837,15 +24852,15 @@ if [ "${1:-}" = "--self-test" ]; then
     python3 tests/epubcheck.py sections "$M56_EPUB" "$HTML_SECTION_ID" \
       "$M56W/twin-epub.txt" --labels
 
-  # The `.tex` comparison, on a pair that differs by one line.
+  # The `.tex` comparison, on a pair that differs by one line, through the
+  # function M56-AC6 and M58-AC6 call (M092).
   cp "$CAPTURE_ROOT/index-labels-twin-latex/index-labels-twin.tex" \
     "$M56W/drifted.tex"
   printf '%% a line the fixture does not carry\n' >> "$M56W/drifted.tex"
-  if diff -q "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
-             "$M56W/drifted.tex" > /dev/null 2>&1; then
-    fail "M56 T4 self-test: the .tex comparison passed a twin carrying an extra line, so its green above says nothing"
-  fi
-  pass "M56 T4 self-test: the .tex comparison catches a twin differing by one line"
+  m56_planted 'a twin .tex differing from the fixture'"'"'s by one line' \
+    "differs from $M56W/drifted.tex, so an index-labels: declaration reached" \
+    check_tex_identical "$CAPTURE_ROOT/index-labels-latex/index-labels.tex" \
+      "$M56W/drifted.tex" "$M56W/drifted.diff" "M56 probe"
 
   # Each whole-message assertion, against the log of the fixture that writes no
   # unusable shape: a message asserted by a prefix short enough to match
@@ -25511,12 +25526,10 @@ pass "M58-AC5: the unknown-key report lists all five writable keys, the two new 
 # and not a search for the declared glyphs: a difference anywhere in the file
 # fails this, whatever the differing lines say. A same-tree comparison of two
 # documents, which is not the merge-base refactor oracle D-004 refused (D-012).
-if ! diff -u "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" \
-             "$CAPTURE_ROOT/index-separators-twin-latex/index-separators-twin.tex" \
-             > "$WORK/index-separators-tex.diff" 2>&1; then
-  head -40 "$WORK/index-separators-tex.diff" >&2
-  fail "M58-AC6: the separators fixture's .tex differs from its twin's, so an index-labels: declaration reached the LaTeX back-end"
-fi
+# The comparison is M56-AC6's function, which the M56 self-test plants red.
+check_tex_identical "$CAPTURE_ROOT/index-separators-latex/index-separators.tex" \
+  "$CAPTURE_ROOT/index-separators-twin-latex/index-separators-twin.tex" \
+  "$WORK/index-separators-tex.diff" "M58-AC6"
 # And the count that says the comparison ran over a file with index commands in
 # it, so an empty diff cannot come of two documents that index nothing.
 # Derived from the fixture's seven marks and latex.lua's contested-key rule,

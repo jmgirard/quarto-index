@@ -30,6 +30,11 @@ examples/.quarto/
 # per-chapter store lives in Quarto's own scratch directory.
 examples/book*/_book/
 examples/book*/.quarto/
+# Pages and their assets a render wrote beside a book project rather than under
+# its `_book/` (an M073 suite run left 22 such files beside
+# examples/book-placement/, and a checkpoint commit swept them in).
+examples/book*/*.html
+examples/book*/site_libs/
 # A PDF book builds every index the book declares (M49), and imakeidx writes
 # each named index's entry file, transcript and compiled index beside the
 # project rather than under its output directory -- where Quarto's own

@@ -10,7 +10,7 @@ _Released 0.3.0 2026-09-05._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M089 | Two book-fixture hygiene gaps close | planned | — | normal | milestones/M089-book-fixture-hygiene.md |
+| M089 | Two book-fixture hygiene gaps close | review | — | normal | milestones/M089-book-fixture-hygiene.md |
 | M088 | Two link-check defects M087's review filed close by deletion | done | — | normal | milestones/archive/M088-link-check-deletions.md |
 | M087 | The link readers call the one link test and use the href it judged | done | — | normal | milestones/archive/M087-one-link-test-call.md |
 | M086 | The sweep-discrimination probe stops re-sweeping the set once per page | done | — | normal | milestones/archive/M086-linear-sweep-discrimination.md |

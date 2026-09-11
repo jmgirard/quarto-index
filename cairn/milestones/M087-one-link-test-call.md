@@ -77,7 +77,7 @@ section per document → its row (KI264). `epubcheck.py links` over
       `sitecheck.py:17`, and `links`/`unresolved` in `epubindex.py` where they
       cite them. Run the readers under the oldest and newest Python in reach
       (LESSONS M082).
-- [ ] T2: Rewrite the M085 AC1 leg (`tests/run-tests.sh:23915-24036`) to drive
+- [x] T2: Rewrite the M085 AC1 leg (`tests/run-tests.sh:23915-24036`) to drive
       every `M085_HREF_SHAPES` row through `htmlindex.leaves_publication`
       alone, failing and naming each row whose verdict it does not return; keep
       its row-shape guard and its both-verdicts guard; rewrite the section
@@ -108,6 +108,7 @@ section per document → its row (KI264). `epubcheck.py links` over
 - 2026-09-10: plan gate dropped M085 review F5 (no leg pins the site sweep across the broadened skip): the old and new rule swept the same count at merge (2025 over the staying plant, M085 T7 and review AC4), and a standing leg would have to restate the six-scheme list D-057 declined.
 - 2026-09-10: implement gate chose an every-match mode in `plant.py` for the AC4 copy (one repack, still refusing a pattern matching nothing) over chaining one plant per locator, and the AC3 leg on every run beside M085's two-command leg rather than under `--self-test`.
 - 2026-09-10: T1 done — the three per-module `leaves_publication` names deleted, their callers call `htmlindex.leaves_publication`, docstrings rewritten; `epubcheck.py links`/`unique` over the demo EPUB, `sitecheck.py links` over the site capture and the five readers' imports all pass under Python 3.9.6 and 3.14.7; `tests/run-tests.sh` (with T2, since M085's leg read the deleted names) passed, 779 checks.
+- 2026-09-10: T2 done — the table leg drives the 14 `M085_HREF_SHAPES` rows through `htmlindex.leaves_publication` alone, row-shape and both-verdicts guards kept, header comment rewritten; extracted alone it passed under 3.9.6 and 3.14.7, went red naming the row on a flipped `/ch1.xhtml` verdict and on a predicate copy with its strip removed (the leading-space `mailto:` row); suite passed, 779 checks.
 
 ## Decisions
 

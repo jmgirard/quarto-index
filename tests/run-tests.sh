@@ -23914,19 +23914,17 @@ fi
 # ---------------------------------------------------------------------------
 # M085 — the link readers give one answer to whether an href leaves
 #
-# AC1. Four readers of this suite decide that question, and each is asked here
-# at its OWN name — `htmlindex.resolve_href`, and the `leaves_publication` that
-# `epubcheck.py unique`, `epubindex.links` and `sitecheck.py links` each call.
-# Asking them at their own names is the point of the leg: one that called the
-# shared definition four times would agree with itself whatever the readers do,
-# where a reader that reintroduced a test of its own shows up here as a verdict
-# disagreeing with the other three.
+# The table. Four readers of this suite decide that question, and each calls
+# `htmlindex.leaves_publication` by that name (M087 removed the per-module
+# names M085 kept for this leg to read: a name wrapping the predicate answered
+# before its caller did anything with the href, so reading it could not see a
+# reader that went on to treat the href some other way). What is asked here is
+# the one predicate, one row at a time; what the commands then DO with a leaving
+# link is held by the two-command leg below and M085's site plants.
 #
-# The expected verdict is written once per row of `M085_HREF_SHAPES` and
-# expanded at all four call sites, so a row cannot be right about one reader
-# and wrong about another. Both verdicts are required present: a table that lost
-# its staying rows would pass a reader calling every href external, and one that
-# lost its leaving rows a reader calling none of them.
+# Both verdicts are required present: a table that lost its staying rows would
+# pass a predicate calling every href external, and one that lost its leaving
+# rows a predicate calling none of them.
 #
 # AC2/AC3. Then the two EPUB commands over ONE publication carrying two index
 # locators that leave it — one `https:`, one `//`. Before this milestone `links`
@@ -23969,22 +23967,7 @@ import sys
 
 sys.path.insert(0, 'tests')
 
-import epubcheck  # noqa: E402
-import epubindex  # noqa: E402
 import htmlindex  # noqa: E402
-import sitecheck  # noqa: E402
-
-# Each reader at the name its OWN code calls, never the one definition they now
-# share: what this leg is about is whether all four still route there.
-# `resolve_href` answers by returning nothing for an href that leaves, which is
-# how its own callers read its verdict.
-READERS = (
-    ('htmlindex.resolve_href',
-     lambda href: htmlindex.resolve_href('index.html', href) is None),
-    ('epubcheck.leaves_publication', epubcheck.leaves_publication),
-    ('epubindex.leaves_publication', epubindex.leaves_publication),
-    ('sitecheck.leaves_publication', sitecheck.leaves_publication),
-)
 
 
 def word(leaves):
@@ -23997,42 +23980,33 @@ for n, line in enumerate(sys.argv[1].split('\n'), 1):
         continue
     parts = line.split('\t')
     if len(parts) != 2 or parts[0] not in ('leaves', 'stays'):
-        print(f'FAIL: M085-AC1: row {n} of M085_HREF_SHAPES is {line!r}, where '
+        print(f'FAIL: M087-AC2: row {n} of M085_HREF_SHAPES is {line!r}, where '
               f'a row is a `leaves` or `stays` verdict, a tab, and an href',
               file=sys.stderr)
         sys.exit(1)
     rows.append((parts[0] == 'leaves', parts[1]))
 
 if len({want for want, _href in rows}) != 2:
-    print(f'FAIL: M085-AC1: the {len(rows)} row(s) of M085_HREF_SHAPES carry '
-          f'one of the two verdicts, so this leg cannot tell a reader that '
+    print(f'FAIL: M087-AC2: the {len(rows)} row(s) of M085_HREF_SHAPES carry '
+          f'one of the two verdicts, so this leg cannot tell a predicate that '
           f'answers every href alike from one that reads the href',
           file=sys.stderr)
     sys.exit(1)
 
-bad = []
-for want, href in rows:
-    got = [(name, bool(read(href))) for name, read in READERS]
-    verdicts = {verdict for _name, verdict in got}
-    if len(verdicts) != 1:
-        parted = ', '.join(f'{name} says {word(verdict)}'
-                           for name, verdict in got)
-        bad.append(f'  {href!r}: the readers part — {parted}')
-    elif verdicts != {want}:
-        bad.append(f'  {href!r}: all four readers say {word(not want)}, and '
-                   f'the table says {word(want)}')
+bad = [f'  {href!r}: htmlindex.leaves_publication says {word(not want)}, and '
+       f'the table says {word(want)}'
+       for want, href in rows
+       if bool(htmlindex.leaves_publication(href)) != want]
 if bad:
-    print(f'FAIL: M085-AC1: {len(bad)} of the {len(rows)} href shape(s) '
+    print(f'FAIL: M087-AC2: {len(bad)} of the {len(rows)} href shape(s) '
           f'M085_HREF_SHAPES names:', file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
     sys.exit(1)
 
-print(f'ok   M085-AC1: each of the {len(rows)} href shape(s) M085_HREF_SHAPES '
+print(f'ok   M087-AC2: each of the {len(rows)} href shape(s) M085_HREF_SHAPES '
       f'names — {sum(1 for want, _href in rows if want)} that leave the '
       f'publication and {sum(1 for want, _href in rows if not want)} that stay '
-      f'in it — gets the table\'s verdict from all four readers, each asked at '
-      f'the name its own code calls: '
-      + ', '.join(name for name, _read in READERS))
+      f'in it — gets the table\'s verdict from htmlindex.leaves_publication')
 M085PY
 
 # The publication the two EPUB commands read here, and the two locators the

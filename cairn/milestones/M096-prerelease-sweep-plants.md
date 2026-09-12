@@ -157,8 +157,87 @@ enumerates. The eighth, the sweep's own positive report, is outside that
 enumeration and is covered by the two pre-existing restored-sentence plants.
 Verified.
 
+**Profile verify slot.** `tests/run-tests.sh --self-test` on the branch head:
+1520 checks, no FAIL line, exit 0. The five new plants are red on their own
+branches at lines 992-996 of that run, and the two restored-sentence plants,
+the collapsed domain and the untabbed row are undisturbed.
+
+**Consistency gate.** `cairn_validate` exit 0, every check PASS or OK. No
+principle changed, so the impact report is skipped. The `generic` profile names
+no toolchain checks. `LESSONS.md` is 19,968 bytes against its 20,000-byte
+budget.
+
 **AC3 — an empty sentence half is refused.** The row `empty half<TAB>` is
 refused on this branch as malformed, naming the row. The same row and the same
 repository under the pre-M096 definition, extracted from `main` and run in this
 session, reported all 22 files of the domain as carrying the retired warning.
 Both halves of the criterion's "rather than" are therefore on record. Verified.
+
+### Independent review, 2026-09-11
+
+Three fresh-context reviewers, none of which authored the branch. The
+blame-history lens reported no finding, naming what it checked: the NUL-split
+enumeration, the stated floor, the README assertion, the malformed-row and
+unreadable-page reporting conventions, the blockquote normalization, and the
+case sensitivity, each confirmed preserved, and D-029's uncaught
+`UnicodeDecodeError` confirmed neither regressed nor silently closed. The
+prior-review lens reported no finding: the inline-comment probe returned empty,
+and the archived findings it read on these files (M52 F1, M46, M073, M37,
+M090) are each honored rather than contradicted. The diff-bug lens reported
+eleven, ranked, each triaged below.
+
+F1 (fix now). `tests/run-tests.sh:1848-1849` says the absolute path is needed
+because three self-test cases run the check from another directory. Five
+helpers do. Verified by grep: the thin repo, the non-repository, the
+README-less repo, the unreadable-page repo and the C-quoted-name repo.
+
+F2 (fix now). `tests/run-tests.sh:1829-1830` says the two modes differ in case
+folding "and nowhere else". They also differ in the reported label and in the
+nouns their reports use, which the same branch's module docstring states.
+
+F3 (fix now, by superseding entry). The milestone-local decision above says the
+merged sweep reports on the unmutated repository exactly what the inline copy
+reported. The verdict is unchanged, but the ok line reads `none of the 2 …
+sentence(s)` where the inline copy read `neither of the 2 … sentences`, and two
+refusal messages gained the list's path. Both wordings confirmed by reading
+`main` and the branch.
+
+F4 (fix now). The new refusal's predicate is `not flatten(text)` and its
+message says "nothing after its tab". Confirmed misleading: a row whose half
+holds only spaces, or only a blockquote marker, gets that message and echoes a
+row in which the offending bytes are invisible.
+
+F5 (fix now). `read_rows`' new docstring paragraph says such a row "holds a
+page to nothing and reports every page swept". No one row does both, and the
+module docstring's `claims` and `phrase-absent` blocks do not record the new
+refusal, which both modes now enforce.
+
+F6 (fix now). The README-less plant's guard asserts that no README.md exists in
+the working tree, where its sibling asserts git's own listing. The weaker shape
+is the one `cairn/check-design.md`'s M42 lesson names: were the scratch `.git`
+ever absent, git would resolve to this repository, the domain would come back
+empty, and the plant would go red on the same message for another reason.
+
+F7 (fix now). AC2's first branch, an empty retired-sentence list, has no plant
+driving it through this mode. AC2 is about the code reporting, which the
+evidence above establishes directly, so this is an evidence gap rather than a
+criterion failure. The plant closes it.
+
+F8 (fix now). The non-repository directory is made with `mktemp -d` outside the
+work directory, so a failing plant strands it where the suite's own clean never
+reaches, and its bare `rmdir` would kill the run with no FAIL line.
+
+F9 (fix now). The deliberate unquoted expansion at `tests/run-tests.sh:1852`
+carries no `shellcheck disable` marker, where the file marks its four others.
+
+F10 (follow-up, this milestone's post-merge hygiene). `cairn/DESIGN.md`'s KI93
+describes the duplication this branch removes, and the architecture prose near
+line 699 still calls the pre-release sweep a standalone check. Both are hygiene
+writes rather than branch work.
+
+F11 (rejected, out of scope). Two prose counts in unmodified lines predate this
+branch and the diff did not introduce them.
+
+Return floor: none of the eleven demonstrates an acceptance criterion failing,
+and none is a defect in what the checker does for its readers. The sweep's
+behavior is verified correct above. No status return.

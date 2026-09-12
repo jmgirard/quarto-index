@@ -41,13 +41,13 @@ deleting the unmeasured page count from the floor's comment.
 
 ## Acceptance criteria
 
-- [ ] AC1: The pre-release sweep's domain enumeration is defined once, in
+- [x] AC1: The pre-release sweep's domain enumeration is defined once, in
       `tests/sitecheck.py`. `check_prerelease_absent` in `tests/run-tests.sh`
       holds no `git ls-files` enumeration, no README-tracked test and no floor
       of its own, reaching all three by invoking `tests/sitecheck.py`. The
       domain this claim quantifies over is that function's whole definition,
       read top to bottom.
-- [ ] AC2: The pre-release sweep reports, rather than crashing or passing
+- [x] AC2: The pre-release sweep reports, rather than crashing or passing
       silently, on every failure branch of its consolidated definition — the
       domain enumerated by reading each branch of that definition that returns
       or prints a failure message. Today that set is: a retired-sentence list
@@ -55,7 +55,7 @@ deleting the unmeasured page count from the floor's comment.
       `git ls-files` exiting non-zero; README.md absent from the enumeration;
       a domain smaller than the floor; and a page in the domain that cannot be
       read.
-- [ ] AC3: A retired-sentence row whose sentence half is empty is refused as
+- [x] AC3: A retired-sentence row whose sentence half is empty is refused as
       malformed rather than matching every page in the domain.
 
 ## Coverage
@@ -128,3 +128,37 @@ finding about today's behavior, so it belongs in the Known issues at this
 milestone's post-merge hygiene rather than in a criterion here.
 
 ## Review
+
+### 2026-09-11, pass 1
+
+**AC1 — the domain enumeration is defined once.** `check_prerelease_absent`
+read whole, top to bottom, is two lines: `python3 "$PRERELEASE_SWEEP"
+prerelease-absent "$1" ${2:+"$2"}`, with `PRERELEASE_SWEEP` set one line above
+to `"$PWD/tests/sitecheck.py"`. Grepped over that whole definition: `ls-files`
+0 hits, `README` 0 hits, floor 0 hits. Repo-wide, the swept-domain
+`git ls-files -z` call is at `tests/sitecheck.py:543` and nowhere else, the
+floor constant at `tests/sitecheck.py:121` and nowhere else, and the
+README-tracked test at `tests/sitecheck.py:551`. The one other hit for that
+test, `tests/run-tests.sh:20041`, is a plant's expected substring rather than a
+test of its own. Verified.
+
+**AC2 — every failure branch reports.** The consolidated definition was read
+top to bottom across its four functions (`check_prerelease_absent`,
+`read_rows`, `swept_domain`, `sweep_rows`). It holds eight branches that return
+or print a failure. Each was run against `prerelease-absent` in this session
+and each exited 1 with its own message, none crashing and none passing
+silently: an empty list; a row with no tab; a row whose sentence half is empty;
+`git ls-files` exiting 128 in a directory that is no repository; README.md
+absent from an eleven-page enumeration; a two-file domain under the floor of
+11; one page of a twelve-file domain that could not be read, named as
+`site/p1.qmd`; and a sentence found on a page, named as
+`site/index.qmd (warning header)`. The first seven are the set the criterion
+enumerates. The eighth, the sweep's own positive report, is outside that
+enumeration and is covered by the two pre-existing restored-sentence plants.
+Verified.
+
+**AC3 — an empty sentence half is refused.** The row `empty half<TAB>` is
+refused on this branch as malformed, naming the row. The same row and the same
+repository under the pre-M096 definition, extracted from `main` and run in this
+session, reported all 22 files of the domain as carrying the retired warning.
+Both halves of the criterion's "rather than" are therefore on record. Verified.

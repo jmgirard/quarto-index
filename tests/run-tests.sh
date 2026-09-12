@@ -1826,8 +1826,9 @@ printf '   %s file(s)\n\n' "$FILTER_SOURCE_COUNT"
 # was a blockquote: without it every `>` starting a continuation line lands
 # mid-sentence in the flattened text, and only the one sentence that occupied a
 # whole line could ever be found. The plants below cover both shapes. The
-# comparison is case-SENSITIVE where `phrase-absent`'s folds; the two modes
-# differ there and nowhere else.
+# comparison is case-SENSITIVE where `phrase-absent`'s folds. That is the one
+# difference in what the two modes DO; they differ as well in the label their
+# reports carry and in the noun those reports use for a row's text half.
 #
 # The optional OVERLAY is tests/sitecheck.py's handle, for the same reason: a
 # check over a tracked set is shown to fail on the defect it names only if the
@@ -1845,10 +1846,15 @@ printf '%s\n' "${PRERELEASE_RETIRED[@]}" > "$WORK/prerelease-retired.txt"
 # M096 a copy of it stood here, and the two had drifted: the enumeration, the
 # README test, the floor, the row reading and the comparison now have one
 # definition, beside the `phrase-absent` sweep they share a domain with. The
-# path is absolute because three self-test cases below run this check from
-# inside another directory.
+# path is absolute because five self-test helpers below run this check from
+# inside another directory: the thin repository, the non-repository, the
+# README-less repository, the unreadable-page repository, and the one holding
+# a C-quoted name.
 PRERELEASE_SWEEP="$PWD/tests/sitecheck.py"
 check_prerelease_absent() {
+  # shellcheck disable=SC2086  # ${2:+"$2"} passes the overlay as ONE argument
+  # when there is one and NO argument when there is none; the inner quotes
+  # survive the unquoted expansion, so a path holding spaces stays one word.
   python3 "$PRERELEASE_SWEEP" prerelease-absent "$1" ${2:+"$2"}
 }
 check_prerelease_absent "$WORK/prerelease-retired.txt" \
@@ -19998,8 +20004,26 @@ M40OLD
   # possible way for a check to say nothing.
   printf 'an empty sentence half\t\n' > "$M40W/prerelease-emptyhalf.txt"
   m40_planted 'a retired-sentence row with nothing after its tab, which before M096 matched every page in the domain' \
-    'carries a row with nothing after its tab' \
+    'carries a row whose sentence flattens to nothing' \
     check_prerelease_absent "$M40W/prerelease-emptyhalf.txt"
+  # The same refusal on a half that is not empty but FLATTENS to empty: the
+  # test is on the flattened half, and the message has to be about that and
+  # not about the tab.
+  printf 'a blockquote marker alone\t>\n' > "$M40W/prerelease-flatempty.txt"
+  m40_planted 'a retired-sentence row whose sentence half holds a blockquote marker and nothing else, which flattens to the empty string' \
+    'carries a row whose sentence flattens to nothing' \
+    check_prerelease_absent "$M40W/prerelease-flatempty.txt"
+
+  # The empty LIST, driven through this mode. The report has to name the
+  # retired-sentence list: `read_rows` takes the list's name and the noun for
+  # a row's text half separately, and a swap leaves every other plant green.
+  : > "$M40W/prerelease-emptylist.txt"
+  m40_planted 'an empty retired-sentence list, over which the sweep would forbid nothing' \
+    'the retired-sentence list at' \
+    check_prerelease_absent "$M40W/prerelease-emptylist.txt"
+  m40_planted 'that same empty list, whose report has to say what it now forbids' \
+    'is empty, so this check forbids nothing' \
+    check_prerelease_absent "$M40W/prerelease-emptylist.txt"
 
   # The three remaining branches of the sweep, which no case reached until
   # M096: `git ls-files` exiting non-zero, README.md untracked, and a page the
@@ -20022,20 +20046,34 @@ M40OLD
   # The directory is made OUTSIDE this checkout: a directory under it is
   # inside this repository, where the command succeeds and returns nothing,
   # which is a different branch of the sweep.
-  M096NOREPO=$(mktemp -d)
+  # A fixed name under the system temp directory rather than `mktemp -d`: a
+  # failing plant exits the run, and a random name made outside $WORK is one
+  # the suite's own `rm -rf "$WORK"` can never reclaim. This one is reused and
+  # cleared by the next run.
+  M096NOREPO="${TMPDIR:-/tmp}/m096-norepo"
+  rm -rf "$M096NOREPO"; mkdir -p "$M096NOREPO"
   git -C "$M096NOREPO" rev-parse --git-dir > /dev/null 2>&1 \
     && fail "M40 self-test: $M096NOREPO is inside a git repository, so the case below would be about an empty enumeration and not about git ls-files failing"
   m096_sweep_no_repo() { ( cd "$M096NOREPO" && check_prerelease_absent "$M44LIST" ); }
   m40_planted 'a directory that is not a git repository, where the enumeration the whole sweep rests on cannot run at all' \
     'so the domain this check sweeps was never enumerated' \
     m096_sweep_no_repo
-  rmdir "$M096NOREPO"
+  rmdir "$M096NOREPO" \
+    || fail "M40 self-test: $M096NOREPO could not be removed, so something wrote into the directory the no-repository case needs empty"
 
   # README.md untracked, with eleven site pages so the domain clears the floor
   # and the README test is what the sweep stops on.
+  # The guard asserts GIT's listing, not the working tree's contents: were the
+  # scratch `.git` ever absent, git would walk up into this repository, the
+  # cwd-relative pathspecs would match nothing, and the plant would go red on
+  # the same message for an entirely different reason (the M42 lesson in
+  # cairn/check-design.md).
   m096_scratch_repo "$M40W/noreadme" 11 no
-  [ -e "$M40W/noreadme/README.md" ] \
-    && fail "M40 self-test: the scratch repository holds a README.md, so the case below would not be about README.md being untracked"
+  M096_NOREADME_LS=$( cd "$M40W/noreadme" && git ls-files -- 'site/*.qmd' README.md )
+  [ "$(printf '%s\n' "$M096_NOREADME_LS" | grep -c '^site/p[0-9]*\.qmd$')" = 11 ] \
+    || fail "M40 self-test: the scratch repository does not track exactly eleven site pages of its own, so the case below would be about a domain of another size or about this repository's"
+  printf '%s\n' "$M096_NOREADME_LS" | grep -q '^README.md$' \
+    && fail "M40 self-test: git lists a README.md in the scratch repository, so the case below would not be about README.md being untracked"
   m096_sweep_no_readme() { ( cd "$M40W/noreadme" && check_prerelease_absent "$M44LIST" ); }
   m40_planted 'a repository tracking eleven documentation pages and no README, whose domain clears the floor and is still not the domain this check names' \
     'README.md is not tracked in this repository' \
@@ -20133,7 +20171,7 @@ M40OLD
   m40_planted 'the second retired sentence restored into the site front page, re-wrapped across a line break at a different column' \
     'site/index.qmd (fluid syntax)' \
     check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-wrapped"
-  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href reaching above the capture through a symlink inside it (beside one through a symlink that stays inside, which must still resolve), a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, a sentence row carrying no tab, a sentence row with nothing after its tab, a directory that is no git repository, a repository tracking no README, and a repository whose domain names a page the working tree no longer holds — that last one asserted twice, on the report covering the domain and on the page it names; and the site project file's output-directory pin on a copy whose output directory is renamed"
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href reaching above the capture through a symlink inside it (beside one through a symlink that stays inside, which must still resolve), a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, a sentence row carrying no tab, a sentence row with nothing after its tab and one holding a blockquote marker that flattens to the same nothing, an empty sentence list asserted twice on the list it names and on what it now forbids, a directory that is no git repository, a repository tracking no README, and a repository whose domain names a page the working tree no longer holds — that last one asserted twice, on the report covering the domain and on the page it names; and the site project file's output-directory pin on a copy whose output directory is renamed"
 fi
 
 # ---------------------------------------------------------------------------

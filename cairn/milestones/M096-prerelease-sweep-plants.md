@@ -101,6 +101,9 @@ deleting the unmeasured page count from the floor's comment.
 - 2026-09-11: CHECKPOINT, no task ticked. T1-T5 are written and each of the four new branches was shown red by hand against scratch repositories. The full `tests/run-tests.sh --self-test` run that must be clean before any box is ticked was still in flight when the turn ended.
 - 2026-09-11: T1-T5 done and ticked. `tests/run-tests.sh --self-test` clean, 1520 checks, exit 0, on the tree at this commit. The five new red plants are at lines 992-996 of that run.
 - 2026-09-11: claim audit: not owed — internal tier.
+- 2026-09-11: review pass 1: three fresh-context lenses, eleven findings, all from the diff-bug lens. F1-F9 fixed at the gate, F10 routed to this milestone's post-merge hygiene, F11 rejected as out of scope. No finding reached the return floor.
+- 2026-09-11: F3 superseded the first decision entry's Consequences sentence; the merge changed three report wordings and the entry claimed it changed none.
+- 2026-09-11: step-7 approval: m096-prerelease-sweep-plants approved for merge, the nine fixed first at the user's selection.
 - 2026-09-11: status review.
 - 2026-09-11: plan gate chose deleting the floor comment's unmeasured page count over teaching the check to fail on drift, because the drift threshold would be invented here rather than derived; falsified by a live domain growing past the floor with the run's printed size going unread.
 
@@ -126,6 +129,21 @@ merging. A retired sentence restored with a different opening capital still
 slips past, where the sibling sweep over the same domain catches it. That is a
 finding about today's behavior, so it belongs in the Known issues at this
 milestone's post-merge hygiene rather than in a criterion here.
+
+### 2026-09-11: the merge changed three report wordings, so the entry above overstates it
+
+**Supersedes** the Consequences sentence of the entry above, which reads that
+the merged sweep reports on the unmutated repository exactly what the inline
+copy reported. The review's third finding showed that sentence false.
+
+**What is true.** The verdict is unchanged: green on the unmutated repository,
+over the same 22 files, on the same comparison. Three wordings differ. The ok
+line reads `none of the 2 … sentence(s)` where the inline copy read `neither of
+the 2 … sentences`, and the empty-list and malformed-row refusals now name the
+list's path. Nothing asserts any of the three, so no check changed colour.
+
+**What stands.** The rest of the entry above, including the case-sensitivity
+decision itself and the gap it leaves, is unaffected.
 
 ## Review
 

@@ -43,7 +43,8 @@
       holds it to. A row is `label<TAB>claim`; both sides are compared with
       blockquote markers stripped and whitespace flattened, so a claim
       rewrapped at a different column, or wrapped in a blockquote, is still
-      the same claim. An empty list is refused rather than swept.
+      the same claim. An empty list is refused rather than swept, and so is a
+      row whose claim flattens to nothing, which every page would state.
 
   phrase-absent <phrase-file> [overlay]
       No tracked page a reader meets carries any phrase a hand-written list
@@ -53,7 +54,8 @@
       sweep uses — every
       tracked `.qmd` under site/ plus README.md, enumerated by `git ls-files`
       rather than written down, and asserted non-empty so a collapsed
-      enumeration reads as collapsed and not as a pass.
+      enumeration reads as collapsed and not as a pass. A row whose phrase
+      flattens to nothing is refused, as it would report every page swept.
 
   prerelease-absent <sentence-file> [overlay]
       No tracked page a reader meets carries a sentence of the retired
@@ -508,9 +510,11 @@ def read_rows(path, what, listed_as=None):
     module's failure convention.
 
     A row whose text half flattens to nothing is REFUSED for the same reason
-    the empty list above is: the empty string is a substring of every page
-    body, so such a row holds a page to nothing and reports every page swept
-    (M096).
+    the empty list above is. The empty string is a substring of every page
+    body, so in `claims` such a row holds the page to nothing, and in the
+    absence modes it reports every page swept (M096). The test is on the
+    FLATTENED half, so a half holding only spaces or only a blockquote marker
+    is refused too, and the message says so rather than naming the tab.
     """
     listed_as = listed_as or what
     lines = [l.rstrip('\n') for l in open(path, encoding='utf-8') if l.strip()]
@@ -526,8 +530,8 @@ def read_rows(path, what, listed_as=None):
     rows = [l.split('\t', 1) for l in lines]
     empty = [l for l, (_label, text) in zip(lines, rows) if not flatten(text)]
     if empty:
-        return None, (f'the {listed_as} list at {path} carries a row with '
-                      f'nothing after its tab, so its {what} is the empty '
+        return None, (f'the {listed_as} list at {path} carries a row whose '
+                      f'{what} flattens to nothing, so it is the empty '
                       f'string, which every page carries:\n'
                       + '\n'.join(f'  <<{l}>>' for l in empty))
     return rows, None

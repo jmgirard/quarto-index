@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M096 | The pre-release sweep fails on the defects it names, from one definition | planned | — | normal | milestones/M096-prerelease-sweep-plants.md |
+| M096 | The pre-release sweep fails on the defects it names, from one definition | review | — | normal | milestones/M096-prerelease-sweep-plants.md |
 | M095 | Three candidate rows' unasserted fixture facts get checks | done | — | normal | milestones/archive/M095-suite-pins-three-rows.md |
 | M094 | A failed store write or source read reports its own cause | done | — | normal | milestones/archive/M094-store-failure-causes.md |
 | M093 | The label and language paths are exercised where no render reached them | done | M092 | normal | milestones/archive/M093-label-language-coverage.md |

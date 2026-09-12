@@ -175,7 +175,12 @@ enumerates. The eighth, the sweep's own positive report, is outside that
 enumeration and is covered by the two pre-existing restored-sentence plants.
 Verified.
 
-**Profile verify slot.** `tests/run-tests.sh --self-test` on the branch head:
+**Profile verify slot, re-run after the gate fixes.** `tests/run-tests.sh
+--self-test` on the head that merges: 1523 checks, no FAIL line, exit 0. The
+three added checks are the blockquote-only row and the empty list asserted on
+both halves of its report. The pass before the fixes read 1520 the same way.
+
+**Profile verify slot, pass 1.** `tests/run-tests.sh --self-test`:
 1520 checks, no FAIL line, exit 0. The five new plants are red on their own
 branches at lines 992-996 of that run, and the two restored-sentence plants,
 the collapsed domain and the untabbed row are undisturbed.

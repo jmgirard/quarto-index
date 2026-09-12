@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-11 (triage pass over 29 candidates and 202 Known issues: the mark-reach and paths-and-filenames rows routed to Known issues, marked on KI11/KI15 and KI14/KI78; the locator-control row compressed; the site/gallery/publishing row promoted for its publishing half, row retained; no drop, merge, split, re-rating or decision entry; validate green.)_
+_Last hygiene check: 2026-09-11 (M096 archived and its row set done, M093's terminal row pruned. KI93 retired as resolved, KI288 added for the case-fold gap the merge left, and the architecture prose calling the pre-release sweep standalone corrected. No lesson captured: LESSONS.md is at 49 of 50 lines and 19,968 of 20,000 bytes, and M096 retires none, so the next milestone to teach one must retire first. The site, gallery and publishing candidate row is retained; M096's Scope Out keeps its publishing items there. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M096 | The pre-release sweep fails on the defects it names, from one definition | review | — | normal | milestones/M096-prerelease-sweep-plants.md |
+| M096 | The pre-release sweep fails on the defects it names, from one definition | done | — | normal | milestones/archive/M096-prerelease-sweep-plants.md |
 | M095 | Three candidate rows' unasserted fixture facts get checks | done | — | normal | milestones/archive/M095-suite-pins-three-rows.md |
 | M094 | A failed store write or source read reports its own cause | done | — | normal | milestones/archive/M094-store-failure-causes.md |
-| M093 | The label and language paths are exercised where no render reached them | done | M092 | normal | milestones/archive/M093-label-language-coverage.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

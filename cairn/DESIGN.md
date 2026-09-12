@@ -697,9 +697,12 @@ order, in both directions, and every stated line also in the fixture that proves
 the recipe; `check_readme_indexes` holds the named-indexes page's claims and its
 copyable YAML block, reading this run's own ledger for the commands that section
 shows. One absence check forbids the two retired pre-release sentences over
-`git ls-files 'site/*.qmd'` plus README, a domain it enumerates itself and whose
-size it reports, and takes an overlay directory so the sentence can be planted
-into a tracked page without editing the repo. A `CLAIM_CONTAINERS` registry
+`git ls-files 'site/*.qmd'` plus README, a domain whose size it reports, and
+takes an overlay directory so the sentence can be planted into a tracked page
+without editing the repo. That check is two lines calling
+`tests/sitecheck.py`'s `prerelease-absent` mode, which enumerates the domain
+and holds the comparison (corrected M096; until then the check carried a copy
+of both). A `CLAIM_CONTAINERS` registry
 stood between eighteen such sentence sets and the pages they were compared
 against until M46 retired it (D-027, D-028), taking fourteen of the sets with
 it. `tests/sitecheck.py` carries the website's own checks: the render writes a
@@ -1057,9 +1060,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   this is cost, not a hole; it is the price of not reading the expectation out
   of the filter's source (D-011). — M28 review F10, count corrected M29
 
-- **KI93.** `tests/sitecheck.py`'s `phrase-absent` duplicates the inline M44
-  sweep rather than the M44 sweep routing through it, so two copies of one
-  domain each print an ok line naming it. — M52 review F8
 - **KI94.** `epubindex.section_rows` is reached by no check and its docstring
   claims a row form manifest 10 does not use. — M52 review F9
 - **KI97.** `epubindex.read` raises rather than reporting on a member it cannot
@@ -1795,3 +1795,7 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   cells and of the cells a fixture reaches. M095 replaced both with "some" and
   "the cells its marks fill" rather than recomputing them, so the leg says less
   about its own domain than it did. — M095 review F14
+- **KI288.** The retired-sentence sweep compares case-sensitively, where its
+  sibling `phrase-absent` over the same domain folds case. A retired sentence
+  restored with a different opening capital is caught by one of the two sweeps
+  and not by the other. — M096

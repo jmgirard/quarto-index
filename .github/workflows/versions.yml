@@ -1,21 +1,22 @@
 # Renders the fixture corpus on several Quarto versions and compares the index
 # each one emits (M43).
 #
-# `_extensions/index/_extension.yml` declares `quarto-required: ">=1.4.0"` and
-# README says "Quarto 1.4 or later". Until this workflow existed that was a
+# `_extensions/index/_extension.yml` declares `quarto-required: ">=1.5.0"` and
+# README says "Quarto 1.5 or later". Until this workflow existed that was a
 # claim nothing ran: `pages.yml` pins one exact version, which satisfies the
 # range trivially and fences nothing about its floor.
 #
-# THE FLOOR. `1.4.549`. A dated observation and not a standing claim: on
-# 2026-08-26 it was the oldest non-prerelease Quarto release satisfying
-# `>=1.4.0`, and `v1.4.0` is no release at all. The query that returned it:
+# THE FLOOR. `1.5.52`. A dated observation and not a standing claim: on
+# 2026-09-13 it was the oldest non-prerelease Quarto release satisfying
+# `>=1.5.0`. No `v1.5.0` to `v1.5.51` release exists. The query that returned
+# it:
 #
 #     gh api --paginate repos/quarto-dev/quarto-cli/releases \
 #       --jq '.[] | select(.prerelease | not) | .tag_name' \
-#       | sort -V | head -5
+#       | sort -V | grep -E '^v1\.5\.' | head -1
 #
-# Nothing here re-runs that query, and nothing checks that 1.4.549 is still the
-# oldest such release — an older one cannot appear, and a newer floor is a
+# Nothing here re-runs that query, and nothing checks that 1.5.52 is still the
+# oldest such release. An older one cannot appear, and a newer floor is a
 # decision, not a fact to be detected.
 #
 # This workflow is deliberately NOT part of `pages.yml`. A red floor render
@@ -86,7 +87,7 @@ jobs:
         env:
           # The floor, stated once, in the file whose header records where it
           # came from and when.
-          FLOOR: '1.4.549'
+          FLOOR: '1.5.52'
           EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
@@ -274,10 +275,11 @@ jobs:
 
       # `imakeidx`, which the LaTeX back-end loads. It is installed HERE, with
       # the runner's own TinyTeX, rather than left to Quarto's on-demand
-      # installer: Quarto 1.4.549 answers `compilation failed- no matching
-      # packages` when it goes looking for `imakeidx.sty` against today's TeX
-      # Live repository, which turned the floor leg red on two runs out of
-      # three while this workflow was first being proved. Run on every leg and
+      # installer: while this workflow was first being proved, that installer
+      # answered `compilation failed- no matching packages` when it went
+      # looking for `imakeidx.sty` against the TeX Live repository of the day,
+      # and turned the floor leg of that time red on two runs out of three.
+      # Run on every leg and
       # not only the floor one, so the legs differ in their Quarto version and
       # in nothing else.
       #

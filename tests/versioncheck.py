@@ -289,12 +289,12 @@ def check_legs(floor, pinned, event):
 def version_named(body, version):
     """Whether `body` names `version` and not a longer version containing it.
 
-    A bare `version in body` reads `1.4.549` out of `1.4.5490` and out of
-    `1.4.549.1`, so a document left naming a release the workflow has moved off
+    A bare `version in body` reads `1.5.52` out of `1.5.520` and out of
+    `1.5.52.1`, so a document left naming a release the workflow has moved off
     could pass on a substring of the new number. The bound is over digits and
     dots on either side, and over those alone: a sentence ending
-    `… Quarto 1.4.549.` still names it, `v1.4.549` still names it, and so do
-    `1.4.549-rc1` and `1.4.549b` — a longer version whose extra part is not a
+    `… Quarto 1.5.52.` still names it, `v1.5.52` still names it, and so do
+    `1.5.52-rc1` and `1.5.52b` — a longer version whose extra part is not a
     digit or a dot is not caught here (M48).
     """
     return re.search(r'(?<![\d.])%s(?!\.?\d)' % re.escape(version),

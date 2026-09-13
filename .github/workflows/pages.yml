@@ -9,7 +9,7 @@
 #
 # Quarto is pinned to an exact version rather than tracking a channel. The pin
 # is not a claim about the extension's supported range — `_extension.yml`
-# declares `>=1.4.0`, and one version fences nothing about that floor; a
+# declares `>=1.5.0`, and one version fences nothing about that floor; a
 # floor/latest matrix is a standing candidate row, and this workflow is where
 # it would attach. `tests/run-tests.sh` checks the pin against that range.
 #

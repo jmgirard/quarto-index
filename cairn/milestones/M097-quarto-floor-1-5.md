@@ -1,13 +1,13 @@
 # M097: The extension requires Quarto 1.5
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP3
 - **Resolves:** —
 - **Surface tier:** user-facing — the minimum Quarto version decides who can install the extension
-- **Branch/PR:** —
+- **Branch/PR:** m097-quarto-floor-1-5
 
 ## Goal
 

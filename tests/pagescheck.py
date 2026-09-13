@@ -4,7 +4,7 @@
       The workflow pins Quarto to an exact version string, and that string
       satisfies the `quarto-required` range the extension declares. Both the
       pin and the range's version are split on `.` and compared as tuples of
-      integers, so `1.10.18` is read as greater than `1.4.0` rather than as
+      integers, so `1.10.18` is read as greater than `1.5.0` rather than as
       the string that sorts before it. Only a `>=` range is understood; any
       other operator is an error rather than a comparison this reader guesses
       at.

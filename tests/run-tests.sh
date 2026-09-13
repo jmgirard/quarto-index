@@ -29113,9 +29113,10 @@ fi
 #        header, `Chapter 4.`, which is where each read stops.
 #   AC8  The four escaping and Unicode fixtures are compared with the entries
 #        their sources derive (`typstcheck.py source`), and that derivation is
-#        held to a hand statement where one exists: every printable ASCII
-#        character for escaping.qmd, `term-21` to `term-7e` for
-#        sort-escaping.qmd, and M33_TERMS for unicode.qmd. The two label
+#        held to a hand statement for each: every printable ASCII
+#        character for escaping.qmd, the fixture's construction for
+#        xref-escaping.qmd (stated above the check), `term-21` to `term-7e`
+#        for sort-escaping.qmd, and M33_TERMS for unicode.qmd. The two label
 #        fixtures print the Spanish table's words and the words the author's
 #        `index-labels:` maps give, the per-index `see` winning in `authors`.
 # ---------------------------------------------------------------------------
@@ -29275,7 +29276,18 @@ for fixture in escaping xref-escaping sort-escaping unicode; do
     "examples/$fixture.qmd" "M098-AC8 ($fixture)" "Index" \
     || fail "M098-AC8: the Typst index of examples/$fixture.qmd does not print the entries its source derives (the report is above)"
 done
-python3 - "${M33_TERMS[@]}" <<'M098HANDPY'
+# The xref-escaping statement is the fixture's construction, written from its
+# prose and not from its marks: the 94 printable characters, character n under
+# `x<n>` at level position n mod 3 and under `a<n>` at (n + 1) mod 3 among
+# `L1!L2!L3`; the 16 special characters alone under `Xs`, `Xt` and `Xb`, and
+# as the middle of `A<c>B`, which the `Xk` marks index by `entry=`; the
+# non-ASCII and unusable targets; and one invisible mark per target path. Every
+# distinct path prefix prints one line. One exception is the level parse's own:
+# `a00` writes `L1!!!!L3`, and a `!!` read left to right is a literal `!` twice,
+# so that target is the one level `L1!!L3` and not `L1`, `!`, `L3`.
+# The first argument is the xref-escaping source to derive from, so the
+# self-test can hand it a changed copy.
+cat > "$WORK/m098-hand.py" <<'M098HANDPY'
 import sys, unicodedata
 from collections import Counter
 sys.path.insert(0, 'tests')
@@ -29285,14 +29297,39 @@ def terms(qmd):
     return Counter((level, term) for level, term, _refs in
                    typstcheck.derived_entries(qmd).elements())
 
+def path_lines(paths):
+    prefixes = {tuple(p[:i]) for p in paths for i in range(1, len(p) + 1)}
+    return Counter((len(p) - 1, p[-1]) for p in prefixes)
+
+def xref_paths():
+    special = ['%', '&', '#', '_', '{', '}', '\\', '~', '^', '$', '@', '|',
+               '!', '"', '<', '>']
+    paths = set()
+    for n in range(94):
+        for pos in (n % 3, (n + 1) % 3):
+            levels = ['L1', 'L2', 'L3']
+            levels[pos] = chr(0x21 + n)
+            paths.add(tuple(levels))
+        paths |= {('x%02d' % n,), ('a%02d' % n,)}
+    paths.discard(('L1', '!', 'L3'))
+    paths.add(('L1!!L3',))
+    for n, char in enumerate(special):
+        paths |= {(char,), ('Xs%02d' % n,), ('Xt%02d' % n,), ('Xb%02d' % n,),
+                  ('A%sB' % char,)}
+    paths |= {('Tgt',), ('Grüße', 'Straße'), ('café naïve',), ('A',),
+              ('Xu00',), ('Xu01',), ('Xe00',), ('Xe01',)}
+    return paths
+
+xref_qmd = sys.argv[1]
 stated = {
     'examples/escaping.qmd':
         Counter((0, chr(c)) for c in range(0x21, 0x7F)),
+    xref_qmd: path_lines(xref_paths()),
     'examples/sort-escaping.qmd':
         Counter((0, 'term-%02x' % c) for c in range(0x21, 0x7F)),
     'examples/unicode.qmd':
         Counter((int(level), unicodedata.normalize('NFC', term))
-                for level, term in (row.split(':', 1) for row in sys.argv[1:])),
+                for level, term in (row.split(':', 1) for row in sys.argv[2:])),
 }
 for qmd, want in stated.items():
     got = terms(qmd)
@@ -29304,6 +29341,8 @@ for qmd, want in stated.items():
     print(f'ok   M098-AC8: the {sum(want.values())} entries derived from {qmd} '
           f'are the ones stated by hand')
 M098HANDPY
+python3 "$WORK/m098-hand.py" examples/xref-escaping.qmd "${M33_TERMS[@]}" \
+  || fail "M098-AC8: an escaping fixture's derived entries are not the ones stated by hand (the report is above)"
 
 quarto render examples/index-lang-es.qmd --to typst > "$WORK/index-lang-es-typst.log" 2>&1 \
   || { tail -40 "$WORK/index-lang-es-typst.log" >&2; fail "M098-AC8: examples/index-lang-es.qmd failed to render to Typst"; }
@@ -29451,6 +29490,16 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_red es-english "got 'entry\t0\tFalcon\tsee|Kestrel'" python3 tests/typstcheck.py terms \
     "$CAPTURE_ROOT/m098-es-english/index-lang-es.pdf" "$WORK/m098-lang-es.tsv" \
     "M098 T5 plant es-english" "Índice alfabético"
+
+  # AC8: the xref-escaping statement against a source whose `x05` target
+  # names `*` where the construction puts `&`, its resolving mark changed too.
+  mkdir -p "$WORK/m098-xref-changed"
+  perl -pe 's{^\[x05\]\{\.index see="L1!L2!&"\}$}{[x05]{.index see="L1!L2!*"}}; s{^\[\]\{\.index entry="L1!L2!&"\}$}{[]{.index entry="L1!L2!*"}}' \
+    examples/xref-escaping.qmd > "$WORK/m098-xref-changed/xref-escaping.qmd"
+  [ "$(diff examples/xref-escaping.qmd "$WORK/m098-xref-changed/xref-escaping.qmd" | grep -c '^>')" -eq 2 ] \
+    || fail "M098 T8 self-test (xref-changed): the substitution did not change exactly the two lines it names"
+  m098_red xref-changed "stated only [(2, '&')]" python3 "$WORK/m098-hand.py" \
+    "$WORK/m098-xref-changed/xref-escaping.qmd" "${M33_TERMS[@]}"
 
   pass "M098 T5 self-test: the named-index, book, escaping and label readings are each red on a copy of the extension with the property they read undone"
 fi

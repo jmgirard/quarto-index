@@ -90,6 +90,7 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - 2026-09-13: T7 checked off. Suite with `--self-test` at 6e061f9: 1599 checks passed. Status review. `tests/pdfindex.py` is unchanged: it reads the Typst index's order, levels and footer as they stand. The reader takes links from the PDF's link annotations, because `pdftohtml -xml` at its default zoom assigned a link to the wrong characters.
 - 2026-09-13: review return 1 (defect): AC8 failed as written, because `examples/xref-escaping.qmd` has no hand-derived manifest. AC5 was not verified, because the book locators are compared by chapter with bounds read from the PDF. AC6 was not verified on the final tree, because run 34785351085 predates the heading change in 6e061f9. Status in-progress, with T8 to T13 added.
 - 2026-09-13: step-7 gate: the user chose the send-back, the proposed finding dispositions, and dropping a page a range covers. The send-back approves the branch push T13 needs.
+- 2026-09-13: T8 code: the xref-escaping check is held to a statement of the fixture's construction, which matches all 643 derived entries. `a00` writes `L1!!!!L3`, which the left-to-right level parse reads as the one level `L1!!L3`, and the statement names that case. The plant xref-changed is red on `(2, '&')` alone, and the real fixture is green (run in isolation).
 
 ## Decisions
 

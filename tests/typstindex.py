@@ -310,10 +310,13 @@ def _levels(edges):
 def read(pdf_path, heading, stop=()):
     """The index under the line `heading`, as a list of Line.
 
-    With `stop`, the read ends at the first later page carrying any of those
-    lines and drops that page, as tests/pdfindex.py's bounded read does; a
-    stop no later page carries raises LookupError. Without it the read runs to
-    the end of the document.
+    With `stop`, the read ends at the first later page carrying a line that
+    starts with any of those strings, and drops that page, as
+    tests/pdfindex.py's bounded read does; a stop no later page carries raises
+    LookupError. A start rather than a whole line, because the page after an
+    index in a Typst book opens with a running header that names the chapter
+    and then the section. Without `stop` the read runs to the end of the
+    document.
     """
     pages = list(_pages(pdf_path))
     start = None
@@ -330,7 +333,8 @@ def read(pdf_path, heading, stop=()):
     if stop:
         wanted = set(stop)
         for i in range(start[0] + 1, len(pages)):
-            if any(_text(words) in wanted for words in pages[i][2]):
+            if any(_text(words).startswith(want) for words in pages[i][2]
+                   for want in wanted):
                 end = i
                 break
         else:

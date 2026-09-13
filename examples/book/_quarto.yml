@@ -9,6 +9,10 @@ project:
 
 book:
   title: "Index Book Fixture"
+  # Quarto's Typst book template fails to compile a book with no author
+  # (observed on Quarto 1.10.18: "expected content, found array"), and the
+  # Typst book checks render this fixture (M098).
+  author: "Index Book Author"
   chapters:
     - index.qmd
     - one.qmd

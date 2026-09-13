@@ -1089,17 +1089,21 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI117.** The `stopped` reading depends on TeX's fatal-error line ending the
   engine log; no capture whose rejection is the log's last `! ` line exists to
   exercise it. — M36
-- **KI120.** `%2F%2Fevil.com` is skipped by neither the `//` nor the scheme
-  test and is resolved as a local path, a false report only. One test answers
-  the question for every link reader now (corrected M085), and the enumeration
-  of what it does not catch names this shape:
-  `htmlindex.leaves_publication`'s docstring. — M46 review, M083 review, M085
+- **KI120.** `%2F%2Fevil.com` is one path segment in the linking page's own
+  directory under RFC 3986, so `htmlindex.leaves_publication` keeps it in the
+  publication correctly and `resolve_href` joins it to that directory
+  (corrected 2026-09-13: this entry called it a protocol-relative reference).
+  What remains is `tests/sitecheck.py links`, which decodes the path before it
+  picks a branch (M46) and so reports the link as naming no file while looking
+  for `evil.com` at the capture root rather than beside the linking page. The
+  verdict is right and the path it names is not. — M46 review, M083 review,
+  M085, D-059
 - **KI266.** A root-relative href (`/ch1.xhtml#frag`) stays in the publication
   by the one test all four link readers now share (M085), and three of them
   join it to the linking page's or member's directory, where the leading slash
   discards that directory and leaves a path no page map and no manifest lists;
   only `tests/sitecheck.py links` resolves it, against the capture root. No
-  fixture writes one. — M085 plan gate
+  fixture writes one, and D-059 declines resolving it. — M085 plan gate, D-059
 - **KI127.** Both sides of the version matrix's fixture-set comparison are
   sets, so two render targets written to one extraction name read as agreement
   while one extraction is silently overwritten. — M48 review

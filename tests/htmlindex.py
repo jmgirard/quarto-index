@@ -914,11 +914,13 @@ def leaves_publication(href):
     document's directory builds a path no page map and no manifest lists, so
     a link that is not broken would be reported as one that is.
 
-    What it does NOT catch: a percent-encoded opening. `%2F%2Fevil.com` is a
-    protocol-relative reference written in escapes, and this reads it as a
-    relative path with a strange name (KI120). Nor is a fragment-only href
-    caught, or an empty one: neither has a file part, and both name the
-    document carrying them.
+    A percent-encoded opening stays, and staying is the right answer. Under
+    RFC 3986 an escaped `/` is data inside a path segment, not a delimiter, so
+    `%2F%2Fevil.com` names one file in the linking document's own directory:
+    `urllib.parse.urljoin('http://h/a/b.html', '%2F%2Fevil.com')` gives
+    `http://h/a/%2F%2Fevil.com` (KI120). A fragment-only href stays too, as
+    does an empty one: neither has a file part, and both name the document
+    carrying them.
 
     A relative filename that carries a colon in its first segment reads as
     leaving — `notes:draft.xhtml` is a scheme match, not a file. An author

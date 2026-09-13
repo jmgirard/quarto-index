@@ -1,0 +1,74 @@
+---
+pagetitle: "Typst"
+---
+
+# Typst
+
+For Typst the extension prints each index with page locators, in two columns,
+built from the same marks every other back-end reads. It needs no Typst
+package: everything the index uses is written into the document, so nothing is
+downloaded when the document compiles.
+
+A page number is known only once Typst has laid out the pages, and the
+extension runs before that. So it writes an invisible Typst label at each mark,
+and each locator in the index asks Typst for the page of its label while the
+document is typeset. A mark in a heading gets its label just after the
+heading, so the copy of that heading in the table of contents carries none.
+
+## Where the index goes
+
+Each index goes where your placement marker puts it, and at the end of the
+document where no marker names it, in the order your `indexes:` metadata
+declares them. See [Placing the index](placing-the-index.qmd). An index starts
+on a new page under an unnumbered level-one heading, which Typst lists in the
+table of contents. The heading is **Index**, or the title your `indexes:`
+metadata declares, or your document language's word for an index where the
+extension covers that language. The text after the index starts on a new page
+too.
+
+## Entries
+
+The entries are ordered and grouped as in HTML: a `Symbols` group first, then
+one group per letter, each under its letter in bold. See [Letter groups in the
+HTML index](letter-groups.qmd). A sub-entry is indented under its parent, and
+sub-entries nest as deep as you write them.
+
+## Locators
+
+Each locator is the page number as the page shows it. An entry's locators are
+in page order, and each one links to its page.
+
+- Several marks of one term on one page print that page once.
+- The locator of a principal mention is set in bold. Where a principal and an
+  ordinary mark of one term share a page, that page's one locator is bold.
+- A range prints its opening and closing pages, `12–15`, and links to the
+  opening page. Where both ends of a range are on one page, it prints that page
+  alone.
+- Pages you marked separately stay separate: marks on pages 3, 4 and 5 print
+  `3, 4, 5`. Only a range you write prints as a range.
+
+## Cross-references
+
+A cross-reference prints its word in italics, then its target as plain text,
+with no link. The words are `see` and `see also`, your document language's
+words where the extension covers that language, or the words you set under
+`index-labels:`, which Typst reads for `symbols`, `see` and `see-also`.
+
+The punctuation is fixed: a comma before each locator and before the first
+cross-reference, and a semicolon between two cross-references. The
+`separator` and `xref-separator` keys of `index-labels:` do not reach the Typst
+index.
+
+## Books
+
+Quarto renders a Typst book as one merged document, so the extension sees every
+chapter's marks at once, and a range you open in one chapter and close in
+another pairs. Books were tested on Quarto 1.10.18. On that version Quarto's
+Typst book template does not compile a book whose `book:` metadata has no
+`author:`.
+
+## A mark Typst never prints
+
+A mark in a front-matter field that Quarto's Typst template does not print,
+such as `description:`, has no label on any page. Its term is still in the
+index, with no page number.

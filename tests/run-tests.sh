@@ -29455,6 +29455,251 @@ if [ "${1:-}" = "--self-test" ]; then
   pass "M098 T5 self-test: the named-index, book, escaping and label readings are each red on a copy of the extension with the property they read undone"
 fi
 
+# ---------------------------------------------------------------------------
+# M098-AC7 — the documentation is true for four back-ends.
+#
+# The claim rows are the sentences M098 adds or corrects, each held to its page
+# by tests/sitecheck.py. A sentence about what a Typst render does is backed by
+# a check: most by the AC1-AC8 sections above, and the rest by the renders in
+# this section, each named beside the rows it backs. The count sweep is its own
+# phrase list rather than a row under M52's two-back-ends list, whose FAIL
+# message names that count by hand.
+# ---------------------------------------------------------------------------
+section 'M098-AC7 — the documentation is true for four back-ends.'
+cat > "$WORK/m098-count-claims.txt" <<'M098COUNT'
+count	Four back-ends ship: LaTeX/PDF, HTML, EPUB and Typst.
+M098COUNT
+python3 tests/sitecheck.py claims README.md "$WORK/m098-count-claims.txt" \
+  || fail "M098-AC7: README.md does not state the four back-ends (its own FAIL line is above)"
+python3 tests/sitecheck.py claims site/index.qmd "$WORK/m098-count-claims.txt" \
+  || fail "M098-AC7: site/index.qmd does not state the four back-ends (its own FAIL line is above)"
+cat > "$WORK/m098-count-retired.txt" <<'M098RETIRED'
+three back-ends	three back-ends
+all three back-ends	all three back-ends
+M098RETIRED
+python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" \
+  || fail "M098-AC7: a page a reader meets still counts three back-ends (its own FAIL line is above)"
+
+cat > "$WORK/m098-nav-claims.txt" <<'M098NAV'
+sidebar entry	- typst.qmd
+M098NAV
+python3 tests/sitecheck.py claims site/_quarto.yml "$WORK/m098-nav-claims.txt" \
+  || fail "M098-AC7: site/_quarto.yml does not list the Typst page in the site navigation (its own FAIL line is above)"
+cat > "$WORK/m098-output-claims.txt" <<'M098OUT'
+link	[Typst](typst.qmd)
+M098OUT
+python3 tests/sitecheck.py claims site/output.qmd "$WORK/m098-output-claims.txt" \
+  || fail "M098-AC7: site/output.qmd does not link to the Typst page (its own FAIL line is above)"
+
+cat > "$WORK/m098-typst-claims.txt" <<'M098PAGE'
+what it prints	For Typst the extension prints each index with page locators, in two columns
+no package	It needs no Typst package
+labels	it writes an invisible Typst label at each mark
+heading mark	A mark in a heading gets its label just after the heading
+own page	An index starts on a new page under an unnumbered level-one heading, which Typst lists in the table of contents
+text after	The text after the index starts on a new page too.
+groups	a `Symbols` group first, then one group per letter, each under its letter in bold
+depth	sub-entries nest as deep as you write them
+page shown	Each locator is the page number as the page shows it.
+links	An entry's locators are in page order, and each one links to its page.
+one page once	Several marks of one term on one page print that page once.
+principal	The locator of a principal mention is set in bold.
+shared page	Where a principal and an ordinary mark of one term share a page, that page's one locator is bold.
+range	A range prints its opening and closing pages, `12–15`, and links to the opening page.
+range on one page	Where both ends of a range are on one page, it prints that page alone.
+separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.
+reference	A cross-reference prints its word in italics, then its target as plain text, with no link.
+label keys	which Typst reads for `symbols`, `see` and `see-also`
+punctuation	a comma before each locator and before the first cross-reference, and a semicolon between two cross-references
+separator keys	The `separator` and `xref-separator` keys of `index-labels:` do not reach the Typst index.
+book pairs	a range you open in one chapter and close in another pairs
+books tested	Books were tested on Quarto 1.10.18.
+author	Quarto's Typst book template does not compile a book whose `book:` metadata has no `author:`
+unprinted field	Its term is still in the index, with no page number.
+M098PAGE
+python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \
+  || fail "M098-AC7: site/typst.qmd no longer states what a Typst render prints (its own FAIL line is above)"
+
+cat > "$WORK/m098-differences-claims.txt" <<'M098DIFF'
+count	Four back-ends ship: LaTeX (and the PDF it typesets), HTML, EPUB and Typst.
+ceiling	No level ceiling in HTML or Typst.
+one entry	An HTML or Typst index prints the locator and the cross-reference together on one entry by itself
+sorting	Sorting is the extension's own in HTML and Typst.
+locators	Typst gives page numbers too, in page order, and each one links to its page.
+targets	In the LaTeX and Typst indexes a target is always plain text.
+no locator	A cross-reference carries no locator in any of the four back-ends.
+principal	the Typst back-end sets the page number in bold
+range	A page range is a page range only in LaTeX and Typst.
+separate pages	Typst prints only the ranges you write: marks on pages 3, 4 and 5 print `3, 4, 5`
+label keys	The Typst index reads the three word keys and neither separator key
+lang count	All four back-ends follow `lang:`, and share nothing else about it.
+lang table	HTML, EPUB and Typst read a table this extension ships
+index-labels readers	`index-labels:` is read by the HTML, EPUB and Typst back-ends alone
+M098DIFF
+python3 tests/sitecheck.py claims site/back-end-differences.qmd "$WORK/m098-differences-claims.txt" \
+  || fail "M098-AC7: site/back-end-differences.qmd no longer states what Typst does (its own FAIL line is above)"
+
+cat > "$WORK/m098-other-claims.txt" <<'M098OTHER'
+typst book	A Typst book is merged the same way.
+M098OTHER
+python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
+  || fail "M098-AC7: site/books.qmd no longer states that a Typst book is merged (its own FAIL line is above)"
+cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
+matrix typst	The same leg renders `typst-index.qmd` to Typst on each version and reads both of its indexes
+M098TESTS
+python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
+  || fail "M098-AC7: site/tests.qmd no longer states the version matrix's Typst step (its own FAIL line is above)"
+cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
+new back-end	A new back-end for Typst.
+what it prints	prints each index it declares with page locators, in two columns, and needs no Typst package
+ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep as they are written.
+locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
+words	The see and see-also words follow `lang:` and `index-labels:`.
+books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
+M098CHANGE
+python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m098-changelog-claims.txt" \
+  || fail "M098-AC7: CHANGELOG.md no longer states the Typst back-end (its own FAIL line is above)"
+
+# The claims no section above reads.
+#
+# Separate pages. Three marks of one term on three pages in a row, written here
+# rather than as a fixture, since nothing else reads it: each page is a locator
+# of its own.
+M098D="$WORK/m098docs"
+rm -rf "$M098D"
+mkdir -p "$M098D/consecutive/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/consecutive/_extensions/index"
+printf '%s\n' '---' 'title: "Consecutive pages"' 'filters:' '  - index' '---' '' \
+  '[otter]{.index}' '' '{{< pagebreak >}}' '' '[otter]{.index}' '' \
+  '{{< pagebreak >}}' '' '[otter]{.index}' > "$M098D/consecutive/consecutive.qmd"
+( cd "$M098D/consecutive" && quarto render consecutive.qmd --to typst -M keep-typ:true ) \
+  > "$WORK/m098-consecutive.log" 2>&1 \
+  || { tail -20 "$WORK/m098-consecutive.log" >&2; fail "M098-AC7: the consecutive-pages document failed to render to Typst"; }
+capture "$M098D/consecutive/consecutive.qmd" typst "m098-consecutive"
+printf 'group\tO\nentry\t0\totter\t1@1, 2@2, 3@3\n' > "$WORK/m098-consecutive.tsv"
+python3 tests/typstindex.py "$M098D/consecutive/consecutive.pdf" "$WORK/m098-consecutive.tsv" \
+  "M098-AC7 (three pages in a row)" "Index" \
+  || fail "M098-AC7: marks on three pages in a row do not print three locators (the report is above)"
+
+# No package. The Typst the render compiled, kept beside the document, imports
+# nothing, and it carries the labels this back-end writes, so the search ran
+# over this back-end's output and not over an empty file.
+grep -q '#\[#metadata(none)<qi-mark-1>\]' "$M098D/consecutive/consecutive.typ" \
+  || fail "M098-AC7: the kept Typst source carries no label this back-end writes, so a search of it for an import says nothing"
+if grep -n '#import' "$M098D/consecutive/consecutive.typ"; then
+  fail "M098-AC7: the Typst a render compiles imports a package"
+fi
+pass "M098-AC7: the Typst a render compiles carries this back-end's labels and imports no package"
+
+# Fixed punctuation. examples/index-separators.qmd sets both separator keys to
+# Arabic marks, and the Typst index prints a comma and a semicolon anyway. Its
+# first Azurite mark is on page 1 and every other mark on page 2, past its one
+# explicit break.
+quarto render examples/index-separators.qmd --to typst > "$WORK/index-separators-typst.log" 2>&1 \
+  || { tail -40 "$WORK/index-separators-typst.log" >&2; fail "M098-AC7: examples/index-separators.qmd failed to render to Typst"; }
+capture examples/index-separators.qmd typst "index-separators-typst"
+printf '%s\n' $'group\tA' $'entry\t0\tAzurite\t1@1, 2@2' $'group\tB' \
+  $'entry\t0\tBeryl\t2@2\tsee also|Azurite' $'group\tC' \
+  $'entry\t0\tCinnabar\t\tsee|Azurite' $'group\tD' \
+  $'entry\t0\tDolomite\t\tsee|Azurite; see also|Beryl' > "$WORK/m098-separators.tsv"
+python3 tests/typstindex.py pages "$CAPTURE_ROOT/index-separators-typst/index-separators.pdf" \
+  "$WORK/m098-separators.tsv" "M098-AC7 (fixed punctuation)" "Index" \
+  || fail "M098-AC7: the Typst index of examples/index-separators.qmd does not print a comma and a semicolon (the report is above)"
+
+# A mark Typst never prints. examples/front-matter.qmd marks a term in each of
+# three front-matter fields and one in its body, all on page 1; Quarto's Typst
+# template prints the subtitle and the abstract and not the description.
+quarto render examples/front-matter.qmd --to typst > "$WORK/front-matter-typst.log" 2>&1 \
+  || { tail -40 "$WORK/front-matter-typst.log" >&2; fail "M098-AC7: examples/front-matter.qmd failed to render to Typst"; }
+capture examples/front-matter.qmd typst "front-matter-typst"
+printf '%s\n' $'group\tB' $'entry\t0\tBollard\t1@1' $'group\tC' $'entry\t0\tCapstan\t1@1' \
+  $'group\tG' $'entry\t0\tGimbal\t1@1' $'group\tH' $'entry\t0\tHalyard' > "$WORK/m098-front-matter.tsv"
+python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" \
+  "$WORK/m098-front-matter.tsv" "M098-AC7 (a field Typst never prints)" "Index" \
+  || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
+
+# The outline and the page after. The book's outline lists the index before
+# the first chapter's own heading; in the named-index fixture the heading of
+# the first index is on a page of its own, apart from the text before and
+# after it.
+python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC7 (the outline lists the index)" \
+  "=Contents" "^Index of Subjects" "=1. Opening" \
+  || fail "M098-AC7: the Typst book's outline does not list the index of subjects (the report is above)"
+python3 - "$M098_NAMED_PDF" <<'M098PAGEPY'
+import subprocess, sys
+text = subprocess.run(['pdftotext', sys.argv[1], '-'], check=True,
+                      capture_output=True, text=True).stdout
+pages = [[l.strip() for l in page.split('\n')] for page in text.split('\f')]
+def page_of(line):
+    found = [n for n, lines in enumerate(pages, start=1) if line in lines]
+    if len(found) != 1:
+        print(f'FAIL: M098-AC7: {line!r} is on page(s) {found}, not one page',
+              file=sys.stderr)
+        sys.exit(1)
+    return found[0]
+before, heading, after = (page_of('Where the first index goes'),
+                          page_of('Index'), page_of('Below the first index'))
+if not before < heading < after:
+    print(f'FAIL: M098-AC7: the text before the first index is on page '
+          f'{before}, its heading on page {heading} and the text after it on '
+          f'page {after}; the index is on pages of its own', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M098-AC7: the first index of the named-index fixture starts on page '
+      f'{heading}, after the text before it on page {before}, and the text '
+      f'after it starts on page {after}')
+M098PAGEPY
+
+# The author. A copy of the book fixture with its `author:` line taken out
+# fails to compile to Typst, with the error Quarto's book template raises.
+cp -R "$BOOK_DIR" "$M098D/noauthor"
+rm -rf "$M098D/noauthor/_extensions" "$M098D/noauthor/_book" "$M098D/noauthor/.quarto"
+mkdir -p "$M098D/noauthor/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/noauthor/_extensions/index"
+grep -v '^  author: ' "$BOOK_DIR/_quarto.yml" > "$M098D/noauthor/_quarto.yml"
+grep -q '^  author: ' "$BOOK_DIR/_quarto.yml" \
+  || fail "M098-AC7: examples/book/_quarto.yml carries no author line, so the copy without one is the fixture itself"
+M098_NOAUTHOR_RC=0
+( cd "$M098D/noauthor" && quarto render --to typst ) > "$WORK/m098-noauthor.log" 2>&1 \
+  || M098_NOAUTHOR_RC=$?
+capture --project "$M098D/noauthor" typst "m098-noauthor"
+[ "$M098_NOAUTHOR_RC" -ne 0 ] \
+  || fail "M098-AC7: the book with no author compiled to Typst, so the docs' sentence that Quarto's template needs one is stale"
+grep -q 'expected content, found array' "$WORK/m098-noauthor.log" \
+  || { tail -20 "$WORK/m098-noauthor.log" >&2; fail "M098-AC7: the book with no author failed, but not with the template's error, so its failure is not the one the docs state"; }
+pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
+pass "M098-AC7: README, the home page and the back-end differences page count four back-ends and no page counts three, the Typst page is in the navigation and linked from the output page, and every sentence M098 adds about Typst is on its page and backed by a check"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M098 T7 self-test — the two sweeps this section adds, shown red: the count
+  # sweep on an overlay page carrying the retired count, and the Typst page's
+  # claim list on a copy that has lost one sentence. The renders above carry
+  # their own failing leg or their own control.
+  # -------------------------------------------------------------------------
+  mkdir -p "$M098D/overlay/site"
+  python3 - site/typst.qmd "$M098D/overlay/site/typst.qmd" "$M098D/typst-lost.qmd" <<'M098PLANTPY' \
+    || fail "M098 T7 self-test: the page variants could not be written (their own FAIL line is above)"
+import sys
+page, overlay, lost = sys.argv[1:4]
+body = open(page, encoding='utf-8').read()
+gone = 'Pages you marked separately stay separate'
+if gone not in body:
+    print(f'FAIL: M098 T7 self-test: {page} does not carry {gone!r}', file=sys.stderr)
+    sys.exit(1)
+open(overlay, 'w', encoding='utf-8').write(body + '\nThree back-ends ship.\n')
+if body.count('`3, 4, 5`') != 1:
+    print(f'FAIL: M098 T7 self-test: {page} does not carry `3, 4, 5` exactly '
+          f'once, so the folded copy is not one changed sentence', file=sys.stderr)
+    sys.exit(1)
+open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
+M098PLANTPY
+  m098_red count-overlay 'site/typst.qmd (three back-ends)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
+  m098_red typst-lost 'does not state 1 of the 24 claim(s)' \
+    python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
+  pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, and the Typst page's claims are red on a copy stating a folded range"
+fi
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M074 T5 — the three axes this milestone is free in, one planted defect

@@ -2,7 +2,7 @@
 
 A Quarto extension for book-quality subject indexing. Mark index entries with
 a format-neutral span syntax; the extension emits the right thing per output
-format. Three back-ends ship: LaTeX/PDF, HTML and EPUB.
+format. Four back-ends ship: LaTeX/PDF, HTML, EPUB and Typst.
 
 ## Install
 

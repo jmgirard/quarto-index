@@ -4,6 +4,14 @@
 
 ### Output
 
+- A new back-end for Typst. A document or a book rendered to Typst prints
+  each index it declares with page locators, in two columns, and needs no
+  Typst package. Entries are ordered and grouped by letter as in HTML, and
+  nest as deep as they are written. A principal mention's page number is set
+  in bold, a range prints its first and last pages, and each page number
+  links to its page. The see and see-also words follow `lang:` and
+  `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
+  book template needs an `author:`.
 - A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no
   longer a language tag under any system locale. The HTML and EPUB index
   keeps its English words for it, and an index the document does not declare

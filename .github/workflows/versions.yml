@@ -226,7 +226,10 @@ jobs:
   #
   # WHAT IT CHECKS. That `quarto render --to pdf` succeeds on both fixtures
   # under this leg's Quarto, and that `tests/indexdump.py pdf` finds a printed
-  # index with at least one entry in each rendered PDF. The render alone is
+  # index with at least one entry in each rendered PDF. And that
+  # `quarto render --to typst` succeeds on examples/typst-index.qmd and prints
+  # both of its indexes as their manifests state them, in order and on the
+  # stated pages (M098). The render alone is
   # not the check: a PDF that typesets at exit 0 while the index prints empty
   # is exactly the break this job exists to catch, and `indexdump.py` is what
   # makes the difference between the two visible.
@@ -387,6 +390,35 @@ jobs:
             examples/book/_book/Index-Book-Fixture.pdf \
             'Index of Subjects' 'Index of People' \
             > "$RUNNER_TEMP/pdf/book.pdf.txt"
+
+      # The Typst back-end (M098), in this job because it reads the PDF through
+      # `pdftotext`, which the poppler step above installs, and needs no TeX.
+      # Each Quarto release bundles its own Typst, so the floor leg is where a
+      # Typst feature the back-end emits and an older Typst lacks would show.
+      #
+      # The render is its own step and the reading the step after it, for the
+      # reason the PDF renders above are. The reading is `typstindex.py pages`:
+      # tests/pdfindex.py reads each index, and each line's level and text are
+      # compared with the rows of the hand-derived manifests the acceptance
+      # suite reads, the entries in order and each locator with its page
+      # number. The faces and links the suite also reads need `pdftohtml`'s
+      # font names and a reading this job does not repeat.
+      - name: Render examples/typst-index.qmd to Typst
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/typst-index.qmd --to typst
+
+      - name: Read the Typst indexes against their manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/typstindex.py pages examples/typst-index.pdf \
+            tests/typst-index-main.tsv 'Typst index of terms' \
+            'Index of Terms' 'Index of People'
+          python3 tests/typstindex.py pages examples/typst-index.pdf \
+            tests/typst-index-people.tsv 'Typst index of people' \
+            'Index of People'
 
       - name: Report what this leg extracted
         shell: bash

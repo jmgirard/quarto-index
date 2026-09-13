@@ -9500,8 +9500,10 @@ $M064_HTML_PASSAGE: [$M064_HTML_TERM]{.index index="gamma"}.
 CONDITIONAL
 }
 
-# `m061_mutant`'s substitution is aimed at `book.lua`; the locator tree lives in
-# `html.lua`, and one of the mutants below is aimed there. Same guard: a
+# `m061_mutant`'s substitution is aimed at `book.lua`; the HTML locator rule,
+# which drops a destination already recorded, lives in `html.lua` (the entry
+# tree it feeds moved to `entries.lua` in M098), and one of the mutants below
+# is aimed there. Same guard: a
 # substitution that changed nothing is a failure, never a silent no-op.
 m064_mutant_html() {   # <slug> <perl expression> <label>
   local slug="$1" expression="$2" label="$3"
@@ -28895,6 +28897,15 @@ python3 tests/typstindex.py "$M098_PDF" tests/typst-index-main.tsv \
 python3 tests/typstindex.py "$M098_PDF" tests/typst-index-people.tsv \
   "M098-AC1/AC3 (the index of people)" "Index of People" \
   || fail "M098-AC1/AC3: the index of people does not match tests/typst-index-people.tsv (the report is above)"
+# The version matrix's reading (AC6), green here on the same render, so a local
+# change that breaks the pdftotext-only reading is red before the next manual
+# Versions run. The self-test holds it red on a page plant below.
+python3 tests/typstindex.py pages "$M098_PDF" tests/typst-index-main.tsv \
+  "M098-AC6 (the index of terms, pdftotext reading)" "Index of Terms" "Index of People" \
+  || fail "M098-AC6: the version matrix's reading of the index of terms does not match tests/typst-index-main.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M098_PDF" tests/typst-index-people.tsv \
+  "M098-AC6 (the index of people, pdftotext reading)" "Index of People" \
+  || fail "M098-AC6: the version matrix's reading of the index of people does not match tests/typst-index-people.tsv (the report is above)"
 
 python3 - "$M098_PDF" <<'M098LINKSPY'
 import sys
@@ -29624,7 +29635,7 @@ cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
 new back-end	A new back-end for Typst.
 what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package
 ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep as they are written.
-locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
+locators	A principal mention's page number is set in bold, a range prints its first and last pages, a page a range spans prints no page number of its own, and each page number links to its page.
 words	The see and see-also words follow `lang:` and `index-labels:`.
 books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
 M098CHANGE

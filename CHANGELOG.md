@@ -8,7 +8,8 @@
   each declared index that holds at least one mark, with page locators, in two
   columns, and needs no Typst package. Entries are ordered and grouped by letter as in HTML, and
   nest as deep as they are written. A principal mention's page number is set
-  in bold, a range prints its first and last pages, and each page number
+  in bold, a range prints its first and last pages, a page a range spans
+  prints no page number of its own, and each page number
   links to its page. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
   book template needs an `author:`.

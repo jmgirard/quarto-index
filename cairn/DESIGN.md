@@ -442,7 +442,9 @@ Three back-ends ship:
   span, not inside it: Pandoc writes an author's id as a label straight after
   the span's content, and a label element there would carry both. A label
   stays out of a heading because Typst's outline copies a heading's body, and
-  a copied label names two elements. The index is one raw Typst block per
+  a copied label names two elements. A label written in an image's alt text
+  moves to just after the image, because Pandoc's Typst writer prints alt
+  text as a string and drops raw Typst there (M098 review). The index is one raw Typst block per
   declared index that some mark files in, placed by `place_index` after a weak
   page break and a raw, unnumbered Typst `heading`. The heading is raw because
   Quarto moves every Pandoc header up a level for Typst in a document whose

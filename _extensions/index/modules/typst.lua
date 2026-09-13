@@ -233,6 +233,28 @@ local function assign_labels(doc, taken)
       record.label = label
       return { span, label_inline(label) }
     end,
+    -- Pandoc's Typst writer prints an image's alt text as a string and drops
+    -- any raw Typst in it, so a label written there names no element and its
+    -- locator would be lost. Each such label moves to just after the image,
+    -- which is on the same page. The walk is bottom-up, so the Span function
+    -- above has already written them.
+    Image = function(image)
+      local moved = {}
+      image.caption = image.caption:walk({
+        RawInline = function(raw)
+          if raw.format == "typst"
+              and raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true) then
+            moved[#moved + 1] = raw
+            return {}
+          end
+        end,
+      })
+      if #moved == 0 then
+        return nil
+      end
+      table.insert(moved, 1, image)
+      return moved
+    end,
   })
 end
 

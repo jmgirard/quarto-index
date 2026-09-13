@@ -29689,6 +29689,29 @@ python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" 
   "$WORK/m098-front-matter.tsv" "M098-AC7 (a field Typst never prints)" "Index" \
   || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
 
+# A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text
+# as a string and drops the label written there, so the back-end moves each
+# such label to just after its image. Page 1 holds an inline image with a mark
+# in its alt text, page 2 a figure whose caption Quarto also copies into the
+# image's alt text, and page 3 an inline image with a plain and a principal
+# mark in its alt text.
+mkdir -p "$M098D/alt/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/alt/_extensions/index"
+cp examples/dot.png "$M098D/alt/"
+printf '%s\n' '---' 'title: "Alt text"' 'filters:' '  - index' '---' '' \
+  'Body ![alt [imgterm]{.index}](dot.png){width=1cm} inline.' '' '{{< pagebreak >}}' '' \
+  '![Figure caption [figterm]{.index}](dot.png){width=1cm}' '' '{{< pagebreak >}}' '' \
+  'Text ![only [second]{.index} here [third]{.index mention="principal"}](dot.png){width=1cm}.' \
+  > "$M098D/alt/alt.qmd"
+( cd "$M098D/alt" && quarto render alt.qmd --to typst ) > "$WORK/m098-alt.log" 2>&1 \
+  || { tail -20 "$WORK/m098-alt.log" >&2; fail "M098-AC7: the alt-text document failed to render to Typst"; }
+capture "$M098D/alt/alt.qmd" typst "m098-alt"
+printf '%s\n' $'group\tF' $'entry\t0\tfigterm\t2@2' $'group\tI' $'entry\t0\timgterm\t1@1' \
+  $'group\tS' $'entry\t0\tsecond\t3@3' $'group\tT' $'entry\t0\tthird\t3*@3' > "$WORK/m098-alt.tsv"
+python3 tests/typstindex.py "$M098D/alt/alt.pdf" "$WORK/m098-alt.tsv" \
+  "M098-AC7 (marks in image alt text)" "Index" \
+  || fail "M098-AC7: a mark in image alt text does not print its page in the Typst index (the report is above)"
+
 # The outline and the page after. The book's outline lists the index before
 # the first chapter's own heading; in the named-index fixture the heading of
 # the first index is on a page of its own, apart from the text before and
@@ -29805,6 +29828,21 @@ M098PLANTPY
   m098_red outline-paragraph "no line '^main ' follows" \
     python3 tests/typstcheck.py order "$M098D/outline-plant/outline.pdf" "M098 T7 plant outline" \
     "=Table of contents" "^main " "=First section" "=main"
+  # The alt-text move undone (T11): the image's labels stay in its alt text.
+  mkdir -p "$M098D/alt-plant"
+  cp "$M098D/alt/alt.qmd" "$M098D/alt/dot.png" "$M098D/alt-plant/"
+  cp -R "$M098D/alt/_extensions" "$M098D/alt-plant/_extensions"
+  perl -0777 -pi -e 's{    Image = function\(image\)}{    NoImage = function(image)}' \
+    "$M098D/alt-plant/_extensions/index/modules/typst.lua"
+  grep -q 'NoImage = function(image)' "$M098D/alt-plant/_extensions/index/modules/typst.lua" \
+    || fail "M098 T11 self-test: the alt-text plant changed nothing in typst.lua"
+  ( cd "$M098D/alt-plant" && quarto render alt.qmd --to typst ) \
+    > "$WORK/m098-alt-plant.log" 2>&1 \
+    || { tail -20 "$WORK/m098-alt-plant.log" >&2; fail "M098 T11 self-test: the alt-text document failed to render through the planted copy"; }
+  capture "$M098D/alt-plant/alt.qmd" typst "m098-alt-plant"
+  m098_red alt-kept "got 'entry\t0\timgterm\t\t'" \
+    python3 tests/typstindex.py "$M098D/alt-plant/alt.pdf" "$WORK/m098-alt.tsv" \
+    "M098 T11 plant alt-kept" "Index"
   pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, the Typst page's claims are red on a copy stating a folded range, and the outline check is red where the index heading is a paragraph"
 fi
 

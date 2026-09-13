@@ -1,13 +1,13 @@
 # M098: A Typst render prints the index
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M097
 - **Driving RR:** —
 - **Principles touched:** IP1, IP2, GP2, GP3, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — authors who render a document or book to Typst get a printed index
-- **Branch/PR:** —
+- **Branch/PR:** m098-typst-back-end
 
 ## Goal
 
@@ -66,6 +66,8 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - 2026-09-13: criteria audit (full mode), round 2 returned 15 findings across M097 and M098, all adopted. M097: the grep exclusions, the named docstring sites, KI114 removed rather than edited, the compare job read for the floor and pinned pair only, and the floor PDF job recorded. M098: a docs sweep for sentences Typst makes false, placement read in text order, two indexes in the Typst fixture, books claimed for 1.10.18 only, page numbers checked on the floor leg, and the CI step moved to the `pdf` job. A new AC8 covers escaping, Unicode and label words (IP2). The plan is final.
 - 2026-09-13: plan kept 8 criteria over the 7-criterion split tripwire. AC8 guards IP2 for the same emitted Typst the other criteria read, so it does not ship on its own.
 - 2026-09-13: probe on Typst 0.15.1: labels on `#metadata` marks and `locate(label).page()` inside `context` printed page locators 1, 2 for marks on two pages. The Typst 0.10 form `locate(loc => ...)` fails on 0.15.1.
+- 2026-09-13: implement started on branch m098-typst-back-end. Probe on Typst 0.15.1: `link(location, strong(...))` gives a PDF link whose page `pdftohtml -xml` reports. `pdftohtml -xml -fontfullname` names the bold face `LibertinusSerif-Bold`. Plain `-xml` drops the weight from the family name.
+- 2026-09-13: question gate: a Typst index prints each page of a run of consecutive pages, and does not fold three or more into a range as makeindex does. Only an author's range prints as a range. A locator prints the page number as the page shows it, and the physical page where the page has no numbering.
 
 ## Decisions
 

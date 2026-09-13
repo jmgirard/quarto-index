@@ -35,7 +35,7 @@ locator: [dahlia]{.index} and [dahlia]{.index mention="principal"}.
 A range that opens and closes on one page prints that page alone:
 [elm]{.index range="open"} and [elm]{.index range="close"}.
 
-A range that closes on the next page opens here: [fig]{.index range="open"}.
+A range that closes on the next page opens here: [fern]{.index range="open"}.
 
 A sort key files a term under other text: [The Hague]{.index sort="Hague"}.
 
@@ -43,7 +43,7 @@ A sort key files a term under other text: [The Hague]{.index sort="Hague"}.
 
 ## Page 2
 
-The range opened on page 1 closes here: [fig]{.index range="close"}.
+The range opened on page 1 closes here: [fern]{.index range="close"}.
 
 The seventh form marks a principal mention: [gnome]{.index mention="principal"}.
 

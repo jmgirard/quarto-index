@@ -17,7 +17,12 @@
 #   Cobalt       the invisible form, page 1
 #   dahlia       ordinary then principal, both page 1: one bold locator
 #   elm          a range opened and closed on page 1: that page alone
-#   fig          a range opened on page 1 and closed on page 2; links to 1
+#   fern         a range opened on page 1 and closed on page 2; links to 1
+#
+# No term holds a letter pair the font sets as one ligature glyph (`fi`, `fl`,
+# `ff`). The Typst that Quarto 1.5.52 bundles maps such a glyph to the single
+# ligature character, and pdftotext then reads `fig` as `ﬁg` (observed
+# 2026-09-13 on the version matrix's floor leg).
 #   gnome        principal, page 2
 #   The Hague    `sort="Hague"`, page 1: files under H
 #   insect       `see="Bee"` alone: no locator
@@ -37,7 +42,7 @@ entry	0	dahlia	1*@1
 group	E
 entry	0	elm	1@1
 group	F
-entry	0	fig	1–2@1
+entry	0	fern	1–2@1
 group	G
 entry	0	gnome	2*@2
 group	H

@@ -28867,7 +28867,7 @@ print('ok   M098-AC1: examples/typst-index.qmd declares two indexes and no '
       'and fixes its pages with four explicit breaks')
 M098FORMSPY
 
-for row in $'entry\t0\tapple\t1@1, 3@3' $'entry\t0\tfig\t1–2@1' \
+for row in $'entry\t0\tapple\t1@1, 3@3' $'entry\t0\tfern\t1–2@1' \
            $'entry\t0\telm\t1@1' $'entry\t0\tdahlia\t1*@1' \
            $'entry\t0\tgnome\t2*@2' $'entry\t0\taardvark\t1@1' \
            $'entry\t0\tinsect\t\tsee|Bee' $'entry\t0\tjam\t3@3\tsee also|apple'; do
@@ -29002,7 +29002,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # A range over two pages: printed as its opening page alone.
   m098_tree norange typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if true}'
   m098_render norange
-  m098_terms norange 'fig\t1@1'
+  m098_terms norange 'fern\t1@1'
 
   # A range on one page: printed as a range from that page to itself.
   m098_tree samepage typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if false}'
@@ -29028,7 +29028,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # A range's link: to the closing page instead of the opening one.
   m098_tree closelink typst.lua 's{link\(f\.start, }{link(f.stop, }'
   m098_render closelink
-  m098_terms closelink 'fig\t1–2@2'
+  m098_terms closelink 'fern\t1–2@2'
 
   # A reference: given a link.
   m098_tree xreflink typst.lua 's{"\[#emph\(%s\) #\(%s\)\],"}{"link(<qi-mark-1>)[#emph(%s) #(%s)],"}'

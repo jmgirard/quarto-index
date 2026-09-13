@@ -1,6 +1,6 @@
 # M098: A Typst render prints the index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M097
 - **Driving RR:** —
@@ -53,7 +53,7 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - [x] T4: Write `examples/typst-index.qmd` and its manifest. Add the suite section for AC1 to AC3, with a self-test plant for each clause it reads. Adapt `tests/pdfindex.py` only where the Typst layout needs it, and state each change in the section. Add the bold reader over `pdftohtml -xml` and the link reader.
 - [x] T5: Add the Typst checks for `examples/named-indexes.qmd` and `examples/book/`, with their manifests and plants. Add `author:` to `examples/book/_quarto.yml` and run the existing book checks. Add the Typst checks and manifests for the four escaping and Unicode fixtures and the two label fixtures in AC8. Every character Typst reads as markup in a term, a sort key or a label is escaped in T3.
 - [x] T6: Add the Typst step to the `pdf` job of `versions.yml`, which already installs poppler. Start the workflow by hand and record the run URL.
-- [ ] T7: Write `site/typst.qmd` and add it to `site/_quarto.yml`. Change the back-end counts, `site/other-formats.qmd`, README and CHANGELOG. Add `tests/sitecheck.py` claims for the new sentences. Update the Architecture section of `cairn/DESIGN.md`.
+- [x] T7: Write `site/typst.qmd` and add it to `site/_quarto.yml`. Change the back-end counts, `site/other-formats.qmd`, README and CHANGELOG. Add `tests/sitecheck.py` claims for the new sentences. Update the Architecture section of `cairn/DESIGN.md`.
 
 ## Work log
 
@@ -80,7 +80,8 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - 2026-09-13: T7 AC7 sweep, 17 hits re-read. Typst made six false, each corrected: README.md:5, site/index.qmd:9 and site/back-end-differences.qmd:7 counted three back-ends, now four. back-end-differences:34 said a printed index cannot link at all, now that in the LaTeX and Typst indexes a target is always plain text. Line 42 said a page range is a range only in LaTeX, now LaTeX and Typst. Line 62 said all three back-ends follow `lang:`, now all four, and that item names Typst's table and `index-labels:` reading. Not made false: back-end-differences:63, books.qmd:245, cross-references.qmd:23 and :26, letter-groups.qmd:16, principal-mention.qmd:9, sorting.qmd:85, placing-the-index.qmd:15 and :22, tests.qmd:29, terms-outside-latin-1.qmd:42 and :56, sub-entry-levels.qmd:74.
 - 2026-09-13: T7: `site/typst.qmd` is in the sidebar and linked from `site/output.qmd`. Every back-end-differences item states what Typst does, and `site/books.qmd`, `site/tests.qmd` and CHANGELOG gain Typst sentences. `site/other-formats.qmd` is unchanged: it names no Typst, and its rule covers formats with no back-end, which Typst no longer is. DESIGN gains the `entries.lua`, `typst.lua` and Typst routing text and KI289-KI291. The AC7 section holds 49 claim rows and a three-back-ends sweep. Its renders check consecutive pages, fixed punctuation, an unprinted front-matter field, the outline entry, no package import and the book's `author:`. All 73 M098 checks and plants passed in isolation.
 - 2026-09-13: claim audit: 230 claims read, 9 corrected — site/typst.qmd, site/books.qmd, CHANGELOG.md, _extensions/index/index.lua, modules/core.lua, modules/entries.lua, modules/typst.lua, tests/typstindex.py, tests/typstcheck.py, tests/run-tests.sh
-- 2026-09-13: the audit found a defect: in a document whose headings start at `##`, Quarto moved the index's Pandoc header up a level for Typst, so it printed as a paragraph the outline did not list. The heading is now a raw Typst `heading`. A new AC7 render checks the outline, the heading an untitled index gets and an index with no marks, and a plant writing the heading as a paragraph is red. The reader's re-read found all nine corrections hold (6e061f9). `tests/pdfindex.py` is unchanged: it reads the Typst index's order, levels and footer as they stand. The reader takes links from the PDF's link annotations, because `pdftohtml -xml` at its default zoom assigned a link to the wrong characters.
+- 2026-09-13: the audit found a defect: in a document whose headings start at `##`, Quarto moved the index's Pandoc header up a level for Typst, so it printed as a paragraph the outline did not list. The heading is now a raw Typst `heading`. A new AC7 render checks the outline, the heading an untitled index gets and an index with no marks, and a plant writing the heading as a paragraph is red. The reader's re-read found all nine corrections hold (6e061f9).
+- 2026-09-13: T7 checked off. Suite with `--self-test` at 6e061f9: 1599 checks passed. Status review. `tests/pdfindex.py` is unchanged: it reads the Typst index's order, levels and footer as they stand. The reader takes links from the PDF's link annotations, because `pdftohtml -xml` at its default zoom assigned a link to the wrong characters.
 
 ## Decisions
 

@@ -40,7 +40,7 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - [x] T1: Change the range in `_extension.yml` to `>=1.5.0`. Change the version sentences in README (line 23 and the floor sentence after it), `site/index.qmd:32` and `site/tests.qmd:22`. Add the CHANGELOG entry. D-060, written at the plan commit, records the decision.
 - [x] T2: In `versions.yml`, set `FLOOR: '1.5.52'` and rewrite the header comment with the query and its date. Re-read the 1.4.549 notes at line 277 and keep only what still applies. Change the range sentence in the `pages.yml` comment.
 - [x] T3: Update the suite. These sites spell the old range or floor: the `m42_plant` rows near `tests/run-tests.sh:20632`, the `versioncheck.py legs` calls near 22743, the floor plants near 22966 and 22990, and the comment near 19470. Move each one to the new range or floor so that each plant still goes red. Change the version examples in the `tests/versioncheck.py:292-297` docstring and in `tests/pagescheck.py:7` to the new floor and range. Run the suite and the self-test.
-- [ ] T4: Push the branch, start `versions.yml` by hand, and record the run URL and the result of each job. Re-check KI110 against the floor leg's PDF job on 1.5.52 rather than substituting the version. Remove KI114, which records a failure on a leg that no longer exists, and name it in the work log. A red PDF job on the floor leg becomes a new Known issues entry.
+- [x] T4: Push the branch, start `versions.yml` by hand, and record the run URL and the result of each job. Re-check KI110 against the floor leg's PDF job on 1.5.52 rather than substituting the version. Remove KI114, which records a failure on a leg that no longer exists, and name it in the work log. A red PDF job on the floor leg becomes a new Known issues entry.
 
 ## Work log
 
@@ -53,6 +53,8 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - 2026-09-13: T1 done: range `>=1.5.0`, README, site/index.qmd and site/tests.qmd sentences, CHANGELOG `### Project` entry under Unreleased. README sentence em-dashes replaced by commas; older README style hits left alone.
 - 2026-09-13: T2 done: FLOOR 1.5.52, header query re-run 2026-09-13 (first `v1.5.` tag after sort -V is v1.5.52), imakeidx note kept without the version, pages.yml range sentence changed.
 - 2026-09-13: T3 done: m42 range plants, versioncheck legs calls, floor plants (1.5 and 1.5.520 forms), comment at 19470 and both docstrings moved; `tests/run-tests.sh --self-test` passed, 1523 checks.
+- 2026-09-13: T4 run: versions.yml dispatched on the branch at d599df8, https://github.com/jmgirard/quarto-index/actions/runs/34779339060. All 8 jobs success: plan, render (floor, 1.5.52), render (pinned, 1.10.18), render (release, release), pdf (floor, 1.5.52), pdf (pinned, 1.10.18), pdf (release, release), compare. Compare: floor and pinned byte-identical on book, demo, html-index and named-indexes (release matched pinned too). The push-triggered run 34779339444 also passed.
+- 2026-09-13: T4 records: KI110 re-checked, the floor PDF job logs `pdf-engine: xelatex` on 1.5.52, so the entry stands with the new version. KI114 removed (a one-off failure on the retired 1.4.549 leg), and the version-matrix candidate row drops its KI114 label and recurrence clause. No red floor PDF job, so no new Known issues entry.
 
 ## Decisions
 

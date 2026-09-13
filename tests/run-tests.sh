@@ -29105,9 +29105,13 @@ fi
 #   AC5  examples/book/. A Typst book is one Pandoc process, so its ranges
 #        pair across chapters as the PDF book's do: Ranged Term prints one
 #        range from the second chapter to the third, bold because its closing
-#        mark is principal. A locator is named by its chapter, the pages from
-#        its numbered heading to the next one's; Shared Term has one in each
-#        of the three chapters that mark it. `main` and `people` are placed by
+#        mark is principal. The page numbers are stated from the source and
+#        the template's layout, observed on Quarto 1.10.18: the title page and
+#        the contents each take a page and its blank back, each chapter opens
+#        on a right-hand page, and each chapter's text fits its opening page.
+#        So chapter n opens on page 3 + 2n, 5 to 11, and every mark in it is on
+#        that page. The chapter rows state those pages and the check holds each
+#        heading to its page; Shared Term has a locator on 5, 7 and 9. `main` and `people` are placed by
 #        the markers in last.qmd and `places`, which no marker names, follows
 #        them. The page after each index opens with the template's running
 #        header, `Chapter 4.`, which is where each read stops.
@@ -29206,45 +29210,45 @@ M098_BOOK_PDFS=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf'
 M098_BOOK_PDF="$M098_BOOK_PDFS"
 
 read -r -d '' M098_BOOK_CHAPTERS <<'MANIFEST' || true
-chapter	index.qmd	1. Opening
-chapter	one.qmd	2. Second chapter
-chapter	sub/two.qmd	3. Third chapter
-chapter	last.qmd	4. Back matter
+chapter	5	index.qmd	1. Opening
+chapter	7	one.qmd	2. Second chapter
+chapter	9	sub/two.qmd	3. Third chapter
+chapter	11	last.qmd	4. Back matter
 MANIFEST
 read -r -d '' M098_BOOK_MAIN <<'MANIFEST' || true
 group	A
-entry	0	Alpha	{index.qmd}
+entry	0	Alpha	5
 group	B
-entry	0	Beacon	{sub/two.qmd}
-entry	0	Beta	{one.qmd}
+entry	0	Beacon	9
+entry	0	Beta	7
 group	C
-entry	0	Chapter Range	{last.qmd}
-entry	0	Shared Term	{index.qmd}, {one.qmd}, {sub/two.qmd}
+entry	0	Chapter Range	11
+entry	0	Shared Term	5, 7, 9
 group	D
 entry	0	Delta		see|Alpha
 group	E
 entry	0	Epsilon		see|No Such Entry
 group	G
-entry	0	Gamma	{one.qmd}
+entry	0	Gamma	7
 group	I
-entry	0	Invisible Entry	{index.qmd}
+entry	0	Invisible Entry	5
 group	K
 entry	0	Kappa
-entry	1	Sub Level	{one.qmd}
+entry	1	Sub Level	7
 group	M
-entry	0	Meridian	{sub/two.qmd}
+entry	0	Meridian	9
 group	R
-entry	0	Ranged Term	{one.qmd}–{sub/two.qmd}*
+entry	0	Ranged Term	7–9*
 group	Z
-entry	0	Zeta	{last.qmd}
+entry	0	Zeta	11
 MANIFEST
 read -r -d '' M098_BOOK_PEOPLE <<'MANIFEST' || true
 group	T
-entry	0	Turing	{one.qmd}
+entry	0	Turing	7
 MANIFEST
 read -r -d '' M098_BOOK_PLACES <<'MANIFEST' || true
 group	L
-entry	0	Lisbon	{sub/two.qmd}
+entry	0	Lisbon	9
 MANIFEST
 for part in MAIN PEOPLE PLACES; do
   var="M098_BOOK_$part"
@@ -29265,7 +29269,7 @@ python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC5 (placement)" \
   "^A third placement marker, this one naming the second declared index" \
   "=Index of People" "=Index of Places" \
   || fail "M098-AC5: an index of the Typst book is not where last.qmd places it (the report is above)"
-pass "M098-AC5: a Typst render of examples/book/ is one PDF printing its three indexes under their declared titles, main and people at the markers in last.qmd and places after them, each entry with a locator on a page of each chapter that marks it"
+pass "M098-AC5: a Typst render of examples/book/ is one PDF printing its three indexes under their declared titles, main and people at the markers in last.qmd and places after them, each entry with the page locators the hand-derived manifest states, and Shared Term on a page of each of its three chapters"
 
 for fixture in escaping xref-escaping sort-escaping unicode; do
   quarto render "examples/$fixture.qmd" --to typst > "$WORK/$fixture-typst.log" 2>&1 \
@@ -29468,9 +29472,17 @@ if [ "${1:-}" = "--self-test" ]; then
     capture --project "$dir" typst "m098-$1"
   }
   m098_book_tree book-noclose typst.lua 's{node\.open_range\.close = mark\.label}{node.open_range.close = nil}'
-  m098_red book-noclose "got 'entry\t0\tRanged Term\t{one.qmd}*" python3 tests/typstcheck.py book \
+  m098_red book-noclose "got 'entry\t0\tRanged Term\t7*" python3 tests/typstcheck.py book \
     "$(find "$CAPTURE_ROOT/m098-book-noclose/_book" -maxdepth 1 -name '*.pdf')" \
     "$WORK/m098-book-MAIN.tsv" "M098 T5 plant book-noclose" "Index of Subjects" "Chapter 4."
+
+  # AC5 (T9): every locator one page on, which puts a chapter's locator on
+  # its blank back page, a page the chapter-bound reading counted as the
+  # chapter's own.
+  m098_book_tree book-pageplus typst.lua 's{\.\.counter\(page\)\.at\(loc\)\)}{..counter(page).at(loc).map(n => n + 1))}'
+  m098_red book-pageplus "got 'entry\t0\tAlpha\t6\t'" python3 tests/typstcheck.py book \
+    "$(find "$CAPTURE_ROOT/m098-book-pageplus/_book" -maxdepth 1 -name '*.pdf')" \
+    "$WORK/m098-book-MAIN.tsv" "M098 T9 plant book-pageplus" "Index of Subjects" "Chapter 4."
 
   m098_book_tree book-unplaced marker.lua "$M098_UNPLACED"
   m098_red book-unplaced "no line '^A second placement marker in this chapter' follows" \

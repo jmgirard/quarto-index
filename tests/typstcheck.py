@@ -10,11 +10,13 @@ it differently, so each mode here compares a narrower row:
       rows are the entries each index holds, and nothing about pages.
 
   book <pdf> <manifest> <label> <heading> [stop ...]
-      As `terms`, and each locator named by the chapter whose pages hold it.
-      The manifest opens with one `chapter<TAB>key<TAB>heading` row per
-      chapter, in book order; a chapter runs from the page carrying its
-      heading line to the page before the next chapter's. A locator is then
-      `{key}` or `{key}–{key}`, a `*` after a bold one.
+      As `terms`, and each locator's page number as it prints, `7` or `7–9`,
+      a `*` after a bold one. The manifest opens with one
+      `chapter<TAB>page<TAB>key<TAB>heading` row per chapter, and the heading
+      line must be on that page. Those rows are the layout facts the stated
+      page numbers rest on, so a template that moves a chapter fails here by
+      name rather than as a locator mismatch. Nothing about the page numbers
+      is read from the PDF under test except the locators themselves.
 
   order <pdf> <label> <line> [<line> ...]
       Each line is found after the one before it in `pdftotext` reading
@@ -139,7 +141,7 @@ def book_main(argv):
             continue
         fields = line.split('\t')
         if fields[0] == 'chapter':
-            chapters.append((fields[1], fields[2]))
+            chapters.append((int(fields[1]), fields[2], fields[3]))
             continue
         if fields[0] == 'entry':
             fields += [''] * (5 - len(fields))
@@ -158,24 +160,13 @@ def book_main(argv):
                 return fail(f'{label}: page {number} of {pdf} prints the page '
                             f'number {text}, so a printed locator is not the '
                             f'page this reading maps it to')
-    starts = []
-    for key, chapter_heading in chapters:
-        at = next((n for n, lines in enumerate(pages, start=1)
-                   if chapter_heading in lines), None)
-        if at is None:
-            return fail(f'{label}: no page of {pdf} carries the chapter '
-                        f'heading {chapter_heading!r}')
-        starts.append((at, key))
-    if [s for s, _k in starts] != sorted(s for s, _k in starts):
-        return fail(f'{label}: the chapter headings are not in book order: '
-                    f'{starts!r}')
-
-    def chapter_of(page):
-        found = None
-        for start, key in starts:
-            if page >= start:
-                found = key
-        return found
+    for page, key, chapter_heading in chapters:
+        if page > len(pages) or chapter_heading not in pages[page - 1]:
+            at = [n for n, lines in enumerate(pages, start=1)
+                  if chapter_heading in lines]
+            return fail(f'{label}: the manifest puts {key} ({chapter_heading!r}) '
+                        f'on page {page}, and {pdf} carries that heading on '
+                        f'page(s) {at}')
 
     try:
         lines = typstindex.read(pdf, heading, stop)
@@ -189,9 +180,7 @@ def book_main(argv):
         term, locators, refs = typstindex.parse_entry(line.words)
         shown = []
         for text, bold, _link in locators:
-            ends = [chapter_of(int(p)) for p in text.split('–')]
-            shown.append('–'.join('{%s}' % e for e in ends)
-                         + ('*' if bold else ''))
+            shown.append(text + ('*' if bold else ''))
         refs_shown = [f'{word}|{target}' + ('@' if linked else '')
                       for word, target, linked in refs]
         actual.append('\t'.join(['entry', str(line.level), term,
@@ -199,7 +188,7 @@ def book_main(argv):
     if not typstindex.compare(actual, expected, label):
         return 1
     print(f'ok   {label}: the {len(expected)} lines under {heading!r} are the '
-          f'manifest\'s, each locator on a page of the chapter it names')
+          f'manifest\'s, each locator on the page it states')
     return 0
 
 

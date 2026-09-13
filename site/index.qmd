@@ -29,7 +29,7 @@ filters:
 ---
 ```
 
-Requires Quarto 1.4 or later. No other runtime dependencies: on the LaTeX
+Requires Quarto 1.5 or later. No other runtime dependencies: on the LaTeX
 side it uses `imakeidx`, which ships with mainstream TeX distributions.
 
 ## Editor support

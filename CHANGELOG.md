@@ -19,6 +19,11 @@
   the write that followed the failed open. Quarto also printed an `ERROR` line
   above the report.
 
+### Project
+
+- The extension now requires Quarto 1.5 or later. Quarto 1.4 users stay on
+  release 0.4.0, the last release that installs on it.
+
 ## 0.4.0 (2026-09-11)
 
 No record 0.3.0 wrote is refused by this version, so a book keeps its terms

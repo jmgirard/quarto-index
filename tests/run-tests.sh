@@ -19467,7 +19467,7 @@ examples_state examples > "$WORK/examples-before.txt"
 # planted there are both gone after the render below (observed 2026-08-27, M46
 # T5) — so this is not a repair for a defect seen here. It is what makes
 # the guarantee the SUITE's: the version matrix runs these renders on Quarto
-# down to the 1.4.549 floor, and a renderer that keeps what it does not
+# down to the 1.5.52 floor, and a renderer that keeps what it does not
 # recognize would leave the rendered-output check finding a page whose source
 # is gone. Removing the directory costs nothing and does not depend on which
 # Quarto ran.
@@ -20629,9 +20629,9 @@ M42PLANT
   printf 'ok   self-test: a quoted pin naming the version the check accepts unquoted is accepted too\n'
 
   # --- pin: the extension's side ------------------------------------------
-  m42_plant ext-tworanges "$M42_EXT" 'quarto-required: ">=1.4.0"' \
-    'quarto-required: ">=1.4.0"
-quarto-required: ">=1.4.0"'
+  m42_plant ext-tworanges "$M42_EXT" 'quarto-required: ">=1.5.0"' \
+    'quarto-required: ">=1.5.0"
+quarto-required: ">=1.5.0"'
   m42_planted 'an extension declaring two required ranges, so which one the pin is judged against is not a fact' \
     'declares 2 `quarto-required:` line(s)' \
     python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-tworanges"
@@ -20641,17 +20641,17 @@ quarto-required: ">=1.4.0"'
     'declares 0 `quarto-required:` line(s)' \
     python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-norange"
 
-  m42_plant ext-caret "$M42_EXT" '">=1.4.0"' '"^1.4.0"'
+  m42_plant ext-caret "$M42_EXT" '">=1.5.0"' '"^1.5.0"'
   m42_planted 'a required range whose operator is not the floor this check knows how to compare' \
     'understands only a `>=` floor' \
     python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-caret"
 
-  m42_plant ext-vfloor "$M42_EXT" '">=1.4.0"' '">=v1.4.0"'
+  m42_plant ext-vfloor "$M42_EXT" '">=1.5.0"' '">=v1.5.0"'
   m42_planted 'a floor that is not a dotted numeric version, which no integer-tuple comparison can read' \
     'which is not a dotted numeric version' \
     python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-vfloor"
 
-  m42_plant ext-abovepin "$M42_EXT" '">=1.4.0"' '">=1.11.0"'
+  m42_plant ext-abovepin "$M42_EXT" '">=1.5.0"' '">=1.11.0"'
   m42_planted 'a floor above the version the workflow pins' \
     'which is below the 1.11.0 floor' \
     python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-abovepin"
@@ -20660,7 +20660,7 @@ quarto-required: ">=1.4.0"'
   # and that is exactly the pair where the two disagree: as text `1.10.18`
   # sorts before `1.9.0`, as tuples it is above it. A string comparison would
   # report this floor unsatisfied, so the pass below is what separates them.
-  m42_plant ext-belowpin "$M42_EXT" '">=1.4.0"' '">=1.9.0"'
+  m42_plant ext-belowpin "$M42_EXT" '">=1.5.0"' '">=1.9.0"'
   python3 tests/pagescheck.py pin "$M42_WF" "$M42W/ext-belowpin" > /dev/null \
     || fail "M42 self-test: the pin check calls the 1.9.0 floor unsatisfied by the 1.10.18 pin, so it is comparing the two as strings and not as the integer tuples the criterion names"
   printf 'ok   self-test: the pin the check accepts against a 1.9.0 floor is one a string comparison would reject, so the comparison is over integer tuples\n'
@@ -22740,17 +22740,17 @@ pass "M43-AC2: the comparison reader holds two legs' HTML extractions equal byte
 
 # The matrix the workflow renders on: two exact versions on a push, and the
 # release channel added on a scheduled or manual run.
-M43LEGS_PUSH=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 push)
+M43LEGS_PUSH=$(python3 tests/versioncheck.py legs 1.5.52 1.10.18 push)
 printf '%s' "$M43LEGS_PUSH" | grep -qF '"name": "release"' \
   && fail "M43-AC1: a push run's matrix carries the release-channel leg, whose red can trace to an upstream release rather than to a commit"
 for leg in floor pinned; do
   printf '%s' "$M43LEGS_PUSH" | grep -qF "\"name\": \"$leg\"" \
     || fail "M43-AC1: a push run's matrix carries no \`$leg\` leg"
 done
-M43LEGS_CRON=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 schedule)
+M43LEGS_CRON=$(python3 tests/versioncheck.py legs 1.5.52 1.10.18 schedule)
 printf '%s' "$M43LEGS_CRON" | grep -qF '"name": "release"' \
   || fail "M43-AC1: a scheduled run's matrix carries no release-channel leg"
-M43LEGS_HAND=$(python3 tests/versioncheck.py legs 1.4.549 1.10.18 workflow_dispatch)
+M43LEGS_HAND=$(python3 tests/versioncheck.py legs 1.5.52 1.10.18 workflow_dispatch)
 printf '%s' "$M43LEGS_HAND" | grep -qF '"name": "release"' \
   || fail "M43-AC1: a manually dispatched run's matrix carries no release-channel leg"
 pass "M43-AC1: the matrix a push renders on is the floor and pinned legs alone, and a scheduled or manually dispatched run adds the release-channel leg"
@@ -22963,7 +22963,7 @@ if [ "${1:-}" = "--self-test" ]; then
     'declares 2 `FLOOR:` line(s)' \
     python3 tests/versioncheck.py floor "$M43F/twofloors.yml" README.md site/tests.qmd
 
-  m43_floor_plant channelfloor.yml "$M43_VERSIONS_WF" "s|FLOOR: '1.4.549'|FLOOR: 'release'|"
+  m43_floor_plant channelfloor.yml "$M43_VERSIONS_WF" "s|FLOOR: '1.5.52'|FLOOR: 'release'|"
   m43_planted 'a floor that is a channel name rather than a release a reader could install' \
     'not an exact dotted version' \
     python3 tests/versioncheck.py floor "$M43F/channelfloor.yml" README.md site/tests.qmd
@@ -22974,20 +22974,20 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # Each document's own side, planted separately: a check green because it
   # only ever reads the first document is a check the second is not held by.
-  m43_floor_plant readme-noversion.md README.md "s|1\.4\.549|1.4|g"
-  m43_planted 'a README that names the 1.4 line but not the release the floor leg installs' \
+  m43_floor_plant readme-noversion.md README.md "s|1\.5\.52|1.5|g"
+  m43_planted 'a README that names the 1.5 line but not the release the floor leg installs' \
     'readme-noversion.md does not name that version anywhere' \
     python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" "$M43F/readme-noversion.md" site/tests.qmd
 
-  m43_floor_plant tests-noversion.qmd site/tests.qmd "s|1\.4\.549|1.4|g"
-  m43_planted "a Tests page that names the 1.4 line but not the release the floor leg installs" \
+  m43_floor_plant tests-noversion.qmd site/tests.qmd "s|1\.5\.52|1.5|g"
+  m43_planted "a Tests page that names the 1.5 line but not the release the floor leg installs" \
     'tests-noversion.qmd does not name that version anywhere' \
     python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" README.md "$M43F/tests-noversion.qmd"
 
   # The bound on that read (M48). A document naming a LONGER version that
   # contains the floor names a release the workflow does not install, and a
   # bare substring test read it as naming the floor.
-  m43_floor_plant readme-longer.md README.md "s|1\.4\.549|1.4.5490|g"
+  m43_floor_plant readme-longer.md README.md "s|1\.5\.52|1.5.520|g"
   m43_planted 'a README naming a longer version the floor version is a substring of, which a bare substring test would read as naming the floor' \
     'readme-longer.md does not name that version anywhere' \
     python3 tests/versioncheck.py floor "$M43_VERSIONS_WF" "$M43F/readme-longer.md" site/tests.qmd

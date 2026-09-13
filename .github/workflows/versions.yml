@@ -8,8 +8,8 @@
 #
 # THE FLOOR. `1.5.52`. A dated observation and not a standing claim: on
 # 2026-09-13 it was the oldest non-prerelease Quarto release satisfying
-# `>=1.5.0`. No `v1.5.0` to `v1.5.51` release exists. The query that returned
-# it:
+# `>=1.5.0`. Releases `v1.5.0` to `v1.5.51` exist only as prereleases. The
+# query that returned it:
 #
 #     gh api --paginate repos/quarto-dev/quarto-cli/releases \
 #       --jq '.[] | select(.prerelease | not) | .tag_name' \

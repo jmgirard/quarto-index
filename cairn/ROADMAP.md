@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M097 | The extension requires Quarto 1.5 | in-progress | — | normal | milestones/M097-quarto-floor-1-5.md |
+| M097 | The extension requires Quarto 1.5 | review | — | normal | milestones/M097-quarto-floor-1-5.md |
 | M098 | A Typst render prints the index | planned | M097 | normal | milestones/M098-typst-back-end.md |
 | M096 | The pre-release sweep fails on the defects it names, from one definition | done | — | normal | milestones/archive/M096-prerelease-sweep-plants.md |
 | M095 | Three candidate rows' unasserted fixture facts get checks | done | — | normal | milestones/archive/M095-suite-pins-three-rows.md |

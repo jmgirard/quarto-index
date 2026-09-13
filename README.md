@@ -21,9 +21,9 @@ filters:
 ```
 
 Requires Quarto 1.5 or later. GitHub Actions renders the example fixtures on
-Quarto 1.5.52, the oldest release of that line, as well as on the version
-the documentation site is built with, and compares the HTML index each one
-emits. Weekly and on demand rather than on every push, the run also adds
+Quarto 1.5.52, the oldest non-prerelease release of that line, as well as on
+the version the documentation site is built with, and compares the HTML index
+each one emits. Weekly and on demand rather than on every push, the run also adds
 Quarto's current release and typesets two of the fixtures to PDF on each
 version it renders on, checking that an index printed; no PDF is compared
 across versions, because two Quarto versions typeset through different TeX

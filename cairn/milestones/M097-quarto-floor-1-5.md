@@ -1,6 +1,6 @@
 # M097: The extension requires Quarto 1.5
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -55,6 +55,8 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - 2026-09-13: T3 done: m42 range plants, versioncheck legs calls, floor plants (1.5 and 1.5.520 forms), comment at 19470 and both docstrings moved; `tests/run-tests.sh --self-test` passed, 1523 checks.
 - 2026-09-13: T4 run: versions.yml dispatched on the branch at d599df8, https://github.com/jmgirard/quarto-index/actions/runs/34779339060. All 8 jobs success: plan, render (floor, 1.5.52), render (pinned, 1.10.18), render (release, release), pdf (floor, 1.5.52), pdf (pinned, 1.10.18), pdf (release, release), compare. Compare: floor and pinned byte-identical on book, demo, html-index and named-indexes (release matched pinned too). The push-triggered run 34779339444 also passed.
 - 2026-09-13: T4 records: KI110 re-checked, the floor PDF job logs `pdf-engine: xelatex` on 1.5.52, so the entry stands with the new version. KI114 removed (a one-off failure on the retired 1.4.549 leg), and the version-matrix candidate row drops its KI114 label and recurrence clause. No red floor PDF job, so no new Known issues entry.
+- 2026-09-13: claim audit: 21 claims read, 1 corrected — .github/workflows/versions.yml, README.md, site/tests.qmd (v1.5.0 to v1.5.51 exist as prereleases, so the header and both floor sentences now say non-prerelease; re-read holds).
+- 2026-09-13: `tests/run-tests.sh --self-test` re-run after the correction passed, 1523 checks. Status set to review.
 
 ## Decisions
 

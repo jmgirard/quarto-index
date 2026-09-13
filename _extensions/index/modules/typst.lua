@@ -27,8 +27,9 @@ local M = {}
 -- closing page are one locator, bold where either is principal, linked to the
 -- first. A range whose two ends share a page prints that page alone. A page
 -- that a range of the same entry spans, its two end pages included, prints no
--- locator of its own, bold or not, as makeindex prints the PDF back-end's
--- (M098 review). Three
+-- locator of its own, bold or not, as makeindex drops such a page in the PDF
+-- back-end (M098 review). makeindex also folds a page just after a range into
+-- the range, which this does not. Three
 -- marks on consecutive pages print three locators: only an author's range
 -- prints as a range (the M098 question gate). The separators are the ones
 -- the LaTeX back-end's makeindex prints, a comma before each locator and

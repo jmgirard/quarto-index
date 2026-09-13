@@ -29297,9 +29297,9 @@ for fixture in escaping xref-escaping sort-escaping unicode; do
     "examples/$fixture.qmd" "M098-AC8 ($fixture)" "Index" \
     || fail "M098-AC8: the Typst index of examples/$fixture.qmd does not print the entries its source derives (the report is above)"
 done
-# The xref-escaping statement is the fixture's construction, written from its
-# prose and not from its marks: the 94 printable characters, character n under
-# `x<n>` at level position n mod 3 and under `a<n>` at (n + 1) mod 3 among
+# The xref-escaping statement is the fixture's construction, a rule for each
+# block of marks, and not a listing of the derived entries: the 94 printable
+# characters, character n under `x<n>` at level position n mod 3 and under `a<n>` at (n + 1) mod 3 among
 # `L1!L2!L3`; the 16 special characters alone under `Xs`, `Xt` and `Xb`, and
 # as the middle of `A<c>B`, which the `Xk` marks index by `entry=`; the
 # non-ASCII and unusable targets; and one invisible mark per target path. Every
@@ -29587,7 +29587,7 @@ principal	The locator of a principal mention is set in bold.
 shared page	Where a principal and an ordinary mark of one term share a page, that page's one locator is bold.
 range	A range prints its opening and closing pages, `12–15`, and links to the opening page.
 range on one page	Where both ends of a range are on one page, it prints that page alone.
-range spans	A page that a range of the term spans, its opening and closing pages included, prints no locator of its own, as in the PDF index.
+range spans	A page that a range of the term spans, its opening and closing pages included, prints no locator of its own.
 range spans bold	A principal mention on such a page loses its bold.
 separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.
 reference	A cross-reference prints its word in italics, then its target as plain text, with no link.

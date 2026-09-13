@@ -31,6 +31,7 @@
 #                mark on page 2 and a plain mark on page 3 inside it, and a
 #                plain mark on page 4: the two pages the range spans print no
 #                locator of their own, so the bold is lost, and page 4 prints
+#                its own locator, `4`
 group	Symbols
 entry	0	42nd Street	2@2
 group	A

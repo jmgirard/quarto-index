@@ -47,8 +47,8 @@ in page order, and each one links to its page.
   opening page. Where both ends of a range are on one page, it prints that page
   alone.
 - A page that a range of the term spans, its opening and closing pages
-  included, prints no locator of its own, as in the PDF index. A principal
-  mention on such a page loses its bold.
+  included, prints no locator of its own. A principal mention on such a page
+  loses its bold.
 - Pages you marked separately stay separate: marks on pages 3, 4 and 5 print
   `3, 4, 5`. Only a range you write prints as a range.
 

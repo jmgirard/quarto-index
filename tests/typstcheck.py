@@ -15,8 +15,10 @@ it differently, so each mode here compares a narrower row:
       `chapter<TAB>page<TAB>key<TAB>heading` row per chapter, and the heading
       line must be on that page. Those rows are the layout facts the stated
       page numbers rest on, so a template that moves a chapter fails here by
-      name rather than as a locator mismatch. Nothing about the page numbers
-      is read from the PDF under test except the locators themselves.
+      name rather than as a locator mismatch. No expected page number is taken
+      from the PDF under test: the PDF is read only to guard the layout (each
+      printed page number, each chapter heading's page) and for the locators
+      compared.
 
   order <pdf> <label> <line> [<line> ...]
       Each line is found after the one before it in `pdftotext` reading

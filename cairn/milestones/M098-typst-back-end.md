@@ -1,6 +1,6 @@
 # M098: A Typst render prints the index
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M097
 - **Driving RR:** —
@@ -37,13 +37,13 @@ A document or book rendered to Typst prints each of its indexes with page locato
 ## Coverage
 
 - AC1 → T1, T2, T3, T4
-- AC2 → T3, T4
+- AC2 → T3, T4, T10
 - AC3 → T3, T4
 - AC4 → T3, T5
-- AC5 → T3, T5
-- AC6 → T6
+- AC5 → T3, T5, T9
+- AC6 → T6, T12, T13
 - AC7 → T7
-- AC8 → T3, T5
+- AC8 → T3, T5, T8
 
 ## Tasks
 
@@ -54,6 +54,12 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - [x] T5: Add the Typst checks for `examples/named-indexes.qmd` and `examples/book/`, with their manifests and plants. Add `author:` to `examples/book/_quarto.yml` and run the existing book checks. Add the Typst checks and manifests for the four escaping and Unicode fixtures and the two label fixtures in AC8. Every character Typst reads as markup in a term, a sort key or a label is escaped in T3.
 - [x] T6: Add the Typst step to the `pdf` job of `versions.yml`, which already installs poppler. Start the workflow by hand and record the run URL.
 - [x] T7: Write `site/typst.qmd` and add it to `site/_quarto.yml`. Change the back-end counts, `site/other-formats.qmd`, README and CHANGELOG. Add `tests/sitecheck.py` claims for the new sentences. Update the Architecture section of `cairn/DESIGN.md`.
+- [ ] T8: Write a hand-derived manifest of the terms `examples/xref-escaping.qmd` prints. Hold the AC8 `typstcheck.py source` derivation for that fixture to it, as for the other three fixtures. Add a plant that is red on a changed derived term. (Review finding 5.)
+- [ ] T9: Make the AC5 book check compare the page numbers of a hand-derived manifest, with the pages fixed from the fixture source. It no longer reads chapter bounds from the PDF under test. Add a plant that moves a locator one page inside its chapter and is red. (Review finding 4.)
+- [ ] T10: In the Typst index, drop an ordinary locator whose page a range of the same term covers, as makeindex does, so `b, 1, 1–2` prints `b, 1–2`. Add the case as a row of the AC1 manifest with a plant, and state the rule in `site/typst.qmd` with a claim check. (Review finding 1.)
+- [ ] T11: Make a mark in image alt text, whose label Pandoc's Typst writer drops, no longer lose its locator in silence. Report it at render where the filter can tell, or record it as a known issue beside KI289. (Review finding 2.)
+- [ ] T12: Run `typstindex.py pages` green on `examples/typst-index.qmd` in the suite, and not only as a red plant. Correct the `run-tests.sh:9504` comment that names `html.lua` for the locator tree. (Review findings 8 and 11.)
+- [ ] T13: After T8 to T12, push the branch head and start `.github/workflows/versions.yml` by hand. Record the run URL and the Typst steps on the floor and pinned legs.
 
 ## Work log
 
@@ -82,6 +88,8 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - 2026-09-13: claim audit: 230 claims read, 9 corrected — site/typst.qmd, site/books.qmd, CHANGELOG.md, _extensions/index/index.lua, modules/core.lua, modules/entries.lua, modules/typst.lua, tests/typstindex.py, tests/typstcheck.py, tests/run-tests.sh
 - 2026-09-13: the audit found a defect: in a document whose headings start at `##`, Quarto moved the index's Pandoc header up a level for Typst, so it printed as a paragraph the outline did not list. The heading is now a raw Typst `heading`. A new AC7 render checks the outline, the heading an untitled index gets and an index with no marks, and a plant writing the heading as a paragraph is red. The reader's re-read found all nine corrections hold (6e061f9).
 - 2026-09-13: T7 checked off. Suite with `--self-test` at 6e061f9: 1599 checks passed. Status review. `tests/pdfindex.py` is unchanged: it reads the Typst index's order, levels and footer as they stand. The reader takes links from the PDF's link annotations, because `pdftohtml -xml` at its default zoom assigned a link to the wrong characters.
+- 2026-09-13: review return 1 (defect): AC8 failed as written, because `examples/xref-escaping.qmd` has no hand-derived manifest. AC5 was not verified, because the book locators are compared by chapter with bounds read from the PDF. AC6 was not verified on the final tree, because run 34785351085 predates the heading change in 6e061f9. Status in-progress, with T8 to T13 added.
+- 2026-09-13: step-7 gate: the user chose the send-back, the proposed finding dispositions, and dropping a page a range covers. The send-back approves the branch push T13 needs.
 
 ## Decisions
 
@@ -113,3 +121,17 @@ Independent review, three lenses. The [S] blame-history lens found nothing: the 
 9. `typst.lua:53-57`: merging and the one-page range test use physical pages, so a page counter reset prints `1, 1` or `1–1`.
 10. `typst.lua:227`: minted labels skip Pandoc ids but not raw Typst labels an author wrote.
 11. Stale: the `run-tests.sh:9504` comment names `html.lua` for the tree.
+
+Triage at the gate (2026-09-13):
+
+- Finding 1: fix now, as T10. The covered page is dropped.
+- Finding 2: fix now, as T11.
+- Finding 3: follow-up, as KI292 and a candidate row.
+- Finding 4: fix now, as T9. The finding is a floor return, because AC5 is not met as written.
+- Finding 5: fix now, as T8. The finding is a floor return, because AC8 fails as written.
+- Finding 6: rejected, because KI291 already records the fold and its blind spot.
+- Finding 7: rejected, because KI290 already records the caption case.
+- Finding 8: fix now, as T12.
+- Finding 9: follow-up, as KI293 and the same candidate row.
+- Finding 10: rejected, because an author label spelled with the extension's `qi-mark-` prefix is very unlikely.
+- Finding 11: fix now, as T12.

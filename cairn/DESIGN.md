@@ -1014,6 +1014,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   check. `tests/typstcheck.py` folds a combining cluster read twice running,
   because pdftotext reads each glyph of such a cluster as the whole cluster. A
   back-end that doubled such a cluster reads as correct there. — M098 T4, T5
+- **KI292.** A Typst locator prints only the page counter. A `page-numbering`
+  pattern with two counters, such as `"1 / 1"`, prints `1` where the footer
+  shows `1 / 3`. — M098 review F3
+- **KI293.** The Typst index merges locators and tests a one-page range by
+  physical page. After a page counter reset, two pages that show one number
+  print `1, 1`, and a range across the reset prints `1–1`. — M098 review F9
 
 ### Reports and messages
 

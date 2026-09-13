@@ -229,7 +229,8 @@ local function Pandoc(doc)
       return qi_marker.place_index(doc, nil)
     end
     if qi_core.is_typst() then
-      return qi_marker.place_index(doc, nil)
+      return qi_marker.place_index(doc,
+        qi_typst.typst_index_blocks(qi_marks.html_marks))
     end
     return qi_marker.place_index(doc,
       qi_html.html_index_blocks(qi_marks.html_marks, taken))

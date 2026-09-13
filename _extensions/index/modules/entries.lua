@@ -222,6 +222,72 @@ local function number_entries(node, counter, taken)
   return counter
 end
 
+-- The top level of a numbered tree, one group per heading, in printed order:
+-- each group is `{ heading = <the text its heading prints>, keys = {...} }`.
+-- `root.sorted` must already be set by `number_entries`.
+local function letter_groups(root, name)
+  local groups = {}
+  local pending = {}
+  local label = nil
+  -- What this index's groups actually head, for the report at the foot of this
+  -- function. Collected as each heading is settled rather than derived from the
+  -- entries a second time: the question is whether two groups a READER sees
+  -- carry one heading, so the thing compared is the text that is printed.
+  local letters = {}
+  local symbols_heading = nil
+
+  local function flush()
+    if #pending > 0 then
+      -- The only place the Symbols group's own word is read: every letter
+      -- group prints the letter it is, and the non-letter group prints
+      -- whatever this index calls it.
+      local heading = label
+      if heading == SYMBOLS_LABEL then
+        heading = qi_indexes.label(name, SYMBOLS_KEY, SYMBOLS_LABEL)
+        symbols_heading = heading
+      else
+        letters[heading] = true
+      end
+      groups[#groups + 1] = { heading = heading, keys = pending }
+      pending = {}
+    end
+  end
+
+  for _, key in ipairs(root.sorted) do
+    local child = root.children[key]
+    local this = group_label(child.sort or key)
+    if this ~= label then
+      -- The keys are already ranked by group, so a change of label is the end
+      -- of a group rather than the start of a second run of one.
+      flush()
+      label = this
+    end
+    pending[#pending + 1] = key
+  end
+  flush()
+  -- Two groups of one index under one heading. The sentinel above keeps the
+  -- non-letter group's identity and its rank whatever the author calls it, so
+  -- the two groups neither merge nor re-rank and what prints is unchanged --
+  -- but a reader of `symbols: "A"` sees an `A` heading over the non-letter
+  -- entries and a second `A` heading over the real A group, and reads one
+  -- group split in two (M56 review F13).
+  --
+  -- Reported HERE and not where the word is read, because only this site knows
+  -- whether a clashing letter group exists: the same word is no clash in an
+  -- index whose terms all file under no letter, and the LaTeX back-end prints
+  -- no letter groups at all, so a report drawn at the reading site would fire
+  -- on a PDF render that has nothing to see. The back-ends that print letter
+  -- groups all reach this function.
+  --
+  -- Compared character for character rather than case-insensitively: a letter
+  -- group always heads a capital, so a lowercase word prints a heading a reader
+  -- can tell from it.
+  if symbols_heading ~= nil and letters[symbols_heading] then
+    qi_core.warn(('%s: the word "%s" heads the entries filing under no letter in %s and is also the heading of one of its letter groups, so a reader sees two groups under one heading; a word that is not a letter this index files a term under heads one group'):format(qi_indexes.LABELS_KEY, symbols_heading, qi_indexes.scope_phrase(name, "this document")))
+  end
+  return groups
+end
+
 -- This document's marks, split into the index each files in, each list still
 -- in document order.
 --
@@ -260,6 +326,7 @@ M["same_levels"] = same_levels
 M["new_entry"] = new_entry
 M["build_entry_tree"] = build_entry_tree
 M["number_entries"] = number_entries
+M["letter_groups"] = letter_groups
 M["marks_by_index"] = marks_by_index
 
 return M

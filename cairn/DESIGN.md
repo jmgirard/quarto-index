@@ -443,8 +443,11 @@ Three back-ends ship:
   the span's content, and a label element there would carry both. A label
   stays out of a heading because Typst's outline copies a heading's body, and
   a copied label names two elements. The index is one raw Typst block per
-  declared index, placed by `place_index` after a weak page break and an
-  unnumbered Pandoc header. Its helper functions query each label's location
+  declared index that some mark files in, placed by `place_index` after a weak
+  page break and a raw, unnumbered Typst `heading`. The heading is raw because
+  Quarto moves every Pandoc header up a level for Typst in a document whose
+  headings start at `##`, which turned a level-one header into a paragraph
+  the outline did not list (M098 claim audit). Its helper functions query each label's location
   while the document is typeset, merge locators of one page, print a range
   from its opening page to its closing page, set a principal locator in
   bold and link each locator to its location. A label no element carries adds

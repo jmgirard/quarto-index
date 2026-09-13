@@ -39,9 +39,9 @@
 
 -- The filter itself. Everything below the requires is the Pandoc pass and the
 -- list of passes handed back to Pandoc; every other definition lives in a
--- module beside this file. Required here are the eight this file itself
--- reaches; the other two, `levels.lua` and `sortkeys.lua`, arrive through
--- them. They are listed in dependency order — `core` requires nothing, `book`
+-- module beside this file. Required here are the nine this file itself
+-- reaches; the other four, `entries.lua`, `languages.lua`, `levels.lua` and
+-- `sortkeys.lua`, arrive through them. They are listed in dependency order — `core` requires nothing, `book`
 -- requires most of the rest — and bound under `qi_` names, so no local can
 -- shadow a module (`levels`, `marks` and `marker` are all ordinary local names
 -- in this filter).

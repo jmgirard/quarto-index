@@ -30,7 +30,9 @@ it differently, so each mode here compares a narrower row:
       separates levels, `!!` is a literal `!`, left to right), empty levels
       dropped, each parent path printing a line of its own, and a reference
       naming its own entry dropped. It handles the mark shapes the four
-      escaping and Unicode fixtures write, and refuses any other.
+      escaping and Unicode fixtures write. It refuses an attribute not written
+      as `key="value"` and a mark naming an index, and does not detect other
+      shapes, such as brackets nested in a mark's visible text.
 
 Every mode exits 0 on a match and 1 with a FAIL line otherwise.
 """

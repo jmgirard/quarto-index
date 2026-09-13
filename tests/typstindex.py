@@ -48,8 +48,8 @@ NS = {'x': 'http://www.w3.org/1999/xhtml'}
 # index level is 1.2em, about 13pt at the default size (typst.lua).
 EDGE_TOLERANCE_PT = 3.0
 
-# The bottom-most line of a page, when it is nothing but digits, is the page
-# number the template prints, and is dropped.
+# The bottom-most line of a page, when it is nothing but digits or the letters
+# of a roman numeral, is the page number the template prints, and is dropped.
 PAGE_NUMBER = re.compile(r'^[\divxlcdm]+$', re.I)
 
 

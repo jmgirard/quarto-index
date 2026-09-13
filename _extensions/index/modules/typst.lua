@@ -137,8 +137,12 @@ end
 
 -- One index's blocks: a page break, the heading, then one raw Typst block
 -- holding the letter groups in two columns and a page break after them. The
--- heading is a Pandoc header, marked unnumbered, so Typst lists it in the
--- outline as the PDF back-end's `intoc` does. The page breaks are weak, so
+-- heading is Typst's own level-one `heading`, unnumbered, so Typst lists it in
+-- the outline as the PDF back-end's `intoc` does. It is raw Typst rather than
+-- a Pandoc header: in a document whose headings start at `##`, Quarto moves
+-- every Pandoc header up a level for Typst, and a level-one header then prints
+-- as a plain paragraph the outline does not list (observed on Quarto 1.10.18
+-- with examples/typst-index.qmd, M098 claim audit). The page breaks are weak, so
 -- they add no blank page, and they give each index a page of its own as
 -- LaTeX's two-column index does.
 local function index_blocks(root, name)
@@ -155,8 +159,8 @@ local function index_blocks(root, name)
   out[#out + 1] = "#pagebreak(weak: true)"
   return pandoc.Blocks({
     pandoc.RawBlock("typst", "#pagebreak(weak: true)"),
-    pandoc.Header(1, qi_entries.literal_inlines(qi_indexes.title(name)),
-                  pandoc.Attr("", { "unnumbered" })),
+    pandoc.RawBlock("typst", ("#heading(level: 1, numbering: none)[#(%s)]")
+      :format(typst_string(qi_indexes.title(name)))),
     pandoc.RawBlock("typst", table.concat(out, "\n")),
   })
 end

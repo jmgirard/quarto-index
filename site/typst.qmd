@@ -5,7 +5,8 @@ pagetitle: "Typst"
 # Typst
 
 For Typst the extension prints each index with page locators, in two columns,
-built from the same marks every other back-end reads. It needs no Typst
+built from the same marks every other back-end reads. A declared index that no
+mark files in prints nothing, not even its heading. It needs no Typst
 package: everything the index uses is written into the document, so nothing is
 downloaded when the document compiles.
 
@@ -21,8 +22,9 @@ Each index goes where your placement marker puts it, and at the end of the
 document where no marker names it, in the order your `indexes:` metadata
 declares them. See [Placing the index](placing-the-index.qmd). An index starts
 on a new page under an unnumbered level-one heading, which Typst lists in the
-table of contents. The heading is **Index**, or the title your `indexes:`
-metadata declares, or your document language's word for an index where the
+table of contents. The heading is the title your `indexes:` metadata gives the
+index, or its name where you give no title. A document that declares no
+`indexes:` gets **Index**, or its language's word for an index where the
 extension covers that language. The text after the index starts on a new page
 too.
 

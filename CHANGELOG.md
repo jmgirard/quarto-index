@@ -5,8 +5,8 @@
 ### Output
 
 - A new back-end for Typst. A document or a book rendered to Typst prints
-  each index it declares with page locators, in two columns, and needs no
-  Typst package. Entries are ordered and grouped by letter as in HTML, and
+  each declared index that holds at least one mark, with page locators, in two
+  columns, and needs no Typst package. Entries are ordered and grouped by letter as in HTML, and
   nest as deep as they are written. A principal mention's page number is set
   in bold, a range prints its first and last pages, and each page number
   links to its page. The see and see-also words follow `lang:` and

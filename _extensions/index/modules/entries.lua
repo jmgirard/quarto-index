@@ -43,7 +43,8 @@ end
 -- nobody overrides the word. The string is the group's IDENTITY -- what
 -- `group_label` returns, what `group_rank` ranks first, and what tells a run
 -- of non-letter entries from the letter groups -- and an author's own word is
--- substituted where the heading is printed and nowhere else (`grouped_blocks`).
+-- substituted where the heading's text is settled and nowhere else
+-- (`letter_groups`, which every back-end printing letter groups reads).
 -- Letting the author's word be the identity would make a word that is a single
 -- ASCII letter merge with that letter's group, and a word sorting after `A`
 -- re-rank the group out of the lead.

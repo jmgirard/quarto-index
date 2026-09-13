@@ -443,7 +443,8 @@ end
 
 -- The back-ends that build their entry tree in this filter, as opposed to the
 -- LaTeX-derived one that emits commands for a typeset-time subsystem. Each
--- records one entry per mark and sorts and groups the entries in Lua. HTML
+-- keeps one record per mark, builds one entry per term from those records,
+-- and sorts and groups the entries in Lua. HTML
 -- and EPUB print that tree as Pandoc blocks. Typst prints it as raw Typst
 -- that asks the typesetter for each locator's page, which is `is_typst`'s
 -- question. How a BOOK reaches this filter is `is_html`'s question.

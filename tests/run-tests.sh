@@ -29493,6 +29493,8 @@ python3 tests/sitecheck.py claims site/output.qmd "$WORK/m098-output-claims.txt"
 
 cat > "$WORK/m098-typst-claims.txt" <<'M098PAGE'
 what it prints	For Typst the extension prints each index with page locators, in two columns
+no marks	A declared index that no mark files in prints nothing, not even its heading.
+heading name	The heading is the title your `indexes:` metadata gives the index, or its name where you give no title.
 no package	It needs no Typst package
 labels	it writes an invisible Typst label at each mark
 heading mark	A mark in a heading gets its label just after the heading
@@ -29551,7 +29553,7 @@ python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
   || fail "M098-AC7: site/tests.qmd no longer states the version matrix's Typst step (its own FAIL line is above)"
 cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
 new back-end	A new back-end for Typst.
-what it prints	prints each index it declares with page locators, in two columns, and needs no Typst package
+what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package
 ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep as they are written.
 locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
 words	The see and see-also words follow `lang:` and `index-labels:`.
@@ -29625,6 +29627,27 @@ python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" 
 python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC7 (the outline lists the index)" \
   "=Contents" "^Index of Subjects" "=1. Opening" \
   || fail "M098-AC7: the Typst book's outline does not list the index of subjects (the report is above)"
+
+# The outline of a single document whose headings start at `##`, which Quarto
+# moves up a level for Typst, and the heading an index gets. The document
+# declares `main` with no title and `spare` with one, and marks a term in `main`
+# alone: `main` prints under its name, and `spare` prints nothing.
+mkdir -p "$M098D/outline/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/outline/_extensions/index"
+printf '%s\n' '---' 'title: "Outline"' 'toc: true' 'indexes:' '  - name: main' \
+  '  - name: spare' '    title: Spare Index' 'filters:' '  - index' '---' '' \
+  '## First section' '' 'A term: [walrus]{.index}.' > "$M098D/outline/outline.qmd"
+( cd "$M098D/outline" && quarto render outline.qmd --to typst ) \
+  > "$WORK/m098-outline.log" 2>&1 \
+  || { tail -20 "$WORK/m098-outline.log" >&2; fail "M098-AC7: the outline document failed to render to Typst"; }
+capture "$M098D/outline/outline.qmd" typst "m098-outline"
+python3 tests/typstcheck.py order "$M098D/outline/outline.pdf" "M098-AC7 (a single document's outline lists the index)" \
+  "=Table of contents" "^main " "=First section" "=main" \
+  || fail "M098-AC7: in a document whose headings start at two hashes, the outline does not list the index under its name (the report is above)"
+if pdftotext "$M098D/outline/outline.pdf" - | grep -q 'Spare Index'; then
+  fail "M098-AC7: a declared index no mark files in printed its title"
+fi
+pass "M098-AC7: a declared index with no title prints under its name and is listed in the outline of a document whose headings start at two hashes, and a declared index no mark files in prints nothing"
 python3 - "$M098_NAMED_PDF" <<'M098PAGEPY'
 import subprocess, sys
 text = subprocess.run(['pdftotext', sys.argv[1], '-'], check=True,
@@ -29667,7 +29690,7 @@ capture --project "$M098D/noauthor" typst "m098-noauthor"
 grep -q 'expected content, found array' "$WORK/m098-noauthor.log" \
   || { tail -20 "$WORK/m098-noauthor.log" >&2; fail "M098-AC7: the book with no author failed, but not with the template's error, so its failure is not the one the docs state"; }
 pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
-pass "M098-AC7: README, the home page and the back-end differences page count four back-ends and no page counts three, the Typst page is in the navigation and linked from the output page, and every sentence M098 adds about Typst is on its page and backed by a check"
+pass "M098-AC7: README, the home page and the back-end differences page count four back-ends and no page counts three, the Typst page is in the navigation and linked from the output page, and each claim row above is on its page"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -29695,9 +29718,25 @@ open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
 M098PLANTPY
   m098_red count-overlay 'site/typst.qmd (three back-ends)' \
     python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
-  m098_red typst-lost 'does not state 1 of the 24 claim(s)' \
+  m098_red typst-lost 'does not state 1 of the 26 claim(s)' \
     python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
-  pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, and the Typst page's claims are red on a copy stating a folded range"
+  # The index heading written as a paragraph, which is what a Pandoc header
+  # became in a document whose headings start at two hashes.
+  mkdir -p "$M098D/outline-plant"
+  cp "$M098D/outline/outline.qmd" "$M098D/outline-plant/"
+  cp -R "$M098D/outline/_extensions" "$M098D/outline-plant/_extensions"
+  perl -0777 -pi -e 's{#heading\(level: 1, numbering: none\)\[#\(%s\)\]}{#par[#(%s)]}' \
+    "$M098D/outline-plant/_extensions/index/modules/typst.lua"
+  grep -q '#par\[#(%s)\]' "$M098D/outline-plant/_extensions/index/modules/typst.lua" \
+    || fail "M098 T7 self-test: the heading plant changed nothing in typst.lua"
+  ( cd "$M098D/outline-plant" && quarto render outline.qmd --to typst ) \
+    > "$WORK/m098-outline-plant.log" 2>&1 \
+    || { tail -20 "$WORK/m098-outline-plant.log" >&2; fail "M098 T7 self-test: the outline document failed to render through the planted copy"; }
+  capture "$M098D/outline-plant/outline.qmd" typst "m098-outline-plant"
+  m098_red outline-paragraph "no line '^main ' follows" \
+    python3 tests/typstcheck.py order "$M098D/outline-plant/outline.pdf" "M098 T7 plant outline" \
+    "=Table of contents" "^main " "=First section" "=main"
+  pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, the Typst page's claims are red on a copy stating a folded range, and the outline check is red where the index heading is a paragraph"
 fi
 
 if [ "${1:-}" = "--self-test" ]; then

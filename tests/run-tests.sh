@@ -24090,11 +24090,12 @@ if [ "${1:-}" = "--self-test" ]; then
     mv "$P/spliced" "$P/_extensions/index/$rel"
   }
 
-  # (1) AC1 — the routing reverted. `builds_ast_index` answers for HTML alone
-  # again, which is what this milestone changed, so the EPUB render builds no
-  # index section at all.
+  # (1) AC1 — the routing reverted. `builds_ast_index` no longer answers for
+  # EPUB, which is what this milestone changed, so the EPUB render builds no
+  # index section at all. The Typst route M098 added stays, so the plant
+  # removes the EPUB route and nothing else.
   m52_tree noroute modules/core.lua \
-    's{  return is_html\(\) or is_epub\(\)\n}{  return is_html()\n}'
+    's{  return is_html\(\) or is_epub\(\) or is_typst\(\)\n}{  return is_html() or is_typst()\n}'
   cp examples/demo.qmd "$M52W/noroute/demo.qmd"
   ( cd "$M52W/noroute" && quarto render demo.qmd --to epub ) \
       > "$WORK/m52-noroute.log" 2>&1 \
@@ -24162,7 +24163,7 @@ M52ZIPPY
   rm -rf "$M52W/fold/_book" "$M52W/fold/.quarto"
   [ ! -e "$M52W/fold/_extensions" ] \
     || fail "M52 T4 self-test: the scratch book still carries an _extensions entry of its own, so the render below would read a filter this plant did not splice"
-  m52_tree fold modules/html.lua \
+  m52_tree fold modules/entries.lua \
     's{qi_indexes\.authored_index\(mark\.index or qi_indexes\.default\(\)\)}{qi_indexes.default()}'
   ( cd "$M52W/fold" && quarto render --to epub ) \
       > "$WORK/m52-fold.log" 2>&1 \

@@ -28870,11 +28870,12 @@ M098FORMSPY
 for row in $'entry\t0\tapple\t1@1, 3@3' $'entry\t0\tfern\t1–2@1' \
            $'entry\t0\telm\t1@1' $'entry\t0\tdahlia\t1*@1' \
            $'entry\t0\tgnome\t2*@2' $'entry\t0\taardvark\t1@1' \
-           $'entry\t0\tinsect\t\tsee|Bee' $'entry\t0\tjam\t3@3\tsee also|apple'; do
+           $'entry\t0\tinsect\t\tsee|Bee' $'entry\t0\tjam\t3@3\tsee also|apple' \
+           $'entry\t0\tkelp\t2–3@2, 4@4'; do
   grep -qxF -- "$row" tests/typst-index-main.tsv \
     || fail "M098-AC2: tests/typst-index-main.tsv no longer carries the row <<$row>>, so the case it states is no longer read"
 done
-pass "M098-AC2: the terms manifest carries a row for each case: three marks on one page, a range over two pages, a range on one page, a principal sharing its page with an ordinary mark, a lone principal, a plain locator, and both reference words"
+pass "M098-AC2: the terms manifest carries a row for each case: three marks on one page, a range over two pages, a range on one page, a principal sharing its page with an ordinary mark, a lone principal, a plain locator, both reference words, and pages a range spans"
 
 quarto render examples/typst-index.qmd --to typst > "$WORK/typst-index.log" 2>&1 \
   || { tail -40 "$WORK/typst-index.log" >&2; fail "M098-AC1: examples/typst-index.qmd failed to render to Typst"; }
@@ -29008,6 +29009,11 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_tree samepage typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if false}'
   m098_render samepage
   m098_terms samepage 'elm\t1–1@1'
+
+  # Pages a range spans (T10): the filter that drops their locators undone.
+  m098_tree nocover typst.lua 's{merged = merged\.filter\(f => f\.start\.page\(\) != f\.stop\.page\(\) or }{merged = merged.filter(f => true or }'
+  m098_render nocover
+  m098_terms nocover 'kelp\t2*@2, 2–3@2, 3@3, 4@4'
 
   # A principal locator: set in the ordinary face.
   m098_tree nobold typst.lua 's|if f\.bold \{ strong|if false { strong|'
@@ -29570,6 +29576,8 @@ principal	The locator of a principal mention is set in bold.
 shared page	Where a principal and an ordinary mark of one term share a page, that page's one locator is bold.
 range	A range prints its opening and closing pages, `12–15`, and links to the opening page.
 range on one page	Where both ends of a range are on one page, it prints that page alone.
+range spans	A page that a range of the term spans, its opening and closing pages included, prints no locator of its own, as in the PDF index.
+range spans bold	A principal mention on such a page loses its bold.
 separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.
 reference	A cross-reference prints its word in italics, then its target as plain text, with no link.
 label keys	which Typst reads for `symbols`, `see` and `see-also`
@@ -29779,7 +29787,7 @@ open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
 M098PLANTPY
   m098_red count-overlay 'site/typst.qmd (three back-ends)' \
     python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
-  m098_red typst-lost 'does not state 1 of the 26 claim(s)' \
+  m098_red typst-lost 'does not state 1 of the 28 claim(s)' \
     python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
   # The index heading written as a paragraph, which is what a Pandoc header
   # became in a document whose headings start at two hashes.

@@ -27,6 +27,10 @@
 #   The Hague    `sort="Hague"`, page 1: files under H
 #   insect       `see="Bee"` alone: no locator
 #   jam          `see-also="apple"` on page 2 and a plain mark on page 3
+#   kelp         a range opened on page 2 and closed on page 3, a principal
+#                mark on page 2 and a plain mark on page 3 inside it, and a
+#                plain mark on page 4: the two pages the range spans print no
+#                locator of their own, so the bold is lost, and page 4 prints
 group	Symbols
 entry	0	42nd Street	2@2
 group	A
@@ -51,3 +55,5 @@ group	I
 entry	0	insect		see|Bee
 group	J
 entry	0	jam	3@3	see also|apple
+group	K
+entry	0	kelp	2–3@2, 4@4

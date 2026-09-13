@@ -55,12 +55,18 @@ The sixth form points at a related entry: [jam]{.index see-also="apple"}.
 
 A term that starts with a digit files under no letter: [42nd Street]{.index}.
 
+A range opens here, and a principal mark on this page falls inside it:
+[kelp]{.index range="open"} and [kelp]{.index mention="principal"}.
+
 {{< pagebreak >}}
 
 ## Page 3
 
 The term marked on page 1 is marked again: [apple]{.index}. So is the term
 whose see-also mark gave it no locator: [jam]{.index}.
+
+The range opened on page 2 has an ordinary mark on its closing page, then
+closes: [kelp]{.index} and [kelp]{.index range="close"}.
 
 The tenth form files a term in the second index. Thirteen people are named on
 this page, one for each letter from A to M:
@@ -85,5 +91,7 @@ index of people runs past the foot of its first column:
 [Volta]{.index index="people"}, [Watt]{.index index="people"},
 [Xenakis]{.index index="people"}, [Young]{.index index="people"} and
 [Zuse]{.index index="people"}.
+
+A mark on a page after the range: [kelp]{.index}.
 
 {{< pagebreak >}}

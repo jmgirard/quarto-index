@@ -25,7 +25,10 @@ local M = {}
 -- a label no element carries adds no locator rather than failing the render
 -- (IP2). The locators are ordered by page. Two with the same opening and
 -- closing page are one locator, bold where either is principal, linked to the
--- first. A range whose two ends share a page prints that page alone. Three
+-- first. A range whose two ends share a page prints that page alone. A page
+-- that a range of the same entry spans, its two end pages included, prints no
+-- locator of its own, bold or not, as makeindex prints the PDF back-end's
+-- (M098 review). Three
 -- marks on consecutive pages print three locators: only an author's range
 -- prints as a range (the M098 question gate). The separators are the ones
 -- the LaTeX back-end's makeindex prints, a comma before each locator and
@@ -61,6 +64,8 @@ local TYPST_HELPERS = [[
       merged.push(f)
     }
   }
+  let ranges = merged.filter(f => f.start.page() != f.stop.page())
+  merged = merged.filter(f => f.start.page() != f.stop.page() or ranges.all(r => f.start.page() < r.start.page() or f.start.page() > r.stop.page()))
   let line = [#term]
   for f in merged {
     let shown = if f.start.page() == f.stop.page() { [#qi-index-page(f.start)] } else { [#qi-index-page(f.start)–#qi-index-page(f.stop)] }

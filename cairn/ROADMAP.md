@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-13 (triage pass over 26 candidate rows and 202 Known issues entries. KI154 and KI159 dropped as already shipped by M096. KI155 compressed for its renamed constant, and the M095 check-gaps row compressed under the row cap. No merge, split, route or re-rating, and no decision entry. Validate green.)_
+_Last hygiene check: 2026-09-13 (M097 archived, M094 row pruned. No lesson added, LESSONS at its byte budget. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,11 +11,10 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M097 | The extension requires Quarto 1.5 | review | — | normal | milestones/M097-quarto-floor-1-5.md |
 | M098 | A Typst render prints the index | planned | M097 | normal | milestones/M098-typst-back-end.md |
+| M097 | The extension requires Quarto 1.5 | done | — | normal | milestones/archive/M097-quarto-floor-1-5.md |
 | M096 | The pre-release sweep fails on the defects it names, from one definition | done | — | normal | milestones/archive/M096-prerelease-sweep-plants.md |
 | M095 | Three candidate rows' unasserted fixture facts get checks | done | — | normal | milestones/archive/M095-suite-pins-three-rows.md |
-| M094 | A failed store write or source read reports its own cause | done | — | normal | milestones/archive/M094-store-failure-causes.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

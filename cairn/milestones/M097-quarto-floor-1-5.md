@@ -25,7 +25,7 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - [x] AC2: The command `grep -rnIE '1\.4\.549|1\.4\.0|Quarto 1\.4|1\.4 or later' .` returns no hit outside five places. They are `.git/`, `site/_site/`, `tests/.work/` and `cairn/`, which holds history and this plan. The fifth is the CHANGELOG lines that name the old minimum as history: the released sections, and the one `## Unreleased` sentence that names release 0.4.0.
 - [x] AC3: The floor leg of `.github/workflows/versions.yml` installs Quarto 1.5.52. Its header comment gives the dated query that found 1.5.52 as the oldest non-prerelease release that `>=1.5.0` admits. A manually started run of the workflow on the milestone branch passes `render (floor)` and `render (pinned)`. Its compare job reports agreement between those two legs. The work log records the result of every other job in that run.
 - [x] AC4: The `## Unreleased` section of `CHANGELOG.md` states that the extension now requires Quarto 1.5 or later, and that Quarto 1.4 users stay on release 0.4.0.
-- [ ] AC5: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
+- [x] AC5: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
 
@@ -58,6 +58,7 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - 2026-09-13: claim audit: 21 claims read, 1 corrected — .github/workflows/versions.yml, README.md, site/tests.qmd (v1.5.0 to v1.5.51 exist as prereleases, so the header and both floor sentences now say non-prerelease; re-read holds).
 - 2026-09-13: `tests/run-tests.sh --self-test` re-run after the correction passed, 1523 checks. Status set to review.
 - 2026-09-13: review checkpoint: AC1-AC4 evidence recorded and ticked, validate green; suite, self-test and two reviewers still running, AC5 unticked.
+- 2026-09-13: review pre-gate checkpoint: all five criteria evidenced and ticked, gate green, 8 findings from three reviewers logged for triage at the approval gate.
 
 ## Decisions
 
@@ -69,3 +70,18 @@ Reviewed 2026-09-13 at 2fd04ec. The branch contains `origin/main` (3ae2cfe), so 
 - AC2 evidence: the criterion's grep, run at the repository root, returns hits under `cairn/` and two hits outside it. `CHANGELOG.md:24` is the `## Unreleased` sentence that names release 0.4.0. `CHANGELOG.md:533` is in the released 0.1.0 section. No hit falls under `.git/`, `site/_site/` or `tests/.work/`, and no other file has a hit.
 - AC3 evidence: `versions.yml:90` sets `FLOOR: '1.5.52'`. The header, lines 9-16, dates the query 2026-09-13 and gives it. The query, re-run at review, still returns `v1.5.52`. Run 34779339060 is a `workflow_dispatch` run on `m097-quarto-floor-1-5` at d599df8, read again with `gh run view`. `render (floor, 1.5.52)` and `render (pinned, 1.10.18)` passed. The compare job log reports the floor leg byte-identical to the pinned leg on book, demo, html-index and named-indexes. The T4 work-log line records all 8 job results. The commits after d599df8 change only prose: the `versions.yml` header comment, README and `site/tests.qmd`. The run covers the workflow as it now runs.
 - AC4 evidence: `CHANGELOG.md:24-25`, under `## Unreleased` then `### Project`, reads that the extension now requires Quarto 1.5 or later and that Quarto 1.4 users stay on release 0.4.0.
+- AC5 evidence: at 743c974, `tests/run-tests.sh` passed with 804 checks and exit 0 in 10 min 42 s. Then `tests/run-tests.sh --self-test` passed with 1523 checks and exit 0 in 14 min 38 s. The two runs were sequential.
+
+Consistency gate: `cairn_validate.py` exit 0, with one advisory on M098's criterion count. No DESIGN principle text changed, so the impact report was skipped. The generic profile names no toolchain checks.
+
+Review findings, three reviewers, ranked within each lens:
+
+- [O] 1: the dispatched run tested d599df8, not the head. The later commits change only prose and comments.
+- [O] 2: no plain suite run was recorded for AC5. This review's fresh plain run supplies it.
+- [O] 3: if `quarto add` only warns, the CHANGELOG sentence "the last release that installs on it" overstates. At tag v1.4.549, `src/extension/install.ts` reads the staged extension through `readExtensions`, and `validateExtension` in `extension.ts` throws on an unmet `quarto-required`. The sentence holds.
+- [O] 4: `pages.yml:12-14` still calls a floor/latest matrix a standing candidate row. `versions.yml` is that matrix, added by M43.
+- [O] 5: `cairn/DESIGN.md:27-29` still calls CI against the floor and latest a future candidate.
+- [O] 6, [S] blame 1: `versions.yml:282` leaves "Run on every leg and" as a short broken line.
+- [O] 7, [S] prior-review 1-2: `site/tests.qmd:23` runs to 96 characters and `README.md:26` to 81. M34 and M093 reviews fixed the same wrap defect.
+- [O] 8: the header query greps `^v1\.5\.` and drops prereleases, so it cannot show the prerelease sentence beside it. Both claims are true by the releases API.
+- [S] prior-review: the PR-comment probe returned no inline comments.

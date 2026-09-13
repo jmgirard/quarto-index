@@ -86,3 +86,30 @@ A document or book rendered to Typst prints each of its indexes with page locato
 ## Decisions
 
 ## Review
+
+Sync: `origin/main` has not moved since the branch was cut. `main` has no unpushed commits. The suite ran with `--self-test` at 926bde6 on Quarto 1.10.18: exit 0, 1599 checks passed.
+
+- AC1: verified. The M098-AC1/AC2/AC3 section shows the fixture declares two indexes and no `lang:`, and it carries the ten forms from `site/syntax.qmd` with fixed page breaks. The 24 lines of `Index of Terms` and the 52 lines of `Index of People` match `tests/typst-index-main.tsv` and `tests/typst-index-people.tsv`, each locator's page included. The people index fills both columns. 15 plants are red, each on its own row.
+- AC2: verified. The terms manifest carries a row for each AC2 case, principal and shared-page rows included. The reader matched each face. Plants nomerge, norange, samepage, nobold, sharedpage and allbold are red.
+- AC3: verified. `Index of Terms` prints 13 locators on page 5 with exactly 13 links, and `Index of People` prints 26 locators on page 6 with 26 links. The link targets match the manifest pages. Plants closelink and xreflink are red.
+- AC4: verified. The `main` index (19 lines) and the `authors` index (20 lines) of `examples/named-indexes.qmd` match their hand manifests at every level. The 6 placement lines are in reading order. Plants named-fold and named-unplaced are red.
+- AC5: not verified as written. The render gives one PDF with three indexes under their titles, placed as `last.qmd` places them, and the HTML, PDF and EPUB book checks pass. But the manifest names a chapter for each locator, not a page, and `typstcheck.py book` reads the chapter bounds from the PDF under test. So the check does not compare the "page locators a hand-derived manifest gives" (review finding 4).
+- AC6: not verified on the final tree. Run 34785351085 at ddc13a7 passed both Typst steps on the floor (1.5.52), pinned (1.10.18) and release legs. Commit 6e061f9 later changed the index heading that `typst.lua` emits, and no run exists at the branch head.
+- AC7: verified. README.md:5, `site/index.qmd:9` and `site/back-end-differences.qmd:7` state four back-ends. The `lang:` item, line 62 on main, now at line 74, says "All four". Each of the ten numbered items covers Typst, item 6 by naming all four back-ends. The sweep grep gives 13 hits, and the work log names each hit it corrected. `site/other-formats.qmd` names no Typst. `typst.qmd` is in `site/_quarto.yml` and linked from `site/output.qmd`, and it states two columns, no package and Quarto 1.10.18. CHANGELOG `## Unreleased` states the back-end. The M098-AC7 checks and their three plants passed.
+- AC8: fails as written. The four fixtures render with exit 0, and the two label fixtures print the Spanish and override words. The escaping, sort-escaping and unicode terms are held to a hand statement. `examples/xref-escaping.qmd` has none: its 643 entries come only from `typstcheck.py source`, the code that derives them (review finding 5).
+
+Consistency gate: `cairn_validate.py` exit 0, all checks passed, with one advisory (8 criteria over the 7 tripwire, recorded at plan). The milestone changes no DESIGN principle, so `cairn_impact` was skipped. The generic profile names no toolchain checks.
+
+Independent review, three lenses. The [S] blame-history lens found nothing: the moved code, the retargeted plants and the D-009/D-060 uses match history. The [S] prior-review lens found no prior-review evidence (archived reviews are one-line summaries, and the PR comment probe returned none). The [O] diff-bug lens gave 11 findings, ranked:
+
+1. `typst.lua:56`: a page mark inside a range prints separately (`b, 1, 1–2`), where makeindex drops the covered page. No doc or KI records the difference.
+2. `typst.lua:43`: a mark in image alt text loses its locator with no warning, because Pandoc's Typst writer drops the label. KI289 names only front-matter fields.
+3. `typst.lua:35-37`: a two-counter `page-numbering` pattern such as `"1 / 1"` prints `1` where the footer shows `1/3`, against `site/typst.qmd:40`.
+4. `typstcheck.py:156-192`: the AC5 locators are compared by chapter, with bounds read from the PDF under test. A page off by one inside its chapter passes.
+5. `run-tests.sh:29269,29293`: the AC8 check for `xref-escaping.qmd` has no hand-derived oracle.
+6. `typstcheck.py:353`: `unrepeat_clusters` folds a doubled combining cluster in the printed text only, so an emitted doubling passes (KI291).
+7. `typst.lua:198-214`: a caption mark copied into a list of figures can report the outline's page (KI290).
+8. `run-tests.sh:29081`: `typstindex.py pages` runs green only in CI. Locally it runs only as a red plant.
+9. `typst.lua:53-57`: merging and the one-page range test use physical pages, so a page counter reset prints `1, 1` or `1–1`.
+10. `typst.lua:227`: minted labels skip Pandoc ids but not raw Typst labels an author wrote.
+11. Stale: the `run-tests.sh:9504` comment names `html.lua` for the tree.

@@ -1,0 +1,89 @@
+---
+title: "Typst index"
+indexes:
+  - name: main
+    title: Index of Terms
+  - name: people
+    title: Index of People
+filters:
+  - index
+---
+
+The Typst back-end's fixture (M098). It declares two indexes and places
+neither, so both print at the end of the document in the order declared. It
+declares no `lang:`, so every word the index prints is the English default.
+
+Every page below ends in an explicit page break, so the page each mark sits
+on is a fact of this source: page 1 is this page, and each break starts the
+next. The suite's manifest states every page number from here and nowhere
+else.
+
+## Page 1
+
+The first form indexes a term under its own text: [aardvark]{.index}.
+
+A term marked three times on one page prints one locator for the page:
+[apple]{.index}, [apple]{.index} and [apple]{.index}.
+
+The second form indexes a term under other text: [the bee]{.index entry="Bee"}.
+
+The fourth form adds an entry with nothing visible: []{.index entry="Cobalt"}.
+
+A principal and an ordinary mark of one term on one page print one bold
+locator: [dahlia]{.index} and [dahlia]{.index mention="principal"}.
+
+A range that opens and closes on one page prints that page alone:
+[elm]{.index range="open"} and [elm]{.index range="close"}.
+
+A range that closes on the next page opens here: [fig]{.index range="open"}.
+
+A sort key files a term under other text: [The Hague]{.index sort="Hague"}.
+
+{{< pagebreak >}}
+
+## Page 2
+
+The range opened on page 1 closes here: [fig]{.index range="close"}.
+
+The seventh form marks a principal mention: [gnome]{.index mention="principal"}.
+
+The third form nests a term under a parent: [hive]{.index entry="Bee!Hive"}.
+
+The fifth form points at another entry: [insect]{.index see="Bee"}.
+
+The sixth form points at a related entry: [jam]{.index see-also="apple"}.
+
+A term that starts with a digit files under no letter: [42nd Street]{.index}.
+
+{{< pagebreak >}}
+
+## Page 3
+
+The term marked on page 1 is marked again: [apple]{.index}. So is the term
+whose see-also mark gave it no locator: [jam]{.index}.
+
+The tenth form files a term in the second index. Thirteen people are named on
+this page, one for each letter from A to M:
+[Adams]{.index index="people"}, [Babbage]{.index index="people"},
+[Curie]{.index index="people"}, [Darwin]{.index index="people"},
+[Euler]{.index index="people"}, [Faraday]{.index index="people"},
+[Gauss]{.index index="people"}, [Hopper]{.index index="people"},
+[Ibn Sina]{.index index="people"}, [Joule]{.index index="people"},
+[Kepler]{.index index="people"}, [Lovelace]{.index index="people"} and
+[Maxwell]{.index index="people"}.
+
+{{< pagebreak >}}
+
+## Page 4
+
+Thirteen more people are named here, one for each letter from N to Z, so the
+index of people runs past the foot of its first column:
+[Noether]{.index index="people"}, [Ohm]{.index index="people"},
+[Pascal]{.index index="people"}, [Quetelet]{.index index="people"},
+[Ramanujan]{.index index="people"}, [Somerville]{.index index="people"},
+[Turing]{.index index="people"}, [Ulam]{.index index="people"},
+[Volta]{.index index="people"}, [Watt]{.index index="people"},
+[Xenakis]{.index index="people"}, [Young]{.index index="people"} and
+[Zuse]{.index index="people"}.
+
+{{< pagebreak >}}

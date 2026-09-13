@@ -59,6 +59,8 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - 2026-09-13: `tests/run-tests.sh --self-test` re-run after the correction passed, 1523 checks. Status set to review.
 - 2026-09-13: review checkpoint: AC1-AC4 evidence recorded and ticked, validate green; suite, self-test and two reviewers still running, AC5 unticked.
 - 2026-09-13: review pre-gate checkpoint: all five criteria evidenced and ticked, gate green, 8 findings from three reviewers logged for triage at the approval gate.
+- 2026-09-13: step-7 approval: m097-quarto-floor-1-5 approved for merge
+- 2026-09-13: gate fix-now: findings 4-7 fixed (prose and comment wraps only), 1-3 and 8 rejected with reasons in Review.
 
 ## Decisions
 
@@ -85,3 +87,8 @@ Review findings, three reviewers, ranked within each lens:
 - [O] 7, [S] prior-review 1-2: `site/tests.qmd:23` runs to 96 characters and `README.md:26` to 81. M34 and M093 reviews fixed the same wrap defect.
 - [O] 8: the header query greps `^v1\.5\.` and drops prereleases, so it cannot show the prerelease sentence beside it. Both claims are true by the releases API.
 - [S] prior-review: the PR-comment probe returned no inline comments.
+
+Triage at the approval gate, chosen by the user:
+
+- Fixed now: 4 (`pages.yml` sentence now points at `versions.yml`), 5 (DESIGN contract bullet, marked corrected M097), 6 (`versions.yml` comment rewrapped), 7 (`site/tests.qmd` paragraph and `README.md` line rewrapped, no line over 80). After the fixes, `tests/versioncheck.py floor` passed and both workflows parse as YAML.
+- Rejected: 1, because the commits after the run change no workflow step. 2, because this review's plain run supplies the evidence. 3, because Quarto 1.4.549's install code refuses the extension. 8, because both header claims are true and the query is recorded as the one that returned 1.5.52.

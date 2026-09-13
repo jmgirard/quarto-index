@@ -20,9 +20,9 @@ any is missing.
 `.github/workflows/versions.yml` renders four of the fixtures —
 `html-index.qmd`, `named-indexes.qmd`, `demo.qmd` and the book — on Quarto
 1.5.52, the oldest non-prerelease release the `>=1.5.0` range the extension
-declares admits; on the version the documentation site is built with; and, weekly and on demand,
-on Quarto's current release. The HTML index each leg emits is compared byte for
-byte against the index the pinned leg emits.
+declares admits; on the version the documentation site is built with; and,
+weekly and on demand, on Quarto's current release. The HTML index each leg
+emits is compared byte for byte against the index the pinned leg emits.
 
 Weekly and on demand — not on every push — the same run also renders
 `demo.qmd` and the book to PDF on each of those Quarto versions, and reads the

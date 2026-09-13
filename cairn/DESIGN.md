@@ -25,8 +25,8 @@ stays user-declared. Toolchain profile: generic (see `cairn/PROFILE.md`).
 - The extension's job ends at correct emitted output for each supported
   format (GP2); mark values are structured, format-neutral data (IP1).
 - Quarto version support is part of the contract: a stated minimum version in
-  `_extension.yml` and README, eventually CI-tested against the floor and
-  latest (candidate: CI matrix).
+  `_extension.yml` and README, rendered in CI by `versions.yml` on the floor
+  and pinned releases, and weekly on Quarto's current release (corrected M097).
 
 ## Function Families
 

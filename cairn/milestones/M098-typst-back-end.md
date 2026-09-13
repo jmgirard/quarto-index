@@ -1,6 +1,6 @@
 # M098: A Typst render prints the index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M097
 - **Driving RR:** —
@@ -59,7 +59,7 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - [x] T10: In the Typst index, drop an ordinary locator whose page a range of the same term covers, as makeindex does, so `b, 1, 1–2` prints `b, 1–2`. Add the case as a row of the AC1 manifest with a plant, and state the rule in `site/typst.qmd` with a claim check. (Review finding 1.)
 - [x] T11: Make a mark in image alt text, whose label Pandoc's Typst writer drops, no longer lose its locator in silence. Report it at render where the filter can tell, or record it as a known issue beside KI289. (Review finding 2.)
 - [x] T12: Run `typstindex.py pages` green on `examples/typst-index.qmd` in the suite, and not only as a red plant. Correct the `run-tests.sh:9504` comment that names `html.lua` for the locator tree. (Review findings 8 and 11.)
-- [ ] T13: After T8 to T12, push the branch head and start `.github/workflows/versions.yml` by hand. Record the run URL and the Typst steps on the floor and pinned legs.
+- [x] T13: After T8 to T12, push the branch head and start `.github/workflows/versions.yml` by hand. Record the run URL and the Typst steps on the floor and pinned legs.
 
 ## Work log
 
@@ -98,6 +98,7 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - 2026-09-13: T8 to T12 checked off. Suite with `--self-test` at a2cef64: 1607 checks passed, the new xref-changed, book-pageplus, nocover and alt-kept plants among them.
 - 2026-09-13: claim audit: 84 claims read, 4 corrected — tests/typst-index-main.tsv, tests/run-tests.sh, site/typst.qmd, _extensions/index/modules/typst.lua, tests/typstcheck.py
 - 2026-09-13: the claim audit read the lines added after the review return (`git diff 7e8cbd3..HEAD`). The earlier audit covered the rest. The same reader's re-read found all four corrections hold. The corrections are comments, a manifest comment and one site sentence, and the site claims and the terms manifest were re-run in isolation.
+- 2026-09-13: T13 done. The branch head 0c72455 was pushed, as the send-back approved. Run 34791155718 (https://github.com/jmgirard/quarto-index/actions/runs/34791155718) passed both Typst steps on the floor (1.5.52), pinned (1.10.18) and release legs. The push-triggered Versions run 34791156057 also passed. Status review.
 
 ## Decisions
 

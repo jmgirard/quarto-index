@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-11 (M096 archived and its row set done, M093's terminal row pruned. KI93 retired as resolved, KI288 added for the case-fold gap the merge left, and the architecture prose calling the pre-release sweep standalone corrected. No lesson captured: LESSONS.md is at 49 of 50 lines and 19,968 of 20,000 bytes, and M096 retires none, so the next milestone to teach one must retire first. The site, gallery and publishing candidate row is retained; M096's Scope Out keeps its publishing items there. Validate green.)_
+_Last hygiene check: 2026-09-13 (triage pass over 26 candidate rows and 202 Known issues entries. KI154 and KI159 dropped as already shipped by M096. KI155 compressed for its renamed constant, and the M095 check-gaps row compressed under the row cap. No merge, split, route or re-rating, and no decision entry. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -20,7 +20,7 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Close the four check gaps M095 left: the whole-module index probe reading the cell list rather than the reset body, `Bramble`'s negative control reusing another capture, `outside-heading` not pinning the container and heading elements, and the M26 leg's deleted counts. Promote on a seventh index cell, or with any other pass over the state probe — added 2026-09-11 — M095 review — KI284-KI287
+- Close the four check gaps M095's review left in the state probe and three suite checks. Promote on a seventh index cell, or with any other pass over the state probe — added 2026-09-11 — M095 review — KI284-KI287
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - Suite-run shape follow-ups (clustered): parallel independent legs; a named-subset run, blocked until the three whole-run accumulator sweeps declare their own domains; per-render rather than per-section timing. Promote on a section growing past a couple of minutes, or on M075's section profile proving too coarse — added 2026-09-03, clustered 2026-09-06 — M075 plan gate — KI238, KI241-KI245

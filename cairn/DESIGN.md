@@ -1418,12 +1418,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   absolute path, symlink inside the capture, and directory `index.html`
   symlinked above it. The repair ships unpromised. — M46 descope amendment,
   M46 review rounds 1-4
-- **KI154.** Four clauses of the pre-release sweep are unplanted. — M46 review
-  F19
-- **KI155.** `FLOOR = 11` stands against a live domain of 21, pinned by
-  nothing. — M46 review F20
-- **KI159.** A retired-sentence row with an empty sentence reddens the whole
-  domain, a fifth unplanted clause. — M46 review F28
+- **KI155.** `DOMAIN_FLOOR = 11` in `tests/sitecheck.py` stands below the
+  live domain, pinned by nothing. M096 kept it rather than invent a drift
+  threshold (corrected M096: the constant was `FLOOR`, the domain 21). — M46
+  review F20
 - **KI160.** The published URL is derived from the remote by convention, so a
   custom domain would leave README and the site's entry page naming a URL the
   deploy job does not publish to with the suite green. — M42 review

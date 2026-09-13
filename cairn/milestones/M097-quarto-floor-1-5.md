@@ -21,10 +21,10 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 
 ## Acceptance criteria
 
-- [ ] AC1: `_extensions/index/_extension.yml` declares `quarto-required: ">=1.5.0"`. README, `site/index.qmd` and `site/tests.qmd` state that the extension requires Quarto 1.5 or later.
-- [ ] AC2: The command `grep -rnIE '1\.4\.549|1\.4\.0|Quarto 1\.4|1\.4 or later' .` returns no hit outside five places. They are `.git/`, `site/_site/`, `tests/.work/` and `cairn/`, which holds history and this plan. The fifth is the CHANGELOG lines that name the old minimum as history: the released sections, and the one `## Unreleased` sentence that names release 0.4.0.
-- [ ] AC3: The floor leg of `.github/workflows/versions.yml` installs Quarto 1.5.52. Its header comment gives the dated query that found 1.5.52 as the oldest non-prerelease release that `>=1.5.0` admits. A manually started run of the workflow on the milestone branch passes `render (floor)` and `render (pinned)`. Its compare job reports agreement between those two legs. The work log records the result of every other job in that run.
-- [ ] AC4: The `## Unreleased` section of `CHANGELOG.md` states that the extension now requires Quarto 1.5 or later, and that Quarto 1.4 users stay on release 0.4.0.
+- [x] AC1: `_extensions/index/_extension.yml` declares `quarto-required: ">=1.5.0"`. README, `site/index.qmd` and `site/tests.qmd` state that the extension requires Quarto 1.5 or later.
+- [x] AC2: The command `grep -rnIE '1\.4\.549|1\.4\.0|Quarto 1\.4|1\.4 or later' .` returns no hit outside five places. They are `.git/`, `site/_site/`, `tests/.work/` and `cairn/`, which holds history and this plan. The fifth is the CHANGELOG lines that name the old minimum as history: the released sections, and the one `## Unreleased` sentence that names release 0.4.0.
+- [x] AC3: The floor leg of `.github/workflows/versions.yml` installs Quarto 1.5.52. Its header comment gives the dated query that found 1.5.52 as the oldest non-prerelease release that `>=1.5.0` admits. A manually started run of the workflow on the milestone branch passes `render (floor)` and `render (pinned)`. Its compare job reports agreement between those two legs. The work log records the result of every other job in that run.
+- [x] AC4: The `## Unreleased` section of `CHANGELOG.md` states that the extension now requires Quarto 1.5 or later, and that Quarto 1.4 users stay on release 0.4.0.
 - [ ] AC5: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
@@ -57,7 +57,15 @@ The extension declares, documents and tests Quarto 1.5 as its minimum version, s
 - 2026-09-13: T4 records: KI110 re-checked, the floor PDF job logs `pdf-engine: xelatex` on 1.5.52, so the entry stands with the new version. KI114 removed (a one-off failure on the retired 1.4.549 leg), and the version-matrix candidate row drops its KI114 label and recurrence clause. No red floor PDF job, so no new Known issues entry.
 - 2026-09-13: claim audit: 21 claims read, 1 corrected — .github/workflows/versions.yml, README.md, site/tests.qmd (v1.5.0 to v1.5.51 exist as prereleases, so the header and both floor sentences now say non-prerelease; re-read holds).
 - 2026-09-13: `tests/run-tests.sh --self-test` re-run after the correction passed, 1523 checks. Status set to review.
+- 2026-09-13: review checkpoint: AC1-AC4 evidence recorded and ticked, validate green; suite, self-test and two reviewers still running, AC5 unticked.
 
 ## Decisions
 
 ## Review
+
+Reviewed 2026-09-13 at 2fd04ec. The branch contains `origin/main` (3ae2cfe), so no merge was needed before gathering evidence.
+
+- AC1 evidence: `_extension.yml:4` reads `quarto-required: ">=1.5.0"`. `README.md:23` and `site/index.qmd:32` read "Requires Quarto 1.5 or later". `site/tests.qmd:21-23` states the `>=1.5.0` range the extension declares, with 1.5.52 as its oldest non-prerelease release. That sentence gives the requirement as the declared range, not as the words "1.5 or later".
+- AC2 evidence: the criterion's grep, run at the repository root, returns hits under `cairn/` and two hits outside it. `CHANGELOG.md:24` is the `## Unreleased` sentence that names release 0.4.0. `CHANGELOG.md:533` is in the released 0.1.0 section. No hit falls under `.git/`, `site/_site/` or `tests/.work/`, and no other file has a hit.
+- AC3 evidence: `versions.yml:90` sets `FLOOR: '1.5.52'`. The header, lines 9-16, dates the query 2026-09-13 and gives it. The query, re-run at review, still returns `v1.5.52`. Run 34779339060 is a `workflow_dispatch` run on `m097-quarto-floor-1-5` at d599df8, read again with `gh run view`. `render (floor, 1.5.52)` and `render (pinned, 1.10.18)` passed. The compare job log reports the floor leg byte-identical to the pinned leg on book, demo, html-index and named-indexes. The T4 work-log line records all 8 job results. The commits after d599df8 change only prose: the `versions.yml` header comment, README and `site/tests.qmd`. The run covers the workflow as it now runs.
+- AC4 evidence: `CHANGELOG.md:24-25`, under `## Unreleased` then `### Project`, reads that the extension now requires Quarto 1.5 or later and that Quarto 1.4 users stay on release 0.4.0.

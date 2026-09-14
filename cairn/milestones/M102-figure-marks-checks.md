@@ -119,7 +119,7 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: T3 done. Rendered by hand through the spliced copy, `alts` failed image 4 in HTML and EPUB (got `alt text that marks  and `). The six `after` checks passed, and neither log carried a warning.
 - 2026-09-14: T4 done. The new render-job commands, run by hand on a scratch copy, passed all six `after` checks. `versioncheck.py fixtures` still reads the same five fixture names. The HTML is checked before the EPUB render.
 - 2026-09-14: T5 done. The PDF job renders the fixture to PDF and reads it with `figuremarks.py pdf`, in two steps placed before the figure-marks Typst render. The job's header comments now name these steps and no longer say it renders two PDF fixtures and nothing more.
-- 2026-09-14: T6 done. Dispatched run 34899204830 on 5f26963. Attempt 1 failed the floor render leg in the book render, before the new steps (logged as KI302). The push run 34899205853 on the same commit passed that leg. After a rerun of the failed job, attempt 2 is green on all eight jobs. The floor, pinned and release render legs each printed six `after` ok lines, and each PDF leg printed the `figuremarks.py pdf` ok line, so the floor leg prints the six manifest lines.
+- 2026-09-14: T6 done. Dispatched run 34899204830 on 5f26963. Attempt 1 failed the floor render leg in the book render, before the new steps (logged as KI302). The push run 34899205853 on the same commit passed that leg. After a rerun of the failed job, attempt 2 is green on all eight jobs. Each render leg printed six `after` ok lines. Each PDF leg printed the `figuremarks.py pdf` ok line for the six manifest lines.
 
 ## Decisions
 

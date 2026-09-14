@@ -229,7 +229,11 @@ jobs:
   # index with at least one entry in each rendered PDF. And that
   # `quarto render --to typst` succeeds on examples/typst-index.qmd and prints
   # both of its indexes as their manifests state them, in order and on the
-  # stated pages (M098). The render alone is
+  # stated pages (M098). And that `quarto render --to typst` succeeds on
+  # examples/typst-numbering.qmd and prints its index's text as its manifest
+  # states it, in order, where a locator prints the page numbering's own
+  # text, or the physical page where a page has no numbering (M099). The
+  # render alone is
   # not the check: a PDF that typesets at exit 0 while the index prints empty
   # is exactly the break this job exists to catch, and `indexdump.py` is what
   # makes the difference between the two visible.
@@ -419,6 +423,24 @@ jobs:
           python3 tests/typstindex.py pages examples/typst-index.pdf \
             tests/typst-index-people.tsv 'Typst index of people' \
             'Index of People'
+
+      # A Typst locator under a page numbering of the document's own (M099).
+      # Its text fills a two-counter pattern with the page counter's final
+      # value, read on each leg's Typst. The index page's footer is `5 / 5`, so
+      # the reading names it.
+      - name: Render examples/typst-numbering.qmd to Typst
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/typst-numbering.qmd --to typst
+
+      - name: Read the Typst page-numbering index against its manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/typstindex.py pages examples/typst-numbering.pdf \
+            tests/typst-numbering.tsv 'Typst index under a page numbering' \
+            'Index' '--footer=^\d+ / \d+$'
 
       - name: Report what this leg extracted
         shell: bash

@@ -10,7 +10,10 @@
   nest as deep as they are written. A principal mention's page number is set
   in bold, a range prints its first and last pages, a page a range spans
   prints no page number of its own, and each page number
-  links to its page. The see and see-also words follow `lang:` and
+  links to its page. A page number prints as the page's own numbering prints
+  it, so a page numbering pattern with two counters, such as `1 / 1`,
+  prints `5 / 30`. Page numbers that print the same text, as they can after a
+  page counter reset, print once. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
   book template needs an `author:`.
 - A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no

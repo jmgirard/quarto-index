@@ -450,9 +450,14 @@ Three back-ends ship:
   Quarto moves every Pandoc header up a level for Typst in a document whose
   headings start at `##`, which turned a level-one header into a paragraph
   the outline did not list (M098 claim audit). Its helper functions query each label's location
-  while the document is typeset, merge locators of one page, print a range
-  from its opening page to its closing page, set a principal locator in
-  bold and link each locator to its location. A label no element carries adds
+  while the document is typeset, print each locator as its page's numbering
+  prints it (with the counter's final value where the pattern names two
+  counters or is a function, M099), drop a single mark on a page a range of
+  its entry spans, then merge the locators left that print one text,
+  print a range from its opening page to its closing page, set a principal locator in
+  bold and link each locator to its mark's position (a position, not a
+  location, since M099 review R1: a link to a location fails to compile
+  under a two-argument numbering function). A label no element carries adds
   no locator, so a mark Quarto's template never prints cannot fail the render
   (IP2). Every term, word and heading is a Typst string literal, so no
   character is read as markup. No Typst package is imported (GP3). As for
@@ -1016,12 +1021,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   check. `tests/typstcheck.py` folds a combining cluster read twice running,
   because pdftotext reads each glyph of such a cluster as the whole cluster. A
   back-end that doubled such a cluster reads as correct there. — M098 T4, T5
-- **KI292.** A Typst locator prints only the page counter. A `page-numbering`
-  pattern with two counters, such as `"1 / 1"`, prints `1` where the footer
-  shows `1 / 3`. — M098 review F3
-- **KI293.** The Typst index merges locators and tests a one-page range by
-  physical page. After a page counter reset, two pages that show one number
-  print `1, 1`, and a range across the reset prints `1–1`. — M098 review F9
 - **KI294.** A mark in a figure caption is recorded twice in every back-end,
   because Quarto copies the caption into the image's alt text. A range opened
   there reports that the term's range is already open. Observed on main
@@ -1034,6 +1033,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   open says the mark indexes as an ordinary page number. Where a range spans
   that page, the LaTeX and Typst indexes print no locator for it. — M098
   review pass 2 F4
+- **KI298.** A Typst locator reads the page counter at its mark. Where raw
+  Typst updates the page counter later on the same page, the footer prints
+  the updated value and the locator does not: a mark before
+  `#counter(page).update(n => n + 5)` printed `1 / 7` under a footer of
+  `6 / 7`. Observed on Typst 0.15.1. — M099 review R4
 
 ### Reports and messages
 

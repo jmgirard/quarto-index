@@ -28808,7 +28808,7 @@ pass "M074-AC3: a book whose records show no chapter placing any index still hea
 # The index is read by tests/typstindex.py, which combines three readings of
 # the PDF: pdftotext's word boxes for the text, `pdftohtml -xml -fontfullname`
 # for the face each word is set in, and the PDF's link annotations for the
-# page each word links to. tests/pdfindex.py is not changed: the version
+# page each word links to. M098 left tests/pdfindex.py unchanged: the version
 # matrix's step reads the same index through it (`typstindex.py pages`), and
 # it reads the Typst layout's order, levels and page footer as it stands.
 #
@@ -29007,22 +29007,22 @@ if [ "${1:-}" = "--self-test" ]; then
   }
 
   # Three marks on one page: the merge of one page's locators undone.
-  m098_tree nomerge typst.lua 's{if merged\.len\(\) > 0 and }{if false and }'
+  m098_tree nomerge typst.lua 's{let at = merged\.position\(m => m\.shown == f\.shown\)}{let at = none}'
   m098_render nomerge
   m098_terms nomerge 'apple\t1@1, 1@1, 1@1, 3@3'
 
   # A range over two pages: printed as its opening page alone.
-  m098_tree norange typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if true}'
+  m098_tree norange typst.lua 's{let shown = if first == last}{let shown = if true}'
   m098_render norange
   m098_terms norange 'fern\t1@1'
 
   # A range on one page: printed as a range from that page to itself.
-  m098_tree samepage typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if false}'
+  m098_tree samepage typst.lua 's{let shown = if first == last}{let shown = if false}'
   m098_render samepage
   m098_terms samepage 'elm\t1–1@1'
 
   # Pages a range spans (T10): the filter that drops their locators undone.
-  m098_tree nocover typst.lua 's{merged = merged\.filter\(f => f\.start\.page\(\) != f\.stop\.page\(\) or }{merged = merged.filter(f => true or }'
+  m098_tree nocover typst.lua 's{found = found\.filter\(f => f\.spans or }{found = found.filter(f => true or }'
   m098_render nocover
   m098_terms nocover 'kelp\t2*@2, 2–3@2, 3@3, 4@4'
 
@@ -29033,7 +29033,7 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # A principal sharing its page with an ordinary mark: the page's locator
   # keeps the first mark's face.
-  m098_tree sharedpage typst.lua 's{last\.bold = last\.bold or f\.bold}{last.bold = last.bold}'
+  m098_tree sharedpage typst.lua 's{kept\.bold = kept\.bold or f\.bold}{kept.bold = kept.bold}'
   m098_render sharedpage
   m098_terms sharedpage 'dahlia\t1@1'
 
@@ -29043,7 +29043,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_terms allbold 'aardvark\t1*@1'
 
   # A range's link: to the closing page instead of the opening one.
-  m098_tree closelink typst.lua 's{link\(f\.start, }{link(f.stop, }'
+  m098_tree closelink typst.lua 's{link\(f\.start\.position\(\), }{link(f.stop.position(), }'
   m098_render closelink
   m098_terms closelink 'fern\t1–2@2'
 
@@ -29100,6 +29100,282 @@ M098COLPY
     "M098 T4 plant pageplus (pages)" "Index of Terms" "Index of People"
 
   pass "M098 T4 self-test: each clause the Typst section reads is planted on its own and shown red with that clause's failure, and an unplanted copy stays green"
+fi
+
+# ---------------------------------------------------------------------------
+# M099-AC1/AC2 — a Typst locator prints the text its page numbering prints.
+#
+# The locators of one entry that print one text print it once.
+#
+# examples/typst-numbering.qmd sets the pattern `1 / 1`, changes it and resets
+# the page counter in raw Typst blocks. It does not use the `page-numbering:`
+# key, which the Typst template of Quarto 1.5.52 ignores (observed on the
+# version matrix's floor leg, 2026-09-13). Its page breaks and
+# `set page` rules fix the physical page of every mark, and the page counter
+# and pattern on each page. The manifest, tests/typst-numbering.tsv, is derived
+# by hand from that source under the ORACLE RULE above, and its comment shows
+# the arithmetic for the counter's final value.
+#
+# The index page's footer prints `5 / 5`, three words, so both readings name
+# that footer with `--footer`. A reading without it keeps the footer as a line
+# of the index, which the self-test below shows.
+#
+# The fixture's numberings and the AC2 shapes are held here, so a fixture or a
+# manifest edited to drop a case is red rather than no longer asked about.
+# ---------------------------------------------------------------------------
+section 'M099-AC1/AC2 — a Typst locator prints the text its page numbering prints.'
+M099_FOOTER='--footer=^\d+ / \d+$'
+for needle in '#set page(numbering: "1 / 1")' '#set page(numbering: "i of I")' \
+    '#set page(numbering: "- 1 -")' '#set page(numbering: none)' \
+    '#counter(page).update(1)'; do
+  grep -qF -- "$needle" examples/typst-numbering.qmd \
+    || fail "M099-AC1: examples/typst-numbering.qmd no longer carries <<$needle>>, so the numbering it sets is no longer read"
+done
+# One row for each AC2 shape, and one for each AC1 numbering the rows above do
+# not already show. The rows are the manifest's own, spelled out again here.
+while IFS= read -r row; do
+  grep -qxF -- "$row" tests/typst-numbering.tsv \
+    || fail "M099-AC2: tests/typst-numbering.tsv no longer carries the row <<$row>>, so the case it states is no longer read"
+done <<'M099ROWS'
+entry	0	apple	1 / 5@1
+entry	0	birch	1 / 5@1
+entry	0	cedar	1 / 5*@1
+entry	0	dune	1 / 5–2 / 5@1
+entry	0	elm	1 / 5@1
+entry	0	fern	2 / 5–1 / 5@2
+entry	0	gorse	ii of V@5
+entry	0	holly	2 / 5@4, ii of V@5
+entry	0	iris	- 3 -@6
+entry	0	juniper	7@7
+entry	0	kale	1 / 5@1, 2 / 5@2
+entry	0	lime	1 / 5–2 / 5@1, 2 / 5@4
+M099ROWS
+
+quarto render examples/typst-numbering.qmd --to typst > "$WORK/typst-numbering.log" 2>&1 \
+  || { tail -40 "$WORK/typst-numbering.log" >&2; fail "M099-AC1: examples/typst-numbering.qmd failed to render to Typst"; }
+capture examples/typst-numbering.qmd typst "typst-numbering-typst"
+check_extension_warning_count "$WORK/typst-numbering.log" 0 \
+  "M099-AC1 (examples/typst-numbering.qmd warned; every mark in it is well formed)"
+if grep -qE '(^|\]: .*)warning:' "$WORK/typst-numbering.log"; then
+  grep -E 'warning:' "$WORK/typst-numbering.log" >&2
+  fail "M099-AC1: Typst warned while compiling examples/typst-numbering.qmd, so the emitted Typst is not clean"
+fi
+M099_PDF="$CAPTURE_ROOT/typst-numbering-typst/typst-numbering.pdf"
+python3 tests/typstindex.py "$M099_PDF" tests/typst-numbering.tsv \
+  "Typst index under a page numbering" "Index" "$M099_FOOTER" \
+  || fail "M099-AC1/AC2: the index of examples/typst-numbering.qmd does not match tests/typst-numbering.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M099_PDF" tests/typst-numbering.tsv \
+  "Typst index under a page numbering (pages)" "Index" "$M099_FOOTER" \
+  || fail "M099-AC4: the version matrix's reading of examples/typst-numbering.qmd does not match tests/typst-numbering.tsv (the report is above)"
+# A page numbering set as a Typst function of two arguments (M099 review R1).
+# Typst's footer calls it with the page counter's value and its final value,
+# and a link to a location on such a page fails to compile. The document is
+# built here: one page of text, then the index page, so the final value is 2
+# and both marks sit on page 1, whose footer prints `1 of 2`.
+m099_function_doc() {   # <dir>
+  mkdir -p "$1/_extensions"
+  cp -R "$QI_EXT_DIR" "$1/_extensions/index"
+  cat > "$1/function.qmd" <<'M099FUNCQMD'
+---
+filters:
+  - index
+---
+
+```{=typst}
+#set page(numbering: (n, total) => [#n of #total])
+```
+
+A mark: [apple]{.index}. A range on this page: [birch]{.index range="open"}
+and [birch]{.index range="close"}.
+M099FUNCQMD
+  printf 'group\tA\nentry\t0\tapple\t1 of 2@1\t\ngroup\tB\nentry\t0\tbirch\t1 of 2@1\t\n' \
+    > "$1/function.tsv"
+}
+M099F="$WORK/m099-function"
+rm -rf "$M099F"
+m099_function_doc "$M099F"
+( cd "$M099F" && quarto render function.qmd --to typst ) > "$WORK/m099-function.log" 2>&1 \
+  || { tail -20 "$WORK/m099-function.log" >&2; fail "M099 review R1: a document whose page numbering is a Typst function failed to render (IP2)"; }
+capture "$M099F/function.qmd" typst "m099-function"
+python3 tests/typstindex.py "$M099F/function.pdf" "$M099F/function.tsv" \
+  "Typst index under a numbering function" "Index" '--footer=^\d+ of \d+$' \
+  || fail "M099 review R1: the index under a numbering function does not print what the footer prints (the report is above)"
+pass "M099 review R1: a document whose page numbering is a Typst function of two arguments renders, and each locator prints what the footer prints"
+
+pass "M099-AC1/AC2: a Typst render of examples/typst-numbering.qmd prints each locator as its page's numbering prints it, under two two-counter patterns, a one-counter pattern and none, and the locators of one entry that print one text print it once, at the earliest page, bold where any mark is principal"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M099 T5 self-test — each AC1 and AC2 clause planted on its own in a copy
+  # of the extension, reusing the M098 plant helpers against this fixture, and
+  # shown red with the row that clause decides. Two reader plants follow: the
+  # footer left unnamed, in both readings.
+  # -------------------------------------------------------------------------
+  M099W="$WORK/m099plant"
+  rm -rf "$M099W"
+
+  m099_tree() {   # <slug> <perl substitution on typst.lua>
+    local dir="$M099W/$1"
+    mkdir -p "$dir/_extensions"
+    cp examples/typst-numbering.qmd "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    [ $# -ge 2 ] || return 0
+    local filter="$dir/_extensions/index/modules/typst.lua"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$2" < "$filter" > "$dir/spliced" \
+      || fail "M099 T5 self-test ($1): the substitution aimed at typst.lua could not be applied (its own message is above)"
+    cmp -s "$filter" "$dir/spliced" \
+      && fail "M099 T5 self-test ($1): the substitution reported a match and typst.lua is unchanged"
+    mv "$dir/spliced" "$filter"
+  }
+
+  m099_render() {   # <slug>
+    ( cd "$M099W/$1" && quarto render typst-numbering.qmd --to typst ) \
+      > "$WORK/m099-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m099-$1.log" >&2; fail "M099 T5 self-test ($1): the fixture failed to render through the planted copy"; }
+    capture "$M099W/$1/typst-numbering.qmd" typst "m099-$1"
+  }
+
+  m099_read() {   # <slug> <want>
+    m098_red "m099-$1" "$2" python3 tests/typstindex.py \
+      "$CAPTURE_ROOT/m099-$1/typst-numbering.pdf" tests/typst-numbering.tsv \
+      "M099 T5 plant $1" "Index" "$M099_FOOTER"
+  }
+
+  # The passing control: the copy machinery with nothing planted.
+  m099_tree clean
+  m099_render clean
+  python3 tests/typstindex.py "$CAPTURE_ROOT/m099-clean/typst-numbering.pdf" \
+    tests/typst-numbering.tsv "M099 T5 control" "Index" "$M099_FOOTER" \
+    || fail "M099 T5 self-test: the check is red on an unplanted copy, so a red below would be the copy and not the plant"
+
+  # A one-counter pattern filled with the final value too.
+  m099_tree alwaysboth 's{qi-index-counters\(pattern\) >= 2}{qi-index-counters(pattern) >= 0}'
+  m099_render alwaysboth
+  m099_read alwaysboth 'iris\t- 3- 5 -@6'
+
+  # A two-counter pattern filled with the page value alone.
+  m099_tree neverboth 's{qi-index-counters\(pattern\) >= 2}{qi-index-counters(pattern) >= 99}'
+  m099_render neverboth
+  m099_read neverboth 'gorse\tii@5'
+
+  # Locators merged by physical page rather than by printed text.
+  m099_tree physicalmerge 's{merged\.position\(m => m\.shown == f\.shown\)}{merged.position(m => m.start.page() == f.start.page() and m.stop.page() == f.stop.page())}'
+  m099_render physicalmerge
+  m099_read physicalmerge 'apple\t1 / 5@1, 1 / 5@3'
+
+  # A one-page range tested by physical page rather than by printed text.
+  m099_tree physicalrange 's{let shown = if first == last}{let shown = if start.page() == stop.page()}'
+  m099_render physicalrange
+  m099_read physicalrange 'birch\t1 / 5–1 / 5@1'
+
+  # A merged locator's face taken from its first mark alone.
+  m099_tree firstbold 's{kept\.bold = kept\.bold or f\.bold}{kept.bold = kept.bold}'
+  m099_render firstbold
+  m099_read firstbold 'cedar\t1 / 5@1'
+
+  # A merged locator linked to its later page.
+  m099_tree laterlink 's{merged\.at\(at\) = kept}{kept.start = f.start; merged.at(at) = kept}'
+  m099_render laterlink
+  m099_read laterlink 'cedar\t1 / 5*@3'
+
+  # A merged locator moved to the position of its later page.
+  m099_tree laterplace 's{merged\.at\(at\) = kept}{let _ = merged.remove(at); merged.push(kept)}'
+  m099_render laterplace
+  m099_read laterplace 'kale\t2 / 5@2, 1 / 5@1'
+
+  # The pages a range spans tested by printed text rather than physical page.
+  m099_tree textspan 's{ranges\.all\(r => f\.start\.page\(\) < r\.start\.page\(\) or f\.start\.page\(\) > r\.stop\.page\(\)\)}{ranges.all(r => f.shown != r.shown)}'
+  m099_render textspan
+  m099_read textspan 'birch\t1 / 5@1, 2 / 5@2'
+
+  # The merge run before the pages a range spans are dropped, the order the
+  # M099 claim audit found losing a later locator with a spanned first one.
+  # One substitution moves the drop below the merge loop.
+  m099_tree mergefirst 's{  let ranges = found\.filter\(f => f\.spans\)\n  found = found\.filter\((.*?)\)\n(  let merged = \(\)\n.*?\n  \}\n)}{$2  let ranges = found.filter(f => f.spans)\n  merged = merged.filter($1)\n}s'
+  m099_render mergefirst
+  m099_read mergefirst 'lime\t1 / 5–2 / 5@1\t'
+
+  # The span test with a range's opening page left out of the span.
+  m099_tree spanopen 's{f\.start\.page\(\) < r\.start\.page\(\)}{f.start.page() <= r.start.page()}'
+  m099_render spanopen
+  m099_read spanopen 'fern\t2 / 5@2, 2 / 5–1 / 5@2'
+
+  # The span test with a range's closing page left out of the span.
+  m099_tree spanclose 's{f\.start\.page\(\) > r\.stop\.page\(\)}{f.start.page() >= r.stop.page()}'
+  m099_render spanclose
+  m099_read spanclose 'lime\t1 / 5–2 / 5@1, 2 / 5@2'
+
+  # The span drop applied to ranges across two or more pages too.
+  m099_tree dropranges 's{found = found\.filter\(f => f\.spans or }{found = found.filter(f => false or }'
+  m099_render dropranges
+  m099_read dropranges 'birch\t\t'
+
+  # Locators merged by the page counter's value rather than by printed text.
+  m099_tree countermerge 's{merged\.position\(m => m\.shown == f\.shown\)}{merged.position(m => counter(page).at(m.start) == counter(page).at(f.start) and counter(page).at(m.stop) == counter(page).at(f.stop))}'
+  m099_render countermerge
+  m099_read countermerge 'holly\t2 / 5@4\t'
+
+  # A range printed with its two ends in the other order.
+  m099_tree reorder 's{else \{ first \+ "–" \+ last \}}{else { last + "–" + first }}'
+  m099_render reorder
+  m099_read reorder 'fern\t1 / 5–2 / 5@2'
+
+  # The version matrix's reading over the one-counter plant: red too.
+  m098_red m099-neverboth-pages "(0, 'gorse, ii')" python3 tests/typstindex.py pages \
+    "$CAPTURE_ROOT/m099-neverboth/typst-numbering.pdf" tests/typst-numbering.tsv \
+    "M099 T5 plant neverboth (pages)" "Index" "$M099_FOOTER"
+
+  # The footer left unnamed: each reading keeps `5 / 5` as a line of the index.
+  m098_red m099-nofooter "'entry\t1\t5 / 5\t\t'" python3 tests/typstindex.py \
+    "$M099_PDF" tests/typst-numbering.tsv "M099 T5 plant nofooter" "Index"
+  m098_red m099-nofooter-pages "(1, '5 / 5')" python3 tests/typstindex.py pages \
+    "$M099_PDF" tests/typst-numbering.tsv "M099 T5 plant nofooter (pages)" "Index"
+
+  # A numbering function (review R1): filled with the page value alone, and
+  # linked to a location, each fails the render with Typst's own error.
+  m099_function_red() {   # <slug> <perl substitution on typst.lua>
+    local dir="$WORK/m099-function-$1"
+    rm -rf "$dir"
+    m099_function_doc "$dir"
+    local filter="$dir/_extensions/index/modules/typst.lua"
+    perl -0777 -pi -e "BEGIN { \$n = 0 } \$n += $2; END { die \"the substitution matched nothing\n\" unless \$n }" "$filter" \
+      || fail "M099 review R1 self-test ($1): the substitution aimed at typst.lua matched nothing"
+    local rc
+    ( cd "$dir" && quarto render function.qmd --to typst ) > "$WORK/m099-function-$1.log" 2>&1 && rc=0 || rc=$?
+    capture "$dir/function.qmd" typst "m099-function-$1"
+    [ "$rc" -ne 0 ] \
+      || fail "M099 review R1 self-test ($1): the document rendered through the planted copy, so the check's green says nothing about that clause"
+    grep -qF 'missing argument: total' "$WORK/m099-function-$1.log" \
+      || { tail -20 "$WORK/m099-function-$1.log" >&2; fail "M099 review R1 self-test ($1): the render failed, but not with <<missing argument: total>>"; }
+    pass "M099 review R1 self-test ($1): the render is red on <<missing argument: total>>"
+  }
+  m099_function_red onevalue 's{type\(pattern\) != str or }{type(pattern) == str and }'
+  m099_function_red locationlink 's{link\(f\.start\.position\(\), }{link(f.start, }'
+
+  # The reader keeps a comma at the end of a line (review R3), so a stray
+  # separator after the last locator is a mismatch.
+  python3 - <<'M099COMMAPY' || fail "M099 review R3: tests/typstindex.py strips a comma after the last locator of a line"
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+term = typstindex.Word('apple,', 0, 0, 1, 1)
+last = typstindex.Word('1,', 0, 0, 1, 1)
+last.link = 1
+_, locators, _ = typstindex.parse_entry([term, last])
+if locators != [('1,', False, 1)]:
+    print(f'FAIL: M099 review R3: read {locators!r}', file=sys.stderr)
+    sys.exit(1)
+M099COMMAPY
+  pass "M099 review R3: tests/typstindex.py keeps a comma after the last locator of a line"
+
+  pass "M099 T5 self-test: each AC1 and AC2 clause is planted on its own and shown red with the row that clause decides, an unplanted copy stays green, and both readings are red with the footer left unnamed"
 fi
 
 # ---------------------------------------------------------------------------
@@ -29581,6 +29857,11 @@ text after	The text after the index starts on a new page too.
 groups	a `Symbols` group first, then one group per letter, each under its letter in bold
 depth	sub-entries nest as deep as you write them
 page shown	Each locator is the page number as the page shows it.
+two counters	Where the page numbering pattern names two counters, such as `1 / 1`, a locator prints both, as the page footer does: `5 / 30`.
+no numbering	A page with no numbering prints its physical page number.
+same text	Locators that print the same text print it once, even from different pages, as after a page counter reset.
+same text link	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
+range same text	Where the two ends print the same text, it prints that text alone.
 links	An entry's locators are in page order, and each one links to its page.
 one page once	Several marks of one term on one page print that page once.
 principal	The locator of a principal mention is set in bold.
@@ -29844,7 +30125,9 @@ open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
 M098PLANTPY
   m098_red count-overlay 'site/typst.qmd (three back-ends)' \
     python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
-  m098_red typst-lost 'does not state 1 of the 29 claim(s)' \
+  # The count is the claims file's own row count, so a claim added to the list
+  # above does not leave this plant asking for the old total (M099).
+  m098_red typst-lost "does not state 1 of the $(grep -c . "$WORK/m098-typst-claims.txt") claim(s)" \
     python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
   # The index heading written as a paragraph, which is what a Pandoc header
   # became in a document whose headings start at two hashes.

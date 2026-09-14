@@ -95,5 +95,6 @@ not-shown:
   - examples/state-reuse-plain.qmd
   - examples/state-reuse.qmd
   - examples/typst-index.qmd
+  - examples/typst-numbering.qmd
   - examples/unicode.qmd
   - examples/xref-escaping.qmd

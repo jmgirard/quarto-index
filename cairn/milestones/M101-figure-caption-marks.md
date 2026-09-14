@@ -72,12 +72,12 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       route in `tests/run-tests.sh`.
 - [ ] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
       passes.
-- [ ] AC5: On each leg of `.github/workflows/versions.yml`, the Quarto 1.5
+- [x] AC5: On each leg of `.github/workflows/versions.yml`, the Quarto 1.5
       floor leg included, the Typst render of `examples/figure-marks.qmd`
       matches its manifest. On each leg, the HTML index of the fixture agrees
       with the pinned leg's by the workflow's cross-version comparison. Shown
       by a green dispatched run of that workflow on the milestone branch.
-- [ ] AC6: `site/syntax.qmd` states that a mark in a figure caption files one
+- [x] AC6: `site/syntax.qmd` states that a mark in a figure caption files one
       locator, and that a mark in an image's alt text files its locator at the
       image. `CHANGELOG.md` carries an entry for each. The Architecture section
       of `cairn/DESIGN.md` states both rules, and its Known issues no longer
@@ -159,3 +159,21 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 ## Decisions
 
 ## Review
+
+Evidence gathered 2026-09-14 on `m101-figure-caption-marks` at 826fb1c, which
+`origin/main` (a96dfb0) is an ancestor of, so no merge was needed.
+
+- AC5: versions run 34891292868 ran on the branch at 538eb21. The diff from
+  538eb21 to 826fb1c touches only `cairn/`. All eight jobs of the run passed.
+  In its log, the step that reads the Typst figure-marks index printed `ok` on
+  the floor (1.5.52), pinned (1.10.18) and release legs, 12 lines each. The
+  compare job printed `ok` for figure-marks on the floor and release legs
+  against the pinned leg, 13 rows byte for byte. It printed `ok` for all 10
+  comparisons.
+- AC6: read at review on the branch diff. `site/syntax.qmd` gains one
+  paragraph. It states that a figure caption mark files one locator, and that
+  an alt-text mark files its locator at the image. `CHANGELOG.md` gains two
+  Output entries, one for each rule. The Architecture section of
+  `cairn/DESIGN.md` (lines 172 to 803) states the caption rule at line 213 and
+  the alt-text move at line 433. `grep` for KI294 and KI295 in `cairn/DESIGN.md`
+  finds nothing.

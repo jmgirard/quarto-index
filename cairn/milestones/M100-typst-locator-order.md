@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M100: A Typst index orders locators by the number the page prints
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the order and the locators a Typst index prints
-- **Branch/PR:** —
+- **Branch/PR:** m100-typst-locator-order
 
 ## Goal
 
@@ -26,7 +26,8 @@ A new fixture, `examples/typst-order.qmd`, and a new Typst book fixture,
 `tests/typst-numbering.tsv` and the M099 suite pins and plants that the new
 rules change. The suite reads both new fixtures, and the version matrix reads
 `examples/typst-order.qmd`. The Locators section of `site/typst.qmd`, the
-Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`.
+Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
+`site/back-end-differences.qmd` and its claim row in `tests/run-tests.sh`.
 
 **Out:**
 
@@ -133,19 +134,18 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`.
       range removing a range, equal end values spanning. Merge plants: link to
       the first in order, placement at the earliest physical page, bold from
       the first merged mark only.
-- [ ] T5: Rederive the `tests/typst-numbering.tsv` rows the rules change
-      (`birch`, `fern`, `holly`, `lime`) by hand, with the M099 row pins
-      (`tests/run-tests.sh:29136-29150`) and the M099 plants whose red output
-      the rules now make correct (`textspan`, `:29258-29345`).
+- [ ] T5: Rederive by hand the `tests/typst-numbering.tsv` rows the rules change
+      (`birch`, `fern`, `holly`, `lime`), their M099 row pins (run-tests.sh:29136)
+      and the M099 plants the rules now make correct (`textspan`, :29258-29345).
 - [ ] T6: Write `examples/book-typst-reset/` (`_quarto.yml` with an author, and
       the `_extensions` link), its manifest with its page arithmetic, and a
       suite section beside the M098 book section (`tests/run-tests.sh:29496`).
       List both fixtures where the gallery check requires it.
-- [ ] T7: Add `examples/typst-order.qmd` to the Typst step of
-      `.github/workflows/versions.yml` (near :427), with the `--footer` pattern
-      its index page prints. Run `tests/run-tests.sh --self-test`, then
-      dispatch the matrix on the branch.
-- [ ] T8: Update `site/typst.qmd` (:38), `cairn/DESIGN.md` (:437), `CHANGELOG.md`.
+- [ ] T7: Add `examples/typst-order.qmd`, with its index page's `--footer` pattern, to
+      the Typst step of `.github/workflows/versions.yml` (near :427). Run
+      `tests/run-tests.sh --self-test`, then dispatch the matrix on the branch.
+- [ ] T8: Update `site/typst.qmd` (:38), `cairn/DESIGN.md` (:437), `CHANGELOG.md`,
+      and item 4 of `site/back-end-differences.qmd` (:35).
 
 ## Work log
 
@@ -156,6 +156,8 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`.
 - 2026-09-14: plan gate chose makeindex's class order (lower roman, upper roman, arabic, lower letters, upper letters, other) over the physical order of classes, because the PDF index orders so. Falsified by an author reporting a back-matter class listed before the main text.
 - 2026-09-14: plan gate chose a new fixture over extending `examples/typst-numbering.qmd`, because more pages change its final counter value and every row. Falsified by the two fixtures needing one shape each can hold only together.
 - 2026-09-14: plan gate chose to include the book fixture over leaving it a candidate, because a probe book set numbering and reset the counter in raw Typst per chapter and printed `yam, 1–2, 1`.
+- 2026-09-14: /milestone-implement started on branch m100-typst-locator-order.
+- 2026-09-14: question gate amended Scope In to add item 4 of `site/back-end-differences.qmd` and its claim row, because its "in page order" claim becomes false. T8 extended to match.
 
 ## Decisions
 

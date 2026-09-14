@@ -1,0 +1,486 @@
+---
+filters:
+  - index
+---
+
+```{=typst}
+#set page(numbering: "I")
+#counter(page).update(3)
+```
+
+The fixture for the order of Typst locators and the pages a range spans
+(M100). A locator's class comes from its page's numbering: lower roman `i`,
+upper roman `I`, arabic `1`, lower letters `a`, upper letters `A`, then any
+other symbol or a numbering function. A page with no numbering is arabic.
+Its value is the page counter's value, or the physical page on a page with no
+numbering. An entry's locators print in class order, then by value, then by
+physical page.
+
+Every page starts at a raw Typst `set page` rule, which starts a new page
+itself, and each rule is followed by a page counter update. So the physical
+page, the pattern and the counter value of each page are facts of this source.
+The manifest, tests/typst-order.tsv, states them from here and nowhere else.
+Each term is one case, and no two cases share an entry.
+
+## Physical page 1
+
+The pattern is `I` and the counter is 3, so the page prints `III`.
+
+Upper roman, marked before lower roman: [ash]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(3)
+```
+
+## Physical page 2
+
+The pattern is `1` and the counter is 3.
+
+Arabic, marked before upper roman: [beech]{.index}.
+
+A mark before a reset, with a higher value than a mark after it:
+[hazel]{.index}.
+
+A value that the range of `kale` spans, on a page outside that range:
+[kale]{.index}.
+
+```{=typst}
+#set page(numbering: "i")
+#counter(page).update(2)
+```
+
+## Physical page 3
+
+The pattern is `i` and the counter is 2, so the page prints `ii`.
+
+The second mark of `ash`: [ash]{.index}.
+
+```{=typst}
+#set page(numbering: "I")
+#counter(page).update(2)
+```
+
+## Physical page 4
+
+The pattern is `I` and the counter is 2, so the page prints `II`.
+
+The second mark of `beech`: [beech]{.index}.
+
+```{=typst}
+#set page(numbering: "a")
+#counter(page).update(2)
+```
+
+## Physical page 5
+
+The pattern is `a` and the counter is 2, so the page prints `b`.
+
+Lower letters, marked before arabic: [cedar]{.index}.
+
+```{=typst}
+#set page(numbering: "A")
+#counter(page).update(4)
+```
+
+## Physical page 6
+
+The pattern is `A` and the counter is 4, so the page prints `D`.
+
+Upper letters, marked before lower letters: [dogwood]{.index}.
+
+```{=typst}
+#set page(numbering: "α")
+#counter(page).update(2)
+```
+
+## Physical page 7
+
+The pattern is `α`, a symbol of the class other, and the counter is 2, so the
+page prints `β`.
+
+The class other, marked before upper letters: [elder]{.index}.
+
+```{=typst}
+#set page(numbering: "a")
+#counter(page).update(3)
+```
+
+## Physical page 8
+
+The pattern is `a` and the counter is 3, so the page prints `c`.
+
+The second mark of `dogwood`: [dogwood]{.index}.
+
+```{=typst}
+#set page(numbering: "A")
+#counter(page).update(1)
+```
+
+## Physical page 9
+
+The pattern is `A` and the counter is 1, so the page prints `A`.
+
+The second mark of `elder`: [elder]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(1)
+```
+
+## Physical page 10
+
+The pattern is `1` and the counter is 1.
+
+The second mark of `cedar`: [cedar]{.index}.
+
+The second mark of `hazel`, after the reset: [hazel]{.index}.
+
+```{=typst}
+#set page(numbering: (..values) => "f" + str(values.pos().first()))
+#counter(page).update(2)
+```
+
+## Physical page 11
+
+The numbering is a function, and the counter is 2, so the page prints `f2`.
+
+A page under a numbering function, marked before an arabic page with a higher
+value: [fig]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(40)
+```
+
+## Physical page 12
+
+The pattern is `1` and the counter is 40.
+
+The second mark of `fig`: [fig]{.index}.
+
+An arabic value higher than the physical page of the page with no numbering
+after it: [gorse]{.index}.
+
+```{=typst}
+#set page(numbering: none)
+```
+
+## Physical page 13
+
+This page has no numbering, so it prints its physical page, 13.
+
+The second mark of `gorse`: [gorse]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(2)
+```
+
+## Physical page 14
+
+The pattern is `1` and the counter is 2.
+
+A page of one class and value that prints another text than the next page:
+[iris]{.index}.
+
+A range whose two ends have one value and print different texts:
+[rowan]{.index range="open"}.
+
+A range whose two ends print one text: [nutmeg]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "(1)")
+#counter(page).update(2)
+```
+
+## Physical page 15
+
+The pattern is `(1)` and the counter is 2, so the page prints `(2)`.
+
+The second mark of `iris`: [iris]{.index}.
+
+The range of `rowan` closes here: [rowan]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(4)
+```
+
+## Physical page 16
+
+The pattern is `1` and the counter is 4.
+
+A single mark and a range opening on one page: [juniper]{.index} and
+[juniper]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(2)
+```
+
+## Physical page 17
+
+The pattern is `1` and the counter is 2.
+
+A range opens here: [kale]{.index range="open"}.
+
+A mark of `rowan` on its range's value, which that range does not span:
+[rowan]{.index}.
+
+The range of `nutmeg` closes here: [nutmeg]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "a")
+#counter(page).update(3)
+```
+
+## Physical page 18
+
+The pattern is `a` and the counter is 3, so the page prints `c`.
+
+A mark inside the range of `kale` whose class that range does not span:
+[kale]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(4)
+```
+
+## Physical page 19
+
+The pattern is `1` and the counter is 4.
+
+The range of `kale` closes here: [kale]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(5)
+```
+
+## Physical page 20
+
+The pattern is `1` and the counter is 5.
+
+A range opens here: [lime]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(7)
+```
+
+## Physical page 21
+
+The pattern is `1` and the counter is 7.
+
+The range of `lime` closes here: [lime]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(1)
+```
+
+## Physical page 22
+
+The pattern is `1` and the counter is 1.
+
+A range opens here: [maple]{.index range="open"}.
+
+The first range of `quince` opens here: [quince]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(2)
+```
+
+## Physical page 23
+
+The pattern is `1` and the counter is 2.
+
+A range whose closing page has another class: [pine]{.index range="open"}.
+
+A mark of `nutmeg` that prints the text of its range: [nutmeg]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(3)
+```
+
+## Physical page 24
+
+The pattern is `1` and the counter is 3.
+
+The range of `maple` closes here: [maple]{.index range="close"}.
+
+A mark of `pine` on a value its range would span if class did not count:
+[pine]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(4)
+```
+
+## Physical page 25
+
+The pattern is `1` and the counter is 4.
+
+A value between the two ends of a range that closes on a lower value:
+[oak]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(5)
+```
+
+## Physical page 26
+
+The pattern is `1` and the counter is 5.
+
+A mark on the opening value of the range of `lime`: [lime]{.index}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(6)
+```
+
+## Physical page 27
+
+The pattern is `1` and the counter is 6.
+
+The first range of `quince` closes here: [quince]{.index range="close"}.
+
+A range that closes on a lower value: [oak]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(7)
+```
+
+## Physical page 28
+
+The pattern is `1` and the counter is 7.
+
+A principal mark on the closing value of the range of `lime`:
+[lime]{.index mention="principal"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(2)
+```
+
+## Physical page 29
+
+The pattern is `1` and the counter is 2.
+
+The second range of `quince` opens here, and its values nest inside the
+first's: [quince]{.index range="open"}.
+
+A range whose two ends print one text, on a value the range of `maple` spans:
+[maple]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(4)
+```
+
+## Physical page 30
+
+The pattern is `1` and the counter is 4.
+
+The second range of `quince` closes here: [quince]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(5)
+```
+
+## Physical page 31
+
+The pattern is `1` and the counter is 5.
+
+The third range of `quince` opens here, and its values overlap the first's:
+[quince]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(8)
+```
+
+## Physical page 32
+
+The pattern is `1` and the counter is 8.
+
+The third range of `quince` closes here: [quince]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(2)
+```
+
+## Physical page 33
+
+The pattern is `1` and the counter is 2.
+
+The second range of `maple` closes here: [maple]{.index range="close"}.
+
+The range of `oak` closes here: [oak]{.index range="close"}.
+
+A locator of another text, between the two marks of `sage` that print one
+text: [sage]{.index}.
+
+```{=typst}
+#set page(numbering: "a")
+#counter(page).update(5)
+```
+
+## Physical page 34
+
+The pattern is `a` and the counter is 5, so the page prints `e`.
+
+The range of `pine` closes here: [pine]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "a")
+#counter(page).update(9)
+```
+
+## Physical page 35
+
+The pattern is `a` and the counter is 9, so the page prints `i`.
+
+A principal mark that prints `i` under lower letters, before a page that
+prints `i` under lower roman: [sage]{.index mention="principal"}.
+
+A mark that prints `i` under lower letters: [thyme]{.index}.
+
+```{=typst}
+#set page(numbering: "i")
+#counter(page).update(1)
+```
+
+## Physical page 36
+
+The pattern is `i` and the counter is 1, so the page prints `i`.
+
+The third mark of `sage`: [sage]{.index}.
+
+The range of `juniper` closes here: [juniper]{.index range="close"}.
+
+A mark that prints `i` under lower roman, on a value the range after it spans,
+and that range: [thyme]{.index} and [thyme]{.index range="open"}.
+
+```{=typst}
+#set page(numbering: "i")
+#counter(page).update(3)
+```
+
+## Physical page 37
+
+The pattern is `i` and the counter is 3, so the page prints `iii`.
+
+The range of `thyme` closes here: [thyme]{.index range="close"}.
+
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(1)
+```

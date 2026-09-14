@@ -1,0 +1,122 @@
+# The index examples/typst-order.qmd prints in a Typst render (M100).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states.
+#
+# Physical pages, from the source's `set page` rules, with the pattern, the
+# page counter, the text the page prints, and the class and value of a
+# locator opening there. Class order: lower roman (lr), upper roman (ur),
+# arabic (ar), lower letters (ll), upper letters (ul), other (ot).
+#   page 1   `I`    3   III   ur 3
+#   page 2   `1`    3   3     ar 3
+#   page 3   `i`    2   ii    lr 2
+#   page 4   `I`    2   II    ur 2
+#   page 5   `a`    2   b     ll 2
+#   page 6   `A`    4   D     ul 4
+#   page 7   `α`    2   β     ot 2
+#   page 8   `a`    3   c     ll 3
+#   page 9   `A`    1   A     ul 1
+#   page 10  `1`    1   1     ar 1
+#   page 11  a function of the counter, 2: f2        ot 2
+#   page 12  `1`    40  40    ar 40
+#   page 13  none, the physical page: 13             ar 13
+#   page 14  `1`    2   2     ar 2
+#   page 15  `(1)`  2   (2)   ar 2
+#   page 16  `1`    4   4     ar 4
+#   page 17  `1`    2   2     ar 2
+#   page 18  `a`    3   c     ll 3
+#   page 19  `1`    4   4     ar 4
+#   page 20  `1`    5   5     ar 5
+#   page 21  `1`    7   7     ar 7
+#   pages 22 to 28  `1`, counter 1 to 7: ar 1 to ar 7
+#   page 29  `1`    2   2     ar 2
+#   page 30  `1`    4   4     ar 4
+#   page 31  `1`    5   5     ar 5
+#   page 32  `1`    8   8     ar 8
+#   page 33  `1`    2   2     ar 2
+#   page 34  `a`    5   e     ll 5
+#   page 35  `a`    9   i     ll 9
+#   page 36  `i`    1   i     lr 1
+#   page 37  `i`    3   iii   lr 3
+#   page 38  `1`    1   the index, whose footer prints `1`
+#
+# A range spans values only where its two ends have one class and its closing
+# value is greater than its opening value. A range whose two ends print one
+# text is a single mark.
+#
+#   ash      ur 3 on page 1, lr 2 on page 3: lower roman first
+#   beech    ar 3 on page 2, ur 2 on page 4: upper roman first
+#   cedar    ll 2 on page 5, ar 1 on page 10: arabic first
+#   dogwood  ul 4 on page 6, ll 3 on page 8: lower letters first
+#   elder    ot 2 on page 7, ul 1 on page 9: upper letters first
+#   fig      ot 2 on page 11, ar 40 on page 12: arabic first
+#   gorse    ar 40 on page 12, ar 13 on page 13 (no numbering): 13 first
+#   hazel    ar 3 on page 2, ar 1 on page 10 after a reset: 1 first
+#   iris     ar 2 printing `2` on page 14 and `(2)` on page 15: two texts,
+#            ordered by physical page
+#   juniper  a single mark and a range opening on page 16, ar 4; the range
+#            closes on lr 1, so it spans nothing: the single mark first
+#   kale     a range ar 2 to ar 4 on pages 17 to 19 spans 2, 3 and 4; ar 3 on
+#            page 2 is spanned and prints nothing; ll 3 on page 18 is not
+#   lime     a range ar 5 to ar 7 on pages 20 to 21; ar 5 on page 26 and the
+#            principal ar 7 on page 28 are spanned and print nothing
+#   maple    a range ar 1 to ar 3 on pages 22 to 24; a range printing `2` at
+#            both ends, pages 29 to 33, is a single mark on ar 2, spanned
+#   nutmeg   a range printing `2` at both ends, pages 14 to 17, and a mark
+#            printing `2` on page 23: one locator, linked to page 14
+#   oak      ar 4 on page 25; a range ar 6 to ar 2, pages 27 to 33, spans
+#            nothing: 4 first
+#   pine     a range ar 2 to ll 5, pages 23 to 34, spans nothing; ar 3 on page
+#            24 prints: the range first, by value
+#   quince   ranges ar 1 to 6 (pages 22-27), ar 2 to 4 (29-30) and ar 5 to 8
+#            (31-32): the second nests in the first and the third overlaps
+#            it; no range removes another
+#   rowan    a range ar 2 to ar 2, pages 14 to 15, printing `2–(2)`, spans
+#            nothing; ar 2 on page 17 prints: the range first, by page
+#   sage     ar 2 on page 33, the principal ll 9 `i` on page 35, lr 1 `i` on
+#            page 36: order lr `i`, ar 2, ll `i`; the two `i` print once, at
+#            the place of lr `i`, bold, linked to page 35
+#   thyme    ll 9 `i` on page 35, lr 1 `i` on page 36 and a range lr 1 to lr 3
+#            on pages 36 to 37: the lr `i` is spanned and prints nothing, so
+#            the ll `i` is not merged with it and prints
+group	A
+entry	0	ash	ii@3, III@1
+group	B
+entry	0	beech	II@4, 3@2
+group	C
+entry	0	cedar	1@10, b@5
+group	D
+entry	0	dogwood	c@8, D@6
+group	E
+entry	0	elder	A@9, β@7
+group	F
+entry	0	fig	40@12, f2@11
+group	G
+entry	0	gorse	13@13, 40@12
+group	H
+entry	0	hazel	1@10, 3@2
+group	I
+entry	0	iris	2@14, (2)@15
+group	J
+entry	0	juniper	4@16, 4–i@16
+group	K
+entry	0	kale	2–4@17, c@18
+group	L
+entry	0	lime	5–7@20
+group	M
+entry	0	maple	1–3@22
+group	N
+entry	0	nutmeg	2@14
+group	O
+entry	0	oak	4@25, 6–2@27
+group	P
+entry	0	pine	2–e@23, 3@24
+group	Q
+entry	0	quince	1–6@22, 2–4@29, 5–8@31
+group	R
+entry	0	rowan	2–(2)@14, 2@17
+group	S
+entry	0	sage	i*@35, 2@33
+group	T
+entry	0	thyme	i–iii@36, i@35

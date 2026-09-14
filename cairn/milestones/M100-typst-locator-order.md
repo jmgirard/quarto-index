@@ -158,6 +158,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: plan gate chose to include the book fixture over leaving it a candidate, because a probe book set numbering and reset the counter in raw Typst per chapter and printed `yam, 1–2, 1`.
 - 2026-09-14: /milestone-implement started on branch m100-typst-locator-order.
 - 2026-09-14: question gate amended Scope In to add item 4 of `site/back-end-differences.qmd` and its claim row, because its "in page order" claim becomes false. T8 extended to match.
+- 2026-09-14: T1 wrote `examples/typst-order.qmd` (37 marked pages, 20 entries) and `tests/typst-order.tsv` by hand. The unchanged helper rendered it red on 14 of 20 rows (scratch render). Deviation: the lime principal mark sits on the range's closing value, so the spanned-bold plant tests bold handed to the range. Quince's ranges are sequential in the source, since one term holds one open range, and nest or overlap by value after counter resets. Added thyme for the merge-first plant.
 
 ## Decisions
 

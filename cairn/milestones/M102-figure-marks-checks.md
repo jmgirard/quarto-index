@@ -84,7 +84,7 @@ promised, because an upstream release alone can turn it red (D-025).
       `not in the image's`, the same-block clause's text
       (`tests/figuremarks.py:131`). The before-image clause reads
       differently, so a plant landing before the image cannot pass.
-- [ ] T3: Alt-text plant. Build an `m101_tree` copy whose `html.lua` Image
+- [x] T3: Alt-text plant. Build an `m101_tree` copy whose `html.lua` Image
       function (near 690) returns `{}` in place of the span it took the id
       from, so the mark's text leaves the alt. Render HTML and EPUB through
       it. Run `m101_red` on `figuremarks.py alts` for each, wanting `image 4`.
@@ -116,6 +116,7 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: implement started on branch m102-figure-marks-checks. No question gate: the plan left no choice open.
 - 2026-09-14: T1 done. `figuremarks.py pdf` passes the last run's PDF capture and fails the `latex-move` capture with the new message. The full `--self-test` run is left to T7, because each task's edits change `tests/run-tests.sh`, which a run reads as it goes.
 - 2026-09-14: T2 done. On a copy of the last run's HTML capture, the substitution moved `#qi-mark-4` into a new `<p>`. Then `after` failed dogwood on `not in the image's` and passed elder. A substitution naming an absent id exited 255. The plant also asserts elder still passes, so a plant that moves both ids is caught.
+- 2026-09-14: T3 done. Rendered by hand through the spliced copy, `alts` failed image 4 in HTML and EPUB (got `alt text that marks  and `), the six `after` checks passed, and neither log carried a warning.
 
 ## Decisions
 

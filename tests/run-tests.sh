@@ -31025,13 +31025,27 @@ M102IDPY
       "$HTML_SECTION_ID" elder 4 \
     || fail "M102 self-test (same-block): the planted page fails elder too, so the plant moved more than dogwood's id (the report is above)"
 
+  # M102 alt-strip: the alt-text move returns nothing in place of the span it
+  # took the id from, so the mark's text leaves the alt while the moved id
+  # still lands after the image. Image 4 is the one image whose alt the
+  # manifests state as text.
+  m101_tree alt-strip modules/html.lua \
+    's{(pandoc\.Attr\(span\.identifier\)\)\n          span\.identifier = ""\n          )return span\n}{${1}return {}\n}'
+  for fmt in html epub; do
+    m101_render alt-strip "$fmt"
+    m101_red "alt-strip, $fmt" "image 4" \
+      python3 tests/figuremarks.py alts "$fmt" \
+      "$CAPTURE_ROOT/m101-alt-strip-$fmt/figure-marks.$fmt" \
+      "$HTML_SECTION_ID" "$WORK/figure-marks-$fmt-alts.txt"
+  done
+
   m101_tree latex-move index.lua \
     's{  doc = qi_latex\.move_alt_commands\(doc\)\n}{}'
   m101_render latex-move pdf
   m101_red "latex-move" "the printed index is not the 6 lines tests/figure-marks-pdf.txt states" \
     m101_pdf_check "$CAPTURE_ROOT/m101-latex-move-pdf/figure-marks.pdf"
 
-  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest"
+  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest; a moved id in a block of its own is red on the after check's same-block clause, and a moved mark's text left out of the alt is red on the alts check in HTML and EPUB (M102)"
 fi
 
 # ---------------------------------------------------------------------------

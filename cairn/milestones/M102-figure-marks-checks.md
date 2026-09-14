@@ -94,7 +94,7 @@ promised, because an upstream release alone can turn it red (D-025).
       and hazel:5, with the section prefix the suite's `HTML_SECTION_ID`
       holds. Update the job's comments to say what the steps check. Make sure
       that `tests/versioncheck.py fixtures` still reads the same fixture set.
-- [ ] T5: In the `versions.yml` PDF job, render the fixture to PDF and read
+- [x] T5: In the `versions.yml` PDF job, render the fixture to PDF and read
       it with `figuremarks.py pdf` against `tests/figure-marks-pdf.txt`, as
       separate render and read steps. Put both before the Typst render (near
       476), which writes `examples/figure-marks.pdf` over the LaTeX PDF.
@@ -118,6 +118,7 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: T2 done. On a copy of the last run's HTML capture, the substitution moved `#qi-mark-4` into a new `<p>`. Then `after` failed dogwood on `not in the image's` and passed elder. A substitution naming an absent id exited 255. The plant also asserts elder still passes, so a plant that moves both ids is caught.
 - 2026-09-14: T3 done. Rendered by hand through the spliced copy, `alts` failed image 4 in HTML and EPUB (got `alt text that marks  and `). The six `after` checks passed, and neither log carried a warning.
 - 2026-09-14: T4 done. The new render-job commands, run by hand on a scratch copy, passed all six `after` checks. `versioncheck.py fixtures` still reads the same five fixture names. The HTML is checked before the EPUB render.
+- 2026-09-14: T5 done. The PDF job renders the fixture to PDF and reads it with `figuremarks.py pdf`, in two steps placed before the figure-marks Typst render. The job's header comments now name these steps and no longer say it renders two PDF fixtures and nothing more.
 
 ## Decisions
 

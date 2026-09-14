@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M099 | A Typst locator prints the number its page shows | planned | — | normal | milestones/M099-typst-locator-numbering.md |
 | M098 | A Typst render prints the index | done | M097 | normal | milestones/archive/M098-typst-back-end.md |
 | M097 | The extension requires Quarto 1.5 | done | — | normal | milestones/archive/M097-quarto-floor-1-5.md |
 | M096 | The pre-release sweep fails on the defects it names, from one definition | done | — | normal | milestones/archive/M096-prerelease-sweep-plants.md |
@@ -20,7 +21,6 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- [low] Print a Typst locator as the page's own numbering shows it, with every counter the pattern names and merged by the number shown. Promote on an author using a two-counter `page-numbering` or a page counter reset — added 2026-09-13 — M098 review — KI292, KI293
 - Close the four check gaps M095's review left in the state probe and three suite checks. Promote on a seventh index cell, or with any other pass over the state probe — added 2026-09-11 — M095 review — KI284-KI287
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
@@ -34,6 +34,7 @@ _Released 0.4.0 2026-09-11._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Scope the M083 EPUB plants' derived index locator to the links the sweep reads: it takes any relative `href` in the member, where `tests/epubcheck.py unique` counts only anchors inside the index section. Promote on the fixture writing a link outside that section, or with any other pass over the M083 plants — added 2026-09-08 — M084 review F2 — KI264
+- [low] Order Typst locators by the number the page prints, as makeindex does, compare the span rule by that number, and add a Typst book fixture whose chapters reset the page counter. Promote on an author reporting a locator order or a dropped page after a counter reset — added 2026-09-13 — M099 plan gate
 - [low] Close the last id-census shape M081 and M082 leave in `note_raw`: a `style` or `script` inside `svg` or `math`, where a breakout tag is reported to make a real element the walk steps over. Promote on evidence checked against a browser, which this repo does not run, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - [low] Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254
 - [low] See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255

@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M100: A Typst index orders locators by the number the page prints
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
@@ -39,7 +39,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 
 ## Acceptance criteria
 
-- [ ] AC1: In a Typst render of `examples/typst-order.qmd`, each locator's
+- [x] AC1: In a Typst render of `examples/typst-order.qmd`, each locator's
       opening page has a class and a value. On a page whose numbering is none,
       the class is arabic and the value is the physical page number. Under a
       pattern, the first counting symbol of the pattern, by the rule
@@ -51,7 +51,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       physical page, then by closing physical page, a single mark before a
       range. Shown by `tests/typstindex.py pages` on `examples/typst-order.qmd`
       against a manifest derived by hand from its source.
-- [ ] AC2: In Typst renders of `examples/typst-order.qmd` and
+- [x] AC2: In Typst renders of `examples/typst-order.qmd` and
       `examples/typst-numbering.qmd`, a range whose two ends have one class and
       whose closing value is greater than its opening value spans the values
       from its opening value to its closing value, both included. Where a
@@ -66,7 +66,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       them is principal. Shown by the AC1 reading, and by
       `examples/typst-numbering.qmd` against `tests/typst-numbering.tsv`, whose
       changed rows are rederived by hand.
-- [ ] AC3: A Typst render of `examples/book-typst-reset/` prints its index as
+- [x] AC3: A Typst render of `examples/book-typst-reset/` prints its index as
       its hand-derived manifest states, under the rules of AC1 and AC2. The
       book has a chapter under lower roman numbering, a chapter that resets the
       counter to 1 under arabic numbering, and a chapter that resets it to 1
@@ -74,12 +74,12 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       closing value greater than its opening value. An arabic mark in the
       second or third chapter, on a page outside the range, has a value inside
       it. Shown by `tests/typstindex.py pages` in `tests/run-tests.sh`.
-- [ ] AC4: `examples/typst-index.qmd` still matches
+- [x] AC4: `examples/typst-index.qmd` still matches
       `tests/typst-index-main.tsv` and `tests/typst-index-people.tsv`, and
       `examples/book/` still matches the M098 book manifests, all unchanged
       from main, shown by the M098 checks in `tests/run-tests.sh`.
       `tests/run-tests.sh --self-test` passes.
-- [ ] AC5: The version matrix reads the Typst renders of
+- [x] AC5: The version matrix reads the Typst renders of
       `examples/typst-order.qmd` and `examples/typst-numbering.qmd` against
       their manifests on each leg of its Typst step, the Quarto 1.5 floor leg
       included. Shown by a green dispatched run of
@@ -169,7 +169,33 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: matrix run 34875436802 at 4015196: the floor leg compiled typst-order, but its Typst set `fig` with the `ﬁ` ligature, and pdftotext read `ﬁg, 40, f2`. That was the one row that differed. Renamed the term `fennel`. The same run's floor HTML render failed on `examples/book/_book/last.html` having no index section, which passed in push run 34875437053 at the same commit.
 - claim audit: 230 claims read, 4 corrected — site/typst.qmd, CHANGELOG.md, examples/typst-order.qmd, tests/run-tests.sh
 - 2026-09-14: dispatched matrix run 34875703808 at aa7ae0b green on all legs, and typst-order read green on the floor, pinned and release legs (AC5). Full `tests/run-tests.sh --self-test` passed at aa7ae0b (1667 checks). T1-T8 ticked, and status set to review.
+- 2026-09-14: /milestone-review returned to in-progress, defect return 1: AC6 failed. `cairn/DESIGN.md` says "No range is dropped", but a one-text range is a single mark a span removes. `site/typst.qmd` Locators omits that a merged locator prints at the place of the first in AC1 order. AC1-AC5 verified at 3288c50. Review F1, F2, F4, F5 and F7-F11 carried to the next round untriaged.
 
 ## Decisions
 
 ## Review
+
+Sync: `origin/main` (667c74b) is an ancestor of the branch, so no merge was needed. The evidence comes from a full `tests/run-tests.sh --self-test` at 3288c50 on 2026-09-14. It exited 0 with "All checks passed (1667 checks)".
+
+- AC1 evidence: suite row `M100-AC1/AC2` passed (typst-order render against `tests/typst-order.tsv`). `M100 T4 control` passed (40 index lines, face and link). `M100 T4 self-test` passed: each order, span and merge plant is red on its row, and the unplanted copy is green.
+- AC2 evidence: the same `M100-AC1/AC2` and `M100 T4 self-test` rows passed. `M099-AC1/AC2` passed (typst-numbering render against `tests/typst-numbering.tsv`, four rows rederived).
+- AC3 evidence: `M100-AC3 (reset book)` passed (4 index lines in manifest order). `M100-AC3` passed (yam and zinnia in class and value order, the range from chapter 2 to 3 spanning values).
+- AC4 evidence: `git diff --quiet main...HEAD` is empty over `tests/typst-index-main.tsv`, `tests/typst-index-people.tsv`, `examples/typst-index.qmd` and `examples/book/`. The M098 book manifests in `tests/run-tests.sh` (near :29610-29720) sit outside every diff hunk. The `M098-AC1/AC2/AC3`, `M098-AC4` and `M098-AC5` rows passed, and the self-test run exited 0.
+- AC5 evidence: dispatched run 34875703808 on `m100-typst-locator-order` at aa7ae0b concluded success, all 8 jobs green. Each pdf leg (floor 1.5.52, pinned 1.10.18, release) ran both Typst reads to success. The page-numbering read printed `ok` for 24 index lines, and the locator-order read for 40. The commits after aa7ae0b change only `cairn/` files.
+- AC6 FAILED: the suite row `M100-AC6` passed, but it checks named phrases. A reading of the texts finds two AC2 rules not stated. `cairn/DESIGN.md:462` says "No range is dropped". AC2 makes a range whose ends print one text a single mark that a span removes, and `typst.lua` drops it (`single = first == last`). The Locators section of `site/typst.qmd` states the merge link and bold. It does not state that the merged locator prints at the place of the first of them in the AC1 order (review F3).
+
+Independent review, three fresh-context lenses. The prior-review lens found no prior finding the diff regresses, and no PR review comments exist. The blame-history lens reported no findings. The diff-bug lens found no defect in `qi-index-entry` or `qi-index-rank`, and its renders of both new fixtures at HEAD were green. It reported these findings, most severe first. None has a disposition, because the milestone returned before triage.
+
+- F1 `tests/typst-book-reset.tsv` and the order fixture: no fixture has a same-class mark on a page inside a spanning range with a value outside it. A plant of M099's physical-page drop for one class, over the value rule, left every render green.
+- F2 `CHANGELOG.md:11`: the first Typst bullet still says "a page a range spans prints no page number of its own". The M100 bullet contradicts it.
+- F3 `site/typst.qmd:48`: the page does not state the merge placement at the first in the AC1 order. This is part of the AC6 failure.
+- F4 `site/typst.qmd:72`: "Any other range spans nothing and is never removed" does not say that a spanning range is never removed either.
+- F5 `site/typst.qmd`: the order tiebreak names only the opening page. It omits the closing page and a single mark before a range.
+- F6 `cairn/DESIGN.md:459-462`: the span does not say that its ends are included, and the one-text range as a single mark is missing. This is part of the AC6 failure.
+- F7 `typst.lua:106`: a range can open and close on one physical page with different text, after a counter update between its ends. It then ties a single mark on that page, and document order decides.
+- F8 `typst.lua:106-107`: a removed start-page sort changes no output. Only `fern` catches a removed closing-page sort.
+- F9 `tests/run-tests.sh`: the M099 `laterplace` plant was removed, and no M100 counterpart is shown red. The reviewer reasoned that `sage` catches it.
+- F10 `examples/book-typst-reset/two.qmd`, `three.qmd`: each chapter heading page takes the previous chapter's numbering (page 7 prints `ii`). The `_quarto.yml` comment does not say so.
+- F11 `typst.lua:30-31`, `cairn/DESIGN.md:458`: lines run past the surrounding wrap width.
+
+Gate: returned to in-progress on AC6 (defect return 1).

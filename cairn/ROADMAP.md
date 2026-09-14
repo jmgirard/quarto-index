@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M100 | A Typst index orders locators by the number the page prints | review | — | low | milestones/M100-typst-locator-order.md |
+| M100 | A Typst index orders locators by the number the page prints | in-progress | — | low | milestones/M100-typst-locator-order.md |
 | M099 | A Typst locator prints the number its page shows | done | — | normal | milestones/archive/M099-typst-locator-numbering.md |
 | M098 | A Typst render prints the index | done | M097 | normal | milestones/archive/M098-typst-back-end.md |
 | M097 | The extension requires Quarto 1.5 | done | — | normal | milestones/archive/M097-quarto-floor-1-5.md |

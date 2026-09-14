@@ -11,7 +11,7 @@
   in bold, a range prints its first and last pages, a page a range spans
   prints no page number of its own, and each page number
   links to its page. A page number prints as the page's own numbering prints
-  it, so a `page-numbering` pattern with two counters, such as `1 / 1`,
+  it, so a page numbering pattern with two counters, such as `1 / 1`,
   prints `5 / 30`. Page numbers that print the same text, as they can after a
   page counter reset, print once. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst

@@ -40,7 +40,7 @@ sub-entries nest as deep as you write them.
 Each locator is the page number as the page shows it. An entry's locators are
 in page order, and each one links to its page.
 
-- Where your `page-numbering` pattern names two counters, such as `1 / 1`,
+- Where the page numbering pattern names two counters, such as `1 / 1`,
   a locator prints both, as the page footer does: `5 / 30`.
 - A page with no numbering prints its physical page number.
 - Several marks of one term on one page print that page once.

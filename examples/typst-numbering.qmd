@@ -1,16 +1,20 @@
 ---
-title: "Typst page numbering"
-format:
-  typst:
-    page-numbering: "1 / 1"
 filters:
   - index
 ---
 
+```{=typst}
+#set page(numbering: "1 / 1")
+```
+
 The fixture for Typst locators under a page numbering of its own (M099). The
-document sets the pattern `1 / 1`, which names two counters, so each page's
-footer prints the page counter's value there and its final value. Raw Typst
-blocks change the pattern and reset the page counter below.
+raw Typst block above sets the pattern `1 / 1`, which names two counters, so
+each page's footer prints the page counter's value there and its final value.
+The block is raw Typst rather than the `page-numbering:` key because the
+Typst template of Quarto 1.5.52 sets the numbering `1` and ignores that key.
+The block comes before any text, and the document has no title, so it starts
+no page of its own. Raw Typst blocks change the pattern and reset the page
+counter below.
 
 Every page ends where the next one starts: at an explicit page break, or at a
 raw Typst `set page` rule, which starts a new page itself. So the physical

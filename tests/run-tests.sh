@@ -29106,8 +29106,10 @@ fi
 # M099-AC1/AC2 — a Typst locator prints the text its page's numbering prints,
 # and the locators of one entry that print one text print it once.
 #
-# examples/typst-numbering.qmd sets `page-numbering: "1 / 1"` and changes the
-# pattern and resets the page counter in raw Typst blocks. Its page breaks and
+# examples/typst-numbering.qmd sets the pattern `1 / 1`, changes it and resets
+# the page counter in raw Typst blocks. It does not use the `page-numbering:`
+# key, which the Typst template of Quarto 1.5.52 ignores (observed on the
+# version matrix's floor leg, 2026-09-14). Its page breaks and
 # `set page` rules fix the physical page of every mark, and the page counter
 # and pattern on each page. The manifest, tests/typst-numbering.tsv, is derived
 # by hand from that source under the ORACLE RULE above, and its comment shows
@@ -29122,7 +29124,7 @@ fi
 # ---------------------------------------------------------------------------
 section 'M099-AC1/AC2 — a Typst locator prints the text its page numbering prints.'
 M099_FOOTER='--footer=^\d+ / \d+$'
-for needle in 'page-numbering: "1 / 1"' '#set page(numbering: "i of I")' \
+for needle in '#set page(numbering: "1 / 1")' '#set page(numbering: "i of I")' \
     '#set page(numbering: "- 1 -")' '#set page(numbering: none)' \
     '#counter(page).update(1)'; do
   grep -qF -- "$needle" examples/typst-numbering.qmd \
@@ -29749,7 +29751,7 @@ text after	The text after the index starts on a new page too.
 groups	a `Symbols` group first, then one group per letter, each under its letter in bold
 depth	sub-entries nest as deep as you write them
 page shown	Each locator is the page number as the page shows it.
-two counters	Where your `page-numbering` pattern names two counters, such as `1 / 1`, a locator prints both, as the page footer does: `5 / 30`.
+two counters	Where the page numbering pattern names two counters, such as `1 / 1`, a locator prints both, as the page footer does: `5 / 30`.
 no numbering	A page with no numbering prints its physical page number.
 same text	Locators that print the same text print it once, even from different pages, as after a page counter reset.
 same text link	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
@@ -30017,7 +30019,9 @@ open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
 M098PLANTPY
   m098_red count-overlay 'site/typst.qmd (three back-ends)' \
     python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
-  m098_red typst-lost 'does not state 1 of the 29 claim(s)' \
+  # The count is the claims file's own row count, so a claim added to the list
+  # above does not leave this plant asking for the old total (M099).
+  m098_red typst-lost "does not state 1 of the $(grep -c . "$WORK/m098-typst-claims.txt") claim(s)" \
     python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
   # The index heading written as a paragraph, which is what a Pandoc header
   # became in a document whose headings start at two hashes.

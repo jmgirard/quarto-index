@@ -75,7 +75,7 @@ promised, because an upstream release alone can turn it red (D-025).
       the file in NFC (LESSONS M30). `m101_pdf_check` calls it. The
       `latex-move` plant stays red, with the string its `m101_red` wants
       changed to the new message.
-- [ ] T2: Same-block plant, in the M101 self-test block (near 30903). Copy
+- [x] T2: Same-block plant, in the M101 self-test block (near 30903). Copy
       the captured HTML render and read dogwood's href from its index entry.
       With one perl substitution, move the empty span carrying that id out
       of image 4's `<p>` into a new `<p>` just after it. A substitution that
@@ -115,6 +115,7 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: plan chose to plant the same-block defect by editing the captured page over splicing the filter, because the Image function in `html.lua` returns only inlines, so no one-substitution splice puts the target in another block. Falsified by a single substitution that does.
 - 2026-09-14: implement started on branch m102-figure-marks-checks. No question gate: the plan left no choice open.
 - 2026-09-14: T1 done. `figuremarks.py pdf` passes the last run's PDF capture and fails the `latex-move` capture with the new message. The full `--self-test` run is left to T7, because each task's edits change `tests/run-tests.sh`, which a run reads as it goes.
+- 2026-09-14: T2 done. On a copy of the last run's HTML capture, the substitution moved `#qi-mark-4` into a new `<p>`. Then `after` failed dogwood on `not in the image's` and passed elder. A substitution naming an absent id exited 255. The plant also asserts elder still passes, so a plant that moves both ids is caught.
 
 ## Decisions
 

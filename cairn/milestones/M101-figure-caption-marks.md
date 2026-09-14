@@ -155,6 +155,8 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: T5 done. `tests/run-tests.sh --self-test` passed on 538eb21: 1704 checks, the M101 plants among them. That run holds every check the plain run holds.
 - 2026-09-14: T6 done. Versions run 34891292868, dispatched on 538eb21, is green on the floor, pinned and release legs. Each leg read the figure-marks Typst manifest, and the compare job matched figure-marks on the floor and release legs to the pinned leg.
 - 2026-09-14: status set to review.
+- 2026-09-14: review found 9 findings (diff reviewer; the other two lenses found none). Gate: F5, F6 fixed now; F1-F4 follow-up (KI299-KI301, two candidate rows); F7-F9 rejected. Suite green again on 37f2eac.
+- 2026-09-14: step-7 approval: m101-figure-caption-marks approved for merge
 
 ## Decisions
 
@@ -251,3 +253,7 @@ Dispositions, set by the maintainer at the merge gate on 2026-09-14:
 - F7: rejected. It costs run time and changes no result.
 - F8: rejected. The diff did not introduce it, and it happens on main.
 - F9: rejected. The probe showed no defect.
+
+After the fixes, `tests/run-tests.sh --self-test` on 37f2eac exited 0 with
+1704 checks. The rendered `syntax.html` prints the shortcode example as
+literal text.

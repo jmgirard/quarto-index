@@ -37,8 +37,8 @@ sub-entries nest as deep as you write them.
 
 ## Locators
 
-Each locator is the page number as the page shows it. An entry's locators are
-in page order, and each one links to its page.
+Each locator is the page number as the page shows it. Each one links to its
+page.
 
 - Where the page numbering pattern names two counters, such as `1 / 1`,
   a locator prints both, as the page footer does: `5 / 30`.
@@ -53,9 +53,20 @@ in page order, and each one links to its page.
 - A range prints its opening and closing pages, `12–15`, and links to the
   opening page. Where both ends of a range are on one page, it prints that page
   alone. Where the two ends print the same text, it prints that text alone.
-- A page that a range of the term spans, its opening and closing pages
-  included, prints no locator of its own. A principal mention on such a page
-  loses its bold.
+- An entry's locators are ordered by the numbering of their opening pages, as
+  the PDF index orders page numbers. Lower roman numbers come first, then upper
+  roman numbers, arabic numbers, lowercase letters, uppercase letters, and then
+  any other numbering. The first counting symbol of the page numbering pattern
+  sets the kind, so `1 / 1` is arabic. A page with no numbering counts as
+  arabic, and a numbering function counts as other. Numbers of one kind are
+  ordered by the page counter's value, and then by page. So after a page
+  counter reset, `1` comes before a `3` from an earlier page.
+- A range whose two ends are numbers of one kind, with a higher closing number,
+  spans the numbers from its opening number to its closing number. A mark of
+  the term on a spanned number of that kind prints no locator of its own, even
+  on a page after the range, as after a page counter reset. A principal mention
+  there loses its bold. Any other range spans nothing, and a range never
+  removes another range.
 - Pages you marked separately stay separate: marks on pages 3, 4 and 5 print
   `3, 4, 5`. Only a range you write prints as a range. A mark on the page just
   after a range prints its own locator, `2–3, 4`, where the PDF index prints

@@ -16,6 +16,13 @@
   page counter reset, print once. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
   book template needs an `author:`.
+- A Typst index orders an entry's page numbers as the PDF index does: lower
+  roman numbers first, then upper roman numbers, arabic numbers, lowercase
+  letters, uppercase letters, and any other numbering, and inside each kind by
+  the page counter's value. So after a page counter reset, `1` comes before a
+  `3` from an earlier page. A range spans the numbers from its opening number
+  to a higher closing number of the same kind, and a mark of that entry on a
+  spanned number of that kind prints no page number of its own, even on a page after the range.
 - A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no
   longer a language tag under any system locale. The HTML and EPUB index
   keeps its English words for it, and an index the document does not declare

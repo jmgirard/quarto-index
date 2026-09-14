@@ -30078,14 +30078,14 @@ no numbering	A page with no numbering prints its physical page number.
 same text	Locators that print the same text print it once, even from different pages, as after a page counter reset.
 same text link	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
 range same text	Where the two ends print the same text, it prints that text alone.
-links	An entry's locators are in page order, and each one links to its page.
+links	Each one links to its page.
 one page once	Several marks of one term on one page print that page once.
 principal	The locator of a principal mention is set in bold.
 shared page	Where a principal and an ordinary mark of one term share a page, that page's one locator is bold.
 range	A range prints its opening and closing pages, `12–15`, and links to the opening page.
 range on one page	Where both ends of a range are on one page, it prints that page alone.
-range spans	A page that a range of the term spans, its opening and closing pages included, prints no locator of its own.
-range spans bold	A principal mention on such a page loses its bold.
+range spans	A mark of the term on a spanned number of that kind prints no locator of its own, even on a page after the range, as after a page counter reset.
+range spans bold	A principal mention there loses its bold.
 separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.
 after a range	A mark on the page just after a range prints its own locator, `2–3, 4`, where the PDF index prints `2–4`.
 reference	A cross-reference prints its word in italics, then its target as plain text, with no link.
@@ -30105,7 +30105,7 @@ count	Four back-ends ship: LaTeX (and the PDF it typesets), HTML, EPUB and Typst
 ceiling	No level ceiling in HTML or Typst.
 one entry	An HTML or Typst index prints the locator and the cross-reference together on one entry by itself
 sorting	Sorting is the extension's own in HTML and Typst.
-locators	Typst gives page numbers too, in page order, and each one links to its page.
+locators	Typst gives page numbers too, ordered by kind of numbering as `makeindex` orders them, and each one links to its page.
 targets	In the LaTeX and Typst indexes a target is always plain text.
 no locator	A cross-reference carries no locator in any of the four back-ends.
 principal	the Typst back-end sets the page number in bold
@@ -30378,6 +30378,54 @@ M098PLANTPY
     "M098 T11 plant alt-kept" "Index"
   pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, the Typst page's claims are red on a copy stating a folded range, and the outline check is red where the index heading is a paragraph"
 fi
+
+# ---------------------------------------------------------------------------
+# M100-AC6 — the documentation states the Typst order, span and merge rules.
+#
+# The claim rows are the sentences M100 adds, each held to its page by
+# tests/sitecheck.py, and backed by the M100-AC1/AC2/AC3 sections above. The
+# M098-AC7 rows for the Typst page carry the rewritten span sentences. The
+# retired phrase `in page order` is swept from every page a reader meets, and
+# the Typst paragraph of cairn/DESIGN.md is read with grep, since the sweep
+# does not reach it.
+# ---------------------------------------------------------------------------
+section 'M100-AC6 — the documentation states the Typst order, span and merge rules.'
+cat > "$WORK/m100-typst-claims.txt" <<'M100PAGE'
+order	An entry's locators are ordered by the numbering of their opening pages, as the PDF index orders page numbers.
+classes	Lower roman numbers come first, then upper roman numbers, arabic numbers, lowercase letters, uppercase letters, and then any other numbering.
+symbol	The first counting symbol of the page numbering pattern sets the kind, so `1 / 1` is arabic.
+none and function	A page with no numbering counts as arabic, and a numbering function counts as other.
+value	Numbers of one kind are ordered by the page counter's value, and then by page.
+reset	So after a page counter reset, `1` comes before a `3` from an earlier page.
+span	A range whose two ends are numbers of one kind, with a higher closing number, spans the numbers from its opening number to its closing number.
+no span	Any other range spans nothing, and a range never removes another range.
+merge	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
+M100PAGE
+python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m100-typst-claims.txt" \
+  || fail "M100-AC6: site/typst.qmd does not state the Typst order and span rules (its own FAIL line is above)"
+cat > "$WORK/m100-retired.txt" <<'M100RETIRED'
+page order	in page order
+M100RETIRED
+python3 tests/sitecheck.py phrase-absent "$WORK/m100-retired.txt" \
+  || fail "M100-AC6: a page a reader meets still states Typst page numbers in page order (its own FAIL line is above)"
+cat > "$WORK/m100-changelog-claims.txt" <<'M100CHANGE'
+order	A Typst index orders an entry's page numbers as the PDF index does
+span	A range spans the numbers from its opening number to a higher closing number of the same kind, and a mark of that entry on a spanned number of that kind prints no page number of its own, even on a page after the range.
+M100CHANGE
+python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m100-changelog-claims.txt" \
+  || fail "M100-AC6: CHANGELOG.md does not state the Typst order and span rules (its own FAIL line is above)"
+M100_DESIGN=$(tr -s ' \n' '  ' < cairn/DESIGN.md)
+for phrase in 'order an entry'"'"'s locators by the class of their opening page'"'"'s numbering' \
+    'then by the page counter'"'"'s value' \
+    'A range whose ends have one class and a greater closing value spans the values between its ends' \
+    'linked to the earliest opening page'; do
+  printf '%s' "$M100_DESIGN" | grep -qF -- "$phrase" \
+    || fail "M100-AC6: the Typst paragraph of cairn/DESIGN.md no longer states <<$phrase>>"
+done
+if printf '%s' "$M100_DESIGN" | grep -qF -- 'drop a single mark on a page a range of its entry spans'; then
+  fail "M100-AC6: cairn/DESIGN.md still states a span by physical page"
+fi
+pass "M100-AC6: site/typst.qmd, CHANGELOG.md and the Typst paragraph of cairn/DESIGN.md state the class, value and page order and the value span, and no page a reader meets says Typst page numbers are in page order"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------

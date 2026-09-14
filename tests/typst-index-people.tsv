@@ -1,0 +1,58 @@
+# The index of people examples/typst-index.qmd prints in a Typst render (M098).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh; the row shape is tests/typst-index-main.tsv's. The page
+# headed "Page 3" names the thirteen people from A to M, and the page headed
+# "Page 4" the thirteen from N to Z. Each files under its own initial.
+group	A
+entry	0	Adams	3@3
+group	B
+entry	0	Babbage	3@3
+group	C
+entry	0	Curie	3@3
+group	D
+entry	0	Darwin	3@3
+group	E
+entry	0	Euler	3@3
+group	F
+entry	0	Faraday	3@3
+group	G
+entry	0	Gauss	3@3
+group	H
+entry	0	Hopper	3@3
+group	I
+entry	0	Ibn Sina	3@3
+group	J
+entry	0	Joule	3@3
+group	K
+entry	0	Kepler	3@3
+group	L
+entry	0	Lovelace	3@3
+group	M
+entry	0	Maxwell	3@3
+group	N
+entry	0	Noether	4@4
+group	O
+entry	0	Ohm	4@4
+group	P
+entry	0	Pascal	4@4
+group	Q
+entry	0	Quetelet	4@4
+group	R
+entry	0	Ramanujan	4@4
+group	S
+entry	0	Somerville	4@4
+group	T
+entry	0	Turing	4@4
+group	U
+entry	0	Ulam	4@4
+group	V
+entry	0	Volta	4@4
+group	W
+entry	0	Watt	4@4
+group	X
+entry	0	Xenakis	4@4
+group	Y
+entry	0	Young	4@4
+group	Z
+entry	0	Zuse	4@4

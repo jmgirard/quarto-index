@@ -55,7 +55,7 @@ _None yet — populated as the codebase takes shape._
   `warn`'s own definition from its pinned message count by testing that the
   text before the match ends in `function` — which a `function M.warn(` would
   defeat, counting the definition as a call. Helpers nested inside a function
-  are outside the rule and stay where they are — `flush` in `html.lua`, the
+  are outside the rule and stay where they are — `flush` in `entries.lua`, the
   `note` and `count_owner` walkers in `html.lua` and `marker.lua` — since they
   close over the locals of the function that holds them.
 - **A module is required under `qi_<name>`** (added M17), never its bare name:
@@ -181,9 +181,10 @@ and bound under a `qi_` name so that no local can shadow a module — `levels`,
 The modules, in dependency order:
 
 - `core.lua` — the shared constants, the `warn` channel, and the format
-  tests: `is_latex_derived`, `is_html`, `is_epub`, and `builds_ast_index`
-  (`is_html` or `is_epub`) for the two back-ends that build their index in the
-  AST (M52). It requires nothing; every other module requires it.
+  tests: `is_latex_derived`, `is_html`, `is_epub`, `is_typst`, and
+  `builds_ast_index` (`is_html`, `is_epub` or `is_typst`) for the three
+  back-ends that build their entry tree in this filter (M52; Typst added
+  M098). It requires nothing; every other module requires it.
 - `levels.lua` — what an `entry=`, `see=` or `sort=` value means as a list of
   levels: the parse, the empty-level drop, the three-level clamp, and the
   level path a sort key is declared against.
@@ -215,9 +216,19 @@ The modules, in dependency order:
   with no anchor (D-048). The range pass carries a document hook as well,
   since whether an opening is ever closed is known only once the whole
   document has been read.
-- `html.lua` — the HTML back-end: the entry tree, its ordering and grouping,
-  the anchors that link an entry back to its mark, and the index section built
-  out of them.
+- `entries.lua` — the entry tree the HTML, EPUB and Typst back-ends print:
+  the marks split by index, the tree of one node per level, the collation and
+  its ordering, and the letter groups with their heading-clash report (moved
+  out of `html.lua` M098). It knows no locator shape: each back-end hands
+  `build_entry_tree` a function that reads the fields naming a mark's place in
+  that back-end (`anchor`, `href` and `page_locator` for HTML, `label` for
+  Typst) and adds the locator the mark contributes.
+- `html.lua` — the HTML back-end: the anchors that link an entry back to its
+  mark, the locators they make, and the index section built from the entry
+  tree (corrected M098).
+- `typst.lua` — the Typst back-end (added M098): the `#metadata` label written
+  after each locator mark, and each index as one raw Typst block whose helper
+  functions look up each label's page while Typst typesets.
 - `marker.lua` — recognizing the placement marker, reporting its misuse, and
   putting the index where it stood.
 - `book.lua` — the per-chapter sidecar store, and each declared index built
@@ -423,8 +434,32 @@ Three back-ends ship:
   document at its top-level headings and rewrites each locator link across the
   resulting XHTML files, so a locator href carries a file part the HTML
   back-end's has only in a book.
+- **Typst** (`FORMAT` containing `typst`, added M098): `builds_ast_index`
+  routes it through the per-mark record, and the Pandoc pass takes the
+  anchor path's heading relocation, then labels each locator mark instead of
+  anchoring it. `typst.assign_labels` mints a `qi-mark-<n>` label past every
+  id the document takes and writes `#[#metadata(none)<label>]` after the mark's
+  span, not inside it: Pandoc writes an author's id as a label straight after
+  the span's content, and a label element there would carry both. A label
+  stays out of a heading because Typst's outline copies a heading's body, and
+  a copied label names two elements. A label written in an image's alt text
+  moves to just after the image, because Pandoc's Typst writer prints alt
+  text as a string and drops raw Typst there (M098 review). The index is one raw Typst block per
+  declared index that some mark files in, placed by `place_index` after a weak
+  page break and a raw, unnumbered Typst `heading`. The heading is raw because
+  Quarto moves every Pandoc header up a level for Typst in a document whose
+  headings start at `##`, which turned a level-one header into a paragraph
+  the outline did not list (M098 claim audit). Its helper functions query each label's location
+  while the document is typeset, merge locators of one page, print a range
+  from its opening page to its closing page, set a principal locator in
+  bold and link each locator to its location. A label no element carries adds
+  no locator, so a mark Quarto's template never prints cannot fail the render
+  (IP2). Every term, word and heading is a Typst string literal, so no
+  character is read as markup. No Typst package is imported (GP3). As for
+  EPUB, `is_html` stays the sole gate on the sidecar store: Quarto renders a
+  Typst book in one Pandoc process.
 
-Every other format — beamer, revealjs, gfm — takes neither branch: no
+Every other format — beamer, revealjs, gfm — takes no branch: no
 index, no anchors, no back-end tokens, and the visible text exactly as
 written. What such a format does carry is the mark's own attributes, which
 Pandoc passes through on the span as `data-entry`, `data-see`,
@@ -965,6 +1000,40 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   does not carry. No captured EPUB member carries a literal `<![CDATA[`, so
   nothing is red today; separating the two readings would take a builder that
   knows which of the two it is parsing. — M084 review F3
+
+### The Typst back-end
+
+- **KI289.** A mark in a front-matter field Quarto's Typst template does not
+  print, such as `description:`, has no label element on any page. Its entry
+  prints the term with no locator, and nothing is reported. Observed on Quarto
+  1.10.18 with `examples/front-matter.qmd`. — M098 T3
+- **KI290.** A mark inside a figure caption is unprobed where the document asks
+  for a list of figures. Where that list copies the caption with its label,
+  the locator names the first copy's page. — M098 T3
+- **KI291.** `tests/typstindex.py` reads links from PDF link annotations written
+  as plain dictionaries, which Typst 0.15.1 writes. A PDF whose annotations sit
+  in a compressed object stream reads as having no page tree and fails the
+  check. `tests/typstcheck.py` folds a combining cluster read twice running,
+  because pdftotext reads each glyph of such a cluster as the whole cluster. A
+  back-end that doubled such a cluster reads as correct there. — M098 T4, T5
+- **KI292.** A Typst locator prints only the page counter. A `page-numbering`
+  pattern with two counters, such as `"1 / 1"`, prints `1` where the footer
+  shows `1 / 3`. — M098 review F3
+- **KI293.** The Typst index merges locators and tests a one-page range by
+  physical page. After a page counter reset, two pages that show one number
+  print `1, 1`, and a range across the reset prints `1–1`. — M098 review F9
+- **KI294.** A mark in a figure caption is recorded twice in every back-end,
+  because Quarto copies the caption into the image's alt text. A range opened
+  there reports that the term's range is already open. Observed on main
+  before M098 in an HTML render. — M098 review pass 2 F1
+- **KI295.** The move of a label out of image alt text is checked only on
+  Quarto 1.10.18. The version matrix renders `examples/typst-index.qmd`,
+  which has no image, so the floor leg never runs that path. — M098 review
+  pass 2 F3
+- **KI296.** The report on a `range="open"` whose term already has a range
+  open says the mark indexes as an ordinary page number. Where a range spans
+  that page, the LaTeX and Typst indexes print no locator for it. — M098
+  review pass 2 F4
 
 ### Reports and messages
 

@@ -435,14 +435,26 @@ local function is_epub()
   return FORMAT:match("epub") ~= nil
 end
 
--- The back-ends that build their index in the Pandoc AST, as opposed to the
--- LaTeX-derived one that emits commands for a typeset-time subsystem. HTML
--- and EPUB print the same entry tree from the same blocks; what separates
--- them is how a BOOK reaches this filter, which is `is_html`'s question and
--- not this one's.
-local function builds_ast_index()
-  return is_html() or is_epub()
+-- Typst is the fourth back-end. Pandoc and Quarto spell the format `typst`,
+-- and no other format carries the word.
+local function is_typst()
+  return FORMAT:match("typst") ~= nil
 end
+
+-- The back-ends that build their entry tree in this filter, as opposed to the
+-- LaTeX-derived one that emits commands for a typeset-time subsystem. Each
+-- keeps one record per mark, builds one entry per term from those records,
+-- and sorts and groups the entries in Lua. HTML
+-- and EPUB print that tree as Pandoc blocks. Typst prints it as raw Typst
+-- that asks the typesetter for each locator's page, which is `is_typst`'s
+-- question. How a BOOK reaches this filter is `is_html`'s question.
+local function builds_ast_index()
+  return is_html() or is_epub() or is_typst()
+end
+
+-- The prefix of the label the Typst back-end writes at each mark. A locator
+-- asks Typst for the page of that label while the document is typeset.
+local TYPST_LABEL_PREFIX = "qi-mark-"
 
 -- The HTML back-end's pinned identifiers. They are the only names a reader's
 -- URL or an author's CSS can hold on to, so they are namespaced to the
@@ -515,7 +527,9 @@ M["warn"] = warn
 M["is_latex_derived"] = is_latex_derived
 M["is_html"] = is_html
 M["is_epub"] = is_epub
+M["is_typst"] = is_typst
 M["builds_ast_index"] = builds_ast_index
+M["TYPST_LABEL_PREFIX"] = TYPST_LABEL_PREFIX
 M["HTML_SECTION_ID"] = HTML_SECTION_ID
 M["HTML_ANCHOR_PREFIX"] = HTML_ANCHOR_PREFIX
 M["HTML_ENTRY_PREFIX"] = HTML_ENTRY_PREFIX

@@ -1,0 +1,60 @@
+# The index of terms examples/typst-index.qmd prints in a Typst render (M098).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. Read by
+# tests/typstindex.py, whose `Line.row` states the row shape:
+#   group<TAB>heading
+#   entry<TAB>level<TAB>term<TAB>locators<TAB>references
+# A locator is its page, or first–last for a range; `*` marks a bold one, and
+# `@N` the page its link goes to. A reference is word|target.
+#
+# The pages come from the source's explicit page breaks: page 1 runs to the
+# first break, and each break starts the next page.
+#   42nd Street  one mark, page 2; files under no letter
+#   aardvark     one mark, page 1
+#   apple        three marks on page 1 and one on page 3: one locator a page
+#   Bee          `entry="Bee"` on page 1; Hive nests under it on page 2
+#   Cobalt       the invisible form, page 1
+#   dahlia       ordinary then principal, both page 1: one bold locator
+#   elm          a range opened and closed on page 1: that page alone
+#   fern         a range opened on page 1 and closed on page 2; links to 1
+#
+# No term holds a letter pair the font sets as one ligature glyph (`fi`, `fl`,
+# `ff`). The Typst that Quarto 1.5.52 bundles maps such a glyph to the single
+# ligature character, and pdftotext then reads `fig` as `ﬁg` (observed
+# 2026-09-13 on the version matrix's floor leg).
+#   gnome        principal, page 2
+#   The Hague    `sort="Hague"`, page 1: files under H
+#   insect       `see="Bee"` alone: no locator
+#   jam          `see-also="apple"` on page 2 and a plain mark on page 3
+#   kelp         a range opened on page 2 and closed on page 3, a principal
+#                mark on page 2 and a plain mark on page 3 inside it, and a
+#                plain mark on page 4: the two pages the range spans print no
+#                locator of their own, so the bold is lost, and page 4 prints
+#                its own locator, `4`
+group	Symbols
+entry	0	42nd Street	2@2
+group	A
+entry	0	aardvark	1@1
+entry	0	apple	1@1, 3@3
+group	B
+entry	0	Bee	1@1
+entry	1	Hive	2@2
+group	C
+entry	0	Cobalt	1@1
+group	D
+entry	0	dahlia	1*@1
+group	E
+entry	0	elm	1@1
+group	F
+entry	0	fern	1–2@1
+group	G
+entry	0	gnome	2*@2
+group	H
+entry	0	The Hague	1@1
+group	I
+entry	0	insect		see|Bee
+group	J
+entry	0	jam	3@3	see also|apple
+group	K
+entry	0	kelp	2–3@2, 4@4

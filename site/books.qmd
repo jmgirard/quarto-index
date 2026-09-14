@@ -246,3 +246,9 @@ and the printed index gathers page numbers from all of them. An EPUB book
 prints every index its `indexes:` metadata declares, each under its own title,
 and a page range opened in one chapter and closed in another pairs — see the
 [EPUB](epub.qmd) page.
+
+A Typst book is merged the same way. It prints every declared index that holds
+at least one mark, each under its own title, with page numbers gathered from every chapter, and a page
+range opened in one chapter and closed in another pairs. See the
+[Typst](typst.qmd) page, which also notes the `author:` key Quarto's Typst book
+template needs.

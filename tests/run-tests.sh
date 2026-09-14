@@ -9500,8 +9500,10 @@ $M064_HTML_PASSAGE: [$M064_HTML_TERM]{.index index="gamma"}.
 CONDITIONAL
 }
 
-# `m061_mutant`'s substitution is aimed at `book.lua`; the locator tree lives in
-# `html.lua`, and one of the mutants below is aimed there. Same guard: a
+# `m061_mutant`'s substitution is aimed at `book.lua`; the HTML locator rule,
+# which drops a destination already recorded, lives in `html.lua` (the entry
+# tree it feeds moved to `entries.lua` in M098), and one of the mutants below
+# is aimed there. Same guard: a
 # substitution that changed nothing is a failure, never a silent no-op.
 m064_mutant_html() {   # <slug> <perl expression> <label>
   local slug="$1" expression="$2" label="$3"
@@ -14268,6 +14270,10 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  nothing in the file marks and is there to be reported — it
 #                  is the report M26's pollution filter silences by leaving
 #                  that path in the set the next document resolves against. 1.
+#   typst-index    2 attributes: `see="Bee"`, naming the term the `the bee`
+#                  mark indexes, and `see-also="apple"`, naming a term the file
+#                  marks four times. Both in the first of its two indexes, where
+#                  both terms are marked. 0.
 # ---------------------------------------------------------------------------
 section 'The corpus reconciliation the report forces. Every example that writes a'
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
@@ -14316,6 +14322,7 @@ examples/resolving-xref.qmd	0
 examples/self-xref.qmd	3
 examples/state-reuse-indexes.qmd	0
 examples/state-reuse.qmd	1
+examples/typst-index.qmd	0
 examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
 MANIFEST
@@ -24090,11 +24097,12 @@ if [ "${1:-}" = "--self-test" ]; then
     mv "$P/spliced" "$P/_extensions/index/$rel"
   }
 
-  # (1) AC1 — the routing reverted. `builds_ast_index` answers for HTML alone
-  # again, which is what this milestone changed, so the EPUB render builds no
-  # index section at all.
+  # (1) AC1 — the routing reverted. `builds_ast_index` no longer answers for
+  # EPUB, which is what this milestone changed, so the EPUB render builds no
+  # index section at all. The Typst route M098 added stays, so the plant
+  # removes the EPUB route and nothing else.
   m52_tree noroute modules/core.lua \
-    's{  return is_html\(\) or is_epub\(\)\n}{  return is_html()\n}'
+    's{  return is_html\(\) or is_epub\(\) or is_typst\(\)\n}{  return is_html() or is_typst()\n}'
   cp examples/demo.qmd "$M52W/noroute/demo.qmd"
   ( cd "$M52W/noroute" && quarto render demo.qmd --to epub ) \
       > "$WORK/m52-noroute.log" 2>&1 \
@@ -24162,7 +24170,7 @@ M52ZIPPY
   rm -rf "$M52W/fold/_book" "$M52W/fold/.quarto"
   [ ! -e "$M52W/fold/_extensions" ] \
     || fail "M52 T4 self-test: the scratch book still carries an _extensions entry of its own, so the render below would read a filter this plant did not splice"
-  m52_tree fold modules/html.lua \
+  m52_tree fold modules/entries.lua \
     's{qi_indexes\.authored_index\(mark\.index or qi_indexes\.default\(\)\)}{qi_indexes.default()}'
   ( cd "$M52W/fold" && quarto render --to epub ) \
       > "$WORK/m52-fold.log" 2>&1 \
@@ -28786,6 +28794,1091 @@ check_warning_count "$WORK/m074-nomarker.log" "$WARN_BOOK_NOMARKER" 1 \
 check_extension_warning_count "$WORK/m074-nomarker.log" 2 \
   "M074-AC3 (two.qmd emitted a warning this suite cannot name; its two are the never-written report and the no-marker report)"
 pass "M074-AC3: a book whose records show no chapter placing any index still hears about a record no render has written, from the chapter that reads the store and builds nothing — once, naming both chapters it covers"
+
+# ---------------------------------------------------------------------------
+# M098-AC1/AC2/AC3 — a Typst render prints each declared index with page locators.
+#
+# examples/typst-index.qmd declares two indexes and places neither, so both
+# print at the end of the document in declared order. Its explicit page breaks
+# fix the page of every mark, so each page number below is a fact of the
+# source. The two manifests are tracked files, tests/typst-index-main.tsv and
+# tests/typst-index-people.tsv, so the version matrix reads the same rows
+# (AC6); both are derived by hand under the ORACLE RULE above.
+#
+# The index is read by tests/typstindex.py, which combines three readings of
+# the PDF: pdftotext's word boxes for the text, `pdftohtml -xml -fontfullname`
+# for the face each word is set in, and the PDF's link annotations for the
+# page each word links to. tests/pdfindex.py is not changed: the version
+# matrix's step reads the same index through it (`typstindex.py pages`), and
+# it reads the Typst layout's order, levels and page footer as it stands.
+#
+# The AC2 cases are rows of the terms manifest, and this section holds the
+# manifest to carrying each of them, so a manifest edited to drop a case is red
+# here rather than a comparison that no longer asks about it.
+# ---------------------------------------------------------------------------
+section 'M098-AC1/AC2/AC3 — a Typst render prints each declared index with page locators.'
+python3 - examples/typst-index.qmd site/syntax.qmd <<'M098FORMSPY'
+import re, sys
+source = open(sys.argv[1], encoding='utf-8').read()
+syntax = open(sys.argv[2], encoding='utf-8').read()
+# Each form the syntax page's table lists, and the pattern a mark of that form
+# takes in a fixture. Keyed by the page's own spelling, so the set is held to
+# the page below rather than to this list.
+FORMS = {
+    '[term]{.index}': r'\[[^\]]+\]\{\.index\}',
+    '[term]{.index entry="Entry"}': r'\[[^\]]+\]\{\.index entry="[^"!]+"\}',
+    '[term]{.index entry="Top!Sub"}':
+        r'\[[^\]]+\]\{\.index entry="[^"!]+![^"!]+"\}',
+    '[]{.index entry="Entry"}': r'\[\]\{\.index entry="[^"]+"\}',
+    '[term]{.index see="Other"}': r'\[[^\]]+\]\{\.index see="[^"]+"\}',
+    '[term]{.index see-also="Other"}':
+        r'\[[^\]]+\]\{\.index see-also="[^"]+"\}',
+    '[term]{.index mention="principal"}':
+        r'\[[^\]]+\]\{\.index mention="principal"\}',
+    '[term]{.index range="open"}': r'\[[^\]]+\]\{\.index range="open"\}',
+    '[term]{.index range="close"}': r'\[[^\]]+\]\{\.index range="close"\}',
+    '[term]{.index index="authors"}': r'\[[^\]]+\]\{\.index index="[^"]+"\}',
+}
+listed = re.findall(r'(?m)^\| `([^`]+)` \|', syntax)
+if len(listed) != 10 or set(listed) != set(FORMS):
+    print(f'FAIL: M098-AC1: site/syntax.qmd lists {listed!r}, not the ten forms '
+          f'this check knows a pattern for', file=sys.stderr)
+    sys.exit(1)
+missing = [form for form in listed if not re.search(FORMS[form], source)]
+if missing:
+    print(f'FAIL: M098-AC1: examples/typst-index.qmd carries no mark of the '
+          f'form(s) {missing!r}', file=sys.stderr)
+    sys.exit(1)
+front = source.split('\n---\n', 1)[0]
+if re.search(r'(?m)^lang:', front):
+    print('FAIL: M098-AC1: examples/typst-index.qmd declares a lang:, so the '
+          'words its index prints are not the English defaults', file=sys.stderr)
+    sys.exit(1)
+declared = re.findall(r'(?m)^  - name: (\S+)$', front)
+if declared != ['main', 'people']:
+    print(f'FAIL: M098-AC1: examples/typst-index.qmd declares {declared!r}, '
+          f'not the two indexes its manifests are for', file=sys.stderr)
+    sys.exit(1)
+breaks = source.count('{{< pagebreak >}}')
+if breaks != 4:
+    print(f'FAIL: M098-AC1: examples/typst-index.qmd carries {breaks} page '
+          f'breaks, not the four its manifests number pages by', file=sys.stderr)
+    sys.exit(1)
+print('ok   M098-AC1: examples/typst-index.qmd declares two indexes and no '
+      'lang:, carries a mark of each of the ten forms site/syntax.qmd lists, '
+      'and fixes its pages with four explicit breaks')
+M098FORMSPY
+
+for row in $'entry\t0\tapple\t1@1, 3@3' $'entry\t0\tfern\t1–2@1' \
+           $'entry\t0\telm\t1@1' $'entry\t0\tdahlia\t1*@1' \
+           $'entry\t0\tgnome\t2*@2' $'entry\t0\taardvark\t1@1' \
+           $'entry\t0\tinsect\t\tsee|Bee' $'entry\t0\tjam\t3@3\tsee also|apple' \
+           $'entry\t0\tkelp\t2–3@2, 4@4'; do
+  grep -qxF -- "$row" tests/typst-index-main.tsv \
+    || fail "M098-AC2: tests/typst-index-main.tsv no longer carries the row <<$row>>, so the case it states is no longer read"
+done
+pass "M098-AC2: the terms manifest carries a row for each case: three marks on one page, a range over two pages, a range on one page, a principal sharing its page with an ordinary mark, a lone principal, a plain locator, both reference words, and pages a range spans"
+
+quarto render examples/typst-index.qmd --to typst > "$WORK/typst-index.log" 2>&1 \
+  || { tail -40 "$WORK/typst-index.log" >&2; fail "M098-AC1: examples/typst-index.qmd failed to render to Typst"; }
+capture examples/typst-index.qmd typst "typst-index-typst"
+check_extension_warning_count "$WORK/typst-index.log" 0 \
+  "M098-AC1 (examples/typst-index.qmd warned; every mark in it is well formed)"
+if grep -qE '(^|\]: .*)warning:' "$WORK/typst-index.log"; then
+  grep -E 'warning:' "$WORK/typst-index.log" >&2
+  fail "M098-AC1: Typst warned while compiling examples/typst-index.qmd, so the emitted Typst is not clean"
+fi
+M098_PDF="$CAPTURE_ROOT/typst-index-typst/typst-index.pdf"
+[ -s "$M098_PDF" ] || fail "M098-AC1: $M098_PDF is empty"
+
+python3 tests/typstindex.py "$M098_PDF" tests/typst-index-main.tsv \
+  "M098-AC1/AC2/AC3 (the index of terms)" "Index of Terms" "Index of People" \
+  || fail "M098-AC1/AC2/AC3: the index of terms does not match tests/typst-index-main.tsv (the report is above)"
+python3 tests/typstindex.py "$M098_PDF" tests/typst-index-people.tsv \
+  "M098-AC1/AC3 (the index of people)" "Index of People" \
+  || fail "M098-AC1/AC3: the index of people does not match tests/typst-index-people.tsv (the report is above)"
+# The version matrix's reading (AC6), green here on the same render, so a local
+# change that breaks the pdftotext-only reading is red before the next manual
+# Versions run. The self-test holds it red on a page plant below.
+python3 tests/typstindex.py pages "$M098_PDF" tests/typst-index-main.tsv \
+  "M098-AC6 (the index of terms, pdftotext reading)" "Index of Terms" "Index of People" \
+  || fail "M098-AC6: the version matrix's reading of the index of terms does not match tests/typst-index-main.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M098_PDF" tests/typst-index-people.tsv \
+  "M098-AC6 (the index of people, pdftotext reading)" "Index of People" \
+  || fail "M098-AC6: the version matrix's reading of the index of people does not match tests/typst-index-people.tsv (the report is above)"
+
+python3 - "$M098_PDF" <<'M098LINKSPY'
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+
+pdf = sys.argv[1]
+indexes = {
+    'Index of Terms': typstindex.read(pdf, 'Index of Terms',
+                                      ('Index of People',)),
+    'Index of People': typstindex.read(pdf, 'Index of People'),
+}
+for heading, lines in indexes.items():
+    locators = sum(len(typstindex.parse_entry(line.words)[1])
+                   for line in lines if line.kind == 'entry')
+    pages = sorted({line.page for line in lines})
+    links = typstindex.link_count(pdf, pages)
+    if locators == 0 or links != locators:
+        print(f'FAIL: M098-AC3: {heading!r} prints {locators} locator(s) on '
+              f'page(s) {pages} and those pages carry {links} link(s); each '
+              f'locator is one link and nothing else there links',
+              file=sys.stderr)
+        sys.exit(1)
+    print(f'ok   M098-AC3: {heading!r} prints {locators} locators on page(s) '
+          f'{pages}, which carry exactly {links} links')
+columns = sorted({line.column for line in indexes['Index of People']})
+if columns != [0, 1]:
+    print(f'FAIL: M098-AC1: the index of people fills column(s) {columns}; its '
+          f'52 lines run past the foot of the first of two columns',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M098-AC1: the index of people is set in two columns, and its lines '
+      'fill both')
+M098LINKSPY
+pass "M098-AC1/AC2/AC3: a Typst render of examples/typst-index.qmd prints both declared indexes under their titles, each entry under its letter group with its page locators, a bold face on each principal locator and on no other, one link per locator to the page the manifest gives, and no link on a reference"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M098 T4 self-test — each clause the section above reads, planted on its own
+  # in a copy of the extension and shown red with the failure that clause
+  # names. The plants undo one line of the Typst the back-end emits, or of the
+  # Lua that writes it, and render the fixture through that copy.
+  # -------------------------------------------------------------------------
+  M098W="$WORK/m098plant"
+  rm -rf "$M098W"
+
+  m098_tree() {   # <slug> [<module> <perl substitution>]
+    local dir="$M098W/$1"
+    mkdir -p "$dir"
+    cp examples/typst-index.qmd "$dir/"
+    mkdir -p "$dir/_extensions"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    [ $# -ge 3 ] || return 0
+    local filter="$dir/_extensions/index/modules/$2"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$3" < "$filter" > "$dir/spliced" \
+      || fail "M098 T4 self-test ($1): the substitution aimed at $2 could not be applied (its own message is above)"
+    cmp -s "$filter" "$dir/spliced" \
+      && fail "M098 T4 self-test ($1): the substitution reported a match and $2 is unchanged"
+    mv "$dir/spliced" "$filter"
+  }
+
+  m098_render() {   # <slug>
+    ( cd "$M098W/$1" && quarto render typst-index.qmd --to typst ) \
+      > "$WORK/m098-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m098-$1.log" >&2; fail "M098 T4 self-test ($1): the fixture failed to render through the planted copy"; }
+    capture "$M098W/$1/typst-index.qmd" typst "m098-$1"
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m098_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M098 self-test ($slug): the check passed the planted render, so its green says nothing about that clause"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M098 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this clause catching this plant"; }
+    pass "M098 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  # The passing control: the copy machinery with nothing planted.
+  m098_tree clean
+  m098_render clean
+  python3 tests/typstindex.py "$CAPTURE_ROOT/m098-clean/typst-index.pdf" \
+    tests/typst-index-main.tsv "M098 T4 control" "Index of Terms" "Index of People" \
+    || fail "M098 T4 self-test: the check is red on an unplanted copy, so a red below would be the copy and not the plant"
+
+  m098_terms() {   # <slug> <want>
+    m098_red "$1" "$2" python3 tests/typstindex.py \
+      "$CAPTURE_ROOT/m098-$1/typst-index.pdf" tests/typst-index-main.tsv \
+      "M098 T4 plant $1" "Index of Terms" "Index of People"
+  }
+
+  # Three marks on one page: the merge of one page's locators undone.
+  m098_tree nomerge typst.lua 's{if merged\.len\(\) > 0 and }{if false and }'
+  m098_render nomerge
+  m098_terms nomerge 'apple\t1@1, 1@1, 1@1, 3@3'
+
+  # A range over two pages: printed as its opening page alone.
+  m098_tree norange typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if true}'
+  m098_render norange
+  m098_terms norange 'fern\t1@1'
+
+  # A range on one page: printed as a range from that page to itself.
+  m098_tree samepage typst.lua 's{let shown = if f\.start\.page\(\) == f\.stop\.page\(\)}{let shown = if false}'
+  m098_render samepage
+  m098_terms samepage 'elm\t1–1@1'
+
+  # Pages a range spans (T10): the filter that drops their locators undone.
+  m098_tree nocover typst.lua 's{merged = merged\.filter\(f => f\.start\.page\(\) != f\.stop\.page\(\) or }{merged = merged.filter(f => true or }'
+  m098_render nocover
+  m098_terms nocover 'kelp\t2*@2, 2–3@2, 3@3, 4@4'
+
+  # A principal locator: set in the ordinary face.
+  m098_tree nobold typst.lua 's|if f\.bold \{ strong|if false { strong|'
+  m098_render nobold
+  m098_terms nobold 'gnome\t2@2'
+
+  # A principal sharing its page with an ordinary mark: the page's locator
+  # keeps the first mark's face.
+  m098_tree sharedpage typst.lua 's{last\.bold = last\.bold or f\.bold}{last.bold = last.bold}'
+  m098_render sharedpage
+  m098_terms sharedpage 'dahlia\t1@1'
+
+  # An ordinary locator: set in the bold face.
+  m098_tree allbold typst.lua 's|if f\.bold \{ strong|if true { strong|'
+  m098_render allbold
+  m098_terms allbold 'aardvark\t1*@1'
+
+  # A range's link: to the closing page instead of the opening one.
+  m098_tree closelink typst.lua 's{link\(f\.start, }{link(f.stop, }'
+  m098_render closelink
+  m098_terms closelink 'fern\t1–2@2'
+
+  # A reference: given a link.
+  m098_tree xreflink typst.lua 's{"\[#emph\(%s\) #\(%s\)\],"}{"link(<qi-mark-1>)[#emph(%s) #(%s)],"}'
+  m098_render xreflink
+  m098_terms xreflink 'see|Bee@'
+
+  # A page number: one more than the page shows.
+  m098_tree pageplus typst.lua 's{\.\.counter\(page\)\.at\(loc\)\)}{..counter(page).at(loc).map(n => n + 1))}'
+  m098_render pageplus
+  m098_terms pageplus 'aardvark\t2@1'
+
+  # A reference word: the attribute's name printed in place of the English word.
+  m098_tree attrword typst.lua 's{xref\.kind\.label_key, xref\.kind\.label\)}{xref.kind.label_key, xref.kind.attr)}'
+  m098_render attrword
+  m098_terms attrword 'see-also|apple'
+
+  # A letter-group heading: set in the ordinary face, so it reads as an entry.
+  m098_tree plainheading typst.lua 's{\[#strong\(%s\)\]}{[#(%s)]}'
+  m098_render plainheading
+  m098_terms plainheading 'entry\t0\tSymbols'
+
+  # A sub-entry: set at the top level's indent.
+  m098_tree noindent typst.lua 's{inset: \(left: depth \* 1\.2em\)}{inset: (left: 0em)}'
+  m098_render noindent
+  m098_terms noindent 'entry\t0\tHive'
+
+  # The second declared index: never built.
+  m098_tree onlyfirst typst.lua 's{if list ~= nil and #list > 0 then}{if list ~= nil and #list > 0 and name ~= "people" then}'
+  m098_render onlyfirst
+  m098_red onlyfirst "no index heading 'Index of People'" python3 tests/typstindex.py \
+    "$CAPTURE_ROOT/m098-onlyfirst/typst-index.pdf" tests/typst-index-people.tsv \
+    "M098 T4 plant onlyfirst" "Index of People"
+
+  # One column: the people index no longer reaches a second.
+  m098_tree onecolumn typst.lua 's{#columns\(2, }{#columns(1, }'
+  m098_render onecolumn
+  m098_red onecolumn 'fills column(s) [0]' python3 - "$CAPTURE_ROOT/m098-onecolumn/typst-index.pdf" <<'M098COLPY'
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+columns = sorted({line.column for line in
+                  typstindex.read(sys.argv[1], 'Index of People')})
+if columns != [0, 1]:
+    print(f'FAIL: M098-AC1: the index of people fills column(s) {columns}',
+          file=sys.stderr)
+    sys.exit(1)
+M098COLPY
+
+  # The version matrix's reading (AC6) over the page plant: red too.
+  m098_red pageplus-pages "(0, 'aardvark, 2')" python3 tests/typstindex.py pages \
+    "$CAPTURE_ROOT/m098-pageplus/typst-index.pdf" tests/typst-index-main.tsv \
+    "M098 T4 plant pageplus (pages)" "Index of Terms" "Index of People"
+
+  pass "M098 T4 self-test: each clause the Typst section reads is planted on its own and shown red with that clause's failure, and an unplanted copy stays green"
+fi
+
+# ---------------------------------------------------------------------------
+# M098-AC4/AC5/AC8 — Typst renders of the named-index, book, escaping and label fixtures.
+#
+# ORACLE — every manifest below is derived by hand from its fixture's source,
+# and read against the captured PDF by tests/typstcheck.py, whose modes state
+# what each compares.
+#
+#   AC4  examples/named-indexes.qmd. Typst has no level ceiling, so every
+#        level the fixture writes prints: `alpha > beta > "gamma, delta"` and
+#        `alpha > beta > gamma > delta` in `main`, filed under the sort keys
+#        `Ada` and `Zed`, and the same two shapes in `authors` under `Vee` and
+#        `Wye`. Typst looks up every label while the whole document is
+#        typeset, so no mark below a marker is lost: Underwood and Vesalius
+#        print in `main`, and Ockham and Petrarch in `authors`. Cantor's two
+#        ends pair in neither index and print a locator in each. The page
+#        layout is not the source's to fix here, so these rows carry no
+#        locators; the placement is read in text order instead.
+#   AC5  examples/book/. A Typst book is one Pandoc process, so its ranges
+#        pair across chapters as the PDF book's do: Ranged Term prints one
+#        range from the second chapter to the third, bold because its closing
+#        mark is principal. The page numbers are stated from the source and
+#        the template's layout, observed on Quarto 1.10.18: the title page and
+#        the contents each take a page and its blank back, each chapter opens
+#        on a right-hand page, and each chapter's text fits its opening page.
+#        So chapter n opens on page 3 + 2n, 5 to 11, and every mark in it is on
+#        that page. The chapter rows state those pages and the check holds each
+#        heading to its page; Shared Term has a locator on 5, 7 and 9. `main` and `people` are placed by
+#        the markers in last.qmd and `places`, which no marker names, follows
+#        them. The page after each index opens with the template's running
+#        header, `Chapter 4.`, which is where each read stops.
+#   AC8  The four escaping and Unicode fixtures are compared with the entries
+#        their sources derive (`typstcheck.py source`), and that derivation is
+#        held to a hand statement for each: every printable ASCII
+#        character for escaping.qmd, the fixture's construction for
+#        xref-escaping.qmd (stated above the check), `term-21` to `term-7e`
+#        for sort-escaping.qmd, and M33_TERMS for unicode.qmd. The two label
+#        fixtures print the Spanish table's words and the words the author's
+#        `index-labels:` maps give, the per-index `see` winning in `authors`.
+# ---------------------------------------------------------------------------
+section 'M098-AC4/AC5/AC8 — Typst renders of the named-index, book, escaping and label fixtures.'
+
+# A Typst render must also compile without a warning of Typst's own, which is
+# where a label or a string this back-end wrote badly would show. unicode.qmd
+# is not held to it: its front matter names a PDF main font Typst does not
+# find, and Typst warns about that font.
+m098_no_typst_warning() {   # <log> <label>
+  if grep -qE '(^|\]: .*)warning:' "$1"; then
+    grep -E 'warning:' "$1" >&2
+    fail "$2: Typst warned while compiling, so the Typst this back-end emitted is not clean"
+  fi
+}
+
+quarto render examples/named-indexes.qmd --to typst > "$WORK/named-indexes-typst.log" 2>&1 \
+  || { tail -40 "$WORK/named-indexes-typst.log" >&2; fail "M098-AC4: examples/named-indexes.qmd failed to render to Typst"; }
+capture examples/named-indexes.qmd typst "named-indexes-typst"
+m098_no_typst_warning "$WORK/named-indexes-typst.log" "M098-AC4"
+M098_NAMED_PDF="$CAPTURE_ROOT/named-indexes-typst/named-indexes.pdf"
+
+read -r -d '' M098_NAMED_MAIN <<'MANIFEST' || true
+group	A
+entry	0	Aardvark
+entry	0	alpha
+entry	1	beta
+entry	2	gamma, delta
+entry	2	gamma
+entry	3	delta
+group	C
+entry	0	Cantor
+group	N
+entry	0	Neighbour	see|Aardvark
+group	O
+entry	0	Outsider	see|Babbage
+group	U
+entry	0	Underwood
+group	V
+entry	0	Vesalius
+group	Z
+entry	0	Hague
+MANIFEST
+read -r -d '' M098_NAMED_AUTHORS <<'MANIFEST' || true
+group	A
+entry	0	ada
+entry	1	bee
+entry	2	cee, dee
+entry	3	eff
+entry	2	cee
+entry	3	dee
+entry	4	eff
+group	B
+entry	0	Babbage
+group	C
+entry	0	Cantor
+group	O
+entry	0	Ockham
+group	P
+entry	0	Petrarch
+group	Q
+entry	0	Hague
+group	S
+entry	0	Stranger	see|Aardvark
+MANIFEST
+printf '%s\n' "$M098_NAMED_MAIN" > "$WORK/m098-named-main.tsv"
+printf '%s\n' "$M098_NAMED_AUTHORS" > "$WORK/m098-named-authors.tsv"
+python3 tests/typstcheck.py terms "$M098_NAMED_PDF" "$WORK/m098-named-main.tsv" \
+  "M098-AC4 (main)" "Index" "Below the first index" \
+  || fail "M098-AC4: the first index of the named-index fixture is not the manifest's (the report is above)"
+python3 tests/typstcheck.py terms "$M098_NAMED_PDF" "$WORK/m098-named-authors.tsv" \
+  "M098-AC4 (authors)" "Index of Authors" "Below the second index" \
+  || fail "M098-AC4: the second index of the named-index fixture is not the manifest's (the report is above)"
+python3 tests/typstcheck.py order "$M098_NAMED_PDF" "M098-AC4 (placement)" \
+  "=Where the first index goes" "=Index" "=Below the first index" \
+  "=Where the second index goes" "=Index of Authors" "=Below the second index" \
+  || fail "M098-AC4: an index heading of the named-index fixture is not where its marker is (the report is above)"
+pass "M098-AC4: a Typst render of examples/named-indexes.qmd prints each declared index under its title, at its marker in text order, holding every level of the entries its own marks derive and none filed in the other"
+
+( cd "$BOOK_DIR" && quarto render --to typst ) > "$WORK/book-typst.log" 2>&1 \
+  || { tail -30 "$WORK/book-typst.log" >&2; fail "M098-AC5: the book fixture failed to render to Typst"; }
+capture --project "$BOOK_DIR" typst "book-typst"
+m098_no_typst_warning "$WORK/book-typst.log" "M098-AC5"
+M098_BOOK_PDFS=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf')
+[ "$(printf '%s\n' "$M098_BOOK_PDFS" | grep -c .)" = "1" ] \
+  || fail "M098-AC5: the Typst book render left <<$M098_BOOK_PDFS>> under $CAPTURE_ROOT/book-typst/_book, not one PDF"
+M098_BOOK_PDF="$M098_BOOK_PDFS"
+
+read -r -d '' M098_BOOK_CHAPTERS <<'MANIFEST' || true
+chapter	5	index.qmd	1. Opening
+chapter	7	one.qmd	2. Second chapter
+chapter	9	sub/two.qmd	3. Third chapter
+chapter	11	last.qmd	4. Back matter
+MANIFEST
+read -r -d '' M098_BOOK_MAIN <<'MANIFEST' || true
+group	A
+entry	0	Alpha	5
+group	B
+entry	0	Beacon	9
+entry	0	Beta	7
+group	C
+entry	0	Chapter Range	11
+entry	0	Shared Term	5, 7, 9
+group	D
+entry	0	Delta		see|Alpha
+group	E
+entry	0	Epsilon		see|No Such Entry
+group	G
+entry	0	Gamma	7
+group	I
+entry	0	Invisible Entry	5
+group	K
+entry	0	Kappa
+entry	1	Sub Level	7
+group	M
+entry	0	Meridian	9
+group	R
+entry	0	Ranged Term	7–9*
+group	Z
+entry	0	Zeta	11
+MANIFEST
+read -r -d '' M098_BOOK_PEOPLE <<'MANIFEST' || true
+group	T
+entry	0	Turing	7
+MANIFEST
+read -r -d '' M098_BOOK_PLACES <<'MANIFEST' || true
+group	L
+entry	0	Lisbon	9
+MANIFEST
+for part in MAIN PEOPLE PLACES; do
+  var="M098_BOOK_$part"
+  printf '%s\n%s\n' "$M098_BOOK_CHAPTERS" "${!var}" > "$WORK/m098-book-$part.tsv"
+done
+python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-MAIN.tsv" \
+  "M098-AC5 (main)" "Index of Subjects" "Chapter 4." \
+  || fail "M098-AC5: the book's index of subjects is not the manifest's (the report is above)"
+python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PEOPLE.tsv" \
+  "M098-AC5 (people)" "Index of People" "Chapter 4." \
+  || fail "M098-AC5: the book's index of people is not the manifest's (the report is above)"
+python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PLACES.tsv" \
+  "M098-AC5 (places)" "Index of Places" \
+  || fail "M098-AC5: the book's index of places is not the manifest's (the report is above)"
+python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC5 (placement)" \
+  "^A range whose two marks are both in this chapter" "=Index of Subjects" \
+  "^A second placement marker in this chapter" \
+  "^A third placement marker, this one naming the second declared index" \
+  "=Index of People" "=Index of Places" \
+  || fail "M098-AC5: an index of the Typst book is not where last.qmd places it (the report is above)"
+pass "M098-AC5: a Typst render of examples/book/ is one PDF printing its three indexes under their declared titles, main and people at the markers in last.qmd and places after them, each entry with the page locators the hand-derived manifest states, and Shared Term on a page of each of its three chapters"
+
+for fixture in escaping xref-escaping sort-escaping unicode; do
+  quarto render "examples/$fixture.qmd" --to typst > "$WORK/$fixture-typst.log" 2>&1 \
+    || { tail -40 "$WORK/$fixture-typst.log" >&2; fail "M098-AC8: examples/$fixture.qmd failed to render to Typst"; }
+  capture "examples/$fixture.qmd" typst "$fixture-typst"
+  [ "$fixture" = unicode ] || m098_no_typst_warning "$WORK/$fixture-typst.log" "M098-AC8 ($fixture)"
+  python3 tests/typstcheck.py source "$CAPTURE_ROOT/$fixture-typst/$fixture.pdf" \
+    "examples/$fixture.qmd" "M098-AC8 ($fixture)" "Index" \
+    || fail "M098-AC8: the Typst index of examples/$fixture.qmd does not print the entries its source derives (the report is above)"
+done
+# The xref-escaping statement is the fixture's construction, a rule for each
+# block of marks, and not a listing of the derived entries: the 94 printable
+# characters, character n under `x<n>` at level position n mod 3 and under `a<n>` at (n + 1) mod 3 among
+# `L1!L2!L3`; the 16 special characters alone under `Xs`, `Xt` and `Xb`, and
+# as the middle of `A<c>B`, which the `Xk` marks index by `entry=`; the
+# non-ASCII and unusable targets; and one invisible mark per target path. Every
+# distinct path prefix prints one line. One exception is the level parse's own:
+# `a00` writes `L1!!!!L3`, and a `!!` read left to right is a literal `!` twice,
+# so that target is the one level `L1!!L3` and not `L1`, `!`, `L3`.
+# The first argument is the xref-escaping source to derive from, so the
+# self-test can hand it a changed copy.
+cat > "$WORK/m098-hand.py" <<'M098HANDPY'
+import sys, unicodedata
+from collections import Counter
+sys.path.insert(0, 'tests')
+import typstcheck
+
+def terms(qmd):
+    return Counter((level, term) for level, term, _refs in
+                   typstcheck.derived_entries(qmd).elements())
+
+def path_lines(paths):
+    prefixes = {tuple(p[:i]) for p in paths for i in range(1, len(p) + 1)}
+    return Counter((len(p) - 1, p[-1]) for p in prefixes)
+
+def xref_paths():
+    special = ['%', '&', '#', '_', '{', '}', '\\', '~', '^', '$', '@', '|',
+               '!', '"', '<', '>']
+    paths = set()
+    for n in range(94):
+        for pos in (n % 3, (n + 1) % 3):
+            levels = ['L1', 'L2', 'L3']
+            levels[pos] = chr(0x21 + n)
+            paths.add(tuple(levels))
+        paths |= {('x%02d' % n,), ('a%02d' % n,)}
+    paths.discard(('L1', '!', 'L3'))
+    paths.add(('L1!!L3',))
+    for n, char in enumerate(special):
+        paths |= {(char,), ('Xs%02d' % n,), ('Xt%02d' % n,), ('Xb%02d' % n,),
+                  ('A%sB' % char,)}
+    paths |= {('Tgt',), ('Grüße', 'Straße'), ('café naïve',), ('A',),
+              ('Xu00',), ('Xu01',), ('Xe00',), ('Xe01',)}
+    return paths
+
+xref_qmd = sys.argv[1]
+stated = {
+    'examples/escaping.qmd':
+        Counter((0, chr(c)) for c in range(0x21, 0x7F)),
+    xref_qmd: path_lines(xref_paths()),
+    'examples/sort-escaping.qmd':
+        Counter((0, 'term-%02x' % c) for c in range(0x21, 0x7F)),
+    'examples/unicode.qmd':
+        Counter((int(level), unicodedata.normalize('NFC', term))
+                for level, term in (row.split(':', 1) for row in sys.argv[2:])),
+}
+for qmd, want in stated.items():
+    got = terms(qmd)
+    if got != want:
+        print(f'FAIL: M098-AC8: the entries derived from {qmd} are not the '
+              f'ones stated by hand: derived only {sorted(got - want)!r}, '
+              f'stated only {sorted(want - got)!r}', file=sys.stderr)
+        sys.exit(1)
+    print(f'ok   M098-AC8: the {sum(want.values())} entries derived from {qmd} '
+          f'are the ones stated by hand')
+M098HANDPY
+python3 "$WORK/m098-hand.py" examples/xref-escaping.qmd "${M33_TERMS[@]}" \
+  || fail "M098-AC8: an escaping fixture's derived entries are not the ones stated by hand (the report is above)"
+
+quarto render examples/index-lang-es.qmd --to typst > "$WORK/index-lang-es-typst.log" 2>&1 \
+  || { tail -40 "$WORK/index-lang-es-typst.log" >&2; fail "M098-AC8: examples/index-lang-es.qmd failed to render to Typst"; }
+capture examples/index-lang-es.qmd typst "index-lang-es-typst"
+m098_no_typst_warning "$WORK/index-lang-es-typst.log" "M098-AC8 (index-lang-es)"
+read -r -d '' M098_LANG_ES <<'MANIFEST' || true
+group	Símbolos
+entry	0	#numerals
+group	F
+entry	0	Falcon	véase|Kestrel
+group	K
+entry	0	Kestrel
+group	M
+entry	0	Merlin	véase también|Kestrel
+MANIFEST
+printf '%s\n' "$M098_LANG_ES" > "$WORK/m098-lang-es.tsv"
+python3 tests/typstcheck.py terms "$CAPTURE_ROOT/index-lang-es-typst/index-lang-es.pdf" \
+  "$WORK/m098-lang-es.tsv" "M098-AC8 (index-lang-es)" "Índice alfabético" \
+  || fail "M098-AC8: the Typst index of examples/index-lang-es.qmd does not print the Spanish table's words (the report is above)"
+
+quarto render examples/index-labels.qmd --to typst > "$WORK/index-labels-typst.log" 2>&1 \
+  || { tail -40 "$WORK/index-labels-typst.log" >&2; fail "M098-AC8: examples/index-labels.qmd failed to render to Typst"; }
+capture examples/index-labels.qmd typst "index-labels-typst"
+m098_no_typst_warning "$WORK/index-labels-typst.log" "M098-AC8 (index-labels)"
+read -r -d '' M098_LABELS_MAIN <<'MANIFEST' || true
+group	Zeichen
+entry	0	#numerals
+group	F
+entry	0	Falcon	siehe|Kestrel
+group	K
+entry	0	Kestrel
+group	M
+entry	0	Merlin	siehe auch|Kestrel
+MANIFEST
+read -r -d '' M098_LABELS_AUTHORS <<'MANIFEST' || true
+group	Zeichen
+entry	0	~wavelet
+group	B
+entry	0	Blimp	vergleiche|Zeppelin
+group	D
+entry	0	Dirigible	siehe auch|Zeppelin
+group	Z
+entry	0	Zeppelin
+MANIFEST
+printf '%s\n' "$M098_LABELS_MAIN" > "$WORK/m098-labels-main.tsv"
+printf '%s\n' "$M098_LABELS_AUTHORS" > "$WORK/m098-labels-authors.tsv"
+python3 tests/typstcheck.py terms "$CAPTURE_ROOT/index-labels-typst/index-labels.pdf" \
+  "$WORK/m098-labels-main.tsv" "M098-AC8 (index-labels, main)" "Index" \
+  "Where the second index goes" \
+  || fail "M098-AC8: the first Typst index of examples/index-labels.qmd does not print the author's words (the report is above)"
+python3 tests/typstcheck.py terms "$CAPTURE_ROOT/index-labels-typst/index-labels.pdf" \
+  "$WORK/m098-labels-authors.tsv" "M098-AC8 (index-labels, authors)" "Index of Authors" \
+  || fail "M098-AC8: the second Typst index of examples/index-labels.qmd does not print the author's words (the report is above)"
+pass "M098-AC8: Typst renders of the four escaping and Unicode fixtures exit 0 and print every entry their sources derive, in NFC, and the two label fixtures print the see and see-also words the Spanish table and the author's index-labels maps give"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M098 T5 self-test — each reading above, planted on its own in a copy of
+  # the extension, and shown red with the failure that reading names. Uses the
+  # T4 block's helpers, which the same run defined.
+  # -------------------------------------------------------------------------
+  m098_fixture_tree() {   # <slug> <fixture> <module> <perl substitution>
+    local dir="$M098W/$1"
+    mkdir -p "$dir/_extensions"
+    cp "examples/$2.qmd" "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    local filter="$dir/_extensions/index/modules/$3"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$4" < "$filter" > "$dir/spliced" \
+      || fail "M098 T5 self-test ($1): the substitution aimed at $3 could not be applied (its own message is above)"
+    cmp -s "$filter" "$dir/spliced" \
+      && fail "M098 T5 self-test ($1): the substitution reported a match and $3 is unchanged"
+    mv "$dir/spliced" "$filter"
+    ( cd "$dir" && quarto render "$2.qmd" --to typst ) \
+      > "$WORK/m098-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m098-$1.log" >&2; fail "M098 T5 self-test ($1): the fixture failed to render through the planted copy"; }
+    capture "$dir/$2.qmd" typst "m098-$1"
+  }
+
+  M098_FOLD='s{qi_indexes\.authored_index\(mark\.index or qi_indexes\.default\(\)\)}{qi_indexes.default()}'
+  M098_UNPLACED='s{        placed\[name\] = true\n        local blocks = by_index ~= nil and by_index\[name\] or nil}{        local blocks = nil}'
+
+  # AC4: every mark filed in the first index.
+  m098_fixture_tree named-fold named-indexes entries.lua "$M098_FOLD"
+  m098_red named-fold "got 'entry\t0\tBabbage" python3 tests/typstcheck.py terms \
+    "$CAPTURE_ROOT/m098-named-fold/named-indexes.pdf" "$WORK/m098-named-main.tsv" \
+    "M098 T5 plant named-fold" "Index" "Below the first index"
+
+  # AC4: each index appended at the end rather than placed at its marker.
+  m098_fixture_tree named-unplaced named-indexes marker.lua "$M098_UNPLACED"
+  m098_red named-unplaced "no line '=Below the first index' follows" \
+    python3 tests/typstcheck.py order "$CAPTURE_ROOT/m098-named-unplaced/named-indexes.pdf" \
+    "M098 T5 plant named-unplaced" \
+    "=Where the first index goes" "=Index" "=Below the first index"
+
+  # AC5: a range's closing gives its opening no label, so the book's range
+  # prints its opening chapter alone.
+  m098_book_tree() {   # <slug> <module> <perl substitution>
+    local dir="$M098W/$1"
+    cp -R "$BOOK_DIR" "$dir"
+    rm -rf "$dir/_extensions" "$dir/_book" "$dir/.quarto"
+    mkdir -p "$dir/_extensions"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    local filter="$dir/_extensions/index/modules/$2"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$3" < "$filter" > "$dir/spliced" \
+      || fail "M098 T5 self-test ($1): the substitution aimed at $2 could not be applied (its own message is above)"
+    mv "$dir/spliced" "$filter"
+    ( cd "$dir" && quarto render --to typst ) > "$WORK/m098-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m098-$1.log" >&2; fail "M098 T5 self-test ($1): the book failed to render through the planted copy"; }
+    capture --project "$dir" typst "m098-$1"
+  }
+  m098_book_tree book-noclose typst.lua 's{node\.open_range\.close = mark\.label}{node.open_range.close = nil}'
+  m098_red book-noclose "got 'entry\t0\tRanged Term\t7*" python3 tests/typstcheck.py book \
+    "$(find "$CAPTURE_ROOT/m098-book-noclose/_book" -maxdepth 1 -name '*.pdf')" \
+    "$WORK/m098-book-MAIN.tsv" "M098 T5 plant book-noclose" "Index of Subjects" "Chapter 4."
+
+  # AC5 (T9): every locator one page on, which puts a chapter's locator on
+  # its blank back page, a page the chapter-bound reading counted as the
+  # chapter's own.
+  m098_book_tree book-pageplus typst.lua 's{\.\.counter\(page\)\.at\(loc\)\)}{..counter(page).at(loc).map(n => n + 1))}'
+  m098_red book-pageplus "got 'entry\t0\tAlpha\t6\t'" python3 tests/typstcheck.py book \
+    "$(find "$CAPTURE_ROOT/m098-book-pageplus/_book" -maxdepth 1 -name '*.pdf')" \
+    "$WORK/m098-book-MAIN.tsv" "M098 T9 plant book-pageplus" "Index of Subjects" "Chapter 4."
+
+  m098_book_tree book-unplaced marker.lua "$M098_UNPLACED"
+  m098_red book-unplaced "no line '^A second placement marker in this chapter' follows" \
+    python3 tests/typstcheck.py order \
+    "$(find "$CAPTURE_ROOT/m098-book-unplaced/_book" -maxdepth 1 -name '*.pdf')" \
+    "M098 T5 plant book-unplaced" "^A range whose two marks are both in this chapter" \
+    "=Index of Subjects" "^A second placement marker in this chapter"
+
+  # AC8: a backslash written as a slash.
+  m098_fixture_tree esc-backslash escaping typst.lua 's{return "\\\\\\\\"}{return "/"}'
+  m098_red esc-backslash "derived, not printed: [(0, '\\\\', ())" python3 tests/typstcheck.py source \
+    "$CAPTURE_ROOT/m098-esc-backslash/escaping.pdf" examples/escaping.qmd \
+    "M098 T5 plant esc-backslash" "Index"
+
+  # AC8: the reference words read from nothing but the English defaults.
+  m098_fixture_tree es-english index-lang-es typst.lua 's{typst_string\(qi_indexes\.label\(name, xref\.kind\.label_key, xref\.kind\.label\)\)}{typst_string(xref.kind.label)}'
+  m098_red es-english "got 'entry\t0\tFalcon\tsee|Kestrel'" python3 tests/typstcheck.py terms \
+    "$CAPTURE_ROOT/m098-es-english/index-lang-es.pdf" "$WORK/m098-lang-es.tsv" \
+    "M098 T5 plant es-english" "Índice alfabético"
+
+  # AC8: the xref-escaping statement against a source whose `x05` target
+  # names `*` where the construction puts `&`, its resolving mark changed too.
+  mkdir -p "$WORK/m098-xref-changed"
+  perl -pe 's{^\[x05\]\{\.index see="L1!L2!&"\}$}{[x05]{.index see="L1!L2!*"}}; s{^\[\]\{\.index entry="L1!L2!&"\}$}{[]{.index entry="L1!L2!*"}}' \
+    examples/xref-escaping.qmd > "$WORK/m098-xref-changed/xref-escaping.qmd"
+  [ "$(diff examples/xref-escaping.qmd "$WORK/m098-xref-changed/xref-escaping.qmd" | grep -c '^>')" -eq 2 ] \
+    || fail "M098 T8 self-test (xref-changed): the substitution did not change exactly the two lines it names"
+  m098_red xref-changed "stated only [(2, '&')]" python3 "$WORK/m098-hand.py" \
+    "$WORK/m098-xref-changed/xref-escaping.qmd" "${M33_TERMS[@]}"
+
+  pass "M098 T5 self-test: the named-index, book, escaping and label readings are each red on a copy of the extension with the property they read undone"
+fi
+
+# ---------------------------------------------------------------------------
+# M098-AC7 — the documentation is true for four back-ends.
+#
+# The claim rows are the sentences M098 adds or corrects, each held to its page
+# by tests/sitecheck.py. A sentence about what a Typst render does is backed by
+# a check: most by the AC1-AC8 sections above, and the rest by the renders in
+# this section, each named beside the rows it backs. The count sweep is its own
+# phrase list rather than a row under M52's two-back-ends list, whose FAIL
+# message names that count by hand.
+# ---------------------------------------------------------------------------
+section 'M098-AC7 — the documentation is true for four back-ends.'
+cat > "$WORK/m098-count-claims.txt" <<'M098COUNT'
+count	Four back-ends ship: LaTeX/PDF, HTML, EPUB and Typst.
+M098COUNT
+python3 tests/sitecheck.py claims README.md "$WORK/m098-count-claims.txt" \
+  || fail "M098-AC7: README.md does not state the four back-ends (its own FAIL line is above)"
+python3 tests/sitecheck.py claims site/index.qmd "$WORK/m098-count-claims.txt" \
+  || fail "M098-AC7: site/index.qmd does not state the four back-ends (its own FAIL line is above)"
+cat > "$WORK/m098-count-retired.txt" <<'M098RETIRED'
+three back-ends	three back-ends
+all three back-ends	all three back-ends
+M098RETIRED
+python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" \
+  || fail "M098-AC7: a page a reader meets still counts three back-ends (its own FAIL line is above)"
+
+cat > "$WORK/m098-nav-claims.txt" <<'M098NAV'
+sidebar entry	- typst.qmd
+M098NAV
+python3 tests/sitecheck.py claims site/_quarto.yml "$WORK/m098-nav-claims.txt" \
+  || fail "M098-AC7: site/_quarto.yml does not list the Typst page in the site navigation (its own FAIL line is above)"
+cat > "$WORK/m098-output-claims.txt" <<'M098OUT'
+link	[Typst](typst.qmd)
+M098OUT
+python3 tests/sitecheck.py claims site/output.qmd "$WORK/m098-output-claims.txt" \
+  || fail "M098-AC7: site/output.qmd does not link to the Typst page (its own FAIL line is above)"
+
+cat > "$WORK/m098-typst-claims.txt" <<'M098PAGE'
+what it prints	For Typst the extension prints each index with page locators, in two columns
+no marks	A declared index that no mark files in prints nothing, not even its heading.
+heading name	The heading is the title your `indexes:` metadata gives the index, or its name where you give no title.
+no package	It needs no Typst package
+labels	it writes an invisible Typst label at each mark
+heading mark	A mark in a heading gets its label just after the heading
+own page	An index starts on a new page under an unnumbered level-one heading, which Typst lists in the table of contents
+text after	The text after the index starts on a new page too.
+groups	a `Symbols` group first, then one group per letter, each under its letter in bold
+depth	sub-entries nest as deep as you write them
+page shown	Each locator is the page number as the page shows it.
+links	An entry's locators are in page order, and each one links to its page.
+one page once	Several marks of one term on one page print that page once.
+principal	The locator of a principal mention is set in bold.
+shared page	Where a principal and an ordinary mark of one term share a page, that page's one locator is bold.
+range	A range prints its opening and closing pages, `12–15`, and links to the opening page.
+range on one page	Where both ends of a range are on one page, it prints that page alone.
+range spans	A page that a range of the term spans, its opening and closing pages included, prints no locator of its own.
+range spans bold	A principal mention on such a page loses its bold.
+separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.
+after a range	A mark on the page just after a range prints its own locator, `2–3, 4`, where the PDF index prints `2–4`.
+reference	A cross-reference prints its word in italics, then its target as plain text, with no link.
+label keys	which Typst reads for `symbols`, `see` and `see-also`
+punctuation	a comma before each locator and before the first cross-reference, and a semicolon between two cross-references
+separator keys	The `separator` and `xref-separator` keys of `index-labels:` do not reach the Typst index.
+book pairs	a range you open in one chapter and close in another pairs
+books tested	Books were tested on Quarto 1.10.18.
+author	Quarto's Typst book template does not compile a book whose `book:` metadata has no `author:`
+unprinted field	Its term is still in the index, with no page number.
+M098PAGE
+python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \
+  || fail "M098-AC7: site/typst.qmd no longer states what a Typst render prints (its own FAIL line is above)"
+
+cat > "$WORK/m098-differences-claims.txt" <<'M098DIFF'
+count	Four back-ends ship: LaTeX (and the PDF it typesets), HTML, EPUB and Typst.
+ceiling	No level ceiling in HTML or Typst.
+one entry	An HTML or Typst index prints the locator and the cross-reference together on one entry by itself
+sorting	Sorting is the extension's own in HTML and Typst.
+locators	Typst gives page numbers too, in page order, and each one links to its page.
+targets	In the LaTeX and Typst indexes a target is always plain text.
+no locator	A cross-reference carries no locator in any of the four back-ends.
+principal	the Typst back-end sets the page number in bold
+range	A page range is a page range only in LaTeX and Typst.
+separate pages	Typst prints only the ranges you write: marks on pages 3, 4 and 5 print `3, 4, 5`
+after a range	`makeindex` also folds a page just after a range into it: a range on pages 2 and 3 and a mark on page 4 print `2--4` there and `2–3, 4` in Typst.
+label keys	The Typst index reads the three word keys and neither separator key
+lang count	All four back-ends follow `lang:`, and share nothing else about it.
+lang table	HTML, EPUB and Typst read a table this extension ships
+index-labels readers	`index-labels:` is read by the HTML, EPUB and Typst back-ends alone
+M098DIFF
+python3 tests/sitecheck.py claims site/back-end-differences.qmd "$WORK/m098-differences-claims.txt" \
+  || fail "M098-AC7: site/back-end-differences.qmd no longer states what Typst does (its own FAIL line is above)"
+
+# The fold the two pages above name. examples/typst-index.qmd marks `kelp` in a
+# range on pages 2 and 3 and again on page 4. Its PDF render prints the index
+# line `kelp, 2–4`, and its Typst render `kelp, 2–3, 4`. The same whole-line
+# reading, run on the Typst render, is red, so the line it finds is the fold.
+quarto render examples/typst-index.qmd --to pdf > "$WORK/typst-index-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/typst-index-pdf.log" >&2; fail "M098-AC7: examples/typst-index.qmd failed to render to PDF"; }
+capture examples/typst-index.qmd pdf "typst-index-pdf"
+m098_index_line() {   # <pdf> <line>
+  local text
+  text=$(pdftotext "$1" -) || fail "M098-AC7: pdftotext could not read $1"
+  printf '%s\n' "$text" | grep -xF -- "$2" > /dev/null
+}
+m098_index_line "$CAPTURE_ROOT/typst-index-pdf/typst-index.pdf" 'kelp, 2–4' \
+  || fail "M098-AC7: the PDF index of examples/typst-index.qmd does not print the line <<kelp, 2–4>>, so the fold the back-end differences and Typst pages state is not makeindex's"
+if m098_index_line "$M098_PDF" 'kelp, 2–4'; then
+  fail "M098-AC7: the Typst index of examples/typst-index.qmd also prints <<kelp, 2–4>>, so the reading above cannot tell the fold from its absence"
+fi
+m098_index_line "$M098_PDF" 'kelp, 2–3, 4' \
+  || fail "M098-AC7: the Typst index of examples/typst-index.qmd does not print the line <<kelp, 2–3, 4>>"
+pass "M098-AC7: the PDF index folds the page just after kelp's range into it (kelp, 2–4), and the Typst index prints that page on its own (kelp, 2–3, 4)"
+
+cat > "$WORK/m098-other-claims.txt" <<'M098OTHER'
+typst book	A Typst book is merged the same way.
+M098OTHER
+python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
+  || fail "M098-AC7: site/books.qmd no longer states that a Typst book is merged (its own FAIL line is above)"
+cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
+matrix typst	The same leg renders `typst-index.qmd` to Typst on each version and reads both of its indexes
+M098TESTS
+python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
+  || fail "M098-AC7: site/tests.qmd no longer states the version matrix's Typst step (its own FAIL line is above)"
+cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
+new back-end	A new back-end for Typst.
+what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package
+ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep as they are written.
+locators	A principal mention's page number is set in bold, a range prints its first and last pages, a page a range spans prints no page number of its own, and each page number links to its page.
+words	The see and see-also words follow `lang:` and `index-labels:`.
+books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
+M098CHANGE
+python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m098-changelog-claims.txt" \
+  || fail "M098-AC7: CHANGELOG.md no longer states the Typst back-end (its own FAIL line is above)"
+
+# The claims no section above reads.
+#
+# Separate pages. Three marks of one term on three pages in a row, written here
+# rather than as a fixture, since nothing else reads it: each page is a locator
+# of its own.
+M098D="$WORK/m098docs"
+rm -rf "$M098D"
+mkdir -p "$M098D/consecutive/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/consecutive/_extensions/index"
+printf '%s\n' '---' 'title: "Consecutive pages"' 'filters:' '  - index' '---' '' \
+  '[otter]{.index}' '' '{{< pagebreak >}}' '' '[otter]{.index}' '' \
+  '{{< pagebreak >}}' '' '[otter]{.index}' > "$M098D/consecutive/consecutive.qmd"
+( cd "$M098D/consecutive" && quarto render consecutive.qmd --to typst -M keep-typ:true ) \
+  > "$WORK/m098-consecutive.log" 2>&1 \
+  || { tail -20 "$WORK/m098-consecutive.log" >&2; fail "M098-AC7: the consecutive-pages document failed to render to Typst"; }
+capture "$M098D/consecutive/consecutive.qmd" typst "m098-consecutive"
+printf 'group\tO\nentry\t0\totter\t1@1, 2@2, 3@3\n' > "$WORK/m098-consecutive.tsv"
+python3 tests/typstindex.py "$M098D/consecutive/consecutive.pdf" "$WORK/m098-consecutive.tsv" \
+  "M098-AC7 (three pages in a row)" "Index" \
+  || fail "M098-AC7: marks on three pages in a row do not print three locators (the report is above)"
+
+# No package. The Typst the render compiled, kept beside the document, imports
+# nothing, and it carries the labels this back-end writes, so the search ran
+# over this back-end's output and not over an empty file.
+grep -q '#\[#metadata(none)<qi-mark-1>\]' "$M098D/consecutive/consecutive.typ" \
+  || fail "M098-AC7: the kept Typst source carries no label this back-end writes, so a search of it for an import says nothing"
+if grep -n '#import' "$M098D/consecutive/consecutive.typ"; then
+  fail "M098-AC7: the Typst a render compiles imports a package"
+fi
+pass "M098-AC7: the Typst a render compiles carries this back-end's labels and imports no package"
+
+# Fixed punctuation. examples/index-separators.qmd sets both separator keys to
+# Arabic marks, and the Typst index prints a comma and a semicolon anyway. Its
+# first Azurite mark is on page 1 and every other mark on page 2, past its one
+# explicit break.
+quarto render examples/index-separators.qmd --to typst > "$WORK/index-separators-typst.log" 2>&1 \
+  || { tail -40 "$WORK/index-separators-typst.log" >&2; fail "M098-AC7: examples/index-separators.qmd failed to render to Typst"; }
+capture examples/index-separators.qmd typst "index-separators-typst"
+printf '%s\n' $'group\tA' $'entry\t0\tAzurite\t1@1, 2@2' $'group\tB' \
+  $'entry\t0\tBeryl\t2@2\tsee also|Azurite' $'group\tC' \
+  $'entry\t0\tCinnabar\t\tsee|Azurite' $'group\tD' \
+  $'entry\t0\tDolomite\t\tsee|Azurite; see also|Beryl' > "$WORK/m098-separators.tsv"
+python3 tests/typstindex.py pages "$CAPTURE_ROOT/index-separators-typst/index-separators.pdf" \
+  "$WORK/m098-separators.tsv" "M098-AC7 (fixed punctuation)" "Index" \
+  || fail "M098-AC7: the Typst index of examples/index-separators.qmd does not print a comma and a semicolon (the report is above)"
+
+# A mark Typst never prints. examples/front-matter.qmd marks a term in each of
+# three front-matter fields and one in its body, all on page 1; Quarto's Typst
+# template prints the subtitle and the abstract and not the description.
+quarto render examples/front-matter.qmd --to typst > "$WORK/front-matter-typst.log" 2>&1 \
+  || { tail -40 "$WORK/front-matter-typst.log" >&2; fail "M098-AC7: examples/front-matter.qmd failed to render to Typst"; }
+capture examples/front-matter.qmd typst "front-matter-typst"
+printf '%s\n' $'group\tB' $'entry\t0\tBollard\t1@1' $'group\tC' $'entry\t0\tCapstan\t1@1' \
+  $'group\tG' $'entry\t0\tGimbal\t1@1' $'group\tH' $'entry\t0\tHalyard' > "$WORK/m098-front-matter.tsv"
+python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" \
+  "$WORK/m098-front-matter.tsv" "M098-AC7 (a field Typst never prints)" "Index" \
+  || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
+
+# A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text
+# as a string and drops the label written there, so the back-end moves each
+# such label to just after its image. Page 1 holds an inline image with a mark
+# in its alt text, page 2 a figure whose caption Quarto also copies into the
+# image's alt text, and page 3 an inline image with a plain and a principal
+# mark in its alt text.
+mkdir -p "$M098D/alt/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/alt/_extensions/index"
+cp examples/dot.png "$M098D/alt/"
+printf '%s\n' '---' 'title: "Alt text"' 'filters:' '  - index' '---' '' \
+  'Body ![alt [imgterm]{.index}](dot.png){width=1cm} inline.' '' '{{< pagebreak >}}' '' \
+  '![Figure caption [figterm]{.index}](dot.png){width=1cm}' '' '{{< pagebreak >}}' '' \
+  'Text ![only [second]{.index} here [third]{.index mention="principal"}](dot.png){width=1cm}.' \
+  > "$M098D/alt/alt.qmd"
+( cd "$M098D/alt" && quarto render alt.qmd --to typst ) > "$WORK/m098-alt.log" 2>&1 \
+  || { tail -20 "$WORK/m098-alt.log" >&2; fail "M098-AC7: the alt-text document failed to render to Typst"; }
+capture "$M098D/alt/alt.qmd" typst "m098-alt"
+printf '%s\n' $'group\tF' $'entry\t0\tfigterm\t2@2' $'group\tI' $'entry\t0\timgterm\t1@1' \
+  $'group\tS' $'entry\t0\tsecond\t3@3' $'group\tT' $'entry\t0\tthird\t3*@3' > "$WORK/m098-alt.tsv"
+python3 tests/typstindex.py "$M098D/alt/alt.pdf" "$WORK/m098-alt.tsv" \
+  "M098-AC7 (marks in image alt text)" "Index" \
+  || fail "M098-AC7: a mark in image alt text does not print its page in the Typst index (the report is above)"
+
+# The outline and the page after. The book's outline lists the index before
+# the first chapter's own heading; in the named-index fixture the heading of
+# the first index is on a page of its own, apart from the text before and
+# after it.
+python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC7 (the outline lists the index)" \
+  "=Contents" "^Index of Subjects" "=1. Opening" \
+  || fail "M098-AC7: the Typst book's outline does not list the index of subjects (the report is above)"
+
+# The outline of a single document whose headings start at `##`, which Quarto
+# moves up a level for Typst, and the heading an index gets. The document
+# declares `main` with no title and `spare` with one, and marks a term in `main`
+# alone: `main` prints under its name, and `spare` prints nothing.
+mkdir -p "$M098D/outline/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/outline/_extensions/index"
+printf '%s\n' '---' 'title: "Outline"' 'toc: true' 'indexes:' '  - name: main' \
+  '  - name: spare' '    title: Spare Index' 'filters:' '  - index' '---' '' \
+  '## First section' '' 'A term: [walrus]{.index}.' > "$M098D/outline/outline.qmd"
+( cd "$M098D/outline" && quarto render outline.qmd --to typst ) \
+  > "$WORK/m098-outline.log" 2>&1 \
+  || { tail -20 "$WORK/m098-outline.log" >&2; fail "M098-AC7: the outline document failed to render to Typst"; }
+capture "$M098D/outline/outline.qmd" typst "m098-outline"
+python3 tests/typstcheck.py order "$M098D/outline/outline.pdf" "M098-AC7 (a single document's outline lists the index)" \
+  "=Table of contents" "^main " "=First section" "=main" \
+  || fail "M098-AC7: in a document whose headings start at two hashes, the outline does not list the index under its name (the report is above)"
+if pdftotext "$M098D/outline/outline.pdf" - | grep -q 'Spare Index'; then
+  fail "M098-AC7: a declared index no mark files in printed its title"
+fi
+pass "M098-AC7: a declared index with no title prints under its name and is listed in the outline of a document whose headings start at two hashes, and a declared index no mark files in prints nothing"
+python3 - "$M098_NAMED_PDF" <<'M098PAGEPY'
+import subprocess, sys
+text = subprocess.run(['pdftotext', sys.argv[1], '-'], check=True,
+                      capture_output=True, text=True).stdout
+pages = [[l.strip() for l in page.split('\n')] for page in text.split('\f')]
+def page_of(line):
+    found = [n for n, lines in enumerate(pages, start=1) if line in lines]
+    if len(found) != 1:
+        print(f'FAIL: M098-AC7: {line!r} is on page(s) {found}, not one page',
+              file=sys.stderr)
+        sys.exit(1)
+    return found[0]
+before, heading, after = (page_of('Where the first index goes'),
+                          page_of('Index'), page_of('Below the first index'))
+if not before < heading < after:
+    print(f'FAIL: M098-AC7: the text before the first index is on page '
+          f'{before}, its heading on page {heading} and the text after it on '
+          f'page {after}; the index is on pages of its own', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M098-AC7: the first index of the named-index fixture starts on page '
+      f'{heading}, after the text before it on page {before}, and the text '
+      f'after it starts on page {after}')
+M098PAGEPY
+
+# The author. A copy of the book fixture with its `author:` line taken out
+# fails to compile to Typst, with the error Quarto's book template raises.
+cp -R "$BOOK_DIR" "$M098D/noauthor"
+rm -rf "$M098D/noauthor/_extensions" "$M098D/noauthor/_book" "$M098D/noauthor/.quarto"
+mkdir -p "$M098D/noauthor/_extensions"
+cp -R "$QI_EXT_DIR" "$M098D/noauthor/_extensions/index"
+grep -v '^  author: ' "$BOOK_DIR/_quarto.yml" > "$M098D/noauthor/_quarto.yml"
+grep -q '^  author: ' "$BOOK_DIR/_quarto.yml" \
+  || fail "M098-AC7: examples/book/_quarto.yml carries no author line, so the copy without one is the fixture itself"
+M098_NOAUTHOR_RC=0
+( cd "$M098D/noauthor" && quarto render --to typst ) > "$WORK/m098-noauthor.log" 2>&1 \
+  || M098_NOAUTHOR_RC=$?
+capture --project "$M098D/noauthor" typst "m098-noauthor"
+[ "$M098_NOAUTHOR_RC" -ne 0 ] \
+  || fail "M098-AC7: the book with no author compiled to Typst, so the docs' sentence that Quarto's template needs one is stale"
+grep -q 'expected content, found array' "$WORK/m098-noauthor.log" \
+  || { tail -20 "$WORK/m098-noauthor.log" >&2; fail "M098-AC7: the book with no author failed, but not with the template's error, so its failure is not the one the docs state"; }
+pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
+pass "M098-AC7: README, the home page and the back-end differences page count four back-ends and no page counts three, the Typst page is in the navigation and linked from the output page, and each claim row above is on its page"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M098 T7 self-test — the two sweeps this section adds, shown red: the count
+  # sweep on an overlay page carrying the retired count, and the Typst page's
+  # claim list on a copy that has lost one sentence. The renders above carry
+  # their own failing leg or their own control.
+  # -------------------------------------------------------------------------
+  mkdir -p "$M098D/overlay/site"
+  python3 - site/typst.qmd "$M098D/overlay/site/typst.qmd" "$M098D/typst-lost.qmd" <<'M098PLANTPY' \
+    || fail "M098 T7 self-test: the page variants could not be written (their own FAIL line is above)"
+import sys
+page, overlay, lost = sys.argv[1:4]
+body = open(page, encoding='utf-8').read()
+gone = 'Pages you marked separately stay separate'
+if gone not in body:
+    print(f'FAIL: M098 T7 self-test: {page} does not carry {gone!r}', file=sys.stderr)
+    sys.exit(1)
+open(overlay, 'w', encoding='utf-8').write(body + '\nThree back-ends ship.\n')
+if body.count('`3, 4, 5`') != 1:
+    print(f'FAIL: M098 T7 self-test: {page} does not carry `3, 4, 5` exactly '
+          f'once, so the folded copy is not one changed sentence', file=sys.stderr)
+    sys.exit(1)
+open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
+M098PLANTPY
+  m098_red count-overlay 'site/typst.qmd (three back-ends)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
+  m098_red typst-lost 'does not state 1 of the 29 claim(s)' \
+    python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
+  # The index heading written as a paragraph, which is what a Pandoc header
+  # became in a document whose headings start at two hashes.
+  mkdir -p "$M098D/outline-plant"
+  cp "$M098D/outline/outline.qmd" "$M098D/outline-plant/"
+  cp -R "$M098D/outline/_extensions" "$M098D/outline-plant/_extensions"
+  perl -0777 -pi -e 's{#heading\(level: 1, numbering: none\)\[#\(%s\)\]}{#par[#(%s)]}' \
+    "$M098D/outline-plant/_extensions/index/modules/typst.lua"
+  grep -q '#par\[#(%s)\]' "$M098D/outline-plant/_extensions/index/modules/typst.lua" \
+    || fail "M098 T7 self-test: the heading plant changed nothing in typst.lua"
+  ( cd "$M098D/outline-plant" && quarto render outline.qmd --to typst ) \
+    > "$WORK/m098-outline-plant.log" 2>&1 \
+    || { tail -20 "$WORK/m098-outline-plant.log" >&2; fail "M098 T7 self-test: the outline document failed to render through the planted copy"; }
+  capture "$M098D/outline-plant/outline.qmd" typst "m098-outline-plant"
+  m098_red outline-paragraph "no line '^main ' follows" \
+    python3 tests/typstcheck.py order "$M098D/outline-plant/outline.pdf" "M098 T7 plant outline" \
+    "=Table of contents" "^main " "=First section" "=main"
+  # The alt-text move undone (T11): the image's labels stay in its alt text.
+  mkdir -p "$M098D/alt-plant"
+  cp "$M098D/alt/alt.qmd" "$M098D/alt/dot.png" "$M098D/alt-plant/"
+  cp -R "$M098D/alt/_extensions" "$M098D/alt-plant/_extensions"
+  perl -0777 -pi -e 's{    Image = function\(image\)}{    NoImage = function(image)}' \
+    "$M098D/alt-plant/_extensions/index/modules/typst.lua"
+  grep -q 'NoImage = function(image)' "$M098D/alt-plant/_extensions/index/modules/typst.lua" \
+    || fail "M098 T11 self-test: the alt-text plant changed nothing in typst.lua"
+  ( cd "$M098D/alt-plant" && quarto render alt.qmd --to typst ) \
+    > "$WORK/m098-alt-plant.log" 2>&1 \
+    || { tail -20 "$WORK/m098-alt-plant.log" >&2; fail "M098 T11 self-test: the alt-text document failed to render through the planted copy"; }
+  capture "$M098D/alt-plant/alt.qmd" typst "m098-alt-plant"
+  m098_red alt-kept "got 'entry\t0\timgterm\t\t'" \
+    python3 tests/typstindex.py "$M098D/alt-plant/alt.pdf" "$WORK/m098-alt.tsv" \
+    "M098 T11 plant alt-kept" "Index"
+  pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, the Typst page's claims are red on a copy stating a folded range, and the outline check is red where the index heading is a paragraph"
+fi
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------

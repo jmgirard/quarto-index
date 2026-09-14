@@ -39,9 +39,9 @@
 
 -- The filter itself. Everything below the requires is the Pandoc pass and the
 -- list of passes handed back to Pandoc; every other definition lives in a
--- module beside this file. Required here are the seven this file itself
--- reaches; the other two, `levels.lua` and `sortkeys.lua`, arrive through
--- them. They are listed in dependency order — `core` requires nothing, `book`
+-- module beside this file. Required here are the nine this file itself
+-- reaches; the other four, `entries.lua`, `languages.lua`, `levels.lua` and
+-- `sortkeys.lua`, arrive through them. They are listed in dependency order — `core` requires nothing, `book`
 -- requires most of the rest — and bound under `qi_` names, so no local can
 -- shadow a module (`levels`, `marks` and `marker` are all ordinary local names
 -- in this filter).
@@ -51,6 +51,7 @@ local qi_latex = require("./modules/latex")
 local qi_marks = require("./modules/marks")
 local qi_passes = require("./modules/passes")
 local qi_html = require("./modules/html")
+local qi_typst = require("./modules/typst")
 local qi_marker = require("./modules/marker")
 local qi_book = require("./modules/book")
 
@@ -210,7 +211,13 @@ local function Pandoc(doc)
     end
     if qi_marks.marks_seen > 0 then
       doc = qi_html.relocate_heading_anchors(doc)
-      doc = qi_html.assign_anchors(doc, taken)
+      -- Typst links a locator to a label rather than to an id, so its marks
+      -- are labelled instead of anchored.
+      if qi_core.is_typst() then
+        doc = qi_typst.assign_labels(doc, taken)
+      else
+        doc = qi_html.assign_anchors(doc, taken)
+      end
     end
     if book then
       return qi_book.html_book(doc, book, marker_places, taken)
@@ -220,6 +227,10 @@ local function Pandoc(doc)
     -- surviving `.aux` no HTML render has.)
     if qi_marks.marks_seen == 0 then
       return qi_marker.place_index(doc, nil)
+    end
+    if qi_core.is_typst() then
+      return qi_marker.place_index(doc,
+        qi_typst.typst_index_blocks(qi_marks.html_marks))
     end
     return qi_marker.place_index(doc,
       qi_html.html_index_blocks(qi_marks.html_marks, taken))

@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M098 | A Typst render prints the index | planned | M097 | normal | milestones/M098-typst-back-end.md |
+| M098 | A Typst render prints the index | review | M097 | normal | milestones/M098-typst-back-end.md |
 | M097 | The extension requires Quarto 1.5 | done | — | normal | milestones/archive/M097-quarto-floor-1-5.md |
 | M096 | The pre-release sweep fails on the defects it names, from one definition | done | — | normal | milestones/archive/M096-prerelease-sweep-plants.md |
 | M095 | Three candidate rows' unasserted fixture facts get checks | done | — | normal | milestones/archive/M095-suite-pins-three-rows.md |
@@ -21,6 +21,7 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- [low] Print a Typst locator as the page's own numbering shows it, with every counter the pattern names and merged by the number shown. Promote on an author using a two-counter `page-numbering` or a page counter reset — added 2026-09-13 — M098 review — KI292, KI293
 - Close the four check gaps M095's review left in the state probe and three suite checks. Promote on a seventh index cell, or with any other pass over the state probe — added 2026-09-11 — M095 review — KI284-KI287
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248

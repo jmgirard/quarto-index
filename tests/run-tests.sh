@@ -29022,7 +29022,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_terms samepage 'elm\t1–1@1'
 
   # Pages a range spans (T10): the filter that drops their locators undone.
-  m098_tree nocover typst.lua 's{found = found\.filter\(f => f\.spans or }{found = found.filter(f => true or }'
+  m098_tree nocover typst.lua 's{found = found\.filter\(f => not f\.single or }{found = found.filter(f => true or }'
   m098_render nocover
   m098_terms nocover 'kelp\t2*@2, 2–3@2, 3@3, 4@4'
 
@@ -29138,17 +29138,17 @@ while IFS= read -r row; do
     || fail "M099-AC2: tests/typst-numbering.tsv no longer carries the row <<$row>>, so the case it states is no longer read"
 done <<'M099ROWS'
 entry	0	apple	1 / 5@1
-entry	0	birch	1 / 5@1
+entry	0	birch	1 / 5@1, 2 / 5@2
 entry	0	cedar	1 / 5*@1
 entry	0	dune	1 / 5–2 / 5@1
 entry	0	elm	1 / 5@1
-entry	0	fern	2 / 5–1 / 5@2
+entry	0	fern	2 / 5@2, 2 / 5–1 / 5@2
 entry	0	gorse	ii of V@5
-entry	0	holly	2 / 5@4, ii of V@5
+entry	0	holly	ii of V@5, 2 / 5@4
 entry	0	iris	- 3 -@6
 entry	0	juniper	7@7
 entry	0	kale	1 / 5@1, 2 / 5@2
-entry	0	lime	1 / 5–2 / 5@1, 2 / 5@4
+entry	0	lime	1 / 5–2 / 5@1
 M099ROWS
 
 quarto render examples/typst-numbering.qmd --to typst > "$WORK/typst-numbering.log" 2>&1 \
@@ -29285,47 +29285,29 @@ if [ "${1:-}" = "--self-test" ]; then
   m099_render laterlink
   m099_read laterlink 'cedar\t1 / 5*@3'
 
-  # A merged locator moved to the position of its later page.
-  m099_tree laterplace 's{merged\.at\(at\) = kept}{let _ = merged.remove(at); merged.push(kept)}'
-  m099_render laterplace
-  m099_read laterplace 'kale\t2 / 5@2, 1 / 5@1'
+  # Five plants left this section in M100. Under the new order, a merged
+  # locator placed at its later page prints kale's row unchanged. The rows the
+  # span tested by printed text, the merge run before the drop, and the span
+  # without its opening page were red on are now this manifest's own rows. The
+  # span without its closing page is the M100 span-close plant. The M100
+  # self-test plants each of those clauses on examples/typst-order.qmd.
 
-  # The pages a range spans tested by printed text rather than physical page.
-  m099_tree textspan 's{ranges\.all\(r => f\.start\.page\(\) < r\.start\.page\(\) or f\.start\.page\(\) > r\.stop\.page\(\)\)}{ranges.all(r => f.shown != r.shown)}'
-  m099_render textspan
-  m099_read textspan 'birch\t1 / 5@1, 2 / 5@2'
-
-  # The merge run before the pages a range spans are dropped, the order the
-  # M099 claim audit found losing a later locator with a spanned first one.
-  # One substitution moves the drop below the merge loop.
-  m099_tree mergefirst 's{  let ranges = found\.filter\(f => f\.spans\)\n  found = found\.filter\((.*?)\)\n(  let merged = \(\)\n.*?\n  \}\n)}{$2  let ranges = found.filter(f => f.spans)\n  merged = merged.filter($1)\n}s'
-  m099_render mergefirst
-  m099_read mergefirst 'lime\t1 / 5–2 / 5@1\t'
-
-  # The span test with a range's opening page left out of the span.
-  m099_tree spanopen 's{f\.start\.page\(\) < r\.start\.page\(\)}{f.start.page() <= r.start.page()}'
-  m099_render spanopen
-  m099_read spanopen 'fern\t2 / 5@2, 2 / 5–1 / 5@2'
-
-  # The span test with a range's closing page left out of the span.
-  m099_tree spanclose 's{f\.start\.page\(\) > r\.stop\.page\(\)}{f.start.page() >= r.stop.page()}'
-  m099_render spanclose
-  m099_read spanclose 'lime\t1 / 5–2 / 5@1, 2 / 5@2'
-
-  # The span drop applied to ranges across two or more pages too.
-  m099_tree dropranges 's{found = found\.filter\(f => f\.spans or }{found = found.filter(f => false or }'
+  # The span drop applied to a range that spans values too: each such range
+  # spans its own opening value.
+  m099_tree dropranges 's{found = found\.filter\(f => not f\.single or }{found = found.filter(f => false or }'
   m099_render dropranges
-  m099_read dropranges 'birch\t\t'
+  m099_read dropranges 'dune\t\t'
 
-  # Locators merged by the page counter's value rather than by printed text.
+  # Locators merged by the page counter's value rather than by printed text:
+  # holly's two pages merge at the lower-roman place, linked to page 4.
   m099_tree countermerge 's{merged\.position\(m => m\.shown == f\.shown\)}{merged.position(m => counter(page).at(m.start) == counter(page).at(f.start) and counter(page).at(m.stop) == counter(page).at(f.stop))}'
   m099_render countermerge
-  m099_read countermerge 'holly\t2 / 5@4\t'
+  m099_read countermerge 'holly\tii of V@4\t'
 
   # A range printed with its two ends in the other order.
   m099_tree reorder 's{else \{ first \+ "–" \+ last \}}{else { last + "–" + first }}'
   m099_render reorder
-  m099_read reorder 'fern\t1 / 5–2 / 5@2'
+  m099_read reorder 'fern\t2 / 5@2, 1 / 5–2 / 5@2'
 
   # The version matrix's reading over the one-counter plant: red too.
   m098_red m099-neverboth-pages "(0, 'gorse, ii')" python3 tests/typstindex.py pages \
@@ -29376,6 +29358,193 @@ M099COMMAPY
   pass "M099 review R3: tests/typstindex.py keeps a comma after the last locator of a line"
 
   pass "M099 T5 self-test: each AC1 and AC2 clause is planted on its own and shown red with the row that clause decides, an unplanted copy stays green, and both readings are red with the footer left unnamed"
+fi
+
+# ---------------------------------------------------------------------------
+# M100-AC1/AC2 — a Typst index orders locators and spans ranges by the number the page prints.
+#
+# examples/typst-order.qmd starts every page with a raw Typst `set page` rule
+# and a page counter update, so the physical page, the pattern and the
+# counter of each page are facts of its source. The manifest,
+# tests/typst-order.tsv, is derived by hand from that source under the ORACLE
+# RULE above, and its comment gives each page's class and value and each
+# entry's reason. The index page's footer prints `1`, which both readings
+# name with `--footer`.
+#
+# The fixture's numberings and every entry's row are held here, so a fixture
+# or a manifest edited to drop a case is red rather than no longer asked about.
+# ---------------------------------------------------------------------------
+section 'M100-AC1/AC2 — a Typst index orders locators and spans ranges by the number the page prints.'
+M100_FOOTER='--footer=^\d+$'
+for needle in '#set page(numbering: "I")' '#set page(numbering: "i")' \
+    '#set page(numbering: "1")' '#set page(numbering: "(1)")' \
+    '#set page(numbering: "a")' '#set page(numbering: "A")' \
+    '#set page(numbering: "α")' '#set page(numbering: (..values) =>' \
+    '#set page(numbering: none)' '#counter(page).update(40)'; do
+  grep -qF -- "$needle" examples/typst-order.qmd \
+    || fail "M100-AC1: examples/typst-order.qmd no longer carries <<$needle>>, so the numbering it sets is no longer read"
+done
+# Every entry row of the manifest, spelled out again here: each is one shape.
+while IFS= read -r row; do
+  grep -qxF -- "$row" tests/typst-order.tsv \
+    || fail "M100-AC1/AC2: tests/typst-order.tsv no longer carries the row <<$row>>, so the case it states is no longer read"
+done <<'M100ROWS'
+entry	0	ash	ii@3, III@1
+entry	0	beech	II@4, 3@2
+entry	0	cedar	1@10, b@5
+entry	0	dogwood	c@8, D@6
+entry	0	elder	A@9, β@7
+entry	0	fig	40@12, f2@11
+entry	0	gorse	13@13, 40@12
+entry	0	hazel	1@10, 3@2
+entry	0	iris	2@14, (2)@15
+entry	0	juniper	4@16, 4–i@16
+entry	0	kale	2–4@17, c@18
+entry	0	lime	5–7@20
+entry	0	maple	1–3@22
+entry	0	nutmeg	2@14
+entry	0	oak	4@25, 6–2@27
+entry	0	pine	2–e@23, 3@24
+entry	0	quince	1–6@22, 2–4@29, 5–8@31
+entry	0	rowan	2–(2)@14, 2@17
+entry	0	sage	i*@35, 2@33
+entry	0	thyme	i–iii@36, i@35
+M100ROWS
+
+quarto render examples/typst-order.qmd --to typst > "$WORK/typst-order.log" 2>&1 \
+  || { tail -40 "$WORK/typst-order.log" >&2; fail "M100-AC1: examples/typst-order.qmd failed to render to Typst"; }
+capture examples/typst-order.qmd typst "typst-order-typst"
+check_extension_warning_count "$WORK/typst-order.log" 0 \
+  "M100-AC1 (examples/typst-order.qmd warned; every mark in it is well formed)"
+if grep -qE '(^|\]: .*)warning:' "$WORK/typst-order.log"; then
+  grep -E 'warning:' "$WORK/typst-order.log" >&2
+  fail "M100-AC1: Typst warned while compiling examples/typst-order.qmd, so the emitted Typst is not clean"
+fi
+M100_PDF="$CAPTURE_ROOT/typst-order-typst/typst-order.pdf"
+python3 tests/typstindex.py "$M100_PDF" tests/typst-order.tsv \
+  "Typst index in locator order" "Index" "$M100_FOOTER" \
+  || fail "M100-AC1/AC2: the index of examples/typst-order.qmd does not match tests/typst-order.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M100_PDF" tests/typst-order.tsv \
+  "Typst index in locator order (pages)" "Index" "$M100_FOOTER" \
+  || fail "M100-AC1/AC5: the version matrix's reading of examples/typst-order.qmd does not match tests/typst-order.tsv (the report is above)"
+pass "M100-AC1/AC2: a Typst render of examples/typst-order.qmd orders each entry's locators by class, value and physical page, drops a single mark on a value a range of its class spans, and merges the locators left that print one text at the first in that order, linked to the earliest page"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M100 T4 self-test — each AC1 and AC2 clause planted on its own in a copy
+  # of the extension, rendered through that copy, and shown red with the row
+  # that clause decides. The M099 plant helper's shape, on this fixture.
+  # -------------------------------------------------------------------------
+  M100W="$WORK/m100plant"
+  rm -rf "$M100W"
+
+  m100_tree() {   # <slug> [<perl substitution on typst.lua>]
+    local dir="$M100W/$1"
+    mkdir -p "$dir/_extensions"
+    cp examples/typst-order.qmd "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    [ $# -ge 2 ] || return 0
+    local filter="$dir/_extensions/index/modules/typst.lua"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$2" < "$filter" > "$dir/spliced" \
+      || fail "M100 T4 self-test ($1): the substitution aimed at typst.lua could not be applied (its own message is above)"
+    cmp -s "$filter" "$dir/spliced" \
+      && fail "M100 T4 self-test ($1): the substitution reported a match and typst.lua is unchanged"
+    mv "$dir/spliced" "$filter"
+  }
+
+  # <slug> <perl substitution> <want>: plant, render, and read red on <want>.
+  m100_plant() {
+    m100_tree "$1" "$2"
+    ( cd "$M100W/$1" && quarto render typst-order.qmd --to typst ) \
+      > "$WORK/m100-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m100-$1.log" >&2; fail "M100 T4 self-test ($1): the fixture failed to render through the planted copy"; }
+    capture "$M100W/$1/typst-order.qmd" typst "m100-$1"
+    m098_red "m100-$1" "$3" python3 tests/typstindex.py \
+      "$CAPTURE_ROOT/m100-$1/typst-order.pdf" tests/typst-order.tsv \
+      "M100 T4 plant $1" "Index" "$M100_FOOTER"
+  }
+
+  # The passing control: the copy machinery with nothing planted.
+  m100_tree clean
+  ( cd "$M100W/clean" && quarto render typst-order.qmd --to typst ) > "$WORK/m100-clean.log" 2>&1 \
+    || { tail -20 "$WORK/m100-clean.log" >&2; fail "M100 T4 self-test: the fixture failed to render through the unplanted copy"; }
+  capture "$M100W/clean/typst-order.qmd" typst "m100-clean"
+  python3 tests/typstindex.py "$CAPTURE_ROOT/m100-clean/typst-order.pdf" \
+    tests/typst-order.tsv "M100 T4 control" "Index" "$M100_FOOTER" \
+    || fail "M100 T4 self-test: the check is red on an unplanted copy, so a red below would be the copy and not the plant"
+
+  # Order. Locators in physical page order, class and value ignored.
+  m100_plant physical 's{  found = found\.sorted\(key: f => f\.value\)\n  found = found\.sorted\(key: f => f\.class\)\n}{}' \
+    'thyme\ti@35, i–iii@36'
+  # Each adjacent pair of classes in the other order.
+  m100_plant lower-upper-roman 's{"i": 0, "I": 1,}{"i": 1, "I": 0,}' 'ash\tIII@1, ii@3'
+  m100_plant roman-arabic 's{"I": 1, "1": 2,}{"I": 2, "1": 1,}' 'beech\t3@2, II@4'
+  m100_plant arabic-letters 's{"1": 2, "a": 3,}{"1": 3, "a": 2,}' 'cedar\tb@5, 1@10'
+  m100_plant lower-upper-letters 's{"a": 3, "A": 4\)}{"a": 4, "A": 3)}' 'dogwood\tD@6, c@8'
+  m100_plant letters-other 's{"A": 4\)}{"A": 6)}' 'elder\tβ@7, A@9'
+  # A numbering function counted as arabic, and a page with no numbering as
+  # the class other.
+  m100_plant function-arabic 's{\(5, counter\(page\)\.at\(loc\)\.first\(\)\)}{(2, counter(page).at(loc).first())}' \
+    'fig\tf2@11, 40@12'
+  m100_plant none-other 's{\(2, loc\.page\(\)\)}{(5, loc.page())}' 'gorse\t40@12, 13@13'
+  # The value left out of the order.
+  m100_plant novalue 's{  found = found\.sorted\(key: f => f\.value\)\n}{}' 'hazel\t3@2, 1@10'
+  # The physical tiebreak reversed.
+  m100_plant reversed-page 's{sorted\(key: f => f\.start\.page\(\)\)}{sorted(key: f => -f.start.page())}' \
+    'iris\t(2)@15, 2@14'
+  # A range before a single mark that opens on its page.
+  m100_plant range-first 's{sorted\(key: f => f\.stop\.page\(\)\)}{sorted(key: f => -f.stop.page())}' \
+    'juniper\t4–i@16, 4@16'
+
+  # Span. The span tested by physical page, the M099 rule.
+  m100_plant physical-span 's{f\.class != r\.class or f\.value < r\.value or f\.value > r\.high}{f.start.page() < r.start.page() or f.start.page() > r.stop.page()}' \
+    'kale\t2–4@17, 3@2'
+  # A span without its opening value, and without its closing value.
+  m100_plant span-open 's{f\.value < r\.value}{f.value <= r.value}' 'lime\t5–7@20, 5@26'
+  m100_plant span-close 's{f\.value > r\.high\)}{f.value >= r.high)}' 'lime\t5–7@20, 7*@28'
+  # A spanned principal mark handing its bold to the range.
+  m100_plant spanned-bold 's{(  let ranges = found\.filter\(f => f\.spans\)\n)}{  found = found.map(r => { let r = r; if r.spans and found.any(f => f.single and f.bold and f.class == r.class and f.value >= r.value and f.value <= r.high) { r.bold = true }; r })\n$1}' \
+    'lime\t5–7*@20'
+  # A range whose two ends print one text kept, in a span, as a range.
+  m100_plant one-text-kept 's{found\.filter\(f => not f\.single or }{found.filter(f => f.start.page() != f.stop.page() or }' \
+    'maple\t1–3@22, 2@29'
+  # A range whose closing value is lower spanning the values between its ends.
+  m100_plant reversed-span 's{high > value\)\)(.*?)f\.value < r\.value or f\.value > r\.high}{high != value))$1f.value < calc.min(r.value, r.high) or f.value > calc.max(r.value, r.high)}s' \
+    'oak\t6–2@27\t'
+  # A range whose two ends differ in class spanning the values of its opening.
+  m100_plant mixed-class 's{high-class == class and }{}' 'pine\t2–e@23\t'
+  # A range that spans values removing another such range.
+  m100_plant range-drops-range 's{found\.filter\(f => not f\.single or ranges\.all\(r => }{found.filter(f => (not f.single and not f.spans) or ranges.all(r => r == f or }' \
+    'quince\t1–6@22\t'
+  # A range whose two ends have one value spanning that value.
+  m100_plant equal-span 's{high > value\)\)}{high >= value))}' 'rowan\t2–(2)@14\t'
+
+  # Merge. Linked to the first in order, not the earliest page; placed at the
+  # earliest page, not the first in order; bold from the first mark alone.
+  m100_plant first-link 's{\n      if f\.start\.page\(\) < kept\.start\.page\(\) \{ kept\.start = f\.start \}}{}' \
+    'sage\ti*@36, 2@33'
+  m100_plant earliest-place 's{if f\.start\.page\(\) < kept\.start\.page\(\) \{ kept\.start = f\.start \}}{if f.start.page() < kept.start.page() { kept.start = f.start; let _ = merged.remove(at); merged.push(kept); continue }}' \
+    'sage\t2@33, i*@35'
+  m100_plant first-bold 's{kept\.bold = kept\.bold or f\.bold}{kept.bold = kept.bold}' 'sage\ti@35, 2@33'
+  # The merge run before the spanned marks are dropped, the order the M099
+  # claim audit found losing a later locator with a spanned first one: the
+  # lower-letters `i` of thyme merges into the spanned lower-roman `i`.
+  m100_plant merge-first 's{  let ranges = found\.filter\(f => f\.spans\)\n  found = found\.filter\((.*?)\)\n(  let merged = \(\)\n.*?\n  \}\n)}{$2  let ranges = found.filter(f => f.spans)\n  merged = merged.filter($1)\n}s' \
+    'thyme\ti–iii@36\t'
+
+  # The version matrix's reading over the physical-order plant: red too.
+  m098_red m100-physical-pages "(0, 'thyme, i, i–iii')" python3 tests/typstindex.py pages \
+    "$CAPTURE_ROOT/m100-physical/typst-order.pdf" tests/typst-order.tsv \
+    "M100 T4 plant physical (pages)" "Index" "$M100_FOOTER"
+
+  pass "M100 T4 self-test: each AC1 order, AC2 span and AC2 merge clause is planted on its own and shown red with the row that clause decides, and an unplanted copy stays green"
 fi
 
 # ---------------------------------------------------------------------------

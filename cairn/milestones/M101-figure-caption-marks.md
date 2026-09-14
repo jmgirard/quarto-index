@@ -218,7 +218,7 @@ nine, ranked most severe first. Dispositions are set at the merge gate.
   (`marks.lua:647`). Quarto gives the shortcode in the caption and in the alt
   copy two different custom ids, so the Lua equality fails. The mark files
   twice, one HTML link names no element, and a range opened there reports
-  "already open". Confirmed at review in a scratch render on Quarto 1.10.18.
+  "already open". Reproduced at review in a scratch render on Quarto 1.10.18.
   `site/syntax.qmd` and `CHANGELOG.md` state the rule with no condition.
 - F2: in that case the empty span that takes a moved alt-text id is dropped
   by Quarto's figure renderer (`html.lua:685`, `latex.lua:410`), so the link

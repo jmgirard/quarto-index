@@ -91,12 +91,12 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 
 ## Coverage
 
-- AC1 → T1, T2, T4, T7
-- AC2 → T1, T3, T4, T5, T7
+- AC1 → T1, T2, T4, T7, T11
+- AC2 → T1, T3, T4, T5, T7, T10
 - AC3 → T6, T7
 - AC4 → T7
 - AC5 → T7
-- AC6 → T8
+- AC6 → T8, T9
 
 ## Tasks
 
@@ -146,6 +146,15 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       `tests/run-tests.sh --self-test`, then dispatch the matrix on the branch.
 - [x] T8: Update `site/typst.qmd` (:38), `cairn/DESIGN.md` (:437), `CHANGELOG.md`,
       and item 4 of `site/back-end-differences.qmd` (:35).
+- [ ] T9: State the one-text range as a single mark, the span's included
+      ends and the merge placement in `cairn/DESIGN.md` and `site/typst.qmd`,
+      with the order tiebreak and unremoved spanning ranges. Remove the stale
+      span sentence in `CHANGELOG.md` and correct the book fixture's comment.
+- [x] T10: Add `willow` to `examples/typst-order.qmd`: a range on pages 21 to
+      32 and a mark on page 22 whose value the range does not span. Add its row
+      and a plant of the physical span within one class.
+- [ ] T11: Sort a single mark before a range that closes on its page, with a
+      `vetch` shape on page 37 (a range around a counter update) and a plant.
 
 ## Work log
 
@@ -170,6 +179,8 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - claim audit: 230 claims read, 4 corrected — site/typst.qmd, CHANGELOG.md, examples/typst-order.qmd, tests/run-tests.sh
 - 2026-09-14: dispatched matrix run 34875703808 at aa7ae0b green on all legs, and typst-order read green on the floor, pinned and release legs (AC5). Full `tests/run-tests.sh --self-test` passed at aa7ae0b (1667 checks). T1-T8 ticked, and status set to review.
 - 2026-09-14: /milestone-review returned to in-progress, defect return 1: AC6 failed. `cairn/DESIGN.md` says "No range is dropped", but a one-text range is a single mark a span removes. `site/typst.qmd` Locators omits that a merged locator prints at the place of the first in AC1 order. AC1-AC5 verified at 3288c50. Review F1, F2, F4, F5 and F7-F11 carried to the next round untriaged.
+- 2026-09-14: /milestone-implement resumed. Question gate took review F1 (fixture gap, T10), F7 (single mark before a same-page range, T11) and F2, F4, F5, F6, F10 (T9). F8 rejected: the start-page sort changes no output. F11 rejected: wrap width is style. F9 needs no change: the `earliest-place` plant already shows sage red at the later place.
+- 2026-09-14: T10 added `willow` (range pages 21 to 32, ar 7 to 8, a mark ar 1 on page 22) to `examples/typst-order.qmd`, its row to `tests/typst-order.tsv` and the suite pin, and the `physical-span-class` plant. Scratch render: 42 index lines match in both readings, and the plant is red on `willow\t7–8@21\t`.
 
 ## Decisions
 

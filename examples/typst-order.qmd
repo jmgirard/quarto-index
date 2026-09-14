@@ -276,6 +276,8 @@ The pattern is `1` and the counter is 7.
 
 The range of `lime` closes here: [lime]{.index range="close"}.
 
+A range that spans the values 7 and 8 opens here: [willow]{.index range="open"}.
+
 ```{=typst}
 #set page(numbering: "1")
 #counter(page).update(1)
@@ -288,6 +290,9 @@ The pattern is `1` and the counter is 1.
 A range opens here: [maple]{.index range="open"}.
 
 The first range of `quince` opens here: [quince]{.index range="open"}.
+
+A mark on a page inside the range of `willow`, on a value the range does not
+span: [willow]{.index}.
 
 ```{=typst}
 #set page(numbering: "1")
@@ -412,6 +417,8 @@ The third range of `quince` opens here, and its values overlap the first's:
 The pattern is `1` and the counter is 8.
 
 The third range of `quince` closes here: [quince]{.index range="close"}.
+
+The range of `willow` closes here: [willow]{.index range="close"}.
 
 ```{=typst}
 #set page(numbering: "1")

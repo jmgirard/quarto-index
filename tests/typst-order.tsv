@@ -80,6 +80,9 @@
 #   thyme    ll 9 `i` on page 35, lr 1 `i` on page 36 and a range lr 1 to lr 3
 #            on pages 36 to 37: the lr `i` is spanned and prints nothing, so
 #            the ll `i` is not merged with it and prints
+#   willow   a range ar 7 to ar 8, pages 21 to 32, spans 7 and 8; ar 1 on
+#            page 22 lies inside the range's pages and is not spanned, so it
+#            prints: 1 first, by value
 group	A
 entry	0	ash	ii@3, III@1
 group	B
@@ -120,3 +123,5 @@ group	S
 entry	0	sage	i*@35, 2@33
 group	T
 entry	0	thyme	i–iii@36, i@35
+group	W
+entry	0	willow	1@22, 7–8@21

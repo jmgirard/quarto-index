@@ -29411,6 +29411,7 @@ entry	0	quince	1–6@22, 2–4@29, 5–8@31
 entry	0	rowan	2–(2)@14, 2@17
 entry	0	sage	i*@35, 2@33
 entry	0	thyme	i–iii@36, i@35
+entry	0	willow	1@22, 7–8@21
 M100ROWS
 
 quarto render examples/typst-order.qmd --to typst > "$WORK/typst-order.log" 2>&1 \
@@ -29508,6 +29509,10 @@ if [ "${1:-}" = "--self-test" ]; then
   # Span. The span tested by physical page, the M099 rule.
   m100_plant physical-span 's{f\.class != r\.class or f\.value < r\.value or f\.value > r\.high}{f.start.page() < r.start.page() or f.start.page() > r.stop.page()}' \
     'kale\t2–4@17, 3@2'
+  # The same physical span held to the range's own class: a mark on a page
+  # inside the range, on a value the range does not span, is dropped.
+  m100_plant physical-span-class 's{f\.class != r\.class or f\.value < r\.value or f\.value > r\.high}{f.class != r.class or f.start.page() < r.start.page() or f.start.page() > r.stop.page()}' \
+    'willow\t7–8@21\t'
   # A span without its opening value, and without its closing value.
   m100_plant span-open 's{f\.value < r\.value}{f.value <= r.value}' 'lime\t5–7@20, 5@26'
   m100_plant span-close 's{f\.value > r\.high\)}{f.value >= r.high)}' 'lime\t5–7@20, 7*@28'

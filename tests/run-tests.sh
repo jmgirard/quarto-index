@@ -22306,9 +22306,10 @@ fi
 # rests on: an artifact carrying an index dumps rows, and an artifact carrying
 # none is a loud failure rather than an empty print two legs would agree about.
 #
-# Four unplanted controls. Three are the artifact shapes the matrix renders: a
-# single document's index, a document declaring two indexes, and a book whose
-# locators point across pages. The fourth is a printed PDF index, which the
+# Five unplanted controls. Four are the artifacts the matrix renders: two
+# single documents' indexes, the second the figure-marks fixture (M101), a
+# document declaring two indexes, and a book whose locators point across
+# pages. The fifth is a printed PDF index, which the
 # matrix stopped rendering at M47; it stays because `indexdump.py`'s `pdf` mode
 # is still the suite's reader of a printed index, and this run's own capture is
 # the unplanted control the mode's planted clauses under `--self-test` are
@@ -22321,6 +22322,12 @@ M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
 M43_BOOK_HTML="$CAPTURE_ROOT/book-html/_book/last.html"
 M43_DEMO_PDF="$CAPTURE_ROOT/demo-pdf/demo.pdf"
+# The figure-marks fixture (M101) is rendered by its own section far below
+# this one, so the matrix's HTML render of it is repeated here for the dump.
+quarto render examples/figure-marks.qmd --to html > "$WORK/m43-figure-marks.log" 2>&1 \
+  || { tail -20 "$WORK/m43-figure-marks.log" >&2; fail "M43-T1: examples/figure-marks.qmd failed to render to HTML"; }
+capture examples/figure-marks.qmd html "m43-figure-marks-html"
+M43_FIGURE_HTML="$CAPTURE_ROOT/m43-figure-marks-html/figure-marks.html"
 
 # The dump's stdout is the comparison's whole subject, so a control asserts it
 # is non-empty AND that it carries both row kinds — a dump of section headers
@@ -22362,7 +22369,8 @@ m43_dump() {
 M43_HTML_FIXTURES="html-index|$CAPTURE_ROOT/html-index/html-index.html|1|examples/html-index.qmd (HTML)
 named-indexes|$M43_NAMED_HTML|2|examples/named-indexes.qmd (HTML)
 demo|$M43_DEMO_HTML|1|examples/demo.qmd (HTML)
-book|$M43_BOOK_HTML|3|examples/book (HTML)"
+book|$M43_BOOK_HTML|3|examples/book (HTML)
+figure-marks|$M43_FIGURE_HTML|1|examples/figure-marks.qmd (HTML)"
 
 M43_COVERED=""
 while IFS='|' read -r m43name m43art m43sections m43label; do
@@ -22375,7 +22383,7 @@ done <<< "$M43_HTML_FIXTURES"
 # Its rows are asserted by `m43_dump` itself and read by nothing else, so
 # the serialization goes nowhere.
 m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > /dev/null
-pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/html-index.qmd and one for examples/demo.qmd, two for the fixture declaring two, three for the book, which declares three and builds each of them — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section each for examples/html-index.qmd, examples/demo.qmd and examples/figure-marks.qmd, two for the fixture declaring two, three for the book, which declares three and builds each of them — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
 
 # M48-AC4 — and those are the fixtures the workflow extracts, no more and no
 # fewer. The names come from the table above rather than being written out

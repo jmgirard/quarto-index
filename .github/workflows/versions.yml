@@ -181,6 +181,12 @@ jobs:
           python3 tests/indexdump.py html examples/book/_book/last.html \
             > "$OUT/book.html.txt"
 
+          # Marks in figure captions and in image alt text (M101), where each
+          # Quarto's own figure handling decides what the filter is handed.
+          quarto render examples/figure-marks.qmd --to html
+          python3 tests/indexdump.py html examples/figure-marks.html \
+            > "$OUT/figure-marks.html.txt"
+
           wc -l "$OUT"/*.txt
 
       - name: Upload this leg's extractions
@@ -235,7 +241,10 @@ jobs:
   # text, or the physical page where a page has no numbering (M099). And that
   # `quarto render --to typst` succeeds on examples/typst-order.qmd and prints
   # its index's text as its manifest states it, each entry's locators in class
-  # and value order (M100). The render alone is
+  # and value order (M100). And that `quarto render --to typst` succeeds on
+  # examples/figure-marks.qmd and prints its index as its manifest states it,
+  # one locator a mark in a figure caption or an image's alt text (M101). The
+  # render alone is
   # not the check: a PDF that typesets at exit 0 while the index prints empty
   # is exactly the break this job exists to catch, and `indexdump.py` is what
   # makes the difference between the two visible.
@@ -459,6 +468,23 @@ jobs:
           python3 tests/typstindex.py pages examples/typst-order.pdf \
             tests/typst-order.tsv 'Typst index in locator order' \
             'Index' '--footer=^\d+$'
+
+      # Marks in figure captions and in image alt text (M101), read on each
+      # leg's Typst: a copied caption files nothing, and a label moved out of
+      # alt text still names the image's page. The fixture's pages carry no
+      # footer.
+      - name: Render examples/figure-marks.qmd to Typst
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/figure-marks.qmd --to typst
+
+      - name: Read the Typst figure-marks index against its manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/typstindex.py pages examples/figure-marks.pdf \
+            tests/figure-marks-typst.tsv 'Typst index of figure marks' 'Index'
 
       - name: Report what this leg extracted
         shell: bash

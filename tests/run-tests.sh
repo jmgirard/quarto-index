@@ -29196,6 +29196,7 @@ rm -rf "$M099F"
 m099_function_doc "$M099F"
 ( cd "$M099F" && quarto render function.qmd --to typst ) > "$WORK/m099-function.log" 2>&1 \
   || { tail -20 "$WORK/m099-function.log" >&2; fail "M099 review R1: a document whose page numbering is a Typst function failed to render (IP2)"; }
+capture "$M099F/function.qmd" typst "m099-function"
 python3 tests/typstindex.py "$M099F/function.pdf" "$M099F/function.tsv" \
   "Typst index under a numbering function" "Index" '--footer=^\d+ of \d+$' \
   || fail "M099 review R1: the index under a numbering function does not print what the footer prints (the report is above)"
@@ -29346,8 +29347,14 @@ if [ "${1:-}" = "--self-test" ]; then
     local filter="$dir/_extensions/index/modules/typst.lua"
     perl -0777 -pi -e "BEGIN { \$n = 0 } \$n += $2; END { die \"the substitution matched nothing\n\" unless \$n }" "$filter" \
       || fail "M099 review R1 self-test ($1): the substitution aimed at typst.lua matched nothing"
-    m098_red "m099-function-$1" 'missing argument: total' \
-      bash -c "cd '$dir' && quarto render function.qmd --to typst"
+    local rc
+    ( cd "$dir" && quarto render function.qmd --to typst ) > "$WORK/m099-function-$1.log" 2>&1 && rc=0 || rc=$?
+    capture "$dir/function.qmd" typst "m099-function-$1"
+    [ "$rc" -ne 0 ] \
+      || fail "M099 review R1 self-test ($1): the document rendered through the planted copy, so the check's green says nothing about that clause"
+    grep -qF 'missing argument: total' "$WORK/m099-function-$1.log" \
+      || { tail -20 "$WORK/m099-function-$1.log" >&2; fail "M099 review R1 self-test ($1): the render failed, but not with <<missing argument: total>>"; }
+    pass "M099 review R1 self-test ($1): the render is red on <<missing argument: total>>"
   }
   m099_function_red onevalue 's{type\(pattern\) != str or }{type(pattern) == str and }'
   m099_function_red locationlink 's{link\(f\.start\.position\(\), }{link(f.start, }'

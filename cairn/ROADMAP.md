@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-14 (M098 archived, M095 row pruned. No lesson added, LESSONS at its byte budget. Validate green.)_
+_Last hygiene check: 2026-09-14 (M099 archived, M096 row pruned. KI298 added. No lesson added, LESSONS at its byte budget. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M099 | A Typst locator prints the number its page shows | review | — | normal | milestones/M099-typst-locator-numbering.md |
+| M099 | A Typst locator prints the number its page shows | done | — | normal | milestones/archive/M099-typst-locator-numbering.md |
 | M098 | A Typst render prints the index | done | M097 | normal | milestones/archive/M098-typst-back-end.md |
 | M097 | The extension requires Quarto 1.5 | done | — | normal | milestones/archive/M097-quarto-floor-1-5.md |
-| M096 | The pre-release sweep fails on the defects it names, from one definition | done | — | normal | milestones/archive/M096-prerelease-sweep-plants.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

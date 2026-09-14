@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M101: A mark in a figure caption or an image's alt text files one locator
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the locators and the reports every back-end gives an author
-- **Branch/PR:** —
+- **Branch/PR:** `m101-figure-caption-marks`
 
 ## Goal
 

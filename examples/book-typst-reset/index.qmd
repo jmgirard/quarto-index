@@ -1,0 +1,10 @@
+```{=typst}
+#set page(numbering: "i")
+#counter(page).update(1)
+```
+
+# Front matter
+
+The pattern is `i` and the page counter is 1, so this page prints `i`.
+
+A lower roman mark: [yam]{.index}.

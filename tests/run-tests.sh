@@ -29733,6 +29733,53 @@ python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC5 (placement)" \
   || fail "M098-AC5: an index of the Typst book is not where last.qmd places it (the report is above)"
 pass "M098-AC5: a Typst render of examples/book/ is one PDF printing its three indexes under their declared titles, main and people at the markers in last.qmd and places after them, each entry with the page locators the hand-derived manifest states, and Shared Term on a page of each of its three chapters"
 
+# M100-AC3 — a Typst book whose chapters reset the page counter. The manifest,
+# tests/typst-book-reset.tsv, is derived by hand from the chapter sources and
+# states no links, since the book template's own pages leave a mark's physical
+# page out of those sources. So it is read with `typstindex.py pages`. The
+# yam range crosses from the second chapter to the third, and a mark on a
+# value it spans, after it closes, prints nothing.
+M100_BOOK_DIR="examples/book-typst-reset"
+for needle in '#set page(numbering: "i")' '#set page(numbering: "1")' '#counter(page).update(1)'; do
+  grep -qF -- "$needle" "$M100_BOOK_DIR/index.qmd" "$M100_BOOK_DIR/two.qmd" "$M100_BOOK_DIR/three.qmd" \
+    || fail "M100-AC3: no chapter of $M100_BOOK_DIR carries <<$needle>>, so the numbering it sets is no longer read"
+done
+grep -qF -- '#counter(page).update(2)' "$M100_BOOK_DIR/three.qmd" \
+  || fail "M100-AC3: $M100_BOOK_DIR/three.qmd no longer updates the counter after the range closes, so no page outside the range prints a value inside it"
+grep -qxF -- "$(printf 'entry\t0\tyam\ti, 1, 2–3')" tests/typst-book-reset.tsv \
+  || fail "M100-AC3: tests/typst-book-reset.tsv no longer carries the yam row, so the case it states is no longer read"
+m100_book_read() {   # <project dir> <slug> <label>
+  ( cd "$1" && quarto render --to typst ) > "$WORK/$2.log" 2>&1 \
+    || { tail -30 "$WORK/$2.log" >&2; fail "M100-AC3: $1 failed to render to Typst"; }
+  capture --project "$1" typst "$2"
+  local pdfs
+  pdfs=$(find "$CAPTURE_ROOT/$2/_book" -maxdepth 1 -name '*.pdf')
+  [ "$(printf '%s\n' "$pdfs" | grep -c .)" = "1" ] \
+    || fail "M100-AC3: the Typst render of $1 left <<$pdfs>> under $CAPTURE_ROOT/$2/_book, not one PDF"
+  python3 tests/typstindex.py pages "$pdfs" tests/typst-book-reset.tsv "$3" "Index"
+}
+m100_book_read "$M100_BOOK_DIR" "book-typst-reset" "M100-AC3 (reset book)" \
+  || fail "M100-AC3: the index of the reset book does not match tests/typst-book-reset.tsv (the report is above)"
+m098_no_typst_warning "$WORK/book-typst-reset.log" "M100-AC3"
+pass "M100-AC3: a Typst render of examples/book-typst-reset/ prints yam's locators in class and value order, its range across the second and third chapters spanning values 2 and 3, and no locator for a mark on value 2 after that range closes"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # M100-AC3 self-test: the M099 rule, a span by physical page, planted in a
+  # copy of the book. The mark on value 2 after the range then prints.
+  M100B="$WORK/m100book"
+  rm -rf "$M100B"
+  mkdir -p "$M100B"
+  cp -R "$M100_BOOK_DIR" "$M100B/book"
+  rm -rf "$M100B/book/_extensions" "$M100B/book/_book" "$M100B/book/.quarto"
+  mkdir -p "$M100B/book/_extensions"
+  cp -R "$QI_EXT_DIR" "$M100B/book/_extensions/index"
+  perl -0777 -pi -e 'BEGIN { $n = 0 } $n += s{f\.class != r\.class or f\.value < r\.value or f\.value > r\.high}{f.start.page() < r.start.page() or f.start.page() > r.stop.page()}; END { die "the substitution matched nothing\n" unless $n }' \
+    "$M100B/book/_extensions/index/modules/typst.lua" \
+    || fail "M100-AC3 self-test: the substitution aimed at typst.lua matched nothing"
+  m098_red m100-book-physical "(0, 'yam, i, 1, 2–3, 2')" \
+    m100_book_read "$M100B/book" "m100-book-physical" "M100-AC3 plant physical-span"
+fi
+
 for fixture in escaping xref-escaping sort-escaping unicode; do
   quarto render "examples/$fixture.qmd" --to typst > "$WORK/$fixture-typst.log" 2>&1 \
     || { tail -40 "$WORK/$fixture-typst.log" >&2; fail "M098-AC8: examples/$fixture.qmd failed to render to Typst"; }

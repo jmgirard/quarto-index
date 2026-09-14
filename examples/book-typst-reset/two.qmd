@@ -1,0 +1,24 @@
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(1)
+```
+
+# Second chapter
+
+The pattern is `1` and the page counter is reset to 1.
+
+An arabic mark on value 1: [yam]{.index}.
+
+{{< pagebreak >}}
+
+The page counter is 2.
+
+A range opens here, on value 2, and closes in the next chapter:
+[yam]{.index range="open"}.
+
+{{< pagebreak >}}
+
+The page counter is 3.
+
+A mark on value 3, before a mark on value 1 in the next chapter:
+[zinnia]{.index}.

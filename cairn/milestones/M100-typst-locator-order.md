@@ -166,6 +166,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: user chose at a chip to push the branch before review and dispatch the version matrix on it (T7, AC5), over leaving the push to review.
 - 2026-09-14: full `tests/run-tests.sh --self-test` passed at 0b8be1c in a scratch worktree (1667 checks). The later commits change only claims and fixture prose, whose checks were rerun directly.
 - 2026-09-14: matrix run 34875158566 at 4b5d330: typst-order read green on the pinned and release legs, but failed to compile on the 1.5.52 floor leg with `invalid numbering pattern` at `#set page(numbering: "α")`. Page 7 now uses `*` (prints `†`). Rendered and read green locally, and the letters-other plant is red on `elder\t†@7, A@9`.
+- 2026-09-14: matrix run 34875436802 at 4015196: the floor leg compiled typst-order, but its Typst set `fig` with the `ﬁ` ligature, and pdftotext read `ﬁg, 40, f2`. That was the one row that differed. Renamed the term `fennel`. The same run's floor HTML render failed on `examples/book/_book/last.html` having no index section, which passed in push run 34875437053 at the same commit.
 - claim audit: 230 claims read, 4 corrected — site/typst.qmd, CHANGELOG.md, examples/typst-order.qmd, tests/run-tests.sh
 
 ## Decisions

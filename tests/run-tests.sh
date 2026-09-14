@@ -29396,7 +29396,7 @@ entry	0	beech	II@4, 3@2
 entry	0	cedar	1@10, b@5
 entry	0	dogwood	c@8, D@6
 entry	0	elder	A@9, †@7
-entry	0	fig	40@12, f2@11
+entry	0	fennel	40@12, f2@11
 entry	0	gorse	13@13, 40@12
 entry	0	hazel	1@10, 3@2
 entry	0	iris	2@14, (2)@15
@@ -29494,7 +29494,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # A numbering function counted as arabic, and a page with no numbering as
   # the class other.
   m100_plant function-arabic 's{\(5, counter\(page\)\.at\(loc\)\.first\(\)\)}{(2, counter(page).at(loc).first())}' \
-    'fig\tf2@11, 40@12'
+    'fennel\tf2@11, 40@12'
   m100_plant none-other 's{\(2, loc\.page\(\)\)}{(5, loc.page())}' 'gorse\t40@12, 13@13'
   # The value left out of the order.
   m100_plant novalue 's{  found = found\.sorted\(key: f => f\.value\)\n}{}' 'hazel\t3@2, 1@10'

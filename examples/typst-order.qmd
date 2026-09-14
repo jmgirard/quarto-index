@@ -147,7 +147,7 @@ The second mark of `hazel`, after the reset: [hazel]{.index}.
 The numbering is a function, and the counter is 2, so the page prints `f2`.
 
 A page under a numbering function, marked before an arabic page with a higher
-value: [fig]{.index}.
+value: [fennel]{.index}.
 
 ```{=typst}
 #set page(numbering: "1")
@@ -158,7 +158,7 @@ value: [fig]{.index}.
 
 The pattern is `1` and the counter is 40.
 
-The second mark of `fig`: [fig]{.index}.
+The second mark of `fennel`: [fennel]{.index}.
 
 An arabic value higher than the physical page of the page with no numbering
 after it: [gorse]{.index}.

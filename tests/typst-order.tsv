@@ -50,7 +50,7 @@
 #   cedar    ll 2 on page 5, ar 1 on page 10: arabic first
 #   dogwood  ul 4 on page 6, ll 3 on page 8: lower letters first
 #   elder    ot 2 on page 7, ul 1 on page 9: upper letters first
-#   fig      ot 2 on page 11, ar 40 on page 12: arabic first
+#   fennel   ot 2 on page 11, ar 40 on page 12: arabic first
 #   gorse    ar 40 on page 12, ar 13 on page 13 (no numbering): 13 first
 #   hazel    ar 3 on page 2, ar 1 on page 10 after a reset: 1 first
 #   iris     ar 2 printing `2` on page 14 and `(2)` on page 15: two texts,
@@ -91,7 +91,7 @@ entry	0	dogwood	c@8, D@6
 group	E
 entry	0	elder	A@9, †@7
 group	F
-entry	0	fig	40@12, f2@11
+entry	0	fennel	40@12, f2@11
 group	G
 entry	0	gorse	13@13, 40@12
 group	H

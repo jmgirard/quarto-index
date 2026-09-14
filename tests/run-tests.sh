@@ -30167,7 +30167,7 @@ cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
 new back-end	A new back-end for Typst.
 what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package
 ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep as they are written.
-locators	A principal mention's page number is set in bold, a range prints its first and last pages, a page a range spans prints no page number of its own, and each page number links to its page.
+locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
 words	The see and see-also words follow `lang:` and `index-labels:`.
 books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
 M098CHANGE
@@ -30409,10 +30409,13 @@ symbol	The first counting symbol of the page numbering pattern sets the kind, so
 none and function	A page with no numbering counts as arabic, with its physical page as its number, and a numbering function counts as other.
 value	Numbers of one kind are ordered by value, the page counter's value or the physical page where a page has no numbering, and then by page.
 reset	So after a page counter reset, `1` comes before a `3` from an earlier page.
-span	A range whose two ends print different numbers of one kind, with a higher closing number, spans the numbers from its opening number to its closing number.
+span	A range whose two ends print different numbers of one kind, with a higher closing number, spans the numbers from its opening number to its closing number, both included.
 one text	A range whose two ends print the same text counts as a single mark, and a span removes it the same way.
-no span	Any other range spans nothing and is never removed.
+no span	Any other range spans nothing.
+range kept	A span never removes a range whose two ends print different text.
 merge	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
+merge place	It prints at the place of the first of them in the order below.
+tiebreak	Where two locators open on one page, the one that closes on the earlier page comes first, and a single mark comes before a range that closes on its page.
 M100PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m100-typst-claims.txt" \
   || fail "M100-AC6: site/typst.qmd does not state the Typst order and span rules (its own FAIL line is above)"
@@ -30430,13 +30433,19 @@ python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m100-changelog-claims.txt"
 M100_DESIGN=$(tr -s ' \n' '  ' < cairn/DESIGN.md)
 for phrase in 'order an entry'"'"'s locators by the class of their opening page'"'"'s numbering' \
     'then by the page counter'"'"'s value' \
-    'A range whose ends have one class and a greater closing value spans the values between its ends' \
-    'linked to the earliest opening page'; do
+    'A range whose ends have one class and a greater closing value spans the values between its ends, both included' \
+    'A range whose two ends print one text counts as a single mark' \
+    'a single mark before a range' \
+    'No span drops a range whose ends print different text' \
+    'at the first in that order, linked to the earliest opening page, bold where any of them is principal'; do
   printf '%s' "$M100_DESIGN" | grep -qF -- "$phrase" \
     || fail "M100-AC6: the Typst paragraph of cairn/DESIGN.md no longer states <<$phrase>>"
 done
 if printf '%s' "$M100_DESIGN" | grep -qF -- 'drop a single mark on a page a range of its entry spans'; then
   fail "M100-AC6: cairn/DESIGN.md still states a span by physical page"
+fi
+if printf '%s' "$M100_DESIGN" | grep -qF -- 'No range is dropped'; then
+  fail "M100-AC6: cairn/DESIGN.md still states that no range is dropped, but a range whose two ends print one text is a single mark a span drops"
 fi
 pass "M100-AC6: site/typst.qmd, CHANGELOG.md and the Typst paragraph of cairn/DESIGN.md state the class, value and page order and the value span, and no page a reader meets says Typst page numbers are in page order"
 

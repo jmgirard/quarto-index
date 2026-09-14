@@ -8,8 +8,7 @@
   each declared index that holds at least one mark, with page locators, in two
   columns, and needs no Typst package. Entries are ordered and grouped by letter as in HTML, and
   nest as deep as they are written. A principal mention's page number is set
-  in bold, a range prints its first and last pages, a page a range spans
-  prints no page number of its own, and each page number
+  in bold, a range prints its first and last pages, and each page number
   links to its page. A page number prints as the page's own numbering prints
   it, so a page numbering pattern with two counters, such as `1 / 1`,
   prints `5 / 30`. Page numbers that print the same text, as they can after a

@@ -456,11 +456,14 @@ Three back-ends ship:
   their opening page's numbering (lower roman, upper roman, arabic, lower
   letters, upper letters, other, as makeindex orders them, with no numbering
   counted arabic), then by the page counter's value (the physical page where there is
-  no numbering), then by opening and closing physical page (M100). A range
-  whose ends have one class and a greater closing value spans the values
-  between its ends, and a single mark of that class on a spanned value is
-  dropped. No range is dropped. Then they merge the locators left that print
-  one text at the first in that order, linked to the earliest opening page,
+  no numbering), then by opening and closing physical page, a single mark
+  before a range (M100). A range whose two ends print one text counts as a
+  single mark. A range whose ends have one class and a greater closing value
+  spans the values between its ends, both included, and a single mark of that
+  class on a spanned value is dropped. No span drops a range whose ends print
+  different text. Then they merge the locators left that print one text at
+  the first in that order, linked to the earliest opening page, bold where
+  any of them is principal,
   print a range from its opening page to its closing page, set a principal locator in
   bold and link each locator to its mark's position (a position, not a
   location, since M099 review R1: a link to a location fails to compile

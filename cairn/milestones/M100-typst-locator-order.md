@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M100: A Typst index orders locators by the number the page prints
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
@@ -168,6 +168,8 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - claim audit: 250 claims read, 5 corrected — examples/typst-order.qmd, tests/typst-order.tsv, _extensions/index/modules/typst.lua, tests/run-tests.sh
 - 2026-09-14: the claim audit also found "Where both ends of a range are on one page, it prints that page alone" in `site/typst.qmd` false for vetch. It and its M098-AC7 claim row now add "with no page counter update between them". After the corrections, the order fixture rendered green in both readings (44 lines), and the M098 and M100 claim files for `site/typst.qmd` passed (34 and 13 claims).
 - 2026-09-14: compressed Tasks (T1 shapes, T4 plants) to pointers at the manifest comment and the suite block, after the plan-owned body reached 158 lines.
+- 2026-09-14: the claim auditor re-read the six corrected claims at 8c9c552, and all hold.
+- 2026-09-14: pushed the branch and dispatched matrix run 34882305528 at 8c9c552, because the order fixture changed. It concluded success on all 8 jobs, the floor, pinned and release pdf legs included (AC5). T1-T11 ticked, and status set to review.
 
 ## Decisions
 

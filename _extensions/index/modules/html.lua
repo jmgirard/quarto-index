@@ -622,6 +622,8 @@ end
 local function assign_anchors(doc, taken)
   local number = 0
   local keeper = keepable_author_ids(doc, taken)
+  -- The id each mark is left carrying, for the `Image` function below.
+  local anchored = {}
   return doc:walk({
     Span = function(span)
       local pending = span.attributes[qi_core.HTML_PENDING_ATTR]
@@ -670,7 +672,33 @@ local function assign_anchors(doc, taken)
       if record and not record.anchorless then
         record.anchor = span.identifier
       end
+      anchored[span.identifier] = true
       return span
+    end,
+    -- The HTML and EPUB writers print an image's alt text as a string, so an
+    -- id on a mark there names no element of the page and its locator links
+    -- to nothing. Each such id moves to an empty span just after the image,
+    -- which is in the same block, and the mark's text stays in the alt text.
+    -- The walk is bottom-up, so the Span function above has already given
+    -- each mark its id. The Typst back-end moves its labels the same way
+    -- (`assign_labels`).
+    Image = function(image)
+      local moved = {}
+      image.caption = image.caption:walk({
+        Span = function(span)
+          if span.identifier == "" or not anchored[span.identifier] then
+            return nil
+          end
+          moved[#moved + 1] = pandoc.Span({}, pandoc.Attr(span.identifier))
+          span.identifier = ""
+          return span
+        end,
+      })
+      if #moved == 0 then
+        return nil
+      end
+      table.insert(moved, 1, image)
+      return moved
     end,
   })
 end

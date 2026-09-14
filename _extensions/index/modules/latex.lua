@@ -381,6 +381,49 @@ local function fold_xrefs(seen)
   return table.concat(parts, "; ")
 end
 
+-- Pandoc's LaTeX writer prints an image's alt text as the `alt=` key of
+-- `\includegraphics` and drops any raw LaTeX in it, so the `\index` command a
+-- mark there emits was lost with its locator. Each command this back-end wrote
+-- moves to just after the image, which is on the same page. Raw LaTeX an
+-- author wrote in the alt text is left where it is: the writer drops it with
+-- or without this pass, and moving it would print it.
+local function move_alt_commands(doc)
+  -- The commands a mark emits: its `\index`, and the registration a
+  -- principal mark or a range end adds beside it.
+  local heads = { "\\index", "\\" .. qi_core.REGISTER_COMMAND .. "{",
+                  "\\" .. qi_core.RANGEFROM_COMMAND .. "{",
+                  "\\" .. qi_core.RANGEEND_COMMAND .. "{" }
+  local function ours(raw)
+    if raw.format ~= "latex" then
+      return false
+    end
+    for _, head in ipairs(heads) do
+      if raw.text:sub(1, #head) == head then
+        return true
+      end
+    end
+    return false
+  end
+  return doc:walk({
+    Image = function(image)
+      local moved = {}
+      image.caption = image.caption:walk({
+        RawInline = function(raw)
+          if ours(raw) then
+            moved[#moved + 1] = raw
+            return {}
+          end
+        end,
+      })
+      if #moved == 0 then
+        return nil
+      end
+      table.insert(moved, 1, image)
+      return moved
+    end,
+  })
+end
+
 -- Every mutable cell this module owns, back to the value its declaration
 -- gives, for the reason marks.lua's own `reset` states: `require` caches a
 -- module for the life of the Lua state, so nothing else returns these to their
@@ -412,5 +455,6 @@ M["record_principal"] = record_principal
 M["principal_ordinal"] = principal_ordinal
 M["principal_keys"] = principal_keys
 M["fold_xrefs"] = fold_xrefs
+M["move_alt_commands"] = move_alt_commands
 
 return M

@@ -113,7 +113,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       figure's caption. Follow `declass_copy` (`passes.lua:89`). Apply the
       same helper to the blocks the recovery reader walks
       (`_extensions/index/modules/book.lua:842`).
-- [ ] T3: Move a mark's link target out of image alt text to just after the
+- [x] T3: Move a mark's link target out of image alt text to just after the
       image, as `assign_labels` does for Typst (`typst.lua:297`). HTML and EPUB
       get an empty span carrying the id, in `assign_anchors` (`html.lua:622`).
       LaTeX gets the `\index` command, in `latex.lua`.
@@ -143,6 +143,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: implement started on `m101-figure-caption-marks`; question gate skipped, nothing left open.
 - 2026-09-14: T1 done. The figure div's image carries a trailing backslash: alone in its paragraph, Pandoc makes it a nested figure, whose LaTeX fails to compile and whose alt text is a caption copy. The alt checks live in `tests/figuremarks.py`. Red on main: the log check in all four formats; the HTML and EPUB manifests (alder and cedar file 2); the HTML and EPUB link checks; all six `after` checks; the PDF manifest (no dogwood, elder or hazel line). Green on main: the `alt` checks, the two locator roles, both Typst readings.
 - 2026-09-14: T2 done. `declass_caption_copies` lives in `marks.lua`, the one module both `passes.lua` and `book.lua` load. It compares the image's alt inlines with the caption's inlines by Lua equality. The M101 section's log checks and the HTML and EPUB manifests went green. The full suite runs after T3, whose checks the M101 section still shows red.
+- 2026-09-14: T3 done. `assign_anchors` moves each mark id out of an image's alt text to an empty span after the image. `move_alt_commands` in `latex.lua` moves the `\index` and registration commands the same way, called from the LaTeX path of `index.lua`. Every check in the M101 section is green on a driver run of that section alone.
 
 ## Decisions
 

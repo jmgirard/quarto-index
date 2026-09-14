@@ -34,7 +34,10 @@ figure caption files one locator, whether or not the figure has an id, and a
 range can open there. A mark in an image's alt text files its locator at the
 image: in HTML and EPUB the locator links to the place just after the image,
 and in PDF and Typst it prints the image's page. The alt text itself is left
-as written.
+as written. One exception: a mark in the caption of a figure with no id whose
+caption also holds a shortcode, such as `{{</* meta title */>}}`, files twice.
+In HTML and EPUB one of its two locators links to no element, and a range
+opened there is reported as already open.
 
 The forms have a page each:
 [sub-entry levels](sub-entry-levels.qmd),

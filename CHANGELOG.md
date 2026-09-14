@@ -44,7 +44,9 @@
 - A mark in a figure caption files one locator in every format, in an HTML
   book as well. Pandoc copies the caption of a figure into the alt text of its
   image, and before this change the copy filed a second locator in HTML and
-  EPUB, and a range opened in the caption was reported as already open.
+  EPUB, and a range opened in the caption was reported as already open. A
+  caption of a figure with no id that also holds a shortcode still files the
+  mark twice.
 - A mark in an image's alt text files its locator at the image. In HTML and
   EPUB the locator links to an empty element just after the image, and in PDF
   the index prints the image's page. Before this change, the HTML and EPUB

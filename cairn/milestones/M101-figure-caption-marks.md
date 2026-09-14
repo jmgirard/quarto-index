@@ -239,3 +239,15 @@ nine, ranked most severe first. Dispositions are set at the merge gate.
 - F9: a heading with an alt-text mark now puts `\index` in its LaTeX short
   title. A probe with a table of contents and running heads printed no extra
   locator.
+
+Dispositions, set by the maintainer at the merge gate on 2026-09-14:
+
+- F1, F2: follow-up. `site/syntax.qmd` and `CHANGELOG.md` now name the
+  shortcode exception, KI299 records it, and a candidate row holds the fix.
+- F3: follow-up. KI300 records the gap, and a candidate row holds it.
+- F4: follow-up. KI301 records the gap, and it shares the F3 candidate row.
+- F5: fixed now. The LaTeX move matches `\index{` and `\index[` only.
+- F6: fixed now. The `passes.lua` header names the caption-copy declass.
+- F7: rejected. It costs run time and changes no result.
+- F8: rejected. The diff did not introduce it, and it happens on main.
+- F9: rejected. The probe showed no defect.

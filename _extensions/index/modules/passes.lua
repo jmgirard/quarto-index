@@ -56,7 +56,7 @@ end
 -- tags every index mark it finds there with META_MARK_ATTR; the emitting pass
 -- reads the tag off.
 --
--- Two other things the same pass does, because they have to happen before any
+-- Three other things the same pass does, because they have to happen before any
 -- pass reads a mark. Its `Span` function discards a META_MARK_ATTR an author
 -- wrote — on any span — since one left in place would file a body mark as a
 -- front-matter one (the HTML_PENDING_ATTR precedent in the emitting pass);
@@ -69,7 +69,10 @@ end
 -- page (the same probe: one `abstract:` mark reached `Span` three times and
 -- its page carried one anchor). The copies are declassed rather than removed,
 -- so nothing about the div but that class changes; a single HTML document has
--- no such div, and no other format has been measured for one.
+-- no such div, and no other format has been measured for one. And in every
+-- format its document function takes the index class and the id off the copy
+-- of a figure's caption that Pandoc puts in the alt text of the figure's image
+-- (`marks.declass_caption_copies`), so a caption mark is read once.
 local function TagSpan(span)
   if span.attributes[qi_core.META_MARK_ATTR] == nil then
     return nil

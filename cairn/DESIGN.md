@@ -1030,6 +1030,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   does not carry. No captured EPUB member carries a literal `<![CDATA[`, so
   nothing is red today; separating the two readings would take a builder that
   knows which of the two it is parsing. — M084 review F3
+- **KI299.** `marks.declass_caption_copies` does not see the alt-text copy of
+  a caption that holds a Quarto shortcode. Quarto gives the shortcode in the
+  caption and in the copy different custom ids, so the two inline lists are
+  not equal. A mark in the caption of such a figure with no id files twice.
+  In HTML the moved id of the copy's mark is dropped with the empty span
+  Quarto's figure renderer discards, so one index link names no element, and
+  a range opened there is reported as already open. The HTML book's recovery
+  route reads the shortcode as source text and files the mark once. Observed
+  on Quarto 1.10.18. — M101 review F1, F2
 
 ### The Typst back-end
 
@@ -1578,6 +1587,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `corpus-xref-escaping.log`, and the zero counts beside it over the book
   logs, would stay green if their manifest row or render were removed. —
   M091 review F1
+- **KI300.** The version matrix shows the move of an alt-text mark's target
+  only on the pinned Quarto for HTML, EPUB and LaTeX. Its HTML step compares
+  each leg's index hrefs to the pinned leg's and never checks that the target
+  id is on the page, and it renders no EPUB or PDF of
+  `examples/figure-marks.qmd`. A floor Quarto that drops the moved span passes
+  the matrix. — M101 review F3
+- **KI301.** Two M101 checks in `tests/run-tests.sh` have no plant under
+  `--self-test`. No plant moves a target into another block to turn the
+  same-block clause of `tests/figuremarks.py after` red. No plant changes the
+  copied alt text to turn the `alts` check red, and that check was green on
+  main. — M101 review F4
 
 ### The repo and its packaging
 

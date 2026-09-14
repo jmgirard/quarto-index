@@ -392,7 +392,8 @@ end
 local function move_alt_commands(doc)
   -- The commands a mark emits: its `\index`, and the registration a
   -- principal mark or a range end adds beside it.
-  local heads = { "\\index", "\\" .. qi_core.REGISTER_COMMAND .. "{",
+  local heads = { "\\index{", "\\index[",
+                  "\\" .. qi_core.REGISTER_COMMAND .. "{",
                   "\\" .. qi_core.RANGEFROM_COMMAND .. "{",
                   "\\" .. qi_core.RANGEEND_COMMAND .. "{" }
   local function ours(raw)

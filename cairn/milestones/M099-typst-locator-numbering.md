@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M099: A Typst locator prints the number its page shows
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -104,25 +104,25 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 
 ## Tasks
 
-- [ ] T1: Teach `tests/typstindex.py` (`parse_entry`, `PAGE_NUMBER` at :92)
+- [x] T1: Teach `tests/typstindex.py` (`parse_entry`, `PAGE_NUMBER` at :92)
       and `tests/pdfindex.py` (`LOCATOR_ONLY` at :73) to read a locator of
       several words and to drop a page footer of several words. Plant one
       multi-word locator and one multi-word footer for each reader, and show
       each plant red on the unchanged reader.
-- [ ] T2: Write `examples/typst-numbering.qmd` with the AC1 numberings, set by
+- [x] T2: Write `examples/typst-numbering.qmd` with the AC1 numberings, set by
       raw `#set page(numbering: ...)` blocks, a raw `#counter(page).update(1)`
       reset, and the AC2 shapes. Explicit page breaks fix the page of each
       mark. Derive the manifests by hand. Take the spacing that pdftotext
       reads from one probe render. Show the final counter arithmetic in the
       manifest comment, and count the index's own pages in it.
-- [ ] T3: Change `qi-index-page` (typst.lua:39). If the pattern names two
+- [x] T3: Change `qi-index-page` (typst.lua:39). If the pattern names two
       counting symbols by Typst's own rule, fill it with both counter values.
       If not, fill it with the page value alone. Render the fixture red
       before the change and green after it.
-- [ ] T4: Change `qi-index-entry` (typst.lua:43) to drop the single marks on
+- [x] T4: Change `qi-index-entry` (typst.lua:43) to drop the single marks on
       pages a range spans on the physical pages, then merge the locators left
       by their printed text. The order stays physical.
-- [ ] T5: In a scratch copy, plant one defect for each AC1 and AC2 clause.
+- [x] T5: In a scratch copy, plant one defect for each AC1 and AC2 clause.
       Show each plant red against the manifests. The plants:
       - a fill that always uses two counters
       - a fill that always uses one counter
@@ -138,12 +138,12 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
       - a span drop that also drops multi-page ranges
       - a merge by counter value
       - a range whose two ends are reordered.
-- [ ] T6: Add the fixture render and both readings to `tests/run-tests.sh`
+- [x] T6: Add the fixture render and both readings to `tests/run-tests.sh`
       beside the M098 section (near :28882). Add a render step and a
       `typstindex.py pages` step to `.github/workflows/versions.yml` (near
       :406). Run the suite with `--self-test`, then dispatch the matrix on the
       branch.
-- [ ] T7: Update the Locators section of `site/typst.qmd` (:38) and
+- [x] T7: Update the Locators section of `site/typst.qmd` (:38) and
       `CHANGELOG.md`. Remove KI292 and KI293 from DESIGN.md Known issues, and
       add an entry for a page numbering set as a Typst function.
 
@@ -167,6 +167,7 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 - re-audit: AC2 (full) — the order sentence, one-page ranges in a span, nested ranges and the lime bullet were unstated or loose. Three plants were missing: end-page inclusion, counter-value merge, reversed ends.
 - re-audit: AC2 (full) — "always prints" was false for merged ranges, and two shapes had no witness: a collapsed range merging with a single mark, and a one-page range in a span. Opening-page inclusion and the span exemption were unplanted. Second line, so the wording went to the user.
 - 2026-09-13: AC2 amended at the mini gate (user chose to narrow). It now states drop-then-merge and puts three range shapes out of scope, which go to the candidate row. It adds the closing-page and opening-page shapes. T4 reworded, T5 gains five plants, and the fern opening-page mark is added.
+- 2026-09-13: criteria reflowed to the 150-line plan-body cap, words unchanged. Suite run 5 green (1630 checks, with --self-test), all 13 M099 plants red as planned. Matrix run 34800224758 green on all legs at 586a6e7. T1-T7 ticked, status review.
 
 ## Decisions
 

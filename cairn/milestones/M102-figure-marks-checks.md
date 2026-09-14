@@ -36,27 +36,27 @@ promised, because an upstream release alone can turn it red (D-025).
 
 ## Acceptance criteria
 
-- [ ] AC1: The `--self-test` run builds an HTML render in which the id that
+- [x] AC1: The `--self-test` run builds an HTML render in which the id that
       image 4's alt-text move gives dogwood sits in a new block after that
       image's paragraph. On that render, `tests/figuremarks.py after` for
       dogwood at image 4 fails on its same-block clause. The same command
       passes the unplanted render.
-- [ ] AC2: The `--self-test` run builds HTML and EPUB renders through a copy
+- [x] AC2: The `--self-test` run builds HTML and EPUB renders through a copy
       of the extension whose alt-text move in
       `_extensions/index/modules/html.lua` removes a moved mark's text from
       the image's alt. On each render, `tests/figuremarks.py alts` fails on
       image 4's alt. The unplanted renders pass.
-- [ ] AC3: The render job of `.github/workflows/versions.yml` renders
+- [x] AC3: The render job of `.github/workflows/versions.yml` renders
       `examples/figure-marks.qmd` to HTML and to EPUB on each leg. It fails
       that leg unless `tests/figuremarks.py after` passes in both renders
       for dogwood and elder at image 4 and for hazel at image 5. A dispatched
       run on the milestone branch is green on the floor and pinned legs.
-- [ ] AC4: The PDF job of `.github/workflows/versions.yml` renders
+- [x] AC4: The PDF job of `.github/workflows/versions.yml` renders
       `examples/figure-marks.qmd` to PDF on each leg. It fails that leg
       unless the printed index is the six lines `alder, 1`, `birch, 2`,
       `cedar, 3–4`, `dogwood, 5`, `elder, [P:5]` and `hazel, 6`. The same
       dispatched run is green on the floor and pinned legs.
-- [ ] AC5: `tests/run-tests.sh --self-test` passes.
+- [x] AC5: `tests/run-tests.sh --self-test` passes.
 
 ## Coverage
 
@@ -127,3 +127,11 @@ promised, because an upstream release alone can turn it red (D-025).
 ## Decisions
 
 ## Review
+
+Evidence source: `tests/run-tests.sh --self-test` on 5f26963, run 2026-09-14 (1708 checks, exit 0, no FAIL line). `git diff 5f26963 HEAD` outside `cairn/` is empty, so that run covers the reviewed tree. The review re-ran the checks below on that run's work directory.
+
+- AC1: In the self-test's planted page `tests/.work/m101plant/same-block/figure-marks.html`, `#qi-mark-4` (dogwood's href) sits in a new `<p>` right after image 4's `<p>`. `figuremarks.py after html` for dogwood at image 4 fails there with `the element sits in <p>, not in the image's <p>`, the same-block clause. The same command passes the unplanted capture. The suite printed `M101 self-test (same-block): the check is red on <<not in the image's>>`.
+- AC2: The planted extension copy `tests/.work/m101plant/alt-strip` has `return {}` at `html.lua:694`, in the alt-text move's Span function. Its HTML and EPUB renders each fail `figuremarks.py alts` with `image 4` (got `alt text that marks  and `). The unplanted HTML and EPUB captures pass the same command with the same manifests. The suite printed `the check is red on <<image 4>>` for alt-strip in html and in epub.
+- AC3: `versions.yml:201-207` sits in the render job's one step, which runs under `set -euo pipefail`. After the figure-marks HTML extraction, it runs `figuremarks.py after html` for dogwood:4, elder:4 and hazel:5, renders the fixture to EPUB, and runs `figuremarks.py after epub` for the same three. A failing check exits the step and fails the leg. Dispatched run 34899204830 on 5f26963 (branch m102-figure-marks-checks, attempt 2) concluded success. The floor, pinned and release render jobs each succeeded, and each log carries the six `after` ok lines. Attempt 1 failed the floor render job in the book render, before these steps (KI302).
+- AC4: The PDF job has a render step (`quarto render examples/figure-marks.qmd --to pdf`) and a read step (`figuremarks.py pdf examples/figure-marks.pdf tests/figure-marks-pdf.txt`), both under `set -euo pipefail` and before the figure-marks Typst render. `figuremarks.py pdf` exits 1 unless the index `pdfindex.read` returns equals the manifest in NFC. The manifest's bytes are the six lines `alder, 1`, `birch, 2`, `cedar, 3–4` (U+2013), `dogwood, 5`, `elder, [P:5]` and `hazel, 6`. In the same run the floor, pinned and release PDF jobs each succeeded, and each log carries the `figuremarks.py pdf` ok line for the six lines.
+- AC5: `tests/run-tests.sh --self-test` on 5f26963 ended `All checks passed (1708 checks).` with exit 0, and its log holds no FAIL line. No file outside `cairn/` changed after that commit.

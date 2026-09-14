@@ -19,11 +19,12 @@ filters:
 
 The fixture for marks in a figure caption and in an image's alt text (M101).
 Pandoc copies the caption of a figure into the alt text of the image it holds,
-so a caption mark reaches the filter twice; the copy must file nothing. A mark
+so a caption mark on a figure with no id reaches the filter twice (Quarto
+empties the copy on a figure with an id); the copy must file nothing. A mark
 an author writes in the alt text of an image that is not a figure's copy files
 one locator at the image.
 
-Every case ends in an explicit page break, so the page each mark sits on is a
+Every case but the last ends in an explicit page break, so the page each mark sits on is a
 fact of this source: page 1 is this page, and each break starts the next.
 `fig-pos: H` holds each LaTeX figure on the page its source puts it on. No
 term below holds the letters `f` and `i` in a row, which the Typst floor sets

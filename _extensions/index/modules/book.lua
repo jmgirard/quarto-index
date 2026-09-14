@@ -740,6 +740,9 @@ end
 -- read from its record.
 local function recovered_marks(meta, blocks)
   local marks, sorts = {}, {}
+  -- A figure's caption is read once, as the chapter's own render reads it:
+  -- Pandoc's reader copies it into the image's alt text here too (M101).
+  blocks = qi_marks.declass_caption_copies(blocks)
   local function collect(span, in_blocks)
     if not span.classes:includes(qi_core.INDEX_CLASS) then
       return nil
@@ -839,9 +842,7 @@ local function recovered_marks(meta, blocks)
   -- front matter as readily as in the body, and this route cannot tell which
   -- way either went.
   conditional_free_meta(meta):walk({ Span = from_meta })
-  -- A figure's caption is read once, as the chapter's own render reads it:
-  -- Pandoc's reader copies it into the image's alt text here too.
-  qi_marks.declass_caption_copies(blocks):walk({ Span = from_blocks })
+  blocks:walk({ Span = from_blocks })
   return marks, sorts
 end
 

@@ -471,8 +471,8 @@ jobs:
 
       # Marks in figure captions and in image alt text (M101), read on each
       # leg's Typst: a copied caption files nothing, and a label moved out of
-      # alt text still names the image's page. The fixture's pages carry no
-      # footer.
+      # alt text still names the image's page. Each page's footer is its page
+      # number alone, which the reading drops when no `--footer` is given.
       - name: Render examples/figure-marks.qmd to Typst
         shell: bash
         run: |

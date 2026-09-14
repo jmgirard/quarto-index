@@ -22306,10 +22306,10 @@ fi
 # rests on: an artifact carrying an index dumps rows, and an artifact carrying
 # none is a loud failure rather than an empty print two legs would agree about.
 #
-# Five unplanted controls. Four are the artifacts the matrix renders: two
-# single documents' indexes, the second the figure-marks fixture (M101), a
-# document declaring two indexes, and a book whose locators point across
-# pages. The fifth is a printed PDF index, which the
+# Six unplanted controls. Five are the artifacts the matrix renders: three
+# single documents' indexes (examples/html-index.qmd, examples/demo.qmd and
+# the figure-marks fixture, M101), a document declaring two indexes, and a
+# book whose locators point across pages. The sixth is a printed PDF index, which the
 # matrix stopped rendering at M47; it stays because `indexdump.py`'s `pdf` mode
 # is still the suite's reader of a printed index, and this run's own capture is
 # the unplanted control the mode's planted clauses under `--self-test` are
@@ -30587,8 +30587,8 @@ fi
 # those writers print alt text as a flat string, and wrote no `\index` in
 # LaTeX, whose writer drops raw LaTeX there.
 #
-# examples/figure-marks.qmd holds one case a page, each ending in an explicit
-# page break, so each mark's page is a fact of its source. Every manifest here
+# examples/figure-marks.qmd holds one case a page, each but the last ending in
+# an explicit page break, so each mark's page is a fact of its source. Every manifest here
 # is derived by hand from that source under the ORACLE RULE above; the Typst
 # one is the tracked file tests/figure-marks-typst.tsv, so the version matrix
 # reads the same rows. The terms, their pages and why each files one locator:
@@ -30761,8 +30761,9 @@ pass "M101-AC1/AC2: in HTML, EPUB, PDF and Typst a mark in a figure caption file
 # holds the figures, and `last.qmd` carries the placement marker, so it builds
 # the index. `figures.qmd` opens a range in the caption of a figure with no id
 # and a second in the caption of a figure with an id, and closes each later in
-# the chapter. Pandoc's reader copies both captions into their images' alt
-# text, in the chapter's own render and in the recovery route's parse alike.
+# the chapter. The recovery route's parse copies both captions into their
+# images' alt text. In the chapter's own render Quarto empties the alt text of
+# the figure with an id, so only cedar's caption reaches the filter twice there.
 #
 # The record route renders the whole book, so `figures.qmd` writes its record
 # before `last.qmd` reads it. The recovery route renders `last.qmd` alone into
@@ -30977,7 +30978,7 @@ if [ "${1:-}" = "--self-test" ]; then
     "$M101_RECORD_ROWS" "M101 T5 plant no-declass (record route)" hrefs
 
   m101_tree book-declass modules/book.lua \
-    's{qi_marks\.declass_caption_copies\(blocks\):walk}{blocks:walk}'
+    's{  blocks = qi_marks\.declass_caption_copies\(blocks\)\n}{}'
   m101_red "book-declass, recovery route" "the recovery route read" \
     m101_recovery_probe "$M101P/book-declass/_extensions/index/modules" \
     "M101 T5 plant book-declass"

@@ -383,10 +383,12 @@ end
 
 -- Pandoc's LaTeX writer prints an image's alt text as the `alt=` key of
 -- `\includegraphics` and drops any raw LaTeX in it, so the `\index` command a
--- mark there emits was lost with its locator. Each command this back-end wrote
--- moves to just after the image, which is on the same page. Raw LaTeX an
--- author wrote in the alt text is left where it is: the writer drops it with
--- or without this pass, and moving it would print it.
+-- mark there emits was lost with its locator. Each raw LaTeX inline that
+-- starts like a command this back-end writes (`\index`, or a registration or
+-- range command) moves to just after the image, which is on the same page.
+-- Other raw LaTeX in the alt text is left where it is: the writer drops it
+-- with or without this pass, and moving it would print it. An author's own
+-- `\index` written there is moved with the rest.
 local function move_alt_commands(doc)
   -- The commands a mark emits: its `\index`, and the registration a
   -- principal mark or a range end adds beside it.

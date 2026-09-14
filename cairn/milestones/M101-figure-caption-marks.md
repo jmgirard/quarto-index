@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M101: A mark in a figure caption or an image's alt text files one locator
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -120,11 +120,11 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - [x] T4: Add the two HTML book cases to `tests/run-tests.sh`, one on the
       record route and one on the recovery route. Follow the M069 recovery
       cases.
-- [ ] T5: Plant each fix. Revert T2 and show the AC1 range check red in each
+- [x] T5: Plant each fix. Revert T2 and show the AC1 range check red in each
       of the four formats, and the AC3 range check red on each route. Revert
       the HTML half of T3 and show the link check red. Revert the LaTeX half
       and show the PDF manifest red. Run `tests/run-tests.sh --self-test`.
-- [ ] T6: Add the fixture to `.github/workflows/versions.yml`. The pdf job's
+- [x] T6: Add the fixture to `.github/workflows/versions.yml`. The pdf job's
       Typst steps read it against a tracked manifest,
       `tests/figure-marks-typst.tsv`. The render job renders and extracts its
       HTML index. The fixture set that `tests/versioncheck.py fixtures` checks
@@ -150,6 +150,11 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: T5 plants written under `--self-test`: no-declass (four log checks and the record route), book-declass (the probe), copy-id (alder's link), html-move (the link check), latex-move (the PDF manifest). All nine are red with their named failure on a driver run of the M101 sections. The PDF and alder checks became functions so the plants run the same code.
 - 2026-09-14: T6 steps added to `versions.yml`: the render job extracts `figure-marks.html.txt`, and the pdf job renders the fixture to Typst and reads it against `tests/figure-marks-typst.tsv`. The M43 table renders the fixture's HTML and dumps it, so `versioncheck.py fixtures` holds five names.
 - 2026-09-14: T7 done. `site/syntax.qmd` gains one paragraph, `CHANGELOG.md` two Output entries, DESIGN's `passes.lua`, anchor and Typst paragraphs state the two rules, and KI294 and KI295 are removed.
+- 2026-09-14: `tests/run-tests.sh --self-test` failed at the M070 T6 plant, which matches the two recovery walk lines as adjacent. The declass call moved to the head of `recovered_marks`, the walk lines are restored as they were, and the book-declass plant now removes that line.
+- 2026-09-14: claim audit: 105 claims read, 5 corrected — versions.yml, tests/run-tests.sh, _extensions/index/modules/latex.lua, _extensions/index/index.lua, examples/figure-marks.qmd
+- 2026-09-14: T5 done. `tests/run-tests.sh --self-test` passed on 538eb21: 1704 checks, the M101 plants among them. That run holds every check the plain run holds.
+- 2026-09-14: T6 done. Versions run 34891292868, dispatched on 538eb21, is green on the floor, pinned and release legs. Each leg read the figure-marks Typst manifest, and the compare job matched figure-marks on the floor and release legs to the pinned leg.
+- 2026-09-14: status set to review.
 
 ## Decisions
 

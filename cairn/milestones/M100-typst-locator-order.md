@@ -170,6 +170,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: compressed Tasks (T1 shapes, T4 plants) to pointers at the manifest comment and the suite block, after the plan-owned body reached 158 lines.
 - 2026-09-14: the claim auditor re-read the six corrected claims at 8c9c552, and all hold.
 - 2026-09-14: pushed the branch and dispatched matrix run 34882305528 at 8c9c552, because the order fixture changed. It concluded success on all 8 jobs, the floor, pinned and release pdf legs included (AC5). T1-T11 ticked, and status set to review.
+- 2026-09-14: /milestone-review round 2: the full suite at ee379c3 stopped at M074-AC1 when Quarto crashed with a segmentation fault in an unrelated render. The suite was run again.
 
 ## Decisions
 

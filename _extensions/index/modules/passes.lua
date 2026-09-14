@@ -108,6 +108,9 @@ local function TagPandoc(doc)
       end
     end
   end
+  -- In every format: the caption a figure's image holds a copy of is read
+  -- once, in the caption (see `declass_caption_copies`).
+  doc = qi_marks.declass_caption_copies(doc)
   return doc
 end
 

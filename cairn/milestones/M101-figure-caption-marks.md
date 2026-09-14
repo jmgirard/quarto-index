@@ -107,7 +107,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       hand, each with its derivation comment. Add the four readers, the log
       check, the link check and the `alt` check to `tests/run-tests.sh`.
       Record in the work log which checks are red on main.
-- [ ] T2: Change `TagPandoc` (`_extensions/index/modules/passes.lua:98`) for
+- [x] T2: Change `TagPandoc` (`_extensions/index/modules/passes.lua:98`) for
       every format. Take the index class off each span in a copied alt text:
       the alt text of an image that is a figure's only content and equals the
       figure's caption. Follow `declass_copy` (`passes.lua:89`). Apply the
@@ -142,6 +142,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: plan gate chose the HTML cross-version comparison for the matrix over a new HTML manifest step, because the render job already compares each leg to the pinned leg; falsified by a floor leg that agrees with a wrong pinned leg.
 - 2026-09-14: implement started on `m101-figure-caption-marks`; question gate skipped, nothing left open.
 - 2026-09-14: T1 done. The figure div's image carries a trailing backslash: alone in its paragraph, Pandoc makes it a nested figure, whose LaTeX fails to compile and whose alt text is a caption copy. The alt checks live in `tests/figuremarks.py`. Red on main: the log check in all four formats; the HTML and EPUB manifests (alder and cedar file 2); the HTML and EPUB link checks; all six `after` checks; the PDF manifest (no dogwood, elder or hazel line). Green on main: the `alt` checks, the two locator roles, both Typst readings.
+- 2026-09-14: T2 done. `declass_caption_copies` lives in `marks.lua`, the one module both `passes.lua` and `book.lua` load. It compares the image's alt inlines with the caption's inlines by Lua equality. The M101 section's log checks and the HTML and EPUB manifests went green. The full suite runs after T3, whose checks the M101 section still shows red.
 
 ## Decisions
 

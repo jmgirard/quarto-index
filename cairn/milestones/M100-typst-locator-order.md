@@ -39,7 +39,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 
 ## Acceptance criteria
 
-- [x] AC1: In a Typst render of `examples/typst-order.qmd`, each locator's
+- [ ] AC1: In a Typst render of `examples/typst-order.qmd`, each locator's
       opening page has a class and a value. On a page whose numbering is none,
       the class is arabic and the value is the physical page number. Under a
       pattern, the first counting symbol of the pattern, by the rule
@@ -51,7 +51,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       physical page, then by closing physical page, a single mark before a
       range. Shown by `tests/typstindex.py pages` on `examples/typst-order.qmd`
       against a manifest derived by hand from its source.
-- [x] AC2: In Typst renders of `examples/typst-order.qmd` and
+- [ ] AC2: In Typst renders of `examples/typst-order.qmd` and
       `examples/typst-numbering.qmd`, a range whose two ends have one class and
       whose closing value is greater than its opening value spans the values
       from its opening value to its closing value, both included. Where a
@@ -66,7 +66,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       them is principal. Shown by the AC1 reading, and by
       `examples/typst-numbering.qmd` against `tests/typst-numbering.tsv`, whose
       changed rows are rederived by hand.
-- [x] AC3: A Typst render of `examples/book-typst-reset/` prints its index as
+- [ ] AC3: A Typst render of `examples/book-typst-reset/` prints its index as
       its hand-derived manifest states, under the rules of AC1 and AC2. The
       book has a chapter under lower roman numbering, a chapter that resets the
       counter to 1 under arabic numbering, and a chapter that resets it to 1
@@ -74,7 +74,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       closing value greater than its opening value. An arabic mark in the
       second or third chapter, on a page outside the range, has a value inside
       it. Shown by `tests/typstindex.py pages` in `tests/run-tests.sh`.
-- [x] AC4: `examples/typst-index.qmd` still matches
+- [ ] AC4: `examples/typst-index.qmd` still matches
       `tests/typst-index-main.tsv` and `tests/typst-index-people.tsv`, and
       `examples/book/` still matches the M098 book manifests, all unchanged
       from main, shown by the M098 checks in `tests/run-tests.sh`.
@@ -199,3 +199,9 @@ Independent review, three fresh-context lenses. The prior-review lens found no p
 - F11 `typst.lua:30-31`, `cairn/DESIGN.md:458`: lines run past the surrounding wrap width.
 
 Gate: returned to in-progress on AC6 (defect return 1).
+
+### Round 2
+
+Sync: `origin/main` (667c74b) is an ancestor of the branch, so no merge was needed. The round-1 ticks were cleared, and each criterion below is ticked against evidence from this round.
+
+- AC5 evidence: dispatched run 34882305528 on `m100-typst-locator-order` at 8c9c552 concluded success, all 8 jobs green. Each pdf job log prints `ok` for "Typst index under a page numbering" (24 lines). Each also prints `ok` for "Typst index in locator order" (44 lines). The pdf jobs are floor 1.5.52, pinned 1.10.18 and release. The one commit after 8c9c552 changes only `cairn/` files.

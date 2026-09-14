@@ -1587,17 +1587,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `corpus-xref-escaping.log`, and the zero counts beside it over the book
   logs, would stay green if their manifest row or render were removed. —
   M091 review F1
-- **KI300.** The version matrix shows the move of an alt-text mark's target
-  only on the pinned Quarto for HTML, EPUB and LaTeX. Its HTML step compares
-  each leg's index hrefs to the pinned leg's and never checks that the target
-  id is on the page, and it renders no EPUB or PDF of
-  `examples/figure-marks.qmd`. A floor Quarto that drops the moved span passes
-  the matrix. — M101 review F3
-- **KI301.** Two M101 checks in `tests/run-tests.sh` have no plant under
-  `--self-test`. No plant moves a target into another block to turn the
-  same-block clause of `tests/figuremarks.py after` red. No plant changes the
-  copied alt text to turn the `alts` check red, and that check was green on
-  main. — M101 review F4
+- **KI302.** On the floor leg of the version matrix, the book render in the
+  render job can finish at exit 0 without the index. On dispatched run
+  34899204830 (attempt 1, 2026-09-14) it wrote `_book/index.html` and no index
+  section in `last.html`, so `indexdump.py` failed the leg. The push run on the
+  same commit and the rerun of that job passed. Nothing records how often it
+  happens or why. — M102 T6
 
 ### The repo and its packaging
 

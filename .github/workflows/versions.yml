@@ -135,8 +135,10 @@ jobs:
           version: ${{ matrix.leg.version }}
 
       # This job renders the fixtures to HTML, and the comparison below is
-      # over that HTML alone. It renders no PDF and installs no TeX; the PDF
-      # job at the end of this file does that, on its own schedule.
+      # over that HTML alone. It also renders the figure-marks fixture to EPUB,
+      # which it checks on this leg and does not upload or compare. It renders
+      # no PDF and installs no TeX; the PDF job at the end of this file does
+      # that, on its own schedule.
       #
       # Nothing here compares a PDF, and the PDF job compares nothing either.
       # That is deliberate. Two Quarto releases typeset PDF through different
@@ -148,11 +150,13 @@ jobs:
       # A cross-leg PDF comparison waits on an extraction shown engine-neutral
       # across lualatex and xelatex, and is no part of what M51 restored.
       #
-      # Each render below is followed immediately by its extraction. With one
-      # format the four renders write four distinct paths and none can overtake
-      # another; the ordering is kept because a second format would render into
-      # a path an earlier one already wrote — the book renders into `_book`
-      # whatever the format — and the interleaving is what made that safe.
+      # Each render below is followed immediately by its extraction or its
+      # check. The renders write distinct paths and none can overtake another;
+      # the ordering is kept because a second format of the book would render
+      # into a path an earlier one already wrote — the book renders into
+      # `_book` whatever the format — and the interleaving is what made that
+      # safe. The figure-marks EPUB render writes `examples/figure-marks.epub`,
+      # and its HTML is checked before that render runs.
       #
       # `indexdump.py` is what makes each of these a check and not just a
       # render: it fails loudly on an artifact carrying no index, so a leg that
@@ -186,6 +190,24 @@ jobs:
           quarto render examples/figure-marks.qmd --to html
           python3 tests/indexdump.py html examples/figure-marks.html \
             > "$OUT/figure-marks.html.txt"
+
+          # Where an alt-text mark's locator lands (M102). The HTML and EPUB
+          # writers print alt text as a string, so the back-end moves each
+          # mark's id to an empty span just after its image. `figuremarks.py
+          # after` fails unless every locator of the term links to an element
+          # after that image, in the image's own block. The terms and image
+          # numbers are the ones the acceptance suite checks, and `qi-index`
+          # is the suite's HTML_SECTION_ID. The HTML is read before the EPUB
+          # render runs, and the EPUB writes a path of its own.
+          for pair in dogwood:4 elder:4 hazel:5; do
+            python3 tests/figuremarks.py after html examples/figure-marks.html \
+              qi-index "${pair%%:*}" "${pair##*:}"
+          done
+          quarto render examples/figure-marks.qmd --to epub
+          for pair in dogwood:4 elder:4 hazel:5; do
+            python3 tests/figuremarks.py after epub examples/figure-marks.epub \
+              qi-index "${pair%%:*}" "${pair##*:}"
+          done
 
           wc -l "$OUT"/*.txt
 
@@ -223,16 +245,18 @@ jobs:
       - name: Compare each leg's HTML index against the pinned leg's
         run: python3 tests/versioncheck.py compare legs pinned
 
-  # The PDF leg. It renders the two PDF fixtures on every version this run
-  # planned and fails when either prints no index — nothing more. It compares
-  # nothing across legs and uploads nothing: its extractions are written under
+  # The PDF leg. It renders the PDF and Typst fixtures on every version this
+  # run planned, and fails when one prints no index or, where a manifest is
+  # named below, an index other than the one it states. It compares nothing
+  # across legs and uploads nothing: its extractions are written under
   # a directory of its own, outside the one the render job's upload names, so
   # a step added here cannot join that upload and be read by the comparison as
   # a leg's HTML extraction.
   #
-  # WHAT IT CHECKS. That `quarto render --to pdf` succeeds on both fixtures
-  # under this leg's Quarto, and that `tests/indexdump.py pdf` finds a printed
-  # index with at least one entry in each rendered PDF. And that
+  # WHAT IT CHECKS. That `quarto render --to pdf` succeeds on
+  # examples/demo.qmd and examples/book under this leg's Quarto, and that
+  # `tests/indexdump.py pdf` finds a printed index with at least one entry in
+  # each rendered PDF. And that
   # `quarto render --to typst` succeeds on examples/typst-index.qmd and prints
   # both of its indexes as their manifests state them, in order and on the
   # stated pages (M098). And that `quarto render --to typst` succeeds on
@@ -241,13 +265,16 @@ jobs:
   # text, or the physical page where a page has no numbering (M099). And that
   # `quarto render --to typst` succeeds on examples/typst-order.qmd and prints
   # its index's text as its manifest states it, each entry's locators in class
-  # and value order (M100). And that `quarto render --to typst` succeeds on
-  # examples/figure-marks.qmd and prints its index as its manifest states it,
-  # one locator a mark in a figure caption or an image's alt text (M101). The
-  # render alone is
-  # not the check: a PDF that typesets at exit 0 while the index prints empty
-  # is exactly the break this job exists to catch, and `indexdump.py` is what
-  # makes the difference between the two visible.
+  # and value order (M100). And that `quarto render --to pdf` and
+  # `quarto render --to typst` each succeed on examples/figure-marks.qmd and
+  # print its index as a manifest states it, one locator a mark in a figure
+  # caption or an image's alt text (M101): the LaTeX index is the six lines of
+  # tests/figure-marks-pdf.txt (M102), and the Typst index is
+  # tests/figure-marks-typst.tsv. The render alone is not the check: a PDF
+  # that typesets at exit 0 while the index prints empty is exactly the break
+  # this job exists to catch, and the reading step after each render
+  # (`indexdump.py`, `typstindex.py` or `figuremarks.py`) is what makes the
+  # difference between the two visible.
   #
   # WHAT IT DELIBERATELY DOES NOT CHECK. Whether two legs print the SAME
   # index — see the render job's note above on why a PDF comparison would be
@@ -470,8 +497,28 @@ jobs:
             'Index' '--footer=^\d+$'
 
       # Marks in figure captions and in image alt text (M101), read on each
-      # leg's Typst: a copied caption files nothing, and a label moved out of
-      # alt text still names the image's page. Each page's footer is its page
+      # leg's LaTeX (M102): a copied caption files nothing, and a command moved
+      # out of alt text still names the image's page. The reading compares
+      # the printed index, line by line in NFC, with tests/figure-marks-pdf.txt,
+      # the file the acceptance suite reads. These two steps come before the
+      # Typst render below, which writes examples/figure-marks.pdf over this
+      # one.
+      - name: Render examples/figure-marks.qmd to PDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/figure-marks.qmd --to pdf
+
+      - name: Read the figure-marks PDF index against its manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/figuremarks.py pdf examples/figure-marks.pdf \
+            tests/figure-marks-pdf.txt
+
+      # The same fixture read on each leg's Typst: a copied caption files
+      # nothing, and a label moved out of alt text still names the image's
+      # page. Each page's footer is its page
       # number alone, which the reading drops when no `--footer` is given.
       - name: Render examples/figure-marks.qmd to Typst
         shell: bash

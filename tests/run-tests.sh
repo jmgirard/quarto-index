@@ -30725,23 +30725,12 @@ for kind in html epub; do
   done
 done
 
-# ORACLE — the printed LaTeX index: no letter groups, one line a term. A
-# function, so the self-test plant below runs this same comparison.
+# ORACLE — the printed LaTeX index: no letter groups, one line a term. The
+# lines are the tracked file tests/figure-marks-pdf.txt, so the version
+# matrix's PDF job reads the same six. A function, so the self-test plant
+# below runs this same comparison.
 m101_pdf_check() {   # <pdf>
-  python3 - "$1" <<'M101PDFPY'
-import sys
-sys.path.insert(0, 'tests')
-import pdfindex
-expected = ['alder, 1', 'birch, 2', 'cedar, 3–4', 'dogwood, 5',
-            'elder, [P:5]', 'hazel, 6']
-actual = [entry.text for entry in pdfindex.read(sys.argv[1])]
-if actual != expected:
-    print(f'FAIL: M101-AC1/AC2: the PDF index of examples/figure-marks.qmd '
-          f'prints {actual!r}, not {expected!r}', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M101-AC1/AC2: the PDF index prints the {len(expected)} lines its '
-      f'manifest states')
-M101PDFPY
+  python3 tests/figuremarks.py pdf "$1" tests/figure-marks-pdf.txt
 }
 m101_pdf_check "$M101_PDF" \
   || fail "M101-AC1/AC2: the PDF index of examples/figure-marks.qmd does not match its manifest (the report is above)"
@@ -30911,6 +30900,11 @@ if [ "${1:-}" = "--self-test" ]; then
   #   html-move    no id moved out of alt text (html.lua): the link check red
   #   latex-move   no command moved out of alt text (index.lua): the PDF
   #                manifest red
+  # M102 adds two plants for the M101 checks that had none:
+  #   same-block   a moved id put in a block of its own after the image (an
+  #                edit of the captured page): the `after` check red
+  #   alt-strip    the moved mark's text left out of the alt (html.lua): the
+  #                `alts` check red in HTML and EPUB
   # -------------------------------------------------------------------------
   M101P="$WORK/m101plant"
   rm -rf "$M101P"
@@ -30996,13 +30990,66 @@ if [ "${1:-}" = "--self-test" ]; then
     check_html_index_links "$CAPTURE_ROOT/m101-html-move-html/figure-marks.html" \
     "M101 T5 plant html-move"
 
+  # M102 same-block: the id dogwood's locator names, moved out of image 4's
+  # <p> into a new <p> just after it. The Image function in html.lua returns
+  # inlines only, so no splice of the filter puts the id in another block, and
+  # the plant edits a copy of the captured page instead. The move keeps the
+  # element after the image, so only the same-block clause can catch it.
+  # elder's id stays in image 4's <p>, and the check still passes it there.
+  M101_SAME="$M101P/same-block"
+  mkdir -p "$M101_SAME"
+  cp "$M101_HTML" "$M101_SAME/figure-marks.html"
+  m101_dogwood_id=$(HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$M101_SAME/figure-marks.html" <<'M102IDPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+got = [r['locators'] for r in H.index_entries(section)
+       if r['kind'] == 'entry' and r['term'] == 'dogwood']
+if len(got) != 1 or len(got[0]) != 1 or not got[0][0].startswith('#'):
+    sys.exit(f'dogwood prints {got!r}, not one link into its own page')
+print(got[0][0][1:])
+M102IDPY
+) || fail "M102 self-test (same-block): dogwood's locator could not be read from the captured HTML (the report is above)"
+  M102_ID="$m101_dogwood_id" perl -0777 -pi -e '
+    my $id = $ENV{M102_ID};
+    s{<span id="\Q$id\E"></span>((?:(?!</p>).)*</p>)}{$1\n<p><span id="$id"></span></p>}s
+      or die "the substitution matched nothing\n";
+  ' "$M101_SAME/figure-marks.html" \
+    || fail "M102 self-test (same-block): the move of #$m101_dogwood_id out of image 4's paragraph could not be applied (its own message is above)"
+  m101_red "same-block" "not in the image's" \
+    python3 tests/figuremarks.py after html "$M101_SAME/figure-marks.html" \
+    "$HTML_SECTION_ID" dogwood 4
+  python3 tests/figuremarks.py after html "$M101_SAME/figure-marks.html" \
+      "$HTML_SECTION_ID" elder 4 \
+    || fail "M102 self-test (same-block): the planted page fails elder too, so the plant moved more than dogwood's id (the report is above)"
+
+  # M102 alt-strip: the alt-text move returns nothing in place of the span it
+  # took the id from, so the mark's text leaves the alt while the moved id
+  # still lands after the image. Image 4 is the one image whose alt the
+  # manifests state as text.
+  m101_tree alt-strip modules/html.lua \
+    's{(pandoc\.Attr\(span\.identifier\)\)\n          span\.identifier = ""\n          )return span\n}{${1}return {}\n}'
+  for fmt in html epub; do
+    m101_render alt-strip "$fmt"
+    m101_red "alt-strip, $fmt" "image 4" \
+      python3 tests/figuremarks.py alts "$fmt" \
+      "$CAPTURE_ROOT/m101-alt-strip-$fmt/figure-marks.$fmt" \
+      "$HTML_SECTION_ID" "$WORK/figure-marks-$fmt-alts.txt"
+    python3 tests/figuremarks.py after "$fmt" \
+        "$CAPTURE_ROOT/m101-alt-strip-$fmt/figure-marks.$fmt" \
+        "$HTML_SECTION_ID" dogwood 4 \
+      || fail "M102 self-test (alt-strip, $fmt): the plant also moved dogwood's id away from image 4, so it changes more than the alt (the report is above)"
+  done
+
   m101_tree latex-move index.lua \
     's{  doc = qi_latex\.move_alt_commands\(doc\)\n}{}'
   m101_render latex-move pdf
-  m101_red "latex-move" "the PDF index of examples/figure-marks.qmd prints" \
+  m101_red "latex-move" "the printed index is not the 6 lines tests/figure-marks-pdf.txt states" \
     m101_pdf_check "$CAPTURE_ROOT/m101-latex-move-pdf/figure-marks.pdf"
 
-  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest"
+  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest; a moved id in a block of its own is red on the after check's same-block clause, and a moved mark's text left out of the alt is red on the alts check in HTML and EPUB (M102)"
 fi
 
 # ---------------------------------------------------------------------------

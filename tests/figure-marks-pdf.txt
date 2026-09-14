@@ -1,0 +1,6 @@
+alder, 1
+birch, 2
+cedar, 3–4
+dogwood, 5
+elder, [P:5]
+hazel, 6

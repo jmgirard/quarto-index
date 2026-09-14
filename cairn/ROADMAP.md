@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M102 | The figure-marks checks run on every matrix leg, each shown able to fail | planned | — | normal | milestones/M102-figure-marks-checks.md |
+| M102 | The figure-marks checks run on every matrix leg, each shown able to fail | review | — | normal | milestones/M102-figure-marks-checks.md |
 | M101 | A mark in a figure caption or an image's alt text files one locator | done | — | normal | milestones/archive/M101-figure-caption-marks.md |
 | M100 | A Typst index orders locators by the number the page prints | done | — | low | milestones/archive/M100-typst-locator-order.md |
 | M099 | A Typst locator prints the number its page shows | done | — | normal | milestones/archive/M099-typst-locator-numbering.md |

@@ -15,15 +15,23 @@ by hand from the fixture's source (the ORACLE RULE in run-tests.sh):
       The `alt` of each image outside the generated index, in document order,
       is the manifest's line for it. `<none>` states an image that carries no
       `alt` attribute, and `<empty>` one whose `alt` is the empty string.
+  pdf <pdf> <manifest>
+      The LaTeX index printed in <pdf>, one line an entry in the order
+      `tests/pdfindex.py` reads them, is the manifest's lines. Both sides are
+      compared in NFC, because a PDF's text layer renormalizes Unicode. The
+      acceptance suite and the version matrix both read the manifest
+      `tests/figure-marks-pdf.txt`.
 
 Each subcommand prints its own `ok`/`FAIL` line and exits 0 or 1.
 """
 
 import posixpath
 import sys
+import unicodedata
 
 import epubindex
 import htmlindex as H
+import pdfindex
 
 # The elements a reader sees as a block of their own. The nearest one above
 # an element is the block it sits in.
@@ -166,13 +174,35 @@ def cmd_alts(kind, path, prefix, manifest):
     return 0
 
 
+def cmd_pdf(path, manifest):
+    label = f'M101-AC1/AC2: {path}'
+    expected = [unicodedata.normalize('NFC', line)
+                for line in H.read_manifest(manifest)]
+    if not expected:
+        print(f'FAIL: {label}: the manifest is empty', file=sys.stderr)
+        return 1
+    actual = [unicodedata.normalize('NFC', entry.text)
+              for entry in pdfindex.read(path)]
+    if actual != expected:
+        print(f'FAIL: {label}: the printed index is not the {len(expected)} '
+              f'lines {manifest} states', file=sys.stderr)
+        print(f'  got  {actual!r}\n  want {expected!r}', file=sys.stderr)
+        return 1
+    print(f'ok   {label}: the printed index is the {len(expected)} lines '
+          f'{manifest} states, in order')
+    return 0
+
+
 def main(argv):
     if len(argv) == 6 and argv[0] == 'after' and argv[1] in ('html', 'epub'):
         return cmd_after(*argv[1:])
     if len(argv) == 5 and argv[0] == 'alts' and argv[1] in ('html', 'epub'):
         return cmd_alts(*argv[1:])
+    if len(argv) == 3 and argv[0] == 'pdf':
+        return cmd_pdf(*argv[1:])
     print('usage: figuremarks.py after <html|epub> <path> <prefix> <term> <n>\n'
-          '       figuremarks.py alts <html|epub> <path> <prefix> <manifest>',
+          '       figuremarks.py alts <html|epub> <path> <prefix> <manifest>\n'
+          '       figuremarks.py pdf <pdf> <manifest>',
           file=sys.stderr)
     return 2
 

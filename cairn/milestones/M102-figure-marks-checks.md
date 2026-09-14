@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M102: The figure-marks checks run on every matrix leg, each shown able to fail
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it changes the acceptance suite's self-test and the version matrix, and no author-facing behavior
-- **Branch/PR:** —
+- **Branch/PR:** m102-figure-marks-checks
 
 ## Goal
 
@@ -68,7 +68,7 @@ promised, because an upstream release alone can turn it red (D-025).
 
 ## Tasks
 
-- [ ] T1: Move the six expected lines out of `m101_pdf_check`
+- [x] T1: Move the six expected lines out of `m101_pdf_check`
       (`tests/run-tests.sh` near 30729) into a tracked file,
       `tests/figure-marks-pdf.txt`. Add a `pdf <pdf> <manifest>` subcommand
       to `tests/figuremarks.py`. It compares `pdfindex.read` entry text to
@@ -113,6 +113,8 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: plan gate chose to check the LaTeX index on every leg over HTML and EPUB only, because KI300 names all three writers. Falsified by the floor leg printing other index lines for a TeX engine reason.
 - 2026-09-14: plan gate chose plants for the two clauses KI301 names over one per failure branch of `tests/figuremarks.py`, because the other branches catch malformed input rather than a filter defect. Falsified by a filter defect that reaches one of the unplanted branches.
 - 2026-09-14: plan chose to plant the same-block defect by editing the captured page over splicing the filter, because the Image function in `html.lua` returns only inlines, so no one-substitution splice puts the target in another block. Falsified by a single substitution that does.
+- 2026-09-14: implement started on branch m102-figure-marks-checks. No question gate: the plan left no choice open.
+- 2026-09-14: T1 done. `figuremarks.py pdf` passes the last run's PDF capture and fails the `latex-move` capture with the new message. The full `--self-test` run is left to T7, because each task's edits change `tests/run-tests.sh`, which a run reads as it goes.
 
 ## Decisions
 

@@ -30725,23 +30725,12 @@ for kind in html epub; do
   done
 done
 
-# ORACLE — the printed LaTeX index: no letter groups, one line a term. A
-# function, so the self-test plant below runs this same comparison.
+# ORACLE — the printed LaTeX index: no letter groups, one line a term. The
+# lines are the tracked file tests/figure-marks-pdf.txt, so the version
+# matrix's PDF job reads the same six. A function, so the self-test plant
+# below runs this same comparison.
 m101_pdf_check() {   # <pdf>
-  python3 - "$1" <<'M101PDFPY'
-import sys
-sys.path.insert(0, 'tests')
-import pdfindex
-expected = ['alder, 1', 'birch, 2', 'cedar, 3–4', 'dogwood, 5',
-            'elder, [P:5]', 'hazel, 6']
-actual = [entry.text for entry in pdfindex.read(sys.argv[1])]
-if actual != expected:
-    print(f'FAIL: M101-AC1/AC2: the PDF index of examples/figure-marks.qmd '
-          f'prints {actual!r}, not {expected!r}', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M101-AC1/AC2: the PDF index prints the {len(expected)} lines its '
-      f'manifest states')
-M101PDFPY
+  python3 tests/figuremarks.py pdf "$1" tests/figure-marks-pdf.txt
 }
 m101_pdf_check "$M101_PDF" \
   || fail "M101-AC1/AC2: the PDF index of examples/figure-marks.qmd does not match its manifest (the report is above)"
@@ -30999,7 +30988,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m101_tree latex-move index.lua \
     's{  doc = qi_latex\.move_alt_commands\(doc\)\n}{}'
   m101_render latex-move pdf
-  m101_red "latex-move" "the PDF index of examples/figure-marks.qmd prints" \
+  m101_red "latex-move" "the printed index is not the 6 lines tests/figure-marks-pdf.txt states" \
     m101_pdf_check "$CAPTURE_ROOT/m101-latex-move-pdf/figure-marks.pdf"
 
   pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest"

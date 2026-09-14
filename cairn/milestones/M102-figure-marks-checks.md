@@ -135,3 +135,15 @@ Evidence source: `tests/run-tests.sh --self-test` on 5f26963, run 2026-09-14 (17
 - AC3: `versions.yml:201-207` sits in the render job's one step, which runs under `set -euo pipefail`. After the figure-marks HTML extraction, it runs `figuremarks.py after html` for dogwood:4, elder:4 and hazel:5, renders the fixture to EPUB, and runs `figuremarks.py after epub` for the same three. A failing check exits the step and fails the leg. Dispatched run 34899204830 on 5f26963 (branch m102-figure-marks-checks, attempt 2) concluded success. The floor, pinned and release render jobs each succeeded, and each log carries the six `after` ok lines. Attempt 1 failed the floor render job in the book render, before these steps (KI302).
 - AC4: The PDF job has a render step (`quarto render examples/figure-marks.qmd --to pdf`) and a read step (`figuremarks.py pdf examples/figure-marks.pdf tests/figure-marks-pdf.txt`), both under `set -euo pipefail` and before the figure-marks Typst render. `figuremarks.py pdf` exits 1 unless the index `pdfindex.read` returns equals the manifest in NFC. The manifest's bytes are the six lines `alder, 1`, `birch, 2`, `cedar, 3–4` (U+2013), `dogwood, 5`, `elder, [P:5]` and `hazel, 6`. In the same run the floor, pinned and release PDF jobs each succeeded, and each log carries the `figuremarks.py pdf` ok line for the six lines.
 - AC5: `tests/run-tests.sh --self-test` on 5f26963 ended `All checks passed (1708 checks).` with exit 0, and its log holds no FAIL line. No file outside `cairn/` changed after that commit.
+
+Consistency gate: `cairn_validate` exit 0. The generic profile names no toolchain checks, and no principle changed.
+
+Independent review, three lenses ([O] diff-bug, [S] blame-history, [S] prior-review), on 8fb2371. Findings, merged across lenses and ranked:
+- F1 (prior-review 1): the PDF job's WHAT IT CHECKS comment ends by saying `indexdump.py` makes an empty index visible, which is false for the figure-marks LaTeX check M102 adds there (`versions.yml:271`, LESSONS M38).
+- F2 ([O] 1): the render job's ordering comment still calls a second format hypothetical, though the job now renders EPUB (`versions.yml:153-157`).
+- F3 ([O] 2): `figuremarks.py pdf` exits with a traceback, not a FAIL line, when `pdfindex.read` finds no index heading (`figuremarks.py:177-186`).
+- F4 ([O] 3): the alt-strip comment says the moved id still lands after the image, but the plant does not check it (`run-tests.sh` alt-strip block).
+- F5 (all three lenses): two comment lines in the PDF job header run far past the file's 80-column wrap (`versions.yml:255, 271`).
+- F6 ([O] 5): the same-block `perl -pi ... or die` empties its scratch copy on a failed match, on a path where `fail` then ends the run.
+- F7 ([S] blame 2): `cmd_pdf` labels its lines `M101-AC1/AC2`, which the M102 CI step now prints.
+No finding shows an acceptance criterion failing.

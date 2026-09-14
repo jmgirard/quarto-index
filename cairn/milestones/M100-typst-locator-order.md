@@ -232,6 +232,6 @@ Gate triage (user, 2026-09-14):
 - F2: fixed. The tiebreak sentence in `site/typst.qmd` now opens "Where two locators of one kind and number open on one page", and its M100-AC6 claim row matches.
 - F3: fixed. The M100 bullet of `CHANGELOG.md` now states the one-text range as a single mark and the merge place and link, with two new claim rows.
 - F4: fixed. Item 4 of `site/back-end-differences.qmd` now orders "by kind of numbering and then by number", and its M098-AC7 claim row matches.
-- F5: rejected. The gorse row already turns red if a page with no numbering takes the counter as its value.
+- F5: rejected. If a page with no numbering takes the counter as its value, the gorse row already turns red.
 - F6: rejected. It is style, as round-1 F11 was.
-- Fix check: the M100-AC6 and M098-AC7 claim files for `site/typst.qmd`, `CHANGELOG.md` and `site/back-end-differences.qmd` passed on the edited texts (13, 4, 34 and 15 claims), and the page-order sweep passed. Against the texts at e258e04, the changed claims are red (tiebreak, one text, merge, locators). `bash -n tests/run-tests.sh` passed. The code did not change, so the suite and matrix evidence above stands.
+- Fix check: the M100-AC6 and M098-AC7 claim files passed on the edited texts. They hold `site/typst.qmd` to 13 and 34 claims, `CHANGELOG.md` to 4 and `site/back-end-differences.qmd` to 15. The page-order sweep passed. Against the texts at e258e04, the changed claims are red (tiebreak, one text, merge, locators). `bash -n tests/run-tests.sh` passed. The code did not change, so the suite and matrix evidence above stands.

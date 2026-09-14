@@ -1598,6 +1598,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   same-block clause of `tests/figuremarks.py after` red. No plant changes the
   copied alt text to turn the `alts` check red, and that check was green on
   main. — M101 review F4
+- **KI302.** On the floor leg of the version matrix, the book render in the
+  render job can finish at exit 0 without the index. On dispatched run
+  34899204830 (attempt 1, 2026-09-14) it wrote `_book/index.html` and no index
+  section in `last.html`, so `indexdump.py` failed the leg. The push run on the
+  same commit and the rerun of that job passed. Nothing records how often it
+  happens or why. — M102 T6
 
 ### The repo and its packaging
 

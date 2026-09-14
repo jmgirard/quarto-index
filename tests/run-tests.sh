@@ -30660,7 +30660,8 @@ check_locator_role "$M101_HTML" "$HTML_SECTION_ID" elder principal \
 check_locator_role "$M101_HTML" "$HTML_SECTION_ID" dogwood plain \
   "M101-AC1 (HTML, the plain mark in alt text)"
 check_html_index_links "$M101_HTML" "M101-AC2 (HTML)"
-HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$M101_HTML" <<'M101IDPY'
+m101_alder_check() {   # <html>
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$1" <<'M101IDPY'
 import os, sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -30675,6 +30676,9 @@ if got != [['#alder-mark']]:
 print('ok   M101-AC1: alder links to #alder-mark, the id its author wrote on '
       'the caption mark')
 M101IDPY
+}
+m101_alder_check "$M101_HTML" \
+  || fail "M101-AC1: alder's locator does not link to the id its author wrote (the report is above)"
 
 printf 'section\t%s\th1\tIndex\n%s\n' "$HTML_SECTION_ID" "$M101_HTML_ROWS" \
   > "$WORK/figure-marks-epub-index.txt"
@@ -30713,8 +30717,10 @@ for kind in html epub; do
   done
 done
 
-# ORACLE — the printed LaTeX index: no letter groups, one line a term.
-python3 - "$M101_PDF" <<'M101PDFPY'
+# ORACLE — the printed LaTeX index: no letter groups, one line a term. A
+# function, so the self-test plant below runs this same comparison.
+m101_pdf_check() {   # <pdf>
+  python3 - "$1" <<'M101PDFPY'
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
@@ -30728,6 +30734,9 @@ if actual != expected:
 print(f'ok   M101-AC1/AC2: the PDF index prints the {len(expected)} lines its '
       f'manifest states')
 M101PDFPY
+}
+m101_pdf_check "$M101_PDF" \
+  || fail "M101-AC1/AC2: the PDF index of examples/figure-marks.qmd does not match its manifest (the report is above)"
 
 python3 tests/typstindex.py "$M101_TYPST" tests/figure-marks-typst.tsv \
     "M101-AC1/AC2 (Typst)" "Index" \
@@ -30880,6 +30889,112 @@ m101_recovery_probe "$M101B/recovery/_extensions/index/modules" \
     "M101-AC3 (recovery route, what it reads)" \
   || fail "M101-AC3: the recovery route reads a copied caption as a mark (the report is above)"
 pass "M101-AC3: in an HTML book a range opened in a figure caption, with or without an id on the figure, files one locator for its chapter on the record route and on the recovery route, with no report on the marks"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M101 T5 self-test — each fix undone on its own in a copy of the extension,
+  # and the check that holds it shown red with the failure that check names.
+  #   no-declass   the copied caption read as a mark again (passes.lua): the
+  #                log check red in each of the four formats, the log naming
+  #                the range already open, and the record-route index red
+  #   book-declass the same in the recovery reader (book.lua): the probe red
+  #   copy-id      the copy keeps its id (marks.lua): alder's link red
+  #   html-move    no id moved out of alt text (html.lua): the link check red
+  #   latex-move   no command moved out of alt text (index.lua): the PDF
+  #                manifest red
+  # -------------------------------------------------------------------------
+  M101P="$WORK/m101plant"
+  rm -rf "$M101P"
+
+  m101_tree() {   # <slug> <file under the extension> <perl substitution>
+    local dir="$M101P/$1"
+    mkdir -p "$dir/_extensions"
+    cp examples/figure-marks.qmd examples/dot.png "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    local target="$dir/_extensions/index/$2"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$3" < "$target" > "$dir/spliced" \
+      || fail "M101 T5 self-test ($1): the substitution aimed at $2 could not be applied (its own message is above)"
+    cmp -s "$target" "$dir/spliced" \
+      && fail "M101 T5 self-test ($1): the substitution reported a match and $2 is unchanged"
+    mv "$dir/spliced" "$target"
+  }
+
+  m101_render() {   # <slug> <format>
+    ( cd "$M101P/$1" && quarto render figure-marks.qmd --to "$2" ) \
+      > "$WORK/m101-$1-$2.log" 2>&1 \
+      || { tail -20 "$WORK/m101-$1-$2.log" >&2; fail "M101 T5 self-test ($1): the fixture failed to render to $2 through the planted copy"; }
+    capture "$M101P/$1/figure-marks.qmd" "$2" "m101-$1-$2"
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m101_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M101 self-test ($slug): the check passed the planted render, so its green says nothing about that fix"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M101 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this check catching this plant"; }
+    pass "M101 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  m101_tree no-declass modules/passes.lua \
+    's{  doc = qi_marks\.declass_caption_copies\(doc\)\n}{}'
+  for fmt in html epub pdf typst; do
+    m101_render no-declass "$fmt"
+    m101_red "no-declass, $fmt" "expected 0 warning(s) from this extension" \
+      check_extension_warning_count "$WORK/m101-no-declass-$fmt.log" 0 \
+      "M101 T5 plant no-declass ($fmt)"
+    check_warning_count "$WORK/m101-no-declass-$fmt.log" \
+      'range="open" on term "cedar" opens a range for a term whose range is already open' 1 \
+      "M101 T5 plant no-declass ($fmt: the report drawn is the second opening of cedar's range)"
+  done
+  rm -rf "$M101P/book-record"
+  cp -R "$M101B/base" "$M101P/book-record"
+  cp "$M101P/no-declass/_extensions/index/modules/passes.lua" \
+    "$M101P/book-record/_extensions/index/modules/passes.lua"
+  ( cd "$M101P/book-record" && quarto render --to html ) \
+    > "$WORK/m101-plant-book-record.log" 2>&1 \
+    || { tail -20 "$WORK/m101-plant-book-record.log" >&2; fail "M101 T5 self-test (no-declass, book): the record-route book failed to render"; }
+  capture --project "$M101P/book-record" html "m101-plant-book-record"
+  m101_red "no-declass, record route" "the generated index sections do not match the manifest" \
+    check_index_sections "$CAPTURE_ROOT/m101-plant-book-record/_book/last.html" \
+    "$M101_RECORD_ROWS" "M101 T5 plant no-declass (record route)" hrefs
+
+  m101_tree book-declass modules/book.lua \
+    's{qi_marks\.declass_caption_copies\(blocks\):walk}{blocks:walk}'
+  m101_red "book-declass, recovery route" "the recovery route read" \
+    m101_recovery_probe "$M101P/book-declass/_extensions/index/modules" \
+    "M101 T5 plant book-declass"
+
+  m101_tree copy-id modules/marks.lua \
+    's{    span\.identifier = ""\n    return span\n}{    return span\n}'
+  m101_render copy-id html
+  m101_red "copy-id" "alder links to" \
+    m101_alder_check "$CAPTURE_ROOT/m101-copy-id-html/figure-marks.html"
+
+  m101_tree html-move modules/html.lua \
+    's{      anchored\[span\.identifier\] = true\n}{}'
+  m101_render html-move html
+  m101_red "html-move" "resolve to no id in the same file" \
+    check_html_index_links "$CAPTURE_ROOT/m101-html-move-html/figure-marks.html" \
+    "M101 T5 plant html-move"
+
+  m101_tree latex-move index.lua \
+    's{  doc = qi_latex\.move_alt_commands\(doc\)\n}{}'
+  m101_render latex-move pdf
+  m101_red "latex-move" "the PDF index of examples/figure-marks.qmd prints" \
+    m101_pdf_check "$CAPTURE_ROOT/m101-latex-move-pdf/figure-marks.pdf"
+
+  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest"
+fi
 
 # ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.

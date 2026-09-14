@@ -91,14 +91,14 @@ The pattern is `A` and the counter is 4, so the page prints `D`.
 Upper letters, marked before lower letters: [dogwood]{.index}.
 
 ```{=typst}
-#set page(numbering: "α")
+#set page(numbering: "*")
 #counter(page).update(2)
 ```
 
 ## Physical page 7
 
-The pattern is `α`, a symbol of the class other, and the counter is 2, so the
-page prints `β`.
+The pattern is `*`, a symbol of the class other, and the counter is 2, so the
+page prints `†`.
 
 The class other, marked before upper letters: [elder]{.index}.
 

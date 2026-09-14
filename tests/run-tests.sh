@@ -29381,7 +29381,7 @@ M100_FOOTER='--footer=^\d+$'
 for needle in '#set page(numbering: "I")' '#set page(numbering: "i")' \
     '#set page(numbering: "1")' '#set page(numbering: "(1)")' \
     '#set page(numbering: "a")' '#set page(numbering: "A")' \
-    '#set page(numbering: "α")' '#set page(numbering: (..values) =>' \
+    '#set page(numbering: "*")' '#set page(numbering: (..values) =>' \
     '#set page(numbering: none)' '#counter(page).update(40)'; do
   grep -qF -- "$needle" examples/typst-order.qmd \
     || fail "M100-AC1: examples/typst-order.qmd no longer carries <<$needle>>, so the numbering it sets is no longer read"
@@ -29395,7 +29395,7 @@ entry	0	ash	ii@3, III@1
 entry	0	beech	II@4, 3@2
 entry	0	cedar	1@10, b@5
 entry	0	dogwood	c@8, D@6
-entry	0	elder	A@9, β@7
+entry	0	elder	A@9, †@7
 entry	0	fig	40@12, f2@11
 entry	0	gorse	13@13, 40@12
 entry	0	hazel	1@10, 3@2
@@ -29490,7 +29490,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m100_plant roman-arabic 's{"I": 1, "1": 2,}{"I": 2, "1": 1,}' 'beech\t3@2, II@4'
   m100_plant arabic-letters 's{"1": 2, "a": 3,}{"1": 3, "a": 2,}' 'cedar\tb@5, 1@10'
   m100_plant lower-upper-letters 's{"a": 3, "A": 4\)}{"a": 4, "A": 3)}' 'dogwood\tD@6, c@8'
-  m100_plant letters-other 's{"A": 4\)}{"A": 6)}' 'elder\tβ@7, A@9'
+  m100_plant letters-other 's{"A": 4\)}{"A": 6)}' 'elder\t†@7, A@9'
   # A numbering function counted as arabic, and a page with no numbering as
   # the class other.
   m100_plant function-arabic 's{\(5, counter\(page\)\.at\(loc\)\.first\(\)\)}{(2, counter(page).at(loc).first())}' \

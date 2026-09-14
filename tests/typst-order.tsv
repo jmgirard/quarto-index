@@ -14,7 +14,7 @@
 #   page 4   `I`    2   II    ur 2
 #   page 5   `a`    2   b     ll 2
 #   page 6   `A`    4   D     ul 4
-#   page 7   `α`    2   β     ot 2
+#   page 7   `*`    2   †     ot 2
 #   page 8   `a`    3   c     ll 3
 #   page 9   `A`    1   A     ul 1
 #   page 10  `1`    1   1     ar 1
@@ -89,7 +89,7 @@ entry	0	cedar	1@10, b@5
 group	D
 entry	0	dogwood	c@8, D@6
 group	E
-entry	0	elder	A@9, β@7
+entry	0	elder	A@9, †@7
 group	F
 entry	0	fig	40@12, f2@11
 group	G

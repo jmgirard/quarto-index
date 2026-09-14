@@ -29,9 +29,9 @@ fact of this source: page 1 is this page, and each break starts the next.
 term below holds the letters `f` and `i` in a row, which the Typst floor sets
 as one glyph.
 
-A figure with no id, whose caption marks one term:
+A figure with no id, whose caption marks one term with an id of its author's:
 
-![A caption that marks [alder]{.index}.](dot.png)
+![A caption that marks [alder]{#alder-mark .index}.](dot.png)
 
 {{< pagebreak >}}
 

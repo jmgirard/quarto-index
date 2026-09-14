@@ -6,9 +6,9 @@
 #
 # The pages come from the source's explicit page breaks: page 1 runs to the
 # first break, and each break starts the next page. Each term is one case.
-#   alder    a caption mark on a figure with no id, page 1. Pandoc copies the
-#            caption into the image's alt text, and the copy files nothing:
-#            one locator
+#   alder    a caption mark on a figure with no id, page 1, carrying an id of
+#            its author's. Pandoc copies the caption into the image's alt
+#            text, and the copy files nothing: one locator
 #   birch    a caption mark on a figure with an id, page 2: one locator
 #   cedar    a range opened in the caption of a figure with no id on page 3,
 #            closed in the text on page 4: one range, linked to page 3

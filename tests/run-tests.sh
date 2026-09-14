@@ -30584,7 +30584,10 @@ fi
 # is derived by hand from that source under the ORACLE RULE above; the Typst
 # one is the tracked file tests/figure-marks-typst.tsv, so the version matrix
 # reads the same rows. The terms, their pages and why each files one locator:
-#   alder    page 1, the caption of a figure with no id
+#   alder    page 1, the caption of a figure with no id, on a mark carrying
+#            the id `alder-mark`; the copy carries that id too, and a copy
+#            left carrying it made the mark yield its id with a report, so
+#            the HTML locator links to `#alder-mark` and the log is silent
 #   birch    page 2, the caption of a figure with an id
 #   cedar    a range opened in the caption of a figure with no id on page 3
 #            and closed in the text on page 4: one link in HTML and EPUB, the
@@ -30602,7 +30605,7 @@ fi
 # it is what shows that neither the declassed copy nor the moved id changes it.
 # ---------------------------------------------------------------------------
 section 'M101-AC1/AC2 — a mark in a figure caption or an image'\''s alt text files one locator.'
-for needle in '![A caption that marks [alder]{.index}.](dot.png)' \
+for needle in '![A caption that marks [alder]{#alder-mark .index}.](dot.png)' \
     '![A caption that marks [birch]{.index}.](dot.png){#fig-birch}' \
     '![A caption that opens [cedar]{.index range="open"}.](dot.png)' \
     'The range of cedar closes here: [cedar]{.index range="close"}.' \
@@ -30657,6 +30660,21 @@ check_locator_role "$M101_HTML" "$HTML_SECTION_ID" elder principal \
 check_locator_role "$M101_HTML" "$HTML_SECTION_ID" dogwood plain \
   "M101-AC1 (HTML, the plain mark in alt text)"
 check_html_index_links "$M101_HTML" "M101-AC2 (HTML)"
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$M101_HTML" <<'M101IDPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+got = [r['locators'] for r in H.index_entries(section)
+       if r['kind'] == 'entry' and r['term'] == 'alder']
+if got != [['#alder-mark']]:
+    print(f'FAIL: M101-AC1: alder links to {got!r}, not to the id its author '
+          f'wrote on the caption mark', file=sys.stderr)
+    sys.exit(1)
+print('ok   M101-AC1: alder links to #alder-mark, the id its author wrote on '
+      'the caption mark')
+M101IDPY
 
 printf 'section\t%s\th1\tIndex\n%s\n' "$HTML_SECTION_ID" "$M101_HTML_ROWS" \
   > "$WORK/figure-marks-epub-index.txt"
@@ -30718,6 +30736,150 @@ python3 tests/typstindex.py pages "$M101_TYPST" tests/figure-marks-typst.tsv \
     "M101-AC5 (Typst, the version matrix's reading)" "Index" \
   || fail "M101-AC5: the version matrix's reading of examples/figure-marks.qmd does not match tests/figure-marks-typst.tsv (the report is above)"
 pass "M101-AC1/AC2: in HTML, EPUB, PDF and Typst a mark in a figure caption files one locator, with an id on the figure or without, a range opened in a caption prints as a range, and a mark in an image's alt text files one locator, linked in HTML and EPUB to an element just after the image and printing the image's page in PDF and Typst, with no report and every image's alt unchanged"
+
+# ---------------------------------------------------------------------------
+# M101-AC3 — in an HTML book, a mark in a figure caption files one locator on both routes.
+#
+# A three-chapter book written here: `index.qmd` marks nothing, `figures.qmd`
+# holds the figures, and `last.qmd` carries the placement marker, so it builds
+# the index. `figures.qmd` opens a range in the caption of a figure with no id
+# and a second in the caption of a figure with an id, and closes each later in
+# the chapter. Pandoc's reader copies both captions into their images' alt
+# text, in the chapter's own render and in the recovery route's parse alike.
+#
+# The record route renders the whole book, so `figures.qmd` writes its record
+# before `last.qmd` reads it. The recovery route renders `last.qmd` alone into
+# a copy with no store, so it reads the source of `figures.qmd` instead.
+#
+# ORACLE, derived by hand from the chapter source below. On the record route
+# each range is one link, at its opening mark's minted anchor. `figures.qmd`
+# mints in document order: cedar's opening 1, birch's opening 2, and the two
+# closings 3 and 4, which link nowhere. On the recovery route a recovered mark
+# indexes as a plain page locator with no fragment where its author wrote no
+# id, and locators naming one page print once, so each term links to
+# `figures.html` alone.
+#
+# The recovery route's index prints one page link however many marks the
+# source yields, so a copied caption read as a mark changes nothing it prints.
+# What that route reads is held by a probe of `recovered_marks` over the same
+# source instead: two marks a term, an opening and a closing.
+# ---------------------------------------------------------------------------
+section 'M101-AC3 — in an HTML book, a mark in a figure caption files one locator on both routes.'
+M101B="$WORK/m101-book"
+rm -rf "$M101B"
+mkdir -p "$M101B/base/_extensions"
+cp -R "$QI_EXT_DIR" "$M101B/base/_extensions/index"
+cp examples/dot.png "$M101B/base/"
+cat > "$M101B/base/_quarto.yml" <<'M101YML'
+project:
+  type: book
+
+book:
+  title: "Figure caption marks"
+  chapters:
+    - index.qmd
+    - figures.qmd
+    - last.qmd
+
+filters:
+  - index
+M101YML
+printf '# Preface\n\nThis chapter marks no term.\n' > "$M101B/base/index.qmd"
+cat > "$M101B/base/figures.qmd" <<'M101FIGURES'
+# Figures
+
+![A caption that opens [cedar]{.index range="open"}.](dot.png)
+
+![A caption that opens [birch]{.index range="open"}.](dot.png){#fig-birch}
+
+The range of cedar closes here: [cedar]{.index range="close"}.
+
+The range of birch closes here: [birch]{.index range="close"}.
+M101FIGURES
+printf '# Last\n\nThe index follows.\n\n::: {.qi-index-here}\n:::\n' \
+  > "$M101B/base/last.qmd"
+
+read -r -d '' M101_RECORD_ROWS <<'MANIFEST' || true
+section	qi-index	h1	Index
+letter	B
+0	birch	figures.html#qi-mark-2
+letter	C
+0	cedar	figures.html#qi-mark-1
+MANIFEST
+read -r -d '' M101_RECOVERED_ROWS <<'MANIFEST' || true
+section	qi-index	h1	Index
+letter	B
+0	birch	figures.html
+letter	C
+0	cedar	figures.html
+MANIFEST
+
+# The record route: the whole book.
+cp -R "$M101B/base" "$M101B/record"
+( cd "$M101B/record" && quarto render --to html ) > "$WORK/m101-record.log" 2>&1 \
+  || { tail -30 "$WORK/m101-record.log" >&2; fail "M101-AC3: the record-route book failed to render"; }
+capture --project "$M101B/record" html "m101-record"
+check_index_sections "$CAPTURE_ROOT/m101-record/_book/last.html" \
+  "$M101_RECORD_ROWS" "M101-AC3 (record route)" hrefs
+check_extension_warning_count "$WORK/m101-record.log" 0 \
+  "M101-AC3 (record route: each range opens once, so nothing is reported)"
+
+# The recovery route: the last chapter alone, into a copy with no store.
+cp -R "$M101B/base" "$M101B/recovery"
+[ -e "$M101B/recovery/.quarto/$STORE_DIR" ] \
+  && fail "M101-AC3: the recovery copy carries a sidecar store, so its render would read records rather than sources"
+( cd "$M101B/recovery" && quarto render last.qmd --to html ) \
+  > "$WORK/m101-recovery.log" 2>&1 \
+  || { tail -30 "$WORK/m101-recovery.log" >&2; fail "M101-AC3: the recovery-route chapter failed to render"; }
+capture --project "$M101B/recovery" html "m101-recovery"
+check_index_sections "$CAPTURE_ROOT/m101-recovery/_book/last.html" \
+  "$M101_RECOVERED_ROWS" "M101-AC3 (recovery route)" hrefs
+check_store_reports "$WORK/m101-recovery.log" \
+  "M101-AC3 (recovery route: the one report is that figures.qmd has no record)" \
+  WARN_STORE_NEVER_RECOVERED=1
+check_extension_warning_count "$WORK/m101-recovery.log" 1 \
+  "M101-AC3 (recovery route: nothing is reported on the caption marks)"
+
+# The probe of what the recovery route reads, run through Quarto's own Pandoc
+# from a modules directory, as the M093 probes are.
+m101_recovery_probe() {   # <modules dir> <label>
+  local dir="$1" label="$2" got want
+  cat > "$M101B/probe.lua" <<'M101PROBE'
+local qi_book = require("./book")
+local fh = assert(io.open(arg[1], "r"))
+local text = fh:read("a")
+fh:close()
+local parsed = pandoc.read(text, "markdown")
+local counts, order = {}, {}
+for _, mark in ipairs(qi_book.recovered_marks(parsed.meta, parsed.blocks)) do
+  local term = mark.levels[1]
+  if counts[term] == nil then
+    order[#order + 1] = term
+  end
+  counts[term] = (counts[term] or 0) + 1
+end
+table.sort(order)
+for _, term in ipairs(order) do
+  print(term .. "\t" .. counts[term])
+end
+M101PROBE
+  local root
+  root=$(cd "$M101B" && pwd)
+  want=$(printf 'birch\t2\ncedar\t2')
+  got=$( cd "$dir" && quarto pandoc lua "$root/probe.lua" \
+           "$root/base/figures.qmd" 2>&1 ) \
+    || { printf '%s\n' "$got" >&2; printf 'FAIL: %s: the probe exited non-zero\n' "$label" >&2; return 1; }
+  if [ "$got" != "$want" ]; then
+    printf 'FAIL: %s: the recovery route read <<%s>> marks a term, not <<%s>>\n' \
+      "$label" "$got" "$want" >&2
+    return 1
+  fi
+  printf 'ok   %s: the recovery route reads two marks of each term, an opening and a closing\n' "$label"
+}
+m101_recovery_probe "$M101B/recovery/_extensions/index/modules" \
+    "M101-AC3 (recovery route, what it reads)" \
+  || fail "M101-AC3: the recovery route reads a copied caption as a mark (the report is above)"
+pass "M101-AC3: in an HTML book a range opened in a figure caption, with or without an id on the figure, files one locator for its chapter on the record route and on the recovery route, with no report on the marks"
 
 # ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.

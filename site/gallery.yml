@@ -37,6 +37,7 @@ not-shown:
   - examples/dangling-xref.qmd
   - examples/escaping.qmd
   - examples/fold-xref-both.qmd
+  - examples/figure-marks.qmd
   - examples/fold-xref-empty.qmd
   - examples/fold-xref-self.qmd
   - examples/fold-xref.qmd

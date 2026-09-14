@@ -117,7 +117,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       image, as `assign_labels` does for Typst (`typst.lua:297`). HTML and EPUB
       get an empty span carrying the id, in `assign_anchors` (`html.lua:622`).
       LaTeX gets the `\index` command, in `latex.lua`.
-- [ ] T4: Add the two HTML book cases to `tests/run-tests.sh`, one on the
+- [x] T4: Add the two HTML book cases to `tests/run-tests.sh`, one on the
       record route and one on the recovery route. Follow the M069 recovery
       cases.
 - [ ] T5: Plant each fix. Revert T2 and show the AC1 range check red in each
@@ -144,6 +144,9 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: T1 done. The figure div's image carries a trailing backslash: alone in its paragraph, Pandoc makes it a nested figure, whose LaTeX fails to compile and whose alt text is a caption copy. The alt checks live in `tests/figuremarks.py`. Red on main: the log check in all four formats; the HTML and EPUB manifests (alder and cedar file 2); the HTML and EPUB link checks; all six `after` checks; the PDF manifest (no dogwood, elder or hazel line). Green on main: the `alt` checks, the two locator roles, both Typst readings.
 - 2026-09-14: T2 done. `declass_caption_copies` lives in `marks.lua`, the one module both `passes.lua` and `book.lua` load. It compares the image's alt inlines with the caption's inlines by Lua equality. The M101 section's log checks and the HTML and EPUB manifests went green. The full suite runs after T3, whose checks the M101 section still shows red.
 - 2026-09-14: T3 done. `assign_anchors` moves each mark id out of an image's alt text to an empty span after the image. `move_alt_commands` in `latex.lua` moves the `\index` and registration commands the same way, called from the LaTeX path of `index.lua`. Every check in the M101 section is green on a driver run of that section alone.
+- 2026-09-14: the full suite on the T3 commit failed only at M41-AC1, which needs every fixture listed in `site/gallery.yml`. The fixture is now under `not-shown:`.
+- 2026-09-14: T2 extended. A book prototype showed the declassed copy kept the author's id, so the HTML id census counted two carriers and the mark yielded its id with a report. `declass_caption_copies` now clears the copy's id too. The fixture's alder mark carries `#alder-mark`, and a new check holds its locator to that id.
+- 2026-09-14: T4 done. The M101-AC3 section writes a three-chapter book under `$WORK`. The recovery route prints one page link per term whatever the source yields, so its index cannot show a copied caption. A `quarto pandoc lua` probe of `recovered_marks` counts two marks a term, and three with the book.lua call removed (seen in a scratch copy).
 
 ## Decisions
 

@@ -611,7 +611,8 @@ end
 -- read as one it filed a second locator and opened a range a second time
 -- (observed on Quarto 1.10.18 in every format, and in the recovery route's own
 -- parse). Each span in such a copy loses the index class, and nothing else
--- about it changes, so the `alt` text every writer prints stays what it was.
+-- about it but its id changes, so the `alt` text every writer prints stays
+-- what it was.
 --
 -- A copy is the alt text of an image that is the figure's only content and
 -- equals the figure's caption. An image whose alt text differs from the
@@ -625,6 +626,10 @@ local function declass_caption_copies(node)
     span.classes = span.classes:filter(function(class)
       return class ~= qi_core.INDEX_CLASS
     end)
+    -- The copy carries the author's id too. Left in place, the HTML back-end's
+    -- id census counts it as a second element of that name and the mark
+    -- yields its own id. No writer prints an id inside alt text.
+    span.identifier = ""
     return span
   end
   return node:walk({

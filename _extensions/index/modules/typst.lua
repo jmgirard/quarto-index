@@ -29,12 +29,14 @@ local M = {}
 -- tree recorded. Each label is looked up while the document is typeset, and
 -- a label no element carries adds no locator rather than failing the render
 -- (IP2). The locators are ordered by physical page. A range whose two ends
--- print the same text prints that text alone. Locators that print the same
--- text are one locator, at the place of the first, bold where any is
--- principal, and linked to the first (M099). A page that a range of the same
+-- print the same text prints that text alone. A page that a range of the same
 -- entry spans, its two end pages included, prints no locator of its own, bold
 -- or not, as makeindex drops such a page in the PDF back-end (M098 review).
--- The pages a range spans are physical pages. makeindex also folds a page just after a range into
+-- The pages a range spans are physical pages, and they are dropped first.
+-- Of the locators left, those that print the same text are one locator, at
+-- the place of the first, bold where any is principal, and linked to the
+-- first (M099). Merging first would drop a later locator with the first
+-- when the first sits in a range (M099 claim audit). makeindex also folds a page just after a range into
 -- the range, which this does not. Three
 -- marks on consecutive pages print three locators: only an author's range
 -- prints as a range (the M098 question gate). The separators are the ones
@@ -71,6 +73,8 @@ local TYPST_HELPERS = [[
     }
   }
   found = found.sorted(key: f => f.start.page() * 1000000 + f.stop.page())
+  let ranges = found.filter(f => f.spans)
+  found = found.filter(f => f.spans or ranges.all(r => f.start.page() < r.start.page() or f.start.page() > r.stop.page()))
   let merged = ()
   for f in found {
     let at = merged.position(m => m.shown == f.shown)
@@ -79,12 +83,9 @@ local TYPST_HELPERS = [[
     } else {
       let kept = merged.at(at)
       kept.bold = kept.bold or f.bold
-      kept.spans = kept.spans or f.spans
       merged.at(at) = kept
     }
   }
-  let ranges = found.filter(f => f.spans)
-  merged = merged.filter(f => f.spans or ranges.all(r => f.start.page() < r.start.page() or f.start.page() > r.stop.page()))
   let line = [#term]
   for f in merged {
     line = line + [, ] + link(f.start, if f.bold { strong(f.shown) } else { f.shown })

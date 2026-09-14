@@ -29022,7 +29022,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_terms samepage 'elm\t1–1@1'
 
   # Pages a range spans (T10): the filter that drops their locators undone.
-  m098_tree nocover typst.lua 's{merged = merged\.filter\(f => f\.spans or }{merged = merged.filter(f => true or }'
+  m098_tree nocover typst.lua 's{found = found\.filter\(f => f\.spans or }{found = found.filter(f => true or }'
   m098_render nocover
   m098_terms nocover 'kelp\t2*@2, 2–3@2, 3@3, 4@4'
 
@@ -29103,8 +29103,9 @@ M098COLPY
 fi
 
 # ---------------------------------------------------------------------------
-# M099-AC1/AC2 — a Typst locator prints the text its page's numbering prints,
-# and the locators of one entry that print one text print it once.
+# M099-AC1/AC2 — a Typst locator prints the text its page numbering prints.
+#
+# The locators of one entry that print one text print it once.
 #
 # examples/typst-numbering.qmd sets the pattern `1 / 1`, changes it and resets
 # the page counter in raw Typst blocks. It does not use the `page-numbering:`
@@ -29147,6 +29148,7 @@ entry	0	holly	2 / 5@4, ii of V@5
 entry	0	iris	- 3 -@6
 entry	0	juniper	7@7
 entry	0	kale	1 / 5@1, 2 / 5@2
+entry	0	lime	1 / 5–2 / 5@1, 2 / 5@4
 M099ROWS
 
 quarto render examples/typst-numbering.qmd --to typst > "$WORK/typst-numbering.log" 2>&1 \
@@ -29244,7 +29246,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m099_read firstbold 'cedar\t1 / 5@1'
 
   # A merged locator linked to its later page.
-  m099_tree laterlink 's{kept\.spans = kept\.spans or f\.spans}{kept.spans = kept.spans or f.spans; kept.start = f.start}'
+  m099_tree laterlink 's{merged\.at\(at\) = kept}{kept.start = f.start; merged.at(at) = kept}'
   m099_render laterlink
   m099_read laterlink 'cedar\t1 / 5*@3'
 
@@ -29257,6 +29259,13 @@ if [ "${1:-}" = "--self-test" ]; then
   m099_tree textspan 's{ranges\.all\(r => f\.start\.page\(\) < r\.start\.page\(\) or f\.start\.page\(\) > r\.stop\.page\(\)\)}{ranges.all(r => f.shown != r.shown)}'
   m099_render textspan
   m099_read textspan 'birch\t1 / 5@1, 2 / 5@2'
+
+  # The merge run before the pages a range spans are dropped, the order the
+  # M099 claim audit found losing a later locator with a spanned first one.
+  # One substitution moves the drop below the merge loop.
+  m099_tree mergefirst 's{  let ranges = found\.filter\(f => f\.spans\)\n  found = found\.filter\((.*?)\)\n(  let merged = \(\)\n.*?\n  \}\n)}{$2  let ranges = found.filter(f => f.spans)\n  merged = merged.filter($1)\n}s'
+  m099_render mergefirst
+  m099_read mergefirst 'lime\t1 / 5–2 / 5@1\t'
 
   # The version matrix's reading over the one-counter plant: red too.
   m098_red m099-neverboth-pages "(0, 'gorse, ii')" python3 tests/typstindex.py pages \

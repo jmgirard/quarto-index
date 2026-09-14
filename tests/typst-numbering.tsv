@@ -15,7 +15,7 @@
 #   page 6  counter 3                  `- 1 -`
 #   page 7  counter 4                  none
 #   page 8  counter 5, the index       `1 / 1`
-# The index holds eleven one-line entries under eleven letter groups, which fit on
+# The index holds twelve one-line entries under twelve letter groups, which fit on
 # one page, so page 8 is the last page. The final value of the page counter is
 # therefore 5: 2 on page 5, plus one for each of pages 6, 7 and 8. A pattern
 # naming two counters prints it as `5`, or as `V` for `I`.
@@ -37,6 +37,9 @@
 #   iris     one mark under `- 1 -`, page 6
 #   juniper  one mark on page 7, which has no numbering
 #   kale     pages 1, 2 and 3: `1 / 5` once, where page 1 puts it, then `2 / 5`
+#   lime     a range from page 1 to page 2, a mark on page 2 inside it and a
+#            mark on page 4, which prints `2 / 5` as page 2 does: the page 2
+#            mark prints nothing, and page 4 prints its own locator
 group	A
 entry	0	apple	1 / 5@1
 group	B
@@ -59,3 +62,5 @@ group	J
 entry	0	juniper	7@7
 group	K
 entry	0	kale	1 / 5@1, 2 / 5@2
+group	L
+entry	0	lime	1 / 5–2 / 5@1, 2 / 5@4

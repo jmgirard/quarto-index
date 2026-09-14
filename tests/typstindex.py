@@ -437,8 +437,8 @@ def pages_main(argv, footer_pattern=None):
     if not compare(actual, expected, label):
         return 1
     print(f'ok   {label}: pdfindex reads the {len(expected)} lines of '
-          f'{heading!r} in the manifest\'s order, each locator on the '
-          f'manifest\'s page')
+          f'{heading!r} in the manifest\'s order, each locator\'s text as '
+          f'the manifest prints it')
     return 0
 
 

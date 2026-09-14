@@ -45,6 +45,10 @@ that prints the same text: [elm]{.index range="open"} and
 A term marked here, on the next page and after the reset prints the text of
 this page first, where its earliest mark sits: [kale]{.index}.
 
+A range opens here and closes on the next page, which a mark inside the
+range shares, and a mark after the reset prints that page's text again:
+[lime]{.index range="open"}.
+
 {{< pagebreak >}}
 
 ## Physical page 2
@@ -60,6 +64,9 @@ A range opens here and closes after the reset, on a page that prints a lower
 number: [fern]{.index range="open"}.
 
 The second mark of `kale`: [kale]{.index}.
+
+The range of `lime` closes here, beside a mark inside it:
+[lime]{.index range="close"} and [lime]{.index}.
 
 {{< pagebreak >}}
 
@@ -92,6 +99,9 @@ The third mark of `kale`: [kale]{.index}.
 The page counter is 2.
 
 The second range of `dune` closes here: [dune]{.index range="close"}.
+
+The mark of `lime` that prints the text of the page inside its range:
+[lime]{.index}.
 
 A term marked here and on the next page, where the counter is also 2 under
 another pattern, prints two locators: [holly]{.index}.

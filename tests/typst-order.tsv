@@ -80,6 +80,9 @@
 #   thyme    ll 9 `i` on page 35, lr 1 `i` on page 36 and a range lr 1 to lr 3
 #            on pages 36 to 37: the lr `i` is spanned and prints nothing, so
 #            the ll `i` is not merged with it and prints
+#   vetch    on page 37 a range opens on lr 3, a single mark follows on lr 3,
+#            a counter update sets 1, and the range closes on lr 1: it spans
+#            nothing, both close on page 37, and the single mark comes first
 #   willow   a range ar 7 to ar 8, pages 21 to 32, spans 7 and 8; ar 1 on
 #            page 22 lies inside the range's pages and is not spanned, so it
 #            prints: 1 first, by value
@@ -123,5 +126,7 @@ group	S
 entry	0	sage	i*@35, 2@33
 group	T
 entry	0	thyme	i–iii@36, i@35
+group	V
+entry	0	vetch	iii@37, iii–i@37
 group	W
 entry	0	willow	1@22, 7–8@21

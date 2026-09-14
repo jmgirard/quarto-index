@@ -488,6 +488,16 @@ The pattern is `i` and the counter is 3, so the page prints `iii`.
 
 The range of `thyme` closes here: [thyme]{.index range="close"}.
 
+A range opens here, and a single mark follows it on value 3:
+[vetch]{.index range="open"} and [vetch]{.index}.
+
+```{=typst}
+#counter(page).update(1)
+```
+
+The counter is now 1 on this same page, so the range closes on value 1 and
+spans nothing, and the page's footer prints `i`: [vetch]{.index range="close"}.
+
 ```{=typst}
 #set page(numbering: "1")
 #counter(page).update(1)

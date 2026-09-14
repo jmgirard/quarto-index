@@ -103,6 +103,7 @@ local TYPST_HELPERS = [[
       found.push((start: start, stop: stop, shown: shown, bold: item.at(2), class: class, value: value, high: high, single: single, spans: not single and high-class == class and high > value))
     }
   }
+  found = found.sorted(key: f => if f.single { 0 } else { 1 })
   found = found.sorted(key: f => f.stop.page())
   found = found.sorted(key: f => f.start.page())
   found = found.sorted(key: f => f.value)

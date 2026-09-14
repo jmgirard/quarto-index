@@ -29411,6 +29411,7 @@ entry	0	quince	1–6@22, 2–4@29, 5–8@31
 entry	0	rowan	2–(2)@14, 2@17
 entry	0	sage	i*@35, 2@33
 entry	0	thyme	i–iii@36, i@35
+entry	0	vetch	iii@37, iii–i@37
 entry	0	willow	1@22, 7–8@21
 M100ROWS
 
@@ -29505,6 +29506,10 @@ if [ "${1:-}" = "--self-test" ]; then
   # A range before a single mark that opens on its page.
   m100_plant range-first 's{sorted\(key: f => f\.stop\.page\(\)\)}{sorted(key: f => -f.stop.page())}' \
     'juniper\t4–i@16, 4@16'
+  # A range before a single mark where both close on one page: document order
+  # decides, and the range of vetch is written first.
+  m100_plant range-first-same-page 's{  found = found\.sorted\(key: f => if f\.single \{ 0 \} else \{ 1 \}\)\n}{}' \
+    'vetch\tiii–i@37, iii@37'
 
   # Span. The span tested by physical page, the M099 rule.
   m100_plant physical-span 's{f\.class != r\.class or f\.value < r\.value or f\.value > r\.high}{f.start.page() < r.start.page() or f.start.page() > r.stop.page()}' \

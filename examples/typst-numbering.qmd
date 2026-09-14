@@ -38,6 +38,9 @@ A range that opens and closes on this page sits beside a mark after the reset
 that prints the same text: [elm]{.index range="open"} and
 [elm]{.index range="close"}.
 
+A term marked here, on the next page and after the reset prints the text of
+this page first, where its earliest mark sits: [kale]{.index}.
+
 {{< pagebreak >}}
 
 ## Physical page 2
@@ -51,6 +54,8 @@ The first range of `dune` closes here: [dune]{.index range="close"}.
 
 A range opens here and closes after the reset, on a page that prints a lower
 number: [fern]{.index range="open"}.
+
+The second mark of `kale`: [kale]{.index}.
 
 {{< pagebreak >}}
 
@@ -73,6 +78,8 @@ The second range of `dune` opens here: [dune]{.index range="open"}.
 The mark of `elm`: [elm]{.index}.
 
 The range of `fern` closes here: [fern]{.index range="close"}.
+
+The third mark of `kale`: [kale]{.index}.
 
 {{< pagebreak >}}
 

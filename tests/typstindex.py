@@ -282,7 +282,10 @@ def parse_entry(words):
                              f'locators of {_text(words)!r}')
         locator.append(word)
         i += 1
-        ends = word.text.endswith(',')
+        # A comma ends a locator only where more words follow. At the end of
+        # the line it stays in the text, so a stray separator reads as a
+        # mismatch rather than as the locator before it (M099 review R3).
+        ends = word.text.endswith(',') and i < len(words)
         if not ends and i < len(words) and not words[i].italic:
             continue
         if not ends and i < len(words):

@@ -452,9 +452,12 @@ Three back-ends ship:
   the outline did not list (M098 claim audit). Its helper functions query each label's location
   while the document is typeset, print each locator as its page's numbering
   prints it (with the counter's final value where the pattern names two
-  counters, M099), merge the locators of one entry that print one text,
+  counters or is a function, M099), drop a single mark on a page a range of
+  its entry spans, then merge the locators left that print one text,
   print a range from its opening page to its closing page, set a principal locator in
-  bold and link each locator to its location. A label no element carries adds
+  bold and link each locator to its mark's position (a position, not a
+  location, since M099 review R1: a link to a location fails to compile
+  under a two-argument numbering function). A label no element carries adds
   no locator, so a mark Quarto's template never prints cannot fail the render
   (IP2). Every term, word and heading is a Typst string literal, so no
   character is read as markup. No Typst package is imported (GP3). As for
@@ -1030,9 +1033,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   open says the mark indexes as an ordinary page number. Where a range spans
   that page, the LaTeX and Typst indexes print no locator for it. — M098
   review pass 2 F4
-- **KI297.** A page numbering set as a Typst function in raw Typst prints its
-  locator by calling the function with the page counter alone. Typst's footer
-  calls it with the final value too, so the two can differ. — M099 T7
+- **KI298.** A Typst locator reads the page counter at its mark. Where raw
+  Typst updates the page counter later on the same page, the footer prints
+  the updated value and the locator does not: a mark before
+  `#counter(page).update(n => n + 5)` printed `1 / 7` under a footer of
+  `6 / 7`. Observed on Typst 0.15.1. — M099 review R4
 
 ### Reports and messages
 

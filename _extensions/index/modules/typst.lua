@@ -20,9 +20,14 @@ local M = {}
 -- it, and the physical page where the page has no numbering. Typst's footer
 -- fills a pattern that names two or more counting symbols with the page
 -- counter's value and its final value, and any other pattern with the value
--- alone (M099). `qi-index-counters` counts those symbols: a character `c` is
--- one when the pattern `c1` filled with 2 does not print `c2`.
--- A numbering function gets the value alone.
+-- alone (M099). `qi-index-counters` counts those symbols: a grapheme cluster
+-- `c` is one when the pattern `c1` filled with 2 does not print `c2`. A
+-- numbering function gets both values, as the footer calls it with both.
+--
+-- Each locator links to its mark's position rather than to its location.
+-- A link to a location on a page whose numbering is a function of two
+-- arguments fails to compile, because Typst calls that function with the
+-- page value alone for the link (observed on Typst 0.15.1, M099 review R1).
 --
 -- `qi-index-entry` prints one entry line. `items` holds one
 -- `(opening label, closing label or none, principal)` triple per locator the
@@ -49,7 +54,7 @@ local TYPST_HELPERS = [[
   let pattern = loc.page-numbering()
   if pattern == none {
     str(loc.page())
-  } else if type(pattern) == str and qi-index-counters(pattern) >= 2 {
+  } else if type(pattern) != str or qi-index-counters(pattern) >= 2 {
     numbering(pattern, ..counter(page).at(loc), ..counter(page).final())
   } else {
     numbering(pattern, ..counter(page).at(loc))
@@ -88,7 +93,7 @@ local TYPST_HELPERS = [[
   }
   let line = [#term]
   for f in merged {
-    line = line + [, ] + link(f.start, if f.bold { strong(f.shown) } else { f.shown })
+    line = line + [, ] + link(f.start.position(), if f.bold { strong(f.shown) } else { f.shown })
   }
   for (i, xref) in xrefs.enumerate() {
     line = line + (if i == 0 { [, ] } else { [; ] }) + xref

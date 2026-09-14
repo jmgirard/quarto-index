@@ -29043,7 +29043,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_terms allbold 'aardvark\t1*@1'
 
   # A range's link: to the closing page instead of the opening one.
-  m098_tree closelink typst.lua 's{link\(f\.start, }{link(f.stop, }'
+  m098_tree closelink typst.lua 's{link\(f\.start\.position\(\), }{link(f.stop.position(), }'
   m098_render closelink
   m098_terms closelink 'fern\t1–2@2'
 
@@ -29110,7 +29110,7 @@ fi
 # examples/typst-numbering.qmd sets the pattern `1 / 1`, changes it and resets
 # the page counter in raw Typst blocks. It does not use the `page-numbering:`
 # key, which the Typst template of Quarto 1.5.52 ignores (observed on the
-# version matrix's floor leg, 2026-09-14). Its page breaks and
+# version matrix's floor leg, 2026-09-13). Its page breaks and
 # `set page` rules fix the physical page of every mark, and the page counter
 # and pattern on each page. The manifest, tests/typst-numbering.tsv, is derived
 # by hand from that source under the ORACLE RULE above, and its comment shows
@@ -29167,6 +29167,40 @@ python3 tests/typstindex.py "$M099_PDF" tests/typst-numbering.tsv \
 python3 tests/typstindex.py pages "$M099_PDF" tests/typst-numbering.tsv \
   "Typst index under a page numbering (pages)" "Index" "$M099_FOOTER" \
   || fail "M099-AC4: the version matrix's reading of examples/typst-numbering.qmd does not match tests/typst-numbering.tsv (the report is above)"
+# A page numbering set as a Typst function of two arguments (M099 review R1).
+# Typst's footer calls it with the page counter's value and its final value,
+# and a link to a location on such a page fails to compile. The document is
+# built here: one page of text, then the index page, so the final value is 2
+# and both marks sit on page 1, whose footer prints `1 of 2`.
+m099_function_doc() {   # <dir>
+  mkdir -p "$1/_extensions"
+  cp -R "$QI_EXT_DIR" "$1/_extensions/index"
+  cat > "$1/function.qmd" <<'M099FUNCQMD'
+---
+filters:
+  - index
+---
+
+```{=typst}
+#set page(numbering: (n, total) => [#n of #total])
+```
+
+A mark: [apple]{.index}. A range on this page: [birch]{.index range="open"}
+and [birch]{.index range="close"}.
+M099FUNCQMD
+  printf 'group\tA\nentry\t0\tapple\t1 of 2@1\t\ngroup\tB\nentry\t0\tbirch\t1 of 2@1\t\n' \
+    > "$1/function.tsv"
+}
+M099F="$WORK/m099-function"
+rm -rf "$M099F"
+m099_function_doc "$M099F"
+( cd "$M099F" && quarto render function.qmd --to typst ) > "$WORK/m099-function.log" 2>&1 \
+  || { tail -20 "$WORK/m099-function.log" >&2; fail "M099 review R1: a document whose page numbering is a Typst function failed to render (IP2)"; }
+python3 tests/typstindex.py "$M099F/function.pdf" "$M099F/function.tsv" \
+  "Typst index under a numbering function" "Index" '--footer=^\d+ of \d+$' \
+  || fail "M099 review R1: the index under a numbering function does not print what the footer prints (the report is above)"
+pass "M099 review R1: a document whose page numbering is a Typst function of two arguments renders, and each locator prints what the footer prints"
+
 pass "M099-AC1/AC2: a Typst render of examples/typst-numbering.qmd prints each locator as its page's numbering prints it, under two two-counter patterns, a one-counter pattern and none, and the locators of one entry that print one text print it once, at the earliest page, bold where any mark is principal"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -29302,6 +29336,37 @@ if [ "${1:-}" = "--self-test" ]; then
     "$M099_PDF" tests/typst-numbering.tsv "M099 T5 plant nofooter" "Index"
   m098_red m099-nofooter-pages "(1, '5 / 5')" python3 tests/typstindex.py pages \
     "$M099_PDF" tests/typst-numbering.tsv "M099 T5 plant nofooter (pages)" "Index"
+
+  # A numbering function (review R1): filled with the page value alone, and
+  # linked to a location, each fails the render with Typst's own error.
+  m099_function_red() {   # <slug> <perl substitution on typst.lua>
+    local dir="$WORK/m099-function-$1"
+    rm -rf "$dir"
+    m099_function_doc "$dir"
+    local filter="$dir/_extensions/index/modules/typst.lua"
+    perl -0777 -pi -e "BEGIN { \$n = 0 } \$n += $2; END { die \"the substitution matched nothing\n\" unless \$n }" "$filter" \
+      || fail "M099 review R1 self-test ($1): the substitution aimed at typst.lua matched nothing"
+    m098_red "m099-function-$1" 'missing argument: total' \
+      bash -c "cd '$dir' && quarto render function.qmd --to typst"
+  }
+  m099_function_red onevalue 's{type\(pattern\) != str or }{type(pattern) == str and }'
+  m099_function_red locationlink 's{link\(f\.start\.position\(\), }{link(f.start, }'
+
+  # The reader keeps a comma at the end of a line (review R3), so a stray
+  # separator after the last locator is a mismatch.
+  python3 - <<'M099COMMAPY' || fail "M099 review R3: tests/typstindex.py strips a comma after the last locator of a line"
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+term = typstindex.Word('apple,', 0, 0, 1, 1)
+last = typstindex.Word('1,', 0, 0, 1, 1)
+last.link = 1
+_, locators, _ = typstindex.parse_entry([term, last])
+if locators != [('1,', False, 1)]:
+    print(f'FAIL: M099 review R3: read {locators!r}', file=sys.stderr)
+    sys.exit(1)
+M099COMMAPY
+  pass "M099 review R3: tests/typstindex.py keeps a comma after the last locator of a line"
 
   pass "M099 T5 self-test: each AC1 and AC2 clause is planted on its own and shown red with the row that clause decides, an unplanted copy stays green, and both readings are red with the footer left unnamed"
 fi

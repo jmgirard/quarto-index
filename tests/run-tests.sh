@@ -30569,6 +30569,157 @@ if [ "${1:-}" = "--self-test" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# M101-AC1/AC2 — a mark in a figure caption or an image's alt text files one locator.
+#
+# Pandoc copies the caption of a figure with no id into the alt text of the
+# image the figure holds, so a caption mark reached the filter twice: it filed
+# a second locator, and a range opened there reported that the term's range was
+# already open. A mark an author writes in the alt text of an image that is no
+# such copy filed a locator that linked to nothing in HTML and EPUB, because
+# those writers print alt text as a flat string, and wrote no `\index` in
+# LaTeX, whose writer drops raw LaTeX there.
+#
+# examples/figure-marks.qmd holds one case a page, each ending in an explicit
+# page break, so each mark's page is a fact of its source. Every manifest here
+# is derived by hand from that source under the ORACLE RULE above; the Typst
+# one is the tracked file tests/figure-marks-typst.tsv, so the version matrix
+# reads the same rows. The terms, their pages and why each files one locator:
+#   alder    page 1, the caption of a figure with no id
+#   birch    page 2, the caption of a figure with an id
+#   cedar    a range opened in the caption of a figure with no id on page 3
+#            and closed in the text on page 4: one link in HTML and EPUB, the
+#            span 3–4 in PDF and Typst
+#   dogwood  page 5, a plain mark in the alt text of an image in a sentence
+#   elder    page 5, a principal mark in that same alt text
+#   hazel    page 6, the alt text of an image in a figure div; the backslash
+#            after the image keeps it from being a figure of its own
+# In PDF the fixture redefines the principal command to print `[P:<page>]`, so
+# the principal locator is visible to pdftotext.
+#
+# Which image's alt text each alt-text mark sits in, counted over the page's
+# images outside the index in document order: dogwood and elder in image 4,
+# hazel in image 5. The `alt` each image carries is stated below, and holding
+# it is what shows that neither the declassed copy nor the moved id changes it.
+# ---------------------------------------------------------------------------
+section 'M101-AC1/AC2 — a mark in a figure caption or an image'\''s alt text files one locator.'
+for needle in '![A caption that marks [alder]{.index}.](dot.png)' \
+    '![A caption that marks [birch]{.index}.](dot.png){#fig-birch}' \
+    '![A caption that opens [cedar]{.index range="open"}.](dot.png)' \
+    'The range of cedar closes here: [cedar]{.index range="close"}.' \
+    '![alt text that marks [dogwood]{.index} and [elder]{.index mention="principal"}](dot.png),' \
+    '![Alt text that marks [hazel]{.index}](dot.png)\' \
+    '::: {#fig-hazel}' 'fig-pos: H'; do
+  grep -qxF -- "$needle" examples/figure-marks.qmd \
+    || fail "M101-AC1/AC2: examples/figure-marks.qmd no longer carries the line <<$needle>>, so the case the manifests below state is no longer rendered"
+done
+M101_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/figure-marks.qmd || true; } | tr -d ' ')
+[ "$M101_BREAKS" = "5" ] \
+  || fail "M101-AC1/AC2: examples/figure-marks.qmd carries $M101_BREAKS page breaks, not the five its manifests number pages by"
+pass "M101-AC1/AC2: examples/figure-marks.qmd carries each case its manifests state, and five page breaks"
+
+for fmt in html epub pdf typst; do
+  quarto render examples/figure-marks.qmd --to "$fmt" \
+    > "$WORK/figure-marks-$fmt.log" 2>&1 \
+    || { tail -40 "$WORK/figure-marks-$fmt.log" >&2; fail "M101-AC1: examples/figure-marks.qmd failed to render to $fmt"; }
+  capture examples/figure-marks.qmd "$fmt" "figure-marks-$fmt"
+  # The copied caption is what drew the report on the range in cedar's
+  # caption, and nothing else in the fixture is misused.
+  check_extension_warning_count "$WORK/figure-marks-$fmt.log" 0 \
+    "M101-AC1 (examples/figure-marks.qmd, $fmt: every mark in it is well formed, and a range opened in a caption is opened once)"
+done
+M101_HTML="$CAPTURE_ROOT/figure-marks-html/figure-marks.html"
+M101_EPUB="$CAPTURE_ROOT/figure-marks-epub/figure-marks.epub"
+M101_PDF="$CAPTURE_ROOT/figure-marks-pdf/figure-marks.pdf"
+M101_TYPST="$CAPTURE_ROOT/figure-marks-typst/figure-marks.pdf"
+for artifact in "$M101_HTML" "$M101_EPUB" "$M101_PDF" "$M101_TYPST"; do
+  [ -s "$artifact" ] || fail "M101-AC1: the render produced no $artifact"
+done
+
+# ORACLE — one locator a term, the range included, which HTML and EPUB print
+# as one link.
+read -r -d '' M101_HTML_ROWS <<'MANIFEST' || true
+letter	A
+0	alder	1
+letter	B
+0	birch	1
+letter	C
+0	cedar	1
+letter	D
+0	dogwood	1
+letter	E
+0	elder	1
+letter	H
+0	hazel	1
+MANIFEST
+check_html_index_manifest "$M101_HTML" "$M101_HTML_ROWS" "M101-AC1 (HTML)"
+check_locator_role "$M101_HTML" "$HTML_SECTION_ID" elder principal \
+  "M101-AC1 (HTML, the principal mark in alt text)"
+check_locator_role "$M101_HTML" "$HTML_SECTION_ID" dogwood plain \
+  "M101-AC1 (HTML, the plain mark in alt text)"
+check_html_index_links "$M101_HTML" "M101-AC2 (HTML)"
+
+printf 'section\t%s\th1\tIndex\n%s\n' "$HTML_SECTION_ID" "$M101_HTML_ROWS" \
+  > "$WORK/figure-marks-epub-index.txt"
+python3 tests/epubcheck.py sections "$M101_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/figure-marks-epub-index.txt" "$HTML_SECTION_ID" \
+  || fail "M101-AC1: the EPUB index of examples/figure-marks.qmd does not match its manifest (the report is above)"
+python3 tests/epubcheck.py links "$M101_EPUB" "$HTML_SECTION_ID" \
+  || fail "M101-AC2: a link in the EPUB index of examples/figure-marks.qmd names no element of the publication (the report is above)"
+
+# ORACLE — the `alt` of each image outside the index, in document order. A
+# figure's image is described by the figure's caption, so the HTML writer gives
+# it no `alt` attribute and the EPUB writer an empty one; the image in the
+# figure div is that figure's content, and Quarto treats it the same way. The
+# image in a sentence is described by its own alt text, which both writers
+# print as the text its marks show. Neither the declassed copy nor the moved id
+# is text, so neither changes any of these.
+printf '%s\n' '<none>' '<none>' '<none>' \
+  'alt text that marks dogwood and elder' '<none>' > "$WORK/figure-marks-html-alts.txt"
+printf '%s\n' '<empty>' '<empty>' '<empty>' \
+  'alt text that marks dogwood and elder' '<empty>' > "$WORK/figure-marks-epub-alts.txt"
+python3 tests/figuremarks.py alts html "$M101_HTML" "$HTML_SECTION_ID" \
+    "$WORK/figure-marks-html-alts.txt" \
+  || fail "M101-AC2: an image of the HTML render carries another alt than its source gives it (the report is above)"
+python3 tests/figuremarks.py alts epub "$M101_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/figure-marks-epub-alts.txt" \
+  || fail "M101-AC2: an image of the EPUB render carries another alt than its source gives it (the report is above)"
+for kind in html epub; do
+  case "$kind" in
+    html) M101_ARTIFACT="$M101_HTML" ;;
+    epub) M101_ARTIFACT="$M101_EPUB" ;;
+  esac
+  for pair in dogwood:4 elder:4 hazel:5; do
+    python3 tests/figuremarks.py after "$kind" "$M101_ARTIFACT" \
+        "$HTML_SECTION_ID" "${pair%%:*}" "${pair##*:}" \
+      || fail "M101-AC2: in the $kind render a locator of ${pair%%:*} does not link to an element just after image ${pair##*:} (the report is above)"
+  done
+done
+
+# ORACLE — the printed LaTeX index: no letter groups, one line a term.
+python3 - "$M101_PDF" <<'M101PDFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+expected = ['alder, 1', 'birch, 2', 'cedar, 3–4', 'dogwood, 5',
+            'elder, [P:5]', 'hazel, 6']
+actual = [entry.text for entry in pdfindex.read(sys.argv[1])]
+if actual != expected:
+    print(f'FAIL: M101-AC1/AC2: the PDF index of examples/figure-marks.qmd '
+          f'prints {actual!r}, not {expected!r}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M101-AC1/AC2: the PDF index prints the {len(expected)} lines its '
+      f'manifest states')
+M101PDFPY
+
+python3 tests/typstindex.py "$M101_TYPST" tests/figure-marks-typst.tsv \
+    "M101-AC1/AC2 (Typst)" "Index" \
+  || fail "M101-AC1/AC2: the Typst index of examples/figure-marks.qmd does not match tests/figure-marks-typst.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M101_TYPST" tests/figure-marks-typst.tsv \
+    "M101-AC5 (Typst, the version matrix's reading)" "Index" \
+  || fail "M101-AC5: the version matrix's reading of examples/figure-marks.qmd does not match tests/figure-marks-typst.tsv (the report is above)"
+pass "M101-AC1/AC2: in HTML, EPUB, PDF and Typst a mark in a figure caption files one locator, with an id on the figure or without, a range opened in a caption prints as a range, and a mark in an image's alt text files one locator, linked in HTML and EPUB to an element just after the image and printing the image's page in PDF and Typst, with no report and every image's alt unchanged"
+
+# ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.
 #
 # One thing is held here: every section the source declares has exactly one

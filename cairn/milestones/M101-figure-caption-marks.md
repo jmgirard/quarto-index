@@ -94,7 +94,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 
 ## Tasks
 
-- [ ] T1: Write `examples/figure-marks.qmd`, with a page break after each case.
+- [x] T1: Write `examples/figure-marks.qmd`, with a page break after each case.
       Its cases:
       - a figure with no id and a caption mark
       - a figure with an id and a caption mark
@@ -140,6 +140,8 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: plan chose to take the index class off the alt-text copy over removing the copy, because removal changes the `alt` text every back-end writes; falsified by an output where the declassed copy still prints index markup.
 - 2026-09-14: plan gate chose to move an alt-text target after the image in HTML, EPUB and LaTeX over recording the defect for later, because KI294 shares the element and fixture; falsified by an image wrapper that puts the moved target in another block.
 - 2026-09-14: plan gate chose the HTML cross-version comparison for the matrix over a new HTML manifest step, because the render job already compares each leg to the pinned leg; falsified by a floor leg that agrees with a wrong pinned leg.
+- 2026-09-14: implement started on `m101-figure-caption-marks`; question gate skipped, nothing left open.
+- 2026-09-14: T1 done. The figure div's image carries a trailing backslash: alone in its paragraph, Pandoc makes it a nested figure, whose LaTeX fails to compile and whose alt text is a caption copy. The alt checks live in `tests/figuremarks.py`. Red on main: the log check in all four formats; the HTML and EPUB manifests (alder and cedar file 2); the HTML and EPUB link checks; all six `after` checks; the PDF manifest (no dogwood, elder or hazel line). Green on main: the `alt` checks, the two locator roles, both Typst readings.
 
 ## Decisions
 

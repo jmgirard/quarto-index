@@ -209,7 +209,13 @@ The modules, in dependency order:
   render, takes the index class off every span inside Quarto's top-level
   `#quarto-meta-markdown` div (the chapter's metadata fields, copied there
   ahead of every filter and not printed), its element hook discarding an
-  author's copy of the tag first (added M071); then three that only read — one
+  author's copy of the tag first (added M071). In every format the same
+  document hook calls `marks.declass_caption_copies`, which takes the index
+  class and the id off each span in the alt text of an image that is a
+  figure's only content and equals the figure's caption: Pandoc's reader copies
+  a figure's caption there, so a caption mark is read once, in the caption.
+  The HTML book's recovery reader applies it to the blocks it walks (added
+  M101). Then three that only read — one
   registering sort keys, one deciding which keys are contested, one pairing
   page ranges — and the emitting pass that rewrites the mark, reading the tag
   off and, in an HTML book chapter, filing a tagged mark as a page locator
@@ -419,7 +425,13 @@ Three back-ends ship:
   heading's inlines into the table of contents and the id would then appear
   twice; a heading mark's anchor — author id or minted — sits on an empty span
   emitted just after the heading, and an untagged mark's author id moves there
-  too, having the same duplicate to avoid (restored M079).
+  too, having the same duplicate to avoid (restored M079). No anchor id stays
+  inside an image's alt text either, because the HTML and EPUB writers print
+  alt text as a string: `assign_anchors` moves each mark's id to an empty span
+  just after the image, in the same block, and the mark's text stays in the
+  alt text. The LaTeX writer drops raw LaTeX in alt text, so
+  `latex.move_alt_commands` moves each `\index` and registration command the
+  back-end wrote there to just after the image (added M101).
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
   two sites gated on the AST back-ends — the per-mark record in `passes.lua`
@@ -444,7 +456,10 @@ Three back-ends ship:
   stays out of a heading because Typst's outline copies a heading's body, and
   a copied label names two elements. A label written in an image's alt text
   moves to just after the image, because Pandoc's Typst writer prints alt
-  text as a string and drops raw Typst there (M098 review). The index is one raw Typst block per
+  text as a string and drops raw Typst there (M098 review). The HTML, EPUB and
+  LaTeX back-ends move an alt-text mark's target the same way, and the version
+  matrix reads `examples/figure-marks.qmd`, which holds such a label, on every
+  leg (M101). The index is one raw Typst block per
   declared index that some mark files in, placed by `place_index` after a weak
   page break and a raw, unnumbered Typst `heading`. The heading is raw because
   Quarto moves every Pandoc header up a level for Typst in a document whose
@@ -1031,14 +1046,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   check. `tests/typstcheck.py` folds a combining cluster read twice running,
   because pdftotext reads each glyph of such a cluster as the whole cluster. A
   back-end that doubled such a cluster reads as correct there. — M098 T4, T5
-- **KI294.** A mark in a figure caption is recorded twice in every back-end,
-  because Quarto copies the caption into the image's alt text. A range opened
-  there reports that the term's range is already open. Observed on main
-  before M098 in an HTML render. — M098 review pass 2 F1
-- **KI295.** The move of a label out of image alt text is checked only on
-  Quarto 1.10.18. The version matrix renders `examples/typst-index.qmd`,
-  which has no image, so the floor leg never runs that path. — M098 review
-  pass 2 F3
 - **KI296.** The report on a `range="open"` whose term already has a range
   open says the mark indexes as an ordinary page number. Where a range spans
   that page, the LaTeX and Typst indexes print no locator for it. — M098

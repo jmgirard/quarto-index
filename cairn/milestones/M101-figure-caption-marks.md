@@ -129,7 +129,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       `tests/figure-marks-typst.tsv`. The render job renders and extracts its
       HTML index. The fixture set that `tests/versioncheck.py fixtures` checks
       takes it. Dispatch the workflow on the branch.
-- [ ] T7: Write the `site/syntax.qmd` paragraph and the two `CHANGELOG.md`
+- [x] T7: Write the `site/syntax.qmd` paragraph and the two `CHANGELOG.md`
       entries. State both rules in the `cairn/DESIGN.md` Architecture section,
       the Typst label-move paragraph included. Remove KI294 and KI295.
 
@@ -147,6 +147,9 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 - 2026-09-14: the full suite on the T3 commit failed only at M41-AC1, which needs every fixture listed in `site/gallery.yml`. The fixture is now under `not-shown:`.
 - 2026-09-14: T2 extended. A book prototype showed the declassed copy kept the author's id, so the HTML id census counted two carriers and the mark yielded its id with a report. `declass_caption_copies` now clears the copy's id too. The fixture's alder mark carries `#alder-mark`, and a new check holds its locator to that id.
 - 2026-09-14: T4 done. The M101-AC3 section writes a three-chapter book under `$WORK`. The recovery route prints one page link per term whatever the source yields, so its index cannot show a copied caption. A `quarto pandoc lua` probe of `recovered_marks` counts two marks a term, and three with the book.lua call removed (seen in a scratch copy).
+- 2026-09-14: T5 plants written under `--self-test`: no-declass (four log checks and the record route), book-declass (the probe), copy-id (alder's link), html-move (the link check), latex-move (the PDF manifest). All nine are red with their named failure on a driver run of the M101 sections. The PDF and alder checks became functions so the plants run the same code.
+- 2026-09-14: T6 steps added to `versions.yml`: the render job extracts `figure-marks.html.txt`, and the pdf job renders the fixture to Typst and reads it against `tests/figure-marks-typst.tsv`. The M43 table renders the fixture's HTML and dumps it, so `versioncheck.py fixtures` holds five names.
+- 2026-09-14: T7 done. `site/syntax.qmd` gains one paragraph, `CHANGELOG.md` two Output entries, DESIGN's `passes.lua`, anchor and Typst paragraphs state the two rules, and KI294 and KI295 are removed.
 
 ## Decisions
 

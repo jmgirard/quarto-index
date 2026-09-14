@@ -29,6 +29,13 @@ ends, so the index prints one locator spanning them rather than a locator at
 each. The tenth says which of a document's declared indexes the mark belongs
 to.
 
+A mark can sit in a figure caption or in an image's alt text. A mark in a
+figure caption files one locator, whether or not the figure has an id, and a
+range can open there. A mark in an image's alt text files its locator at the
+image: in HTML and EPUB the locator links to the place just after the image,
+and in PDF and Typst it prints the image's page. The alt text itself is left
+as written.
+
 The forms have a page each:
 [sub-entry levels](sub-entry-levels.qmd),
 [cross-references](cross-references.qmd),

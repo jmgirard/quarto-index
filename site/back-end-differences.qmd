@@ -51,7 +51,9 @@ numbers; the [Typst](typst.qmd) page describes it.
    means. Typst
    prints only the ranges you write: marks on pages 3, 4 and 5 print
    `3, 4, 5`, where `makeindex` folds three or more pages in a row into a
-   range.
+   range. `makeindex` also folds a page just after a range into it: a range
+   on pages 2 and 3 and a mark on page 4 print `2--4` there and `2–3, 4` in
+   Typst.
 9. **The extension's own words are settable in HTML, EPUB and Typst, and its
    punctuation in HTML and EPUB.** The `Symbols` group heading, the `see` and
    `see also` in front of a cross-reference, and the punctuation inside an

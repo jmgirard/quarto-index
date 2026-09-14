@@ -50,7 +50,9 @@ in page order, and each one links to its page.
   included, prints no locator of its own. A principal mention on such a page
   loses its bold.
 - Pages you marked separately stay separate: marks on pages 3, 4 and 5 print
-  `3, 4, 5`. Only a range you write prints as a range.
+  `3, 4, 5`. Only a range you write prints as a range. A mark on the page just
+  after a range prints its own locator, `2–3, 4`, where the PDF index prints
+  `2–4`.
 
 ## Cross-references
 

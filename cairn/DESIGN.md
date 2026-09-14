@@ -1022,6 +1022,18 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI293.** The Typst index merges locators and tests a one-page range by
   physical page. After a page counter reset, two pages that show one number
   print `1, 1`, and a range across the reset prints `1–1`. — M098 review F9
+- **KI294.** A mark in a figure caption is recorded twice in every back-end,
+  because Quarto copies the caption into the image's alt text. A range opened
+  there reports that the term's range is already open. Observed on main
+  before M098 in an HTML render. — M098 review pass 2 F1
+- **KI295.** The move of a label out of image alt text is checked only on
+  Quarto 1.10.18. The version matrix renders `examples/typst-index.qmd`,
+  which has no image, so the floor leg never runs that path. — M098 review
+  pass 2 F3
+- **KI296.** The report on a `range="open"` whose term already has a range
+  open says the mark indexes as an ordinary page number. Where a range spans
+  that page, the LaTeX and Typst indexes print no locator for it. — M098
+  review pass 2 F4
 
 ### Reports and messages
 

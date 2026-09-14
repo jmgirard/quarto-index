@@ -99,6 +99,8 @@ A document or book rendered to Typst prints each of its indexes with page locato
 - 2026-09-13: claim audit: 84 claims read, 4 corrected — tests/typst-index-main.tsv, tests/run-tests.sh, site/typst.qmd, _extensions/index/modules/typst.lua, tests/typstcheck.py
 - 2026-09-13: the claim audit read the lines added after the review return (`git diff 7e8cbd3..HEAD`). The earlier audit covered the rest. The same reader's re-read found all four corrections hold. The corrections are comments, a manifest comment and one site sentence, and the site claims and the terms manifest were re-run in isolation.
 - 2026-09-13: T13 done. The branch head 0c72455 was pushed, as the send-back approved. Run 34791155718 (https://github.com/jmgirard/quarto-index/actions/runs/34791155718) passed both Typst steps on the floor (1.5.52), pinned (1.10.18) and release legs. The push-triggered Versions run 34791156057 also passed. Status review.
+- 2026-09-13: review pass 2: all eight criteria verified at fd9c364. The user accepted the proposed finding dispositions: the fold stated on two pages with a PDF check, KI294 to KI296 recorded, and two findings rejected.
+- step-7 approval: m098-typst-back-end approved for merge
 
 ## Decisions
 
@@ -167,4 +169,14 @@ Independent review, three fresh lenses. The [S] prior-review lens found no regre
 3. `versions.yml:406-421`: the T11 alt-text move is tested only on Quarto 1.10.18, because the CI fixture has no image.
 4. The range warning "indexes as an ordinary page number instead" is false where a range spans that page, in LaTeX and in Typst alike.
 5. `run-tests.sh:29307-29336`: the `a00` row of the xref statement follows the parser (`L1!!L3`) and not the fixture prose's intent, a pre-existing fixture claim.
-6. Unconfirmed: a break could fall between `#box(image(...))` and the moved label. Not reproduced.
+6. Unconfirmed: the reviewer did not rule out a break between `#box(image(...))` and the moved label. Not reproduced.
+- Unranked note ([S] blame-history): the fold of a page just after a range is disclosed only in a `typst.lua` comment. It is the same gap as finding 2.
+
+Triage at the gate (2026-09-13, pass 2):
+
+- Finding 2 and the unranked note: fix now. `site/back-end-differences.qmd` item 8 and `site/typst.qmd` state the fold, each as a claim row. A new AC7 check renders `examples/typst-index.qmd` to PDF and reads the whole line `kelp, 2–4`, and the same reading is red on the Typst render, which prints `kelp, 2–3, 4`. All of these ran green in isolation.
+- Finding 1: follow-up, as KI294. The diff did not introduce it.
+- Finding 3: follow-up, as KI295.
+- Finding 4: follow-up, as KI296.
+- Finding 5: rejected. The statement is true of the parser, the work log records the `a00` case, and the fixture prose predates M098.
+- Finding 6: rejected. It is unreproduced and names no failing document.

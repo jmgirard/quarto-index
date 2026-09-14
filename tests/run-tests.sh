@@ -29590,6 +29590,7 @@ range on one page	Where both ends of a range are on one page, it prints that pag
 range spans	A page that a range of the term spans, its opening and closing pages included, prints no locator of its own.
 range spans bold	A principal mention on such a page loses its bold.
 separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.
+after a range	A mark on the page just after a range prints its own locator, `2–3, 4`, where the PDF index prints `2–4`.
 reference	A cross-reference prints its word in italics, then its target as plain text, with no link.
 label keys	which Typst reads for `symbols`, `see` and `see-also`
 punctuation	a comma before each locator and before the first cross-reference, and a semicolon between two cross-references
@@ -29613,6 +29614,7 @@ no locator	A cross-reference carries no locator in any of the four back-ends.
 principal	the Typst back-end sets the page number in bold
 range	A page range is a page range only in LaTeX and Typst.
 separate pages	Typst prints only the ranges you write: marks on pages 3, 4 and 5 print `3, 4, 5`
+after a range	`makeindex` also folds a page just after a range into it: a range on pages 2 and 3 and a mark on page 4 print `2--4` there and `2–3, 4` in Typst.
 label keys	The Typst index reads the three word keys and neither separator key
 lang count	All four back-ends follow `lang:`, and share nothing else about it.
 lang table	HTML, EPUB and Typst read a table this extension ships
@@ -29620,6 +29622,27 @@ index-labels readers	`index-labels:` is read by the HTML, EPUB and Typst back-en
 M098DIFF
 python3 tests/sitecheck.py claims site/back-end-differences.qmd "$WORK/m098-differences-claims.txt" \
   || fail "M098-AC7: site/back-end-differences.qmd no longer states what Typst does (its own FAIL line is above)"
+
+# The fold the two pages above name. examples/typst-index.qmd marks `kelp` in a
+# range on pages 2 and 3 and again on page 4. Its PDF render prints the index
+# line `kelp, 2–4`, and its Typst render `kelp, 2–3, 4`. The same whole-line
+# reading, run on the Typst render, is red, so the line it finds is the fold.
+quarto render examples/typst-index.qmd --to pdf > "$WORK/typst-index-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/typst-index-pdf.log" >&2; fail "M098-AC7: examples/typst-index.qmd failed to render to PDF"; }
+capture examples/typst-index.qmd pdf "typst-index-pdf"
+m098_index_line() {   # <pdf> <line>
+  local text
+  text=$(pdftotext "$1" -) || fail "M098-AC7: pdftotext could not read $1"
+  printf '%s\n' "$text" | grep -xF -- "$2" > /dev/null
+}
+m098_index_line "$CAPTURE_ROOT/typst-index-pdf/typst-index.pdf" 'kelp, 2–4' \
+  || fail "M098-AC7: the PDF index of examples/typst-index.qmd does not print the line <<kelp, 2–4>>, so the fold the back-end differences and Typst pages state is not makeindex's"
+if m098_index_line "$M098_PDF" 'kelp, 2–4'; then
+  fail "M098-AC7: the Typst index of examples/typst-index.qmd also prints <<kelp, 2–4>>, so the reading above cannot tell the fold from its absence"
+fi
+m098_index_line "$M098_PDF" 'kelp, 2–3, 4' \
+  || fail "M098-AC7: the Typst index of examples/typst-index.qmd does not print the line <<kelp, 2–3, 4>>"
+pass "M098-AC7: the PDF index folds the page just after kelp's range into it (kelp, 2–4), and the Typst index prints that page on its own (kelp, 2–3, 4)"
 
 cat > "$WORK/m098-other-claims.txt" <<'M098OTHER'
 typst book	A Typst book is merged the same way.
@@ -29821,7 +29844,7 @@ open(lost, 'w', encoding='utf-8').write(body.replace('`3, 4, 5`', '`3–5`'))
 M098PLANTPY
   m098_red count-overlay 'site/typst.qmd (three back-ends)' \
     python3 tests/sitecheck.py phrase-absent "$WORK/m098-count-retired.txt" "$M098D/overlay"
-  m098_red typst-lost 'does not state 1 of the 28 claim(s)' \
+  m098_red typst-lost 'does not state 1 of the 29 claim(s)' \
     python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
   # The index heading written as a paragraph, which is what a Pandoc header
   # became in a document whose headings start at two hashes.

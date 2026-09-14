@@ -195,3 +195,15 @@ Independent review, three lenses. Blame-history: no findings. Prior-review: the 
 - R8 `tests/pdfindex.py` `_fold_continuations`: a wrapped Typst locator line such as `2 / 5` would not fold.
 - R9 `typst.lua:22-23` says "character" where the code counts clusters, and DESIGN.md's Typst paragraph does not state drop-before-merge.
 - R10 `typst.lua:47-52`: repeated `numbering` calls per locator and a quadratic merge scan, unmeasured.
+
+Triage at the gate (user chose the recommended triage):
+
+- R1 fix now. Tracing it showed two causes: the helper filled a function with one value, and Typst itself fails a link to a location on a page whose numbering is a two-argument function. The helper now fills a function with both values and links to the mark's position. Suite check "M099 review R1" renders such a document and reads `1 of 2`, and two plants (`onevalue`, `locationlink`) are red on "missing argument: total".
+- R2 fix now: KI297 retired, since R1's fix removes the limitation it recorded.
+- R3 fix now: the reader keeps a comma at the end of a line, as main did. Checked by "M099 review R3".
+- R4 follow-up: KI298 in DESIGN.md Known issues (mid-page counter update).
+- R5 fix now: date corrected to 2026-09-13. R9 fix now: the comment says grapheme cluster, and DESIGN.md's Typst paragraph states drop-before-merge and position links.
+- R6 reject: pre-existing `pdfindex.py` footer behavior, and the only non-default pattern (`^\d+ / \d+$`) cannot match an entry line.
+- R7 reject: no fixture or caller uses a numbering pattern with a comma. R8 reject: no Typst index line wraps, which the reader's docstring assumes. R10 reject: unmeasured, and Typst caches counter lookups.
+
+Re-verified after the fixes at b96768c: `tests/run-tests.sh --self-test`, all checks passed (1635), the AC1-AC3 and AC5 checks above among them. Matrix run 34863316506 at 8cecd7f concluded success, with both typst-numbering steps green on the floor, pinned and release legs (AC4). `git diff 8cecd7f HEAD` touches only `tests/run-tests.sh`, which the matrix does not run.

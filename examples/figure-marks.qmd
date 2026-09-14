@@ -1,0 +1,69 @@
+---
+title: "Figure marks"
+fig-pos: H
+format:
+  pdf:
+    include-in-header:
+      # The author redefinition the extension documents, and the only way a
+      # principal locator is visible to `pdftotext`: bold and plain text
+      # extract the same. `\newcommand*` lands above the extension's own
+      # `\providecommand`, which then steps aside.
+      text: |
+        \newcommand*\quartoindexprincipal[1]{[P:#1]}
+  html: default
+  epub: default
+  typst: default
+filters:
+  - index
+---
+
+The fixture for marks in a figure caption and in an image's alt text (M101).
+Pandoc copies the caption of a figure into the alt text of the image it holds,
+so a caption mark on a figure with no id reaches the filter twice (Quarto
+empties the copy on a figure with an id); the copy must file nothing. A mark
+an author writes in the alt text of an image that is not a figure's copy files
+one locator at the image.
+
+Every case but the last ends in an explicit page break, so the page each mark sits on is a
+fact of this source: page 1 is this page, and each break starts the next.
+`fig-pos: H` holds each LaTeX figure on the page its source puts it on. No
+term below holds the letters `f` and `i` in a row, which the Typst floor sets
+as one glyph.
+
+A figure with no id, whose caption marks one term with an id of its author's:
+
+![A caption that marks [alder]{#alder-mark .index}.](dot.png)
+
+{{< pagebreak >}}
+
+A figure with an id, whose caption marks one term:
+
+![A caption that marks [birch]{.index}.](dot.png){#fig-birch}
+
+{{< pagebreak >}}
+
+A figure with no id, whose caption opens a range that closes on the next page:
+
+![A caption that opens [cedar]{.index range="open"}.](dot.png)
+
+{{< pagebreak >}}
+
+The range of cedar closes here: [cedar]{.index range="close"}.
+
+{{< pagebreak >}}
+
+An image in a sentence,
+![alt text that marks [dogwood]{.index} and [elder]{.index mention="principal"}](dot.png),
+whose alt text holds a plain and a principal mark.
+
+{{< pagebreak >}}
+
+A figure div with an id, whose image carries alt text that marks one term.
+The backslash after the image keeps it from being the only content of its
+paragraph, so Pandoc makes no figure of it and copies no caption into it:
+
+::: {#fig-hazel}
+![Alt text that marks [hazel]{.index}](dot.png)\
+
+The caption of the figure div.
+:::

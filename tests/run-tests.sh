@@ -22306,9 +22306,10 @@ fi
 # rests on: an artifact carrying an index dumps rows, and an artifact carrying
 # none is a loud failure rather than an empty print two legs would agree about.
 #
-# Four unplanted controls. Three are the artifact shapes the matrix renders: a
-# single document's index, a document declaring two indexes, and a book whose
-# locators point across pages. The fourth is a printed PDF index, which the
+# Six unplanted controls. Five are the artifacts the matrix renders: three
+# single documents' indexes (examples/html-index.qmd, examples/demo.qmd and
+# the figure-marks fixture, M101), a document declaring two indexes, and a
+# book whose locators point across pages. The sixth is a printed PDF index, which the
 # matrix stopped rendering at M47; it stays because `indexdump.py`'s `pdf` mode
 # is still the suite's reader of a printed index, and this run's own capture is
 # the unplanted control the mode's planted clauses under `--self-test` are
@@ -22321,6 +22322,12 @@ M43_DEMO_HTML="$CAPTURE_ROOT/demo-html/demo.html"
 M43_NAMED_HTML="$CAPTURE_ROOT/named-indexes-html/named-indexes.html"
 M43_BOOK_HTML="$CAPTURE_ROOT/book-html/_book/last.html"
 M43_DEMO_PDF="$CAPTURE_ROOT/demo-pdf/demo.pdf"
+# The figure-marks fixture (M101) is rendered by its own section far below
+# this one, so the matrix's HTML render of it is repeated here for the dump.
+quarto render examples/figure-marks.qmd --to html > "$WORK/m43-figure-marks.log" 2>&1 \
+  || { tail -20 "$WORK/m43-figure-marks.log" >&2; fail "M43-T1: examples/figure-marks.qmd failed to render to HTML"; }
+capture examples/figure-marks.qmd html "m43-figure-marks-html"
+M43_FIGURE_HTML="$CAPTURE_ROOT/m43-figure-marks-html/figure-marks.html"
 
 # The dump's stdout is the comparison's whole subject, so a control asserts it
 # is non-empty AND that it carries both row kinds — a dump of section headers
@@ -22362,7 +22369,8 @@ m43_dump() {
 M43_HTML_FIXTURES="html-index|$CAPTURE_ROOT/html-index/html-index.html|1|examples/html-index.qmd (HTML)
 named-indexes|$M43_NAMED_HTML|2|examples/named-indexes.qmd (HTML)
 demo|$M43_DEMO_HTML|1|examples/demo.qmd (HTML)
-book|$M43_BOOK_HTML|3|examples/book (HTML)"
+book|$M43_BOOK_HTML|3|examples/book (HTML)
+figure-marks|$M43_FIGURE_HTML|1|examples/figure-marks.qmd (HTML)"
 
 M43_COVERED=""
 while IFS='|' read -r m43name m43art m43sections m43label; do
@@ -22375,7 +22383,7 @@ done <<< "$M43_HTML_FIXTURES"
 # Its rows are asserted by `m43_dump` itself and read by nothing else, so
 # the serialization goes nowhere.
 m43_dump pdf "$M43_DEMO_PDF" - "examples/demo.qmd (PDF)" > /dev/null
-pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section for examples/html-index.qmd and one for examples/demo.qmd, two for the fixture declaring two, three for the book, which declares three and builds each of them — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
+pass "M43-T1: tests/indexdump.py reduces each artifact shape the version matrix renders to a non-empty row form — one index section each for examples/html-index.qmd, examples/demo.qmd and examples/figure-marks.qmd, two for the fixture declaring two, three for the book, which declares three and builds each of them — and reduces a printed PDF index, which the matrix no longer renders, to a non-empty row form, which is both this control's own assertion and what the pdf mode's planted clauses under --self-test are judged against"
 
 # M48-AC4 — and those are the fixtures the workflow extracts, no more and no
 # fewer. The names come from the table above rather than being written out
@@ -30566,6 +30574,435 @@ if [ "${1:-}" = "--self-test" ]; then
   esac
 
   pass "M076-AC4: with .qmd taken out of the set of source kinds this route reads and nothing else changed, the chapter reading a store no render has written refuses the four chapters behind it and says so — the leg's warning total is unmoved, and the leg's store-report expectation is red and names the refusal wording, which nothing on that leg asserted before this milestone"
+fi
+
+# ---------------------------------------------------------------------------
+# M101-AC1/AC2 — a mark in a figure caption or an image's alt text files one locator.
+#
+# Pandoc copies the caption of a figure with no id into the alt text of the
+# image the figure holds, so a caption mark reached the filter twice: it filed
+# a second locator, and a range opened there reported that the term's range was
+# already open. A mark an author writes in the alt text of an image that is no
+# such copy filed a locator that linked to nothing in HTML and EPUB, because
+# those writers print alt text as a flat string, and wrote no `\index` in
+# LaTeX, whose writer drops raw LaTeX there.
+#
+# examples/figure-marks.qmd holds one case a page, each but the last ending in
+# an explicit page break, so each mark's page is a fact of its source. Every manifest here
+# is derived by hand from that source under the ORACLE RULE above; the Typst
+# one is the tracked file tests/figure-marks-typst.tsv, so the version matrix
+# reads the same rows. The terms, their pages and why each files one locator:
+#   alder    page 1, the caption of a figure with no id, on a mark carrying
+#            the id `alder-mark`; the copy carries that id too, and a copy
+#            left carrying it made the mark yield its id with a report, so
+#            the HTML locator links to `#alder-mark` and the log is silent
+#   birch    page 2, the caption of a figure with an id
+#   cedar    a range opened in the caption of a figure with no id on page 3
+#            and closed in the text on page 4: one link in HTML and EPUB, the
+#            span 3–4 in PDF and Typst
+#   dogwood  page 5, a plain mark in the alt text of an image in a sentence
+#   elder    page 5, a principal mark in that same alt text
+#   hazel    page 6, the alt text of an image in a figure div; the backslash
+#            after the image keeps it from being a figure of its own
+# In PDF the fixture redefines the principal command to print `[P:<page>]`, so
+# the principal locator is visible to pdftotext.
+#
+# Which image's alt text each alt-text mark sits in, counted over the page's
+# images outside the index in document order: dogwood and elder in image 4,
+# hazel in image 5. The `alt` each image carries is stated below, and holding
+# it is what shows that neither the declassed copy nor the moved id changes it.
+# ---------------------------------------------------------------------------
+section 'M101-AC1/AC2 — a mark in a figure caption or an image'\''s alt text files one locator.'
+for needle in '![A caption that marks [alder]{#alder-mark .index}.](dot.png)' \
+    '![A caption that marks [birch]{.index}.](dot.png){#fig-birch}' \
+    '![A caption that opens [cedar]{.index range="open"}.](dot.png)' \
+    'The range of cedar closes here: [cedar]{.index range="close"}.' \
+    '![alt text that marks [dogwood]{.index} and [elder]{.index mention="principal"}](dot.png),' \
+    '![Alt text that marks [hazel]{.index}](dot.png)\' \
+    '::: {#fig-hazel}' 'fig-pos: H'; do
+  grep -qxF -- "$needle" examples/figure-marks.qmd \
+    || fail "M101-AC1/AC2: examples/figure-marks.qmd no longer carries the line <<$needle>>, so the case the manifests below state is no longer rendered"
+done
+M101_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/figure-marks.qmd || true; } | tr -d ' ')
+[ "$M101_BREAKS" = "5" ] \
+  || fail "M101-AC1/AC2: examples/figure-marks.qmd carries $M101_BREAKS page breaks, not the five its manifests number pages by"
+pass "M101-AC1/AC2: examples/figure-marks.qmd carries each case its manifests state, and five page breaks"
+
+for fmt in html epub pdf typst; do
+  quarto render examples/figure-marks.qmd --to "$fmt" \
+    > "$WORK/figure-marks-$fmt.log" 2>&1 \
+    || { tail -40 "$WORK/figure-marks-$fmt.log" >&2; fail "M101-AC1: examples/figure-marks.qmd failed to render to $fmt"; }
+  capture examples/figure-marks.qmd "$fmt" "figure-marks-$fmt"
+  # The copied caption is what drew the report on the range in cedar's
+  # caption, and nothing else in the fixture is misused.
+  check_extension_warning_count "$WORK/figure-marks-$fmt.log" 0 \
+    "M101-AC1 (examples/figure-marks.qmd, $fmt: every mark in it is well formed, and a range opened in a caption is opened once)"
+done
+M101_HTML="$CAPTURE_ROOT/figure-marks-html/figure-marks.html"
+M101_EPUB="$CAPTURE_ROOT/figure-marks-epub/figure-marks.epub"
+M101_PDF="$CAPTURE_ROOT/figure-marks-pdf/figure-marks.pdf"
+M101_TYPST="$CAPTURE_ROOT/figure-marks-typst/figure-marks.pdf"
+for artifact in "$M101_HTML" "$M101_EPUB" "$M101_PDF" "$M101_TYPST"; do
+  [ -s "$artifact" ] || fail "M101-AC1: the render produced no $artifact"
+done
+
+# ORACLE — one locator a term, the range included, which HTML and EPUB print
+# as one link.
+read -r -d '' M101_HTML_ROWS <<'MANIFEST' || true
+letter	A
+0	alder	1
+letter	B
+0	birch	1
+letter	C
+0	cedar	1
+letter	D
+0	dogwood	1
+letter	E
+0	elder	1
+letter	H
+0	hazel	1
+MANIFEST
+check_html_index_manifest "$M101_HTML" "$M101_HTML_ROWS" "M101-AC1 (HTML)"
+check_locator_role "$M101_HTML" "$HTML_SECTION_ID" elder principal \
+  "M101-AC1 (HTML, the principal mark in alt text)"
+check_locator_role "$M101_HTML" "$HTML_SECTION_ID" dogwood plain \
+  "M101-AC1 (HTML, the plain mark in alt text)"
+check_html_index_links "$M101_HTML" "M101-AC2 (HTML)"
+m101_alder_check() {   # <html>
+  HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$1" <<'M101IDPY'
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+section = H.find_id(doc, os.environ['HTML_SECTION_ID'])
+got = [r['locators'] for r in H.index_entries(section)
+       if r['kind'] == 'entry' and r['term'] == 'alder']
+if got != [['#alder-mark']]:
+    print(f'FAIL: M101-AC1: alder links to {got!r}, not to the id its author '
+          f'wrote on the caption mark', file=sys.stderr)
+    sys.exit(1)
+print('ok   M101-AC1: alder links to #alder-mark, the id its author wrote on '
+      'the caption mark')
+M101IDPY
+}
+m101_alder_check "$M101_HTML" \
+  || fail "M101-AC1: alder's locator does not link to the id its author wrote (the report is above)"
+
+printf 'section\t%s\th1\tIndex\n%s\n' "$HTML_SECTION_ID" "$M101_HTML_ROWS" \
+  > "$WORK/figure-marks-epub-index.txt"
+python3 tests/epubcheck.py sections "$M101_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/figure-marks-epub-index.txt" "$HTML_SECTION_ID" \
+  || fail "M101-AC1: the EPUB index of examples/figure-marks.qmd does not match its manifest (the report is above)"
+python3 tests/epubcheck.py links "$M101_EPUB" "$HTML_SECTION_ID" \
+  || fail "M101-AC2: a link in the EPUB index of examples/figure-marks.qmd names no element of the publication (the report is above)"
+
+# ORACLE — the `alt` of each image outside the index, in document order. A
+# figure's image is described by the figure's caption, so the HTML writer gives
+# it no `alt` attribute and the EPUB writer an empty one; the image in the
+# figure div is that figure's content, and Quarto treats it the same way. The
+# image in a sentence is described by its own alt text, which both writers
+# print as the text its marks show. Neither the declassed copy nor the moved id
+# is text, so neither changes any of these.
+printf '%s\n' '<none>' '<none>' '<none>' \
+  'alt text that marks dogwood and elder' '<none>' > "$WORK/figure-marks-html-alts.txt"
+printf '%s\n' '<empty>' '<empty>' '<empty>' \
+  'alt text that marks dogwood and elder' '<empty>' > "$WORK/figure-marks-epub-alts.txt"
+python3 tests/figuremarks.py alts html "$M101_HTML" "$HTML_SECTION_ID" \
+    "$WORK/figure-marks-html-alts.txt" \
+  || fail "M101-AC2: an image of the HTML render carries another alt than its source gives it (the report is above)"
+python3 tests/figuremarks.py alts epub "$M101_EPUB" "$HTML_SECTION_ID" \
+    "$WORK/figure-marks-epub-alts.txt" \
+  || fail "M101-AC2: an image of the EPUB render carries another alt than its source gives it (the report is above)"
+for kind in html epub; do
+  case "$kind" in
+    html) M101_ARTIFACT="$M101_HTML" ;;
+    epub) M101_ARTIFACT="$M101_EPUB" ;;
+  esac
+  for pair in dogwood:4 elder:4 hazel:5; do
+    python3 tests/figuremarks.py after "$kind" "$M101_ARTIFACT" \
+        "$HTML_SECTION_ID" "${pair%%:*}" "${pair##*:}" \
+      || fail "M101-AC2: in the $kind render a locator of ${pair%%:*} does not link to an element just after image ${pair##*:} (the report is above)"
+  done
+done
+
+# ORACLE — the printed LaTeX index: no letter groups, one line a term. A
+# function, so the self-test plant below runs this same comparison.
+m101_pdf_check() {   # <pdf>
+  python3 - "$1" <<'M101PDFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+expected = ['alder, 1', 'birch, 2', 'cedar, 3–4', 'dogwood, 5',
+            'elder, [P:5]', 'hazel, 6']
+actual = [entry.text for entry in pdfindex.read(sys.argv[1])]
+if actual != expected:
+    print(f'FAIL: M101-AC1/AC2: the PDF index of examples/figure-marks.qmd '
+          f'prints {actual!r}, not {expected!r}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M101-AC1/AC2: the PDF index prints the {len(expected)} lines its '
+      f'manifest states')
+M101PDFPY
+}
+m101_pdf_check "$M101_PDF" \
+  || fail "M101-AC1/AC2: the PDF index of examples/figure-marks.qmd does not match its manifest (the report is above)"
+
+python3 tests/typstindex.py "$M101_TYPST" tests/figure-marks-typst.tsv \
+    "M101-AC1/AC2 (Typst)" "Index" \
+  || fail "M101-AC1/AC2: the Typst index of examples/figure-marks.qmd does not match tests/figure-marks-typst.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M101_TYPST" tests/figure-marks-typst.tsv \
+    "M101-AC5 (Typst, the version matrix's reading)" "Index" \
+  || fail "M101-AC5: the version matrix's reading of examples/figure-marks.qmd does not match tests/figure-marks-typst.tsv (the report is above)"
+pass "M101-AC1/AC2: in HTML, EPUB, PDF and Typst a mark in a figure caption files one locator, with an id on the figure or without, a range opened in a caption prints as a range, and a mark in an image's alt text files one locator, linked in HTML and EPUB to an element just after the image and printing the image's page in PDF and Typst, with no report and every image's alt unchanged"
+
+# ---------------------------------------------------------------------------
+# M101-AC3 — in an HTML book, a mark in a figure caption files one locator on both routes.
+#
+# A three-chapter book written here: `index.qmd` marks nothing, `figures.qmd`
+# holds the figures, and `last.qmd` carries the placement marker, so it builds
+# the index. `figures.qmd` opens a range in the caption of a figure with no id
+# and a second in the caption of a figure with an id, and closes each later in
+# the chapter. The recovery route's parse copies both captions into their
+# images' alt text. In the chapter's own render Quarto empties the alt text of
+# the figure with an id, so only cedar's caption reaches the filter twice there.
+#
+# The record route renders the whole book, so `figures.qmd` writes its record
+# before `last.qmd` reads it. The recovery route renders `last.qmd` alone into
+# a copy with no store, so it reads the source of `figures.qmd` instead.
+#
+# ORACLE, derived by hand from the chapter source below. On the record route
+# each range is one link, at its opening mark's minted anchor. `figures.qmd`
+# mints in document order: cedar's opening 1, birch's opening 2, and the two
+# closings 3 and 4, which link nowhere. On the recovery route a recovered mark
+# indexes as a plain page locator with no fragment where its author wrote no
+# id, and locators naming one page print once, so each term links to
+# `figures.html` alone.
+#
+# The recovery route's index prints one page link however many marks the
+# source yields, so a copied caption read as a mark changes nothing it prints.
+# What that route reads is held by a probe of `recovered_marks` over the same
+# source instead: two marks a term, an opening and a closing.
+# ---------------------------------------------------------------------------
+section 'M101-AC3 — in an HTML book, a mark in a figure caption files one locator on both routes.'
+M101B="$WORK/m101-book"
+rm -rf "$M101B"
+mkdir -p "$M101B/base/_extensions"
+cp -R "$QI_EXT_DIR" "$M101B/base/_extensions/index"
+cp examples/dot.png "$M101B/base/"
+cat > "$M101B/base/_quarto.yml" <<'M101YML'
+project:
+  type: book
+
+book:
+  title: "Figure caption marks"
+  chapters:
+    - index.qmd
+    - figures.qmd
+    - last.qmd
+
+filters:
+  - index
+M101YML
+printf '# Preface\n\nThis chapter marks no term.\n' > "$M101B/base/index.qmd"
+cat > "$M101B/base/figures.qmd" <<'M101FIGURES'
+# Figures
+
+![A caption that opens [cedar]{.index range="open"}.](dot.png)
+
+![A caption that opens [birch]{.index range="open"}.](dot.png){#fig-birch}
+
+The range of cedar closes here: [cedar]{.index range="close"}.
+
+The range of birch closes here: [birch]{.index range="close"}.
+M101FIGURES
+printf '# Last\n\nThe index follows.\n\n::: {.qi-index-here}\n:::\n' \
+  > "$M101B/base/last.qmd"
+
+read -r -d '' M101_RECORD_ROWS <<'MANIFEST' || true
+section	qi-index	h1	Index
+letter	B
+0	birch	figures.html#qi-mark-2
+letter	C
+0	cedar	figures.html#qi-mark-1
+MANIFEST
+read -r -d '' M101_RECOVERED_ROWS <<'MANIFEST' || true
+section	qi-index	h1	Index
+letter	B
+0	birch	figures.html
+letter	C
+0	cedar	figures.html
+MANIFEST
+
+# The record route: the whole book.
+cp -R "$M101B/base" "$M101B/record"
+( cd "$M101B/record" && quarto render --to html ) > "$WORK/m101-record.log" 2>&1 \
+  || { tail -30 "$WORK/m101-record.log" >&2; fail "M101-AC3: the record-route book failed to render"; }
+capture --project "$M101B/record" html "m101-record"
+check_index_sections "$CAPTURE_ROOT/m101-record/_book/last.html" \
+  "$M101_RECORD_ROWS" "M101-AC3 (record route)" hrefs
+check_extension_warning_count "$WORK/m101-record.log" 0 \
+  "M101-AC3 (record route: each range opens once, so nothing is reported)"
+
+# The recovery route: the last chapter alone, into a copy with no store.
+cp -R "$M101B/base" "$M101B/recovery"
+[ -e "$M101B/recovery/.quarto/$STORE_DIR" ] \
+  && fail "M101-AC3: the recovery copy carries a sidecar store, so its render would read records rather than sources"
+( cd "$M101B/recovery" && quarto render last.qmd --to html ) \
+  > "$WORK/m101-recovery.log" 2>&1 \
+  || { tail -30 "$WORK/m101-recovery.log" >&2; fail "M101-AC3: the recovery-route chapter failed to render"; }
+capture --project "$M101B/recovery" html "m101-recovery"
+check_index_sections "$CAPTURE_ROOT/m101-recovery/_book/last.html" \
+  "$M101_RECOVERED_ROWS" "M101-AC3 (recovery route)" hrefs
+check_store_reports "$WORK/m101-recovery.log" \
+  "M101-AC3 (recovery route: the one report is that figures.qmd has no record)" \
+  WARN_STORE_NEVER_RECOVERED=1
+check_extension_warning_count "$WORK/m101-recovery.log" 1 \
+  "M101-AC3 (recovery route: nothing is reported on the caption marks)"
+
+# The probe of what the recovery route reads, run through Quarto's own Pandoc
+# from a modules directory, as the M093 probes are.
+m101_recovery_probe() {   # <modules dir> <label>
+  local dir="$1" label="$2" got want
+  cat > "$M101B/probe.lua" <<'M101PROBE'
+local qi_book = require("./book")
+local fh = assert(io.open(arg[1], "r"))
+local text = fh:read("a")
+fh:close()
+local parsed = pandoc.read(text, "markdown")
+local counts, order = {}, {}
+for _, mark in ipairs(qi_book.recovered_marks(parsed.meta, parsed.blocks)) do
+  local term = mark.levels[1]
+  if counts[term] == nil then
+    order[#order + 1] = term
+  end
+  counts[term] = (counts[term] or 0) + 1
+end
+table.sort(order)
+for _, term in ipairs(order) do
+  print(term .. "\t" .. counts[term])
+end
+M101PROBE
+  local root
+  root=$(cd "$M101B" && pwd)
+  want=$(printf 'birch\t2\ncedar\t2')
+  got=$( cd "$dir" && quarto pandoc lua "$root/probe.lua" \
+           "$root/base/figures.qmd" 2>&1 ) \
+    || { printf '%s\n' "$got" >&2; printf 'FAIL: %s: the probe exited non-zero\n' "$label" >&2; return 1; }
+  if [ "$got" != "$want" ]; then
+    printf 'FAIL: %s: the recovery route read <<%s>> marks a term, not <<%s>>\n' \
+      "$label" "$got" "$want" >&2
+    return 1
+  fi
+  printf 'ok   %s: the recovery route reads two marks of each term, an opening and a closing\n' "$label"
+}
+m101_recovery_probe "$M101B/recovery/_extensions/index/modules" \
+    "M101-AC3 (recovery route, what it reads)" \
+  || fail "M101-AC3: the recovery route reads a copied caption as a mark (the report is above)"
+pass "M101-AC3: in an HTML book a range opened in a figure caption, with or without an id on the figure, files one locator for its chapter on the record route and on the recovery route, with no report on the marks"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M101 T5 self-test — each fix undone on its own in a copy of the extension,
+  # and the check that holds it shown red with the failure that check names.
+  #   no-declass   the copied caption read as a mark again (passes.lua): the
+  #                log check red in each of the four formats, the log naming
+  #                the range already open, and the record-route index red
+  #   book-declass the same in the recovery reader (book.lua): the probe red
+  #   copy-id      the copy keeps its id (marks.lua): alder's link red
+  #   html-move    no id moved out of alt text (html.lua): the link check red
+  #   latex-move   no command moved out of alt text (index.lua): the PDF
+  #                manifest red
+  # -------------------------------------------------------------------------
+  M101P="$WORK/m101plant"
+  rm -rf "$M101P"
+
+  m101_tree() {   # <slug> <file under the extension> <perl substitution>
+    local dir="$M101P/$1"
+    mkdir -p "$dir/_extensions"
+    cp examples/figure-marks.qmd examples/dot.png "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    local target="$dir/_extensions/index/$2"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$3" < "$target" > "$dir/spliced" \
+      || fail "M101 T5 self-test ($1): the substitution aimed at $2 could not be applied (its own message is above)"
+    cmp -s "$target" "$dir/spliced" \
+      && fail "M101 T5 self-test ($1): the substitution reported a match and $2 is unchanged"
+    mv "$dir/spliced" "$target"
+  }
+
+  m101_render() {   # <slug> <format>
+    ( cd "$M101P/$1" && quarto render figure-marks.qmd --to "$2" ) \
+      > "$WORK/m101-$1-$2.log" 2>&1 \
+      || { tail -20 "$WORK/m101-$1-$2.log" >&2; fail "M101 T5 self-test ($1): the fixture failed to render to $2 through the planted copy"; }
+    capture "$M101P/$1/figure-marks.qmd" "$2" "m101-$1-$2"
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m101_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M101 self-test ($slug): the check passed the planted render, so its green says nothing about that fix"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M101 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this check catching this plant"; }
+    pass "M101 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  m101_tree no-declass modules/passes.lua \
+    's{  doc = qi_marks\.declass_caption_copies\(doc\)\n}{}'
+  for fmt in html epub pdf typst; do
+    m101_render no-declass "$fmt"
+    m101_red "no-declass, $fmt" "expected 0 warning(s) from this extension" \
+      check_extension_warning_count "$WORK/m101-no-declass-$fmt.log" 0 \
+      "M101 T5 plant no-declass ($fmt)"
+    check_warning_count "$WORK/m101-no-declass-$fmt.log" \
+      'range="open" on term "cedar" opens a range for a term whose range is already open' 1 \
+      "M101 T5 plant no-declass ($fmt: the report drawn is the second opening of cedar's range)"
+  done
+  rm -rf "$M101P/book-record"
+  cp -R "$M101B/base" "$M101P/book-record"
+  cp "$M101P/no-declass/_extensions/index/modules/passes.lua" \
+    "$M101P/book-record/_extensions/index/modules/passes.lua"
+  ( cd "$M101P/book-record" && quarto render --to html ) \
+    > "$WORK/m101-plant-book-record.log" 2>&1 \
+    || { tail -20 "$WORK/m101-plant-book-record.log" >&2; fail "M101 T5 self-test (no-declass, book): the record-route book failed to render"; }
+  capture --project "$M101P/book-record" html "m101-plant-book-record"
+  m101_red "no-declass, record route" "the generated index sections do not match the manifest" \
+    check_index_sections "$CAPTURE_ROOT/m101-plant-book-record/_book/last.html" \
+    "$M101_RECORD_ROWS" "M101 T5 plant no-declass (record route)" hrefs
+
+  m101_tree book-declass modules/book.lua \
+    's{  blocks = qi_marks\.declass_caption_copies\(blocks\)\n}{}'
+  m101_red "book-declass, recovery route" "the recovery route read" \
+    m101_recovery_probe "$M101P/book-declass/_extensions/index/modules" \
+    "M101 T5 plant book-declass"
+
+  m101_tree copy-id modules/marks.lua \
+    's{    span\.identifier = ""\n    return span\n}{    return span\n}'
+  m101_render copy-id html
+  m101_red "copy-id" "alder links to" \
+    m101_alder_check "$CAPTURE_ROOT/m101-copy-id-html/figure-marks.html"
+
+  m101_tree html-move modules/html.lua \
+    's{      anchored\[span\.identifier\] = true\n}{}'
+  m101_render html-move html
+  m101_red "html-move" "resolve to no id in the same file" \
+    check_html_index_links "$CAPTURE_ROOT/m101-html-move-html/figure-marks.html" \
+    "M101 T5 plant html-move"
+
+  m101_tree latex-move index.lua \
+    's{  doc = qi_latex\.move_alt_commands\(doc\)\n}{}'
+  m101_render latex-move pdf
+  m101_red "latex-move" "the PDF index of examples/figure-marks.qmd prints" \
+    m101_pdf_check "$CAPTURE_ROOT/m101-latex-move-pdf/figure-marks.pdf"
+
+  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest"
 fi
 
 # ---------------------------------------------------------------------------

@@ -209,7 +209,13 @@ The modules, in dependency order:
   render, takes the index class off every span inside Quarto's top-level
   `#quarto-meta-markdown` div (the chapter's metadata fields, copied there
   ahead of every filter and not printed), its element hook discarding an
-  author's copy of the tag first (added M071); then three that only read — one
+  author's copy of the tag first (added M071). In every format the same
+  document hook calls `marks.declass_caption_copies`, which takes the index
+  class and the id off each span in the alt text of an image that is a
+  figure's only content and equals the figure's caption: Pandoc's reader copies
+  a figure's caption there, so a caption mark is read once, in the caption.
+  The HTML book's recovery reader applies it to the blocks it walks (added
+  M101). Then three that only read — one
   registering sort keys, one deciding which keys are contested, one pairing
   page ranges — and the emitting pass that rewrites the mark, reading the tag
   off and, in an HTML book chapter, filing a tagged mark as a page locator
@@ -419,7 +425,13 @@ Three back-ends ship:
   heading's inlines into the table of contents and the id would then appear
   twice; a heading mark's anchor — author id or minted — sits on an empty span
   emitted just after the heading, and an untagged mark's author id moves there
-  too, having the same duplicate to avoid (restored M079).
+  too, having the same duplicate to avoid (restored M079). No anchor id stays
+  inside an image's alt text either, because the HTML and EPUB writers print
+  alt text as a string: `assign_anchors` moves each mark's id to an empty span
+  just after the image, in the same block, and the mark's text stays in the
+  alt text. The LaTeX writer drops raw LaTeX in alt text, so
+  `latex.move_alt_commands` moves each `\index` and registration command the
+  back-end wrote there to just after the image (added M101).
 - **EPUB** (`FORMAT` containing `epub`, which covers `epub2` and `epub3`): the
   HTML back-end's index, unchanged (added M52). `builds_ast_index` routes the
   two sites gated on the AST back-ends — the per-mark record in `passes.lua`
@@ -444,7 +456,10 @@ Three back-ends ship:
   stays out of a heading because Typst's outline copies a heading's body, and
   a copied label names two elements. A label written in an image's alt text
   moves to just after the image, because Pandoc's Typst writer prints alt
-  text as a string and drops raw Typst there (M098 review). The index is one raw Typst block per
+  text as a string and drops raw Typst there (M098 review). The HTML, EPUB and
+  LaTeX back-ends move an alt-text mark's target the same way, and the version
+  matrix reads `examples/figure-marks.qmd`, which holds such a label, on every
+  leg (M101). The index is one raw Typst block per
   declared index that some mark files in, placed by `place_index` after a weak
   page break and a raw, unnumbered Typst `heading`. The heading is raw because
   Quarto moves every Pandoc header up a level for Typst in a document whose
@@ -1015,6 +1030,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   does not carry. No captured EPUB member carries a literal `<![CDATA[`, so
   nothing is red today; separating the two readings would take a builder that
   knows which of the two it is parsing. — M084 review F3
+- **KI299.** `marks.declass_caption_copies` does not see the alt-text copy of
+  a caption that holds a Quarto shortcode. Quarto gives the shortcode in the
+  caption and in the copy different custom ids, so the two inline lists are
+  not equal. A mark in the caption of such a figure with no id files twice.
+  In HTML the moved id of the copy's mark is dropped with the empty span
+  Quarto's figure renderer discards, so one index link names no element, and
+  a range opened there is reported as already open. The HTML book's recovery
+  route reads the shortcode as source text and files the mark once. Observed
+  on Quarto 1.10.18. — M101 review F1, F2
 
 ### The Typst back-end
 
@@ -1031,14 +1055,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   check. `tests/typstcheck.py` folds a combining cluster read twice running,
   because pdftotext reads each glyph of such a cluster as the whole cluster. A
   back-end that doubled such a cluster reads as correct there. — M098 T4, T5
-- **KI294.** A mark in a figure caption is recorded twice in every back-end,
-  because Quarto copies the caption into the image's alt text. A range opened
-  there reports that the term's range is already open. Observed on main
-  before M098 in an HTML render. — M098 review pass 2 F1
-- **KI295.** The move of a label out of image alt text is checked only on
-  Quarto 1.10.18. The version matrix renders `examples/typst-index.qmd`,
-  which has no image, so the floor leg never runs that path. — M098 review
-  pass 2 F3
 - **KI296.** The report on a `range="open"` whose term already has a range
   open says the mark indexes as an ordinary page number. Where a range spans
   that page, the LaTeX and Typst indexes print no locator for it. — M098
@@ -1571,6 +1587,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `corpus-xref-escaping.log`, and the zero counts beside it over the book
   logs, would stay green if their manifest row or render were removed. —
   M091 review F1
+- **KI300.** The version matrix shows the move of an alt-text mark's target
+  only on the pinned Quarto for HTML, EPUB and LaTeX. Its HTML step compares
+  each leg's index hrefs to the pinned leg's and never checks that the target
+  id is on the page, and it renders no EPUB or PDF of
+  `examples/figure-marks.qmd`. A floor Quarto that drops the moved span passes
+  the matrix. — M101 review F3
+- **KI301.** Two M101 checks in `tests/run-tests.sh` have no plant under
+  `--self-test`. No plant moves a target into another block to turn the
+  same-block clause of `tests/figuremarks.py after` red. No plant changes the
+  copied alt text to turn the `alts` check red, and that check was green on
+  main. — M101 review F4
 
 ### The repo and its packaging
 

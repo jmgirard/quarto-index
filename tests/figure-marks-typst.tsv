@@ -1,0 +1,31 @@
+# The index examples/figure-marks.qmd prints in a Typst render (M101).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states.
+#
+# The pages come from the source's explicit page breaks: page 1 runs to the
+# first break, and each break starts the next page. Each term is one case.
+#   alder    a caption mark on a figure with no id, page 1, carrying an id of
+#            its author's. Pandoc copies the caption into the image's alt
+#            text, and the copy files nothing: one locator
+#   birch    a caption mark on a figure with an id, page 2: one locator
+#   cedar    a range opened in the caption of a figure with no id on page 3,
+#            closed in the text on page 4: one range, linked to page 3
+#   dogwood  a plain mark in the alt text of an image in a sentence, page 5
+#   elder    a principal mark in the same alt text, page 5: one bold locator
+#   hazel    a mark in the alt text of an image in a figure div, page 6. The
+#            image is not the only content of its paragraph, so it holds no
+#            copied caption and its mark files one locator
+group	A
+entry	0	alder	1@1
+group	B
+entry	0	birch	2@2
+group	C
+entry	0	cedar	3–4@3
+group	D
+entry	0	dogwood	5@5
+group	E
+entry	0	elder	5*@5
+group	H
+entry	0	hazel	6@6

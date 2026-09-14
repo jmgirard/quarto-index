@@ -605,6 +605,54 @@ local function derive_levels(entry, visible, declared, content_count, context,
   return nil, "keep"
 end
 
+-- Pandoc's markdown reader copies the caption of a figure into the alt text of
+-- the image it holds, so every mark in that caption is written twice: once in
+-- the caption and once in the copy. The copy is not a mark an author wrote, and
+-- read as one it filed a second locator and opened a range a second time
+-- (observed on Quarto 1.10.18 in every format, and in the recovery route's own
+-- parse). Each span in such a copy loses the index class, and nothing else
+-- about it but its id changes, so the `alt` text every writer prints stays
+-- what it was.
+--
+-- A copy is the alt text of an image that is the figure's only content and
+-- equals the figure's caption. An image whose alt text differs from the
+-- caption, or that shares its paragraph with anything, holds marks the author
+-- wrote there, and those stay marks.
+local function declass_caption_copies(node)
+  local function declass(span)
+    if not span.classes:includes(qi_core.INDEX_CLASS) then
+      return nil
+    end
+    span.classes = span.classes:filter(function(class)
+      return class ~= qi_core.INDEX_CLASS
+    end)
+    -- The copy carries the author's id too. Left in place, the HTML back-end's
+    -- id census counts it as a second element of that name and the mark
+    -- yields its own id. No writer prints an id inside alt text.
+    span.identifier = ""
+    return span
+  end
+  return node:walk({
+    Figure = function(figure)
+      local long = figure.caption.long
+      if #figure.content ~= 1 or #long ~= 1 then
+        return nil
+      end
+      local block, caption = figure.content[1], long[1]
+      if (block.t ~= "Plain" and block.t ~= "Para") or #block.content ~= 1
+          or (caption.t ~= "Plain" and caption.t ~= "Para") then
+        return nil
+      end
+      local image = block.content[1]
+      if image.t ~= "Image" or image.caption ~= caption.content then
+        return nil
+      end
+      image.caption = image.caption:walk({ Span = declass })
+      return figure
+    end,
+  })
+end
+
 -- Every mutable cell this module owns, back to the value its declaration
 -- gives. `require` caches a module for the life of the Lua state, so nothing
 -- else returns these to their initial values: a state reused across documents
@@ -655,5 +703,6 @@ M["next_range"] = next_range
 M["report_ranges"] = report_ranges
 M["mention_role"] = mention_role
 M["derive_levels"] = derive_levels
+M["declass_caption_copies"] = declass_caption_copies
 
 return M

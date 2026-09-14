@@ -264,6 +264,10 @@ local function Pandoc(doc)
     end
     return qi_marker.place_index(doc, nil)
   end
+  -- The writer drops raw LaTeX inside an image's alt text, so each index
+  -- command there moves to just after its image before anything else reads
+  -- the blocks (see `move_alt_commands`).
+  doc = qi_latex.move_alt_commands(doc)
 
   -- Reported here rather than at the mark, because it takes the whole document
   -- to know that a term has been marked both ways. Read from the map that

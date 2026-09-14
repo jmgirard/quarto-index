@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M101 | A mark in a figure caption or an image's alt text files one locator | planned | — | normal | milestones/M101-figure-caption-marks.md |
+| M101 | A mark in a figure caption or an image's alt text files one locator | review | — | normal | milestones/M101-figure-caption-marks.md |
 | M100 | A Typst index orders locators by the number the page prints | done | — | low | milestones/archive/M100-typst-locator-order.md |
 | M099 | A Typst locator prints the number its page shows | done | — | normal | milestones/archive/M099-typst-locator-numbering.md |
 | M098 | A Typst render prints the index | done | M097 | normal | milestones/archive/M098-typst-back-end.md |
@@ -34,6 +34,8 @@ _Released 0.4.0 2026-09-11._
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Scope the M083 EPUB plants' derived index locator to the links the sweep reads: it takes any relative `href` in the member, where `tests/epubcheck.py unique` counts only anchors inside the index section. Promote on the fixture writing a link outside that section, or with any other pass over the M083 plants — added 2026-09-08 — M084 review F2 — KI264
+- Detect a figure caption's alt-text copy when the caption holds a Quarto shortcode, so the mark files once. Promote on an author reporting one, or with any other change to `declass_caption_copies` — added 2026-09-14 — M101 review F1, F2 — KI299
+- Plant the two M101 checks no self-test turns red, and read the moved alt-text target on the floor leg of the version matrix. Promote on any change to the alt-text move in `html.lua` or `latex.lua` — added 2026-09-14 — M101 review F3, F4 — KI300, KI301
 - [low] Test that the first counting symbol of a Typst page numbering pattern sets a locator's kind: a pattern with two symbols of different kinds, where taking the last symbol changes an entry's order. Promote on any change to `qi-index-rank` or `qi-index-symbols` — added 2026-09-14 — M100 review round 2 F1
 - [low] Close the last id-census shape M081 and M082 leave in `note_raw`: a `style` or `script` inside `svg` or `math`, where a breakout tag is reported to make a real element the walk steps over. Promote on evidence checked against a browser, which this repo does not run, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - [low] Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254

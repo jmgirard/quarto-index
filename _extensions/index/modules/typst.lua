@@ -36,9 +36,16 @@ local M = {}
 -- before the first cross-reference, and a semicolon between two
 -- cross-references.
 local TYPST_HELPERS = [[
+#let qi-index-counters(pattern) = pattern.clusters().filter(c => numbering(c + "1", 2) != c + "2").len()
 #let qi-index-page(loc) = {
   let pattern = loc.page-numbering()
-  if pattern == none { str(loc.page()) } else { numbering(pattern, ..counter(page).at(loc)) }
+  if pattern == none {
+    str(loc.page())
+  } else if type(pattern) == str and qi-index-counters(pattern) >= 2 {
+    numbering(pattern, ..counter(page).at(loc), ..counter(page).final())
+  } else {
+    numbering(pattern, ..counter(page).at(loc))
+  }
 }
 #let qi-index-entry(depth, term, items, xrefs) = context {
   let found = ()
@@ -51,26 +58,30 @@ local TYPST_HELPERS = [[
         let closed = query(item.at(1))
         if closed.len() > 0 { stop = closed.first().location() }
       }
-      found.push((start: start, stop: stop, bold: item.at(2)))
+      let first = qi-index-page(start)
+      let last = qi-index-page(stop)
+      let shown = if first == last { first } else { first + "–" + last }
+      found.push((start: start, stop: stop, shown: shown, bold: item.at(2), spans: start.page() != stop.page()))
     }
   }
   found = found.sorted(key: f => f.start.page() * 1000000 + f.stop.page())
   let merged = ()
   for f in found {
-    if merged.len() > 0 and merged.last().start.page() == f.start.page() and merged.last().stop.page() == f.stop.page() {
-      let last = merged.pop()
-      last.bold = last.bold or f.bold
-      merged.push(last)
-    } else {
+    let at = merged.position(m => m.shown == f.shown)
+    if at == none {
       merged.push(f)
+    } else {
+      let kept = merged.at(at)
+      kept.bold = kept.bold or f.bold
+      kept.spans = kept.spans or f.spans
+      merged.at(at) = kept
     }
   }
-  let ranges = merged.filter(f => f.start.page() != f.stop.page())
-  merged = merged.filter(f => f.start.page() != f.stop.page() or ranges.all(r => f.start.page() < r.start.page() or f.start.page() > r.stop.page()))
+  let ranges = found.filter(f => f.spans)
+  merged = merged.filter(f => f.spans or ranges.all(r => f.start.page() < r.start.page() or f.start.page() > r.stop.page()))
   let line = [#term]
   for f in merged {
-    let shown = if f.start.page() == f.stop.page() { [#qi-index-page(f.start)] } else { [#qi-index-page(f.start)–#qi-index-page(f.stop)] }
-    line = line + [, ] + link(f.start, if f.bold { strong(shown) } else { shown })
+    line = line + [, ] + link(f.start, if f.bold { strong(f.shown) } else { f.shown })
   }
   for (i, xref) in xrefs.enumerate() {
     line = line + (if i == 0 { [, ] } else { [; ] }) + xref

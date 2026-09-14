@@ -25,7 +25,8 @@ column, as tests/pdfindex.py reads it and for the reason its header gives.
 Indent depth is the entry's level, read by clustering the left edges of each
 column. A line whose words are all bold and unlinked is a letter-group
 heading. Every other line is an entry: its term runs up to the first linked
-or italic word, each linked word is one locator, and each italic run opens a
+or italic word, each run of linked words up to a comma is one locator, and
+each italic run opens a
 cross-reference whose target runs to the next italic run.
 
 This module reads the ARTIFACT. It never produces expected values: every
@@ -174,8 +175,15 @@ def _inside(point, box):
     return box[0] <= x <= box[2] and box[1] <= y <= box[3]
 
 
-def _pages(pdf_path):
-    """Yield `(page, width, [[Word, ...], ...])`, one list per line."""
+def _pages(pdf_path, footer_pattern=None):
+    """Yield `(page, width, [[Word, ...], ...])`, one list per line.
+
+    The bottom-most line of each page is dropped when it is the page's footer.
+    With no `footer_pattern`, a footer is one PAGE_NUMBER word. With one, a
+    footer is a line that carries no link and whose words, joined by single
+    spaces, match the pattern, so a caller whose pages print a numbering of
+    several words (`5 / 5`) names it (M099).
+    """
     xml = subprocess.run(
         ['pdftotext', '-bbox-layout', pdf_path, '-'],
         check=True, capture_output=True, text=True).stdout
@@ -205,8 +213,13 @@ def _pages(pdf_path):
                 lines.append(words)
         if lines:
             bottom = max(range(len(lines)), key=lambda i: lines[i][0].y0)
-            if (len(lines[bottom]) == 1
-                    and PAGE_NUMBER.match(lines[bottom][0].text)):
+            if footer_pattern is None:
+                is_footer = (len(lines[bottom]) == 1
+                             and PAGE_NUMBER.match(lines[bottom][0].text))
+            else:
+                is_footer = (all(w.link is None for w in lines[bottom])
+                             and footer_pattern.match(_text(lines[bottom])))
+            if is_footer:
                 del lines[bottom]
         yield number, float(page.get('width')), lines
 
@@ -256,21 +269,34 @@ def parse_entry(words):
         term_words[-1] = term_words[-1][:-1]
     term = ' '.join(term_words)
 
+    # A locator runs over one or more linked words, `5` or `1 / 5`, and ends
+    # at a word ending in a comma or at the end of the line (M099). Its words
+    # share one link and one face, or the line is not read as an entry.
     locators, refs = [], []
     i = first
+    locator = []
     while i < len(words) and not words[i].italic:
         word = words[i]
         if word.link is None:
             raise ValueError(f'an unlinked word {word.text!r} among the '
                              f'locators of {_text(words)!r}')
-        text = word.text
-        if i + 1 < len(words):
-            if not text.endswith(','):
-                raise ValueError(f'no comma after locator {text!r} in '
-                                 f'{_text(words)!r}')
-            text = text[:-1]
-        locators.append((text, word.bold, word.link))
+        locator.append(word)
         i += 1
+        ends = word.text.endswith(',')
+        if not ends and i < len(words) and not words[i].italic:
+            continue
+        if not ends and i < len(words):
+            raise ValueError(f'no comma after locator {_text(locator)!r} in '
+                             f'{_text(words)!r}')
+        text = _text(locator)
+        if ends:
+            text = text[:-1]
+        if (len({w.link for w in locator}) != 1
+                or len({w.bold for w in locator}) != 1):
+            raise ValueError(f'the words of locator {text!r} do not share one '
+                             f'link and one face in {_text(words)!r}')
+        locators.append((text, locator[0].bold, locator[0].link))
+        locator = []
     while i < len(words):
         said = []
         while i < len(words) and words[i].italic:
@@ -308,7 +334,7 @@ def _levels(edges):
             for edge in edges}
 
 
-def read(pdf_path, heading, stop=()):
+def read(pdf_path, heading, stop=(), footer_pattern=None):
     """The index under the line `heading`, as a list of Line.
 
     With `stop`, the read ends at the first later page carrying a line that
@@ -317,9 +343,9 @@ def read(pdf_path, heading, stop=()):
     LookupError. A start rather than a whole line, because the page after an
     index in a Typst book opens with a running header that names the chapter
     and then the section. Without `stop` the read runs to the end of the
-    document.
+    document. `footer_pattern` names the pages' footer, as `_pages` reads it.
     """
-    pages = list(_pages(pdf_path))
+    pages = list(_pages(pdf_path, footer_pattern))
     start = None
     for i, (_n, _w, lines) in enumerate(pages):
         for j, words in enumerate(lines):
@@ -388,7 +414,7 @@ def printed_text(row):
     return (int(level), text)
 
 
-def pages_main(argv):
+def pages_main(argv, footer_pattern=None):
     """`typstindex.py pages <pdf> <manifest> <label> <heading> [stop ...]`.
 
     Reads the index with `tests/pdfindex.py`, which needs only pdftotext, and
@@ -401,7 +427,9 @@ def pages_main(argv):
     stop = tuple(argv[6:])
     expected = [printed_text(row) for row in manifest_rows(manifest)]
     try:
-        entries = pdfindex.read(pdf, heading=heading, stop=stop)
+        entries = pdfindex.read(pdf, heading=heading, stop=stop,
+                                footer_pattern=(footer_pattern
+                                                or pdfindex.LOCATOR_ONLY))
     except LookupError as error:
         print(f'FAIL: {label}: {error}', file=sys.stderr)
         return 1
@@ -447,7 +475,7 @@ def compare(actual, expected, label):
     return False
 
 
-def main(argv):
+def main(argv, footer_pattern=None):
     """`typstindex.py <pdf> <manifest> <label> <heading> [stop ...]`.
 
     The manifest holds one `row()` per line (`manifest_rows`). Exits 0 on a
@@ -457,7 +485,8 @@ def main(argv):
     stop = tuple(argv[5:])
     expected = manifest_rows(manifest)
     try:
-        actual = [line.row() for line in read(pdf, heading, stop)]
+        actual = [line.row()
+                  for line in read(pdf, heading, stop, footer_pattern)]
     except (LookupError, ValueError) as error:
         print(f'FAIL: {label}: {error}', file=sys.stderr)
         return 1
@@ -468,7 +497,21 @@ def main(argv):
     return 0
 
 
+def _footer_option(argv):
+    """`(argv, pattern)`: argv without a `--footer=REGEX` option, and the
+    pattern that option names, or None. Both modes take it, for pages whose
+    footer is not one page-number word (M099)."""
+    rest, pattern = [], None
+    for arg in argv:
+        if arg.startswith('--footer='):
+            pattern = re.compile(arg[len('--footer='):])
+        else:
+            rest.append(arg)
+    return rest, pattern
+
+
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1] == 'pages':
-        sys.exit(pages_main(sys.argv))
-    sys.exit(main(sys.argv))
+    ARGV, FOOTER = _footer_option(sys.argv)
+    if len(ARGV) > 1 and ARGV[1] == 'pages':
+        sys.exit(pages_main(ARGV, FOOTER))
+    sys.exit(main(ARGV, FOOTER))

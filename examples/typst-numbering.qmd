@@ -1,0 +1,124 @@
+---
+title: "Typst page numbering"
+format:
+  typst:
+    page-numbering: "1 / 1"
+filters:
+  - index
+---
+
+The fixture for Typst locators under a page numbering of its own (M099). The
+document sets the pattern `1 / 1`, which names two counters, so each page's
+footer prints the page counter's value there and its final value. Raw Typst
+blocks change the pattern and reset the page counter below.
+
+Every page ends where the next one starts: at an explicit page break, or at a
+raw Typst `set page` rule, which starts a new page itself. So the physical
+page each mark sits on is a fact of this source, and the suite's manifest
+states every page from here and nowhere else. Each term is marked in one case
+of its own, so no two cases share an entry.
+
+## Physical page 1
+
+The page counter is 1, and the pattern is `1 / 1`.
+
+A term marked here and again after the reset prints one locator:
+[apple]{.index}.
+
+A range opens here and closes after the reset, on a page that prints the same
+text: [birch]{.index range="open"}.
+
+A term marked here and marked as principal after the reset prints one bold
+locator: [cedar]{.index}.
+
+The first of two ranges with the same end texts opens here:
+[dune]{.index range="open"}.
+
+A range that opens and closes on this page sits beside a mark after the reset
+that prints the same text: [elm]{.index range="open"} and
+[elm]{.index range="close"}.
+
+{{< pagebreak >}}
+
+## Physical page 2
+
+The page counter is 2.
+
+A mark inside the range of `birch`, which prints one text:
+[birch]{.index}.
+
+The first range of `dune` closes here: [dune]{.index range="close"}.
+
+A range opens here and closes after the reset, on a page that prints a lower
+number: [fern]{.index range="open"}.
+
+{{< pagebreak >}}
+
+```{=typst}
+#counter(page).update(1)
+```
+
+## Physical page 3
+
+The page counter is reset to 1 on this page.
+
+The second mark of `apple`: [apple]{.index}.
+
+The range of `birch` closes here: [birch]{.index range="close"}.
+
+The principal mark of `cedar`: [cedar]{.index mention="principal"}.
+
+The second range of `dune` opens here: [dune]{.index range="open"}.
+
+The mark of `elm`: [elm]{.index}.
+
+The range of `fern` closes here: [fern]{.index range="close"}.
+
+{{< pagebreak >}}
+
+## Physical page 4
+
+The page counter is 2.
+
+The second range of `dune` closes here: [dune]{.index range="close"}.
+
+A term marked here and on the next page, where the counter is also 2 under
+another pattern, prints two locators: [holly]{.index}.
+
+```{=typst}
+#set page(numbering: "i of I")
+#counter(page).update(2)
+```
+
+## Physical page 5
+
+The pattern is `i of I`, which names two counters, and the page counter is
+reset to 2 again.
+
+A mark under this pattern: [gorse]{.index}.
+
+The second mark of `holly`: [holly]{.index}.
+
+```{=typst}
+#set page(numbering: "- 1 -")
+```
+
+## Physical page 6
+
+The pattern is `- 1 -`, which names one counter, and the page counter is 3.
+
+A mark under this pattern: [iris]{.index}.
+
+```{=typst}
+#set page(numbering: none)
+```
+
+## Physical page 7
+
+This page has no numbering, and the page counter is 4.
+
+A mark on a page with no numbering: [juniper]{.index}.
+
+```{=typst}
+#set page(numbering: "1 / 1")
+```

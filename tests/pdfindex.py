@@ -73,8 +73,14 @@ class Entry:
 LOCATOR_ONLY = re.compile(r'^[\d,\s\u2013-]+$')
 
 
-def _pages(pdf_path):
+def _pages(pdf_path, footer_pattern=LOCATOR_ONLY):
     """Yield (page_number, page_width, [(xMin, yMin, text), ...]).
+
+    `footer_pattern` is the pattern a page's footer line matches, the whole line text
+    with its words joined by single spaces. The default is LOCATOR_ONLY, the
+    footer makeindex's PDF pages print. A caller whose pages print another
+    footer, such as a Typst page numbering of several words, names its own
+    (M099).
 
     Two kinds of line carry nothing but locator characters, and this module
     read both as the page-number footer until M15's fixture produced the
@@ -104,14 +110,14 @@ def _pages(pdf_path):
             if text:
                 raw.append([float(line.get('xMin')),
                             float(line.get('yMin')), text])
-        footer = None
+        found = None
         for i, (_x, y, text) in enumerate(raw):
-            if LOCATOR_ONLY.match(text) and (footer is None
-                                             or y > raw[footer][1]):
-                footer = i
+            if footer_pattern.match(text) and (found is None
+                                               or y > raw[found][1]):
+                found = i
         yield (number, float(page.get('width')),
                [(x, y, text) for i, (x, y, text) in enumerate(raw)
-                if i != footer])
+                if i != found])
 
 
 def _fold_continuations(collected):
@@ -154,7 +160,7 @@ def _levels(edges):
             for edge in edges}
 
 
-def read(pdf_path, heading='Index', stop=()):
+def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
     """Read the printed index, in the order it is printed.
 
     Returns a list of Entry, starting at the line after the index heading. With
@@ -178,8 +184,10 @@ def read(pdf_path, heading='Index', stop=()):
     lines: the caller asked for a bounded section and got an unbounded one, and
     passing that back as a short list would read every later index as part of
     this one.
+
+    `footer_pattern` is the footer each page prints, as `_pages` reads it.
     """
-    pages = list(_pages(pdf_path))
+    pages = list(_pages(pdf_path, footer_pattern))
     start = None
     for i, (number, _width, lines) in enumerate(pages):
         for j, (_x, _y, text) in enumerate(lines):

@@ -1,0 +1,58 @@
+# The index examples/typst-numbering.qmd prints in a Typst render (M099).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states. A locator of several words is written
+# with the single spaces pdftotext puts between its words: `1 / 5`.
+#
+# Physical pages, from the source's page breaks and `set page` rules, with the
+# page counter on each and the pattern in force:
+#   page 1  counter 1                  `1 / 1`
+#   page 2  counter 2                  `1 / 1`
+#   page 3  counter 1 (reset to 1)     `1 / 1`
+#   page 4  counter 2                  `1 / 1`
+#   page 5  counter 2 (reset to 2)     `i of I`
+#   page 6  counter 3                  `- 1 -`
+#   page 7  counter 4                  none
+#   page 8  counter 5, the index       `1 / 1`
+# The index holds ten one-line entries under ten letter groups, which fit on
+# one page, so page 8 is the last page. The final value of the page counter is
+# therefore 5: 2 on page 5, plus one for each of pages 6, 7 and 8. A pattern
+# naming two counters prints it as `5`, or as `V` for `I`.
+#
+# So a locator prints `1 / 5` on pages 1 and 3, `2 / 5` on pages 2 and 4,
+# `ii of V` on page 5, `- 3 -` on page 6, and the physical page `7` on page 7.
+#
+#   apple    pages 1 and 3 print one text: one locator, linked to page 1
+#   birch    a range from page 1 to page 3, both ends `1 / 5`: that text alone;
+#            the mark on page 2 lies inside the range and prints nothing
+#   cedar    ordinary on page 1, principal on page 3, one text: one bold
+#            locator, linked to page 1
+#   dune     ranges 1-2 and 3-4, both `1 / 5–2 / 5`: one locator, linked to 1
+#   elm      a range opened and closed on page 1 and a mark on page 3, one
+#            text: one locator, linked to page 1
+#   fern     a range from page 2 to page 3, closing on a lower number
+#   gorse    one mark under `i of I`, page 5
+#   holly    page 4 and page 5 share counter 2 under two patterns: two locators
+#   iris     one mark under `- 1 -`, page 6
+#   juniper  one mark on page 7, which has no numbering
+group	A
+entry	0	apple	1 / 5@1
+group	B
+entry	0	birch	1 / 5@1
+group	C
+entry	0	cedar	1 / 5*@1
+group	D
+entry	0	dune	1 / 5–2 / 5@1
+group	E
+entry	0	elm	1 / 5@1
+group	F
+entry	0	fern	2 / 5–1 / 5@2
+group	G
+entry	0	gorse	ii of V@5
+group	H
+entry	0	holly	2 / 5@4, ii of V@5
+group	I
+entry	0	iris	- 3 -@6
+group	J
+entry	0	juniper	7@7

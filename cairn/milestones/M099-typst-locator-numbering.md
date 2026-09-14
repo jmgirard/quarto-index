@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M099: A Typst locator prints the number its page shows
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes what the index of a Typst render prints
-- **Branch/PR:** —
+- **Branch/PR:** m099-typst-locator-numbering
 
 ## Goal
 

@@ -31037,6 +31037,10 @@ M102IDPY
       python3 tests/figuremarks.py alts "$fmt" \
       "$CAPTURE_ROOT/m101-alt-strip-$fmt/figure-marks.$fmt" \
       "$HTML_SECTION_ID" "$WORK/figure-marks-$fmt-alts.txt"
+    python3 tests/figuremarks.py after "$fmt" \
+        "$CAPTURE_ROOT/m101-alt-strip-$fmt/figure-marks.$fmt" \
+        "$HTML_SECTION_ID" dogwood 4 \
+      || fail "M102 self-test (alt-strip, $fmt): the plant also moved dogwood's id away from image 4, so it changes more than the alt (the report is above)"
   done
 
   m101_tree latex-move index.lua \

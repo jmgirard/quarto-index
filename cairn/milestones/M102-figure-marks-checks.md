@@ -123,6 +123,8 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: T7 done. `tests/run-tests.sh --self-test` on 5f26963 passed all 1708 checks. The same-block plant was red on `not in the image's`, alt-strip was red on `image 4` in HTML and EPUB, and latex-move was red on the new PDF message. KI300 and KI301 are removed from `cairn/DESIGN.md`, and `cairn_validate` passes.
 - claim audit: not owed — internal tier
 - 2026-09-14: implement complete, status review.
+- 2026-09-14: review: five criteria verified, three-lens review reported F1-F7, F1-F5 fixed at the gate, F6-F7 rejected.
+- step-7 approval: m102-figure-marks-checks approved for merge
 
 ## Decisions
 
@@ -147,3 +149,13 @@ Independent review, three lenses ([O] diff-bug, [S] blame-history, [S] prior-rev
 - F6 ([O] 5): the same-block `perl -pi ... or die` empties its scratch copy on a failed match, on a path where `fail` then ends the run.
 - F7 ([S] blame 2): `cmd_pdf` labels its lines `M101-AC1/AC2`, which the M102 CI step now prints.
 No finding shows an acceptance criterion failing.
+
+Triage at the merge gate (user chose to fix F1-F5, then merge):
+- F1: fixed. The comment now names the reading step after each render (`indexdump.py`, `typstindex.py` or `figuremarks.py`).
+- F2: fixed. The ordering comment names the book as the second-format case and says the figure-marks HTML is checked before its EPUB render.
+- F3: fixed. `cmd_pdf` catches `LookupError` and prints a FAIL line. A Typst PDF with no index exits 1 with `the PDF prints no index to compare`, and the good capture still passes.
+- F4: fixed. The alt-strip plant now also runs `after` for dogwood at image 4 on each planted render and fails the run if it is red. Both planted captures pass it.
+- F5: fixed. No comment line in `versions.yml` runs past 81 columns.
+- F6: rejected. The empty scratch copy exists only on a path where `fail` ends the run.
+- F7: rejected. The check is M101's oracle, and the `after` and `alts` lines CI prints carry M101 labels too.
+The fixes change only comments, one error branch and one extra passing check, so the full suite was not re-run. Each changed command was run directly on the last run's artifacts.

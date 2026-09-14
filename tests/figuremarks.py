@@ -181,8 +181,13 @@ def cmd_pdf(path, manifest):
     if not expected:
         print(f'FAIL: {label}: the manifest is empty', file=sys.stderr)
         return 1
-    actual = [unicodedata.normalize('NFC', entry.text)
-              for entry in pdfindex.read(path)]
+    try:
+        entries = pdfindex.read(path)
+    except LookupError as err:
+        print(f'FAIL: {label}: the PDF prints no index to compare: {err}',
+              file=sys.stderr)
+        return 1
+    actual = [unicodedata.normalize('NFC', entry.text) for entry in entries]
     if actual != expected:
         print(f'FAIL: {label}: the printed index is not the {len(expected)} '
               f'lines {manifest} states', file=sys.stderr)

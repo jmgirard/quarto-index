@@ -151,10 +151,12 @@ jobs:
       # across lualatex and xelatex, and is no part of what M51 restored.
       #
       # Each render below is followed immediately by its extraction or its
-      # check. The HTML renders write distinct paths and none can overtake
-      # another; the ordering is kept because a second format would render into
-      # a path an earlier one already wrote — the book renders into `_book`
-      # whatever the format — and the interleaving is what made that safe.
+      # check. The renders write distinct paths and none can overtake another;
+      # the ordering is kept because a second format of the book would render
+      # into a path an earlier one already wrote — the book renders into
+      # `_book` whatever the format — and the interleaving is what made that
+      # safe. The figure-marks EPUB render writes `examples/figure-marks.epub`,
+      # and its HTML is checked before that render runs.
       #
       # `indexdump.py` is what makes each of these a check and not just a
       # render: it fails loudly on an artifact carrying no index, so a leg that
@@ -252,8 +254,9 @@ jobs:
   # a leg's HTML extraction.
   #
   # WHAT IT CHECKS. That `quarto render --to pdf` succeeds on
-  # examples/demo.qmd and examples/book under this leg's Quarto, and that `tests/indexdump.py pdf` finds a printed
-  # index with at least one entry in each rendered PDF. And that
+  # examples/demo.qmd and examples/book under this leg's Quarto, and that
+  # `tests/indexdump.py pdf` finds a printed index with at least one entry in
+  # each rendered PDF. And that
   # `quarto render --to typst` succeeds on examples/typst-index.qmd and prints
   # both of its indexes as their manifests state them, in order and on the
   # stated pages (M098). And that `quarto render --to typst` succeeds on
@@ -268,8 +271,10 @@ jobs:
   # caption or an image's alt text (M101): the LaTeX index is the six lines of
   # tests/figure-marks-pdf.txt (M102), and the Typst index is
   # tests/figure-marks-typst.tsv. The render alone is not the check: a PDF
-  # that typesets at exit 0 while the index prints empty is exactly the break this job exists to catch, and `indexdump.py` is what
-  # makes the difference between the two visible.
+  # that typesets at exit 0 while the index prints empty is exactly the break
+  # this job exists to catch, and the reading step after each render
+  # (`indexdump.py`, `typstindex.py` or `figuremarks.py`) is what makes the
+  # difference between the two visible.
   #
   # WHAT IT DELIBERATELY DOES NOT CHECK. Whether two legs print the SAME
   # index — see the render job's note above on why a PDF comparison would be

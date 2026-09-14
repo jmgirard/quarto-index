@@ -168,6 +168,8 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 - re-audit: AC2 (full) — "always prints" was false for merged ranges, and two shapes had no witness: a collapsed range merging with a single mark, and a one-page range in a span. Opening-page inclusion and the span exemption were unplanted. Second line, so the wording went to the user.
 - 2026-09-13: AC2 amended at the mini gate (user chose to narrow). It now states drop-then-merge and puts three range shapes out of scope, which go to the candidate row. It adds the closing-page and opening-page shapes. T4 reworded, T5 gains five plants, and the fern opening-page mark is added.
 - 2026-09-13: criteria reflowed to the 150-line plan-body cap, words unchanged. Suite run 5 green (1630 checks, with --self-test), all 13 M099 plants red as planned. Matrix run 34800224758 green on all legs at 586a6e7. T1-T7 ticked, status review.
+- 2026-09-14: review: three lenses, 10 findings from the diff-bug lens. User chose the recommended triage. R1, R2, R3, R5 and R9 fixed on the branch, R4 recorded as KI298, and R6, R7, R8 and R10 rejected. Suite 1635 green, matrix 34863316506 green.
+- step-7 approval: m099-typst-locator-numbering approved for merge
 
 ## Decisions
 

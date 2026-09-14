@@ -61,7 +61,8 @@ A mark inside the range of `birch`, which prints one text:
 The first range of `dune` closes here: [dune]{.index range="close"}.
 
 A range opens here and closes after the reset, on a page that prints a lower
-number: [fern]{.index range="open"}.
+number: [fern]{.index range="open"}. A mark on the range's opening page
+prints nothing: [fern]{.index}.
 
 The second mark of `kale`: [kale]{.index}.
 

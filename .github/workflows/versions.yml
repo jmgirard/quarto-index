@@ -231,8 +231,9 @@ jobs:
   # both of its indexes as their manifests state them, in order and on the
   # stated pages (M098). And that `quarto render --to typst` succeeds on
   # examples/typst-numbering.qmd and prints its index's text as its manifest
-  # states it, in order, where each locator prints the page numbering's own
-  # text rather than a page (M099). The render alone is
+  # states it, in order, where a locator prints the page numbering's own
+  # text, or the physical page where a page has no numbering (M099). The
+  # render alone is
   # not the check: a PDF that typesets at exit 0 while the index prints empty
   # is exactly the break this job exists to catch, and `indexdump.py` is what
   # makes the difference between the two visible.

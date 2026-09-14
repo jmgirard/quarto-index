@@ -29267,6 +29267,31 @@ if [ "${1:-}" = "--self-test" ]; then
   m099_render mergefirst
   m099_read mergefirst 'lime\t1 / 5–2 / 5@1\t'
 
+  # The span test with a range's opening page left out of the span.
+  m099_tree spanopen 's{f\.start\.page\(\) < r\.start\.page\(\)}{f.start.page() <= r.start.page()}'
+  m099_render spanopen
+  m099_read spanopen 'fern\t2 / 5@2, 2 / 5–1 / 5@2'
+
+  # The span test with a range's closing page left out of the span.
+  m099_tree spanclose 's{f\.start\.page\(\) > r\.stop\.page\(\)}{f.start.page() >= r.stop.page()}'
+  m099_render spanclose
+  m099_read spanclose 'lime\t1 / 5–2 / 5@1, 2 / 5@2'
+
+  # The span drop applied to ranges across two or more pages too.
+  m099_tree dropranges 's{found = found\.filter\(f => f\.spans or }{found = found.filter(f => false or }'
+  m099_render dropranges
+  m099_read dropranges 'birch\t\t'
+
+  # Locators merged by the page counter's value rather than by printed text.
+  m099_tree countermerge 's{merged\.position\(m => m\.shown == f\.shown\)}{merged.position(m => counter(page).at(m.start) == counter(page).at(f.start) and counter(page).at(m.stop) == counter(page).at(f.stop))}'
+  m099_render countermerge
+  m099_read countermerge 'holly\t2 / 5@4\t'
+
+  # A range printed with its two ends in the other order.
+  m099_tree reorder 's{else \{ first \+ "–" \+ last \}}{else { last + "–" + first }}'
+  m099_render reorder
+  m099_read reorder 'fern\t1 / 5–2 / 5@2'
+
   # The version matrix's reading over the one-counter plant: red too.
   m098_red m099-neverboth-pages "(0, 'gorse, ii')" python3 tests/typstindex.py pages \
     "$CAPTURE_ROOT/m099-neverboth/typst-numbering.pdf" tests/typst-numbering.tsv \

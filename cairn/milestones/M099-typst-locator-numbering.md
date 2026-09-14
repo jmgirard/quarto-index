@@ -38,6 +38,9 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
   this plan adds.
 - A Typst book whose chapters reset the page counter. The same helper serves
   it, but no book fixture is added. It goes to the same candidate row.
+- A one-page range on a page another range spans, a multi-page range that
+  prints the same text as a single mark, and nested or overlapping ranges of
+  one entry. They go to the same candidate row (AC2 amendment).
 
 ## Acceptance criteria
 
@@ -56,20 +59,26 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 
       Shown by `tests/typstindex.py`, which reads the render against manifests
       derived by hand from the fixture source.
-- [ ] AC2: In that render, the locators of one entry that print the same
-      text, single pages and ranges alike, print that text once. The one
-      locator sits at the position of the earliest such page, links to that
-      page, and is bold where any merged mark is principal. A range whose two
-      ends print the same text prints that text alone. A page that a range of
-      the entry spans on the physical pages then prints no locator, as today.
-      Locators whose texts differ print separately, in physical page order.
-      The fixture carries each of these shapes:
+- [ ] AC2: In that render, a single mark that sits on a page a range of the
+      entry spans across two or more physical pages, its end pages included,
+      prints no locator, as today. Of the locators left, those of one entry
+      that print the same text print that text once. The one locator sits at
+      the position of the earliest such page, links to that page, and is bold
+      where any merged mark is principal. A range whose two ends print the
+      same text prints that text alone. Locators whose texts differ print
+      separately, in physical page order. A one-page range on a page another
+      range spans, a range across two or more pages that prints the same text
+      as a single mark, and ranges of one entry that nest or overlap are
+      outside this criterion. The fixture carries each of these shapes:
       - two marks that print one text, on either side of a page counter reset
       - a range across the reset whose two ends print one text
       - a principal mark only on the later of two pages that print one text
       - two ranges with the same end texts
       - a one-page range beside a single mark of the same text
       - a mark on a physical page inside a range that the reset collapsed
+      - a mark on the closing page of a range that prints the same text as a
+        later mark outside every range
+      - a mark on the opening page of a range
       - two pages with one counter value that print different text under
         different patterns
       - a range whose closing text is lower than its opening text.
@@ -114,9 +123,9 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
       counting symbols by Typst's own rule, fill it with both counter values.
       If not, fill it with the page value alone. Render the fixture red
       before the change and green after it.
-- [ ] T4: Change `qi-index-entry` (typst.lua:43) to merge locators by their
-      printed text, then drop the pages a range spans on the physical pages.
-      The order stays physical.
+- [ ] T4: Change `qi-index-entry` (typst.lua:43) to drop the single marks on
+      pages a range spans on the physical pages, then merge the locators left
+      by their printed text. The order stays physical.
 - [ ] T5: In a scratch copy, plant one defect for each AC1 and AC2 clause.
       Show each plant red against the manifests. The plants:
       - a fill that always uses two counters
@@ -126,7 +135,13 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
       - bold taken from the first merged page only
       - a link to the later page
       - the merged locator placed at the later position
-      - a span test by printed text.
+      - a span test by printed text
+      - the merge run before the span drop
+      - a span test that excludes a range's opening page
+      - a span test that excludes a range's closing page
+      - a span drop that also drops multi-page ranges
+      - a merge by counter value
+      - a range whose two ends are reordered.
 - [ ] T6: Add the fixture render and both readings to `tests/run-tests.sh`
       beside the M098 section (near :28882). Add a render step and a
       `typstindex.py pages` step to `.github/workflows/versions.yml` (near
@@ -144,6 +159,18 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 - 2026-09-13: plan gate chose to merge locators by printed text over physical pages, because the PDF index merges by printed number. Falsified by an author reporting a merged locator that hid a page they needed.
 - 2026-09-13: plan chose to merge by text before the physical span rule over the reverse order, because a collapsed range still covers its physical pages. Falsified by a report of a dropped mark that no printed locator shows.
 - 2026-09-13: plan gate chose the version matrix over the local suite only, because the new fill reads the final counter value on the Typst of Quarto 1.5. Falsified by a floor leg that cannot run a Typst step.
+- 2026-09-13: implement started on branch m099-typst-locator-numbering. No implementation question was open, so no gate.
+- 2026-09-13: T1-T4 written. Fixture renders to 8 pages. Unchanged readers red on the render (multi-word locator, `5 / 5` footer). Unchanged helpers red on 8 of the manifest's entries.
+- 2026-09-13: renamed the fixture term `fig` to `fern`, because the Quarto 1.5.52 Typst reads `fi` as a ligature (tests/typst-index-main.tsv comment). Added `kale` for the placement plant.
+- 2026-09-13: T5-T6 written in the suite self-test. Five M098 plants re-aimed at the new code, each shown red in scratch. Suite run 1 red on the gallery list (fixture unlisted). Fixed in site/gallery.yml.
+- 2026-09-13: matrix run 34796793073 red on the floor leg. Quarto 1.5.52's Typst template hard-codes numbering `1` and ignores `page-numbering:`. The fixture now sets `1 / 1` in a raw block. Run 34798353832 green on all legs.
+- 2026-09-13: suite run 2 red on one M098 plant that pinned 29 claims. It now reads its count from the claims list. Suite run 3 red on the M099 banner title. Fixed.
+- 2026-09-13: claim audit: 91 claims read, 2 corrected — typst.lua, site/typst.qmd, CHANGELOG.md, site/tests.qmd, versions.yml, typstindex.py. The merge before the span drop lost a later locator, so the code now drops first (term `lime`, plant `mergefirst`). The matrix wording overstated its page check. The re-read found both true and one comment slip, fixed.
+- 2026-09-13: suite run 4 green (1625 checks, with --self-test). Matrix run 34799239921 green on all legs.
+- 2026-09-13: implement chose to drop spanned single marks before the merge over the plan's merge-first order, because merge-first drops a later same-text locator with a spanned first one. Falsified by a shape where drop-first prints a locator for a spanned page. This supersedes the plan's merge-order line above.
+- re-audit: AC2 (full) — the order sentence, one-page ranges in a span, nested ranges and the lime bullet were unstated or loose. Three plants were missing: end-page inclusion, counter-value merge, reversed ends.
+- re-audit: AC2 (full) — "always prints" was false for merged ranges, and two shapes had no witness: a collapsed range merging with a single mark, and a one-page range in a span. Opening-page inclusion and the span exemption were unplanted. Second line, so the wording went to the user.
+- 2026-09-13: AC2 amended at the mini gate (user chose to narrow). It now states drop-then-merge and puts three range shapes out of scope, which go to the candidate row. It adds the closing-page and opening-page shapes. T4 reworded, T5 gains five plants, and the fern opening-page mark is added.
 
 ## Decisions
 

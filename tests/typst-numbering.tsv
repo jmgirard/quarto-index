@@ -31,7 +31,8 @@
 #   dune     ranges 1-2 and 3-4, both `1 / 5–2 / 5`: one locator, linked to 1
 #   elm      a range opened and closed on page 1 and a mark on page 3, one
 #            text: one locator, linked to page 1
-#   fern     a range from page 2 to page 3, closing on a lower number
+#   fern     a range from page 2 to page 3, closing on a lower number; a mark
+#            on page 2, the range's opening page, prints nothing
 #   gorse    one mark under `i of I`, page 5
 #   holly    page 4 and page 5 share counter 2 under two patterns: two locators
 #   iris     one mark under `- 1 -`, page 6

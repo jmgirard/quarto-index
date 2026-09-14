@@ -171,6 +171,8 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: the claim auditor re-read the six corrected claims at 8c9c552, and all hold.
 - 2026-09-14: pushed the branch and dispatched matrix run 34882305528 at 8c9c552, because the order fixture changed. It concluded success on all 8 jobs, the floor, pinned and release pdf legs included (AC5). T1-T11 ticked, and status set to review.
 - 2026-09-14: /milestone-review round 2: in an unrelated render, Quarto crashed with a segmentation fault, and the full suite at ee379c3 stopped at M074-AC1. The suite was run again.
+- 2026-09-14: round 2 verified AC1-AC6 at 797e97d (1669 checks). The gate fixed review F2, F3 and F4 in the docs, filed F1 as a candidate row, and rejected F5 and F6.
+- step-7 approval: m100-typst-locator-order approved for merge
 
 ## Decisions
 
@@ -223,3 +225,13 @@ Independent review, three fresh-context lenses at ee379c3. The blame-history len
 - F4 `site/back-end-differences.qmd:35-37`: item 4 names the kind of numbering but not the value within a kind.
 - F5 `tests/run-tests.sh:29489-29558`: no plant covers a page with no numbering taking its physical page as its value. The gorse row catches that change anyway.
 - F6 `typst.lua:45`, `site/typst.qmd:55`: lines past the wrap width, the class of round-1 F11.
+
+Gate triage (user, 2026-09-14):
+
+- F1: follow-up, a `[low]` candidate row in `cairn/ROADMAP.md`. A fixture shape needs new renders and a matrix run.
+- F2: fixed. The tiebreak sentence in `site/typst.qmd` now opens "Where two locators of one kind and number open on one page", and its M100-AC6 claim row matches.
+- F3: fixed. The M100 bullet of `CHANGELOG.md` now states the one-text range as a single mark and the merge place and link, with two new claim rows.
+- F4: fixed. Item 4 of `site/back-end-differences.qmd` now orders "by kind of numbering and then by number", and its M098-AC7 claim row matches.
+- F5: rejected. The gorse row already turns red if a page with no numbering takes the counter as its value.
+- F6: rejected. It is style, as round-1 F11 was.
+- Fix check: the M100-AC6 and M098-AC7 claim files for `site/typst.qmd`, `CHANGELOG.md` and `site/back-end-differences.qmd` passed on the edited texts (13, 4, 34 and 15 claims), and the page-order sweep passed. Against the texts at e258e04, the changed claims are red (tiebreak, one text, merge, locators). `bash -n tests/run-tests.sh` passed. The code did not change, so the suite and matrix evidence above stands.

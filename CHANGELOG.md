@@ -23,7 +23,10 @@
   `3` from an earlier page. A range whose two ends print different numbers
   spans the numbers from its opening number to a higher closing number of the
   same kind, and a mark of that entry on a spanned number of that kind prints
-  no page number of its own, even on a page after the range.
+  no page number of its own, even on a page after the range. A range whose
+  two ends print the same text counts as a single mark. Page numbers that
+  print the same text print once, at the place of the first of them in this
+  order, linked to the earliest of their pages.
 - A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no
   longer a language tag under any system locale. The HTML and EPUB index
   keeps its English words for it, and an index the document does not declare

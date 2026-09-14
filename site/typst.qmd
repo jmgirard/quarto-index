@@ -62,9 +62,9 @@ page.
   counts as other. Numbers of one kind are ordered by value, the page
   counter's value or the physical page where a page has no numbering, and
   then by page. So after a page counter reset, `1` comes before a `3` from an
-  earlier page. Where two locators open on one page, the one that closes on
-  the earlier page comes first, and a single mark comes before a range that
-  closes on its page.
+  earlier page. Where two locators of one kind and number open on one page,
+  the one that closes on the earlier page comes first, and a single mark comes
+  before a range that closes on its page.
 - A range whose two ends print different numbers of one kind, with a higher
   closing number, spans the numbers from its opening number to its closing
   number, both included. A mark of the term on a spanned number of that kind prints no

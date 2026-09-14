@@ -30118,7 +30118,7 @@ count	Four back-ends ship: LaTeX (and the PDF it typesets), HTML, EPUB and Typst
 ceiling	No level ceiling in HTML or Typst.
 one entry	An HTML or Typst index prints the locator and the cross-reference together on one entry by itself
 sorting	Sorting is the extension's own in HTML and Typst.
-locators	Typst gives page numbers too, ordered by kind of numbering as `makeindex` orders them, and each one links to its page.
+locators	Typst gives page numbers too, ordered as `makeindex` orders them, by kind of numbering and then by number, and each one links to its page.
 targets	In the LaTeX and Typst indexes a target is always plain text.
 no locator	A cross-reference carries no locator in any of the four back-ends.
 principal	the Typst back-end sets the page number in bold
@@ -30416,7 +30416,7 @@ no span	Any other range spans nothing.
 range kept	A span never removes a range whose two ends print different text.
 merge	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
 merge place	It prints at the place of the first of them in the order below.
-tiebreak	Where two locators open on one page, the one that closes on the earlier page comes first, and a single mark comes before a range that closes on its page.
+tiebreak	Where two locators of one kind and number open on one page, the one that closes on the earlier page comes first, and a single mark comes before a range that closes on its page.
 M100PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m100-typst-claims.txt" \
   || fail "M100-AC6: site/typst.qmd does not state the Typst order and span rules (its own FAIL line is above)"
@@ -30428,6 +30428,8 @@ python3 tests/sitecheck.py phrase-absent "$WORK/m100-retired.txt" \
 cat > "$WORK/m100-changelog-claims.txt" <<'M100CHANGE'
 order	A Typst index orders an entry's page numbers as the PDF index does
 span	A range whose two ends print different numbers spans the numbers from its opening number to a higher closing number of the same kind, and a mark of that entry on a spanned number of that kind prints no page number of its own, even on a page after the range.
+one text	A range whose two ends print the same text counts as a single mark.
+merge	Page numbers that print the same text print once, at the place of the first of them in this order, linked to the earliest of their pages.
 M100CHANGE
 python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m100-changelog-claims.txt" \
   || fail "M100-AC6: CHANGELOG.md does not state the Typst order and span rules (its own FAIL line is above)"

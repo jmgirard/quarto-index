@@ -29291,7 +29291,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # without its opening page were red on are now this manifest's own rows. The
   # span without its closing page is the M100 span-close plant. The M100
   # self-test plants the merge-first, span-open and span-close clauses on
-  # examples/typst-order.qmd, and birch's row here holds the text span.
+  # examples/typst-order.qmd. Birch's row here is the row the M099 text-span
+  # plant printed, which is now the expected row.
 
   # The span drop applied to a range that spans values too: each such range
   # spans its own opening value.
@@ -30095,7 +30096,7 @@ one page once	Several marks of one term on one page print that page once.
 principal	The locator of a principal mention is set in bold.
 shared page	Where a principal and an ordinary mark of one term share a page, that page's one locator is bold.
 range	A range prints its opening and closing pages, `12–15`, and links to the opening page.
-range on one page	Where both ends of a range are on one page, it prints that page alone.
+range on one page	Where both ends of a range are on one page, with no page counter update between them, it prints that page alone.
 range spans	A mark of the term on a spanned number of that kind prints no locator of its own, even on a page after the range, as after a page counter reset.
 range spans bold	A principal mention there loses its bold.
 separate pages	marks on pages 3, 4 and 5 print `3, 4, 5`. Only a range you write prints as a range.

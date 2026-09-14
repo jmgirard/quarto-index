@@ -484,7 +484,8 @@ and that range: [thyme]{.index} and [thyme]{.index range="open"}.
 
 ## Physical page 37
 
-The pattern is `i` and the counter is 3, so the page prints `iii`.
+The pattern is `i` and the counter is 3, so a mark before the counter update
+below prints `iii`.
 
 The range of `thyme` closes here: [thyme]{.index range="close"}.
 

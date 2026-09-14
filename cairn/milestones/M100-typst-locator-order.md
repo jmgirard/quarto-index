@@ -103,21 +103,9 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - [x] T1: Write `examples/typst-order.qmd` with raw `#set page(numbering: ...)`
       and `#counter(page).update(...)` blocks and explicit page breaks, and
       derive its manifest by hand, each page's class and value in its comment.
-      Keep each entry to two or three locators, so no index line wraps. Shapes,
-      each pinned by a suite needle and row check: each adjacent class pair,
-      marked in physical order opposite to the class order. A function-numbered
-      page and a none page. A mark after a reset with a lower value than a mark
-      before it. Two pages of one class and value that print different text. A
-      single mark and a range opening on one page. A spanned value on a page
-      outside the range, and an unspanned value on a page inside it. Marks on a
-      range's opening and closing values, one principal. A one-text range
-      inside another range, and beside a single mark. Ranges whose value
-      intervals nest, and ranges that overlap. A range whose ends differ in
-      class, one whose closing value is lower, and one whose ends have one
-      value and print different text. One text on two pages whose AC1 order and
-      physical order disagree, with a locator of another text between them.
-      End the fixture on a numbering whose index footer the reader drops.
-      Show the unchanged helper red.
+      One shape per entry, no index line wrapping, each pinned by a suite
+      needle and row check. The manifest comment lists the shapes. Show the
+      unchanged helper red.
 - [x] T2: In `qi-index-entry` (typst.lua:63), compute each locator's class and
       value, and sort once per key field, least significant first, with Typst's
       stable `sorted`, so no array comparison or packed key is needed.
@@ -125,15 +113,8 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       keep drop-then-merge, and link a merged locator to its earliest opening
       physical page (typst.lua:84-96).
 - [x] T4: In the suite self-test, plant one defect per AC1 and AC2 clause and
-      show each red on its row. Order plants: physical order, each adjacent
-      class pair swapped, function or none page in the wrong class, value
-      ignored, reversed physical tiebreak, range before single mark. Span
-      plants: span by physical page, span without its opening value, span
-      without its closing value, spanned principal kept bold, one-text range
-      kept in a span, reversed range spanning, mixed-class range spanning, a
-      range removing a range, equal end values spanning. Merge plants: link to
-      the first in order, placement at the earliest physical page, bold from
-      the first merged mark only.
+      show each red on its row. The M100 T4 block of `tests/run-tests.sh`
+      names each plant.
 - [x] T5: Rederive by hand the `tests/typst-numbering.tsv` rows the rules change
       (`birch`, `fern`, `holly`, `lime`), their M099 row pins (run-tests.sh:29136)
       and the M099 plants the rules now make correct (`textspan`, :29258-29345).
@@ -146,14 +127,14 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       `tests/run-tests.sh --self-test`, then dispatch the matrix on the branch.
 - [x] T8: Update `site/typst.qmd` (:38), `cairn/DESIGN.md` (:437), `CHANGELOG.md`,
       and item 4 of `site/back-end-differences.qmd` (:35).
-- [ ] T9: State the one-text range as a single mark, the span's included
+- [x] T9: State the one-text range as a single mark, the span's included
       ends and the merge placement in `cairn/DESIGN.md` and `site/typst.qmd`,
       with the order tiebreak and unremoved spanning ranges. Remove the stale
       span sentence in `CHANGELOG.md` and correct the book fixture's comment.
 - [x] T10: Add `willow` to `examples/typst-order.qmd`: a range on pages 21 to
       32 and a mark on page 22 whose value the range does not span. Add its row
       and a plant of the physical span within one class.
-- [ ] T11: Sort a single mark before a range that closes on its page, with a
+- [x] T11: Sort a single mark before a range that closes on its page, with a
       `vetch` shape on page 37 (a range around a counter update) and a plant.
 
 ## Work log
@@ -183,6 +164,10 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: T10 added `willow` to `examples/typst-order.qmd`: a range on pages 21 to 32 (ar 7 to 8) and a mark ar 1 on page 22. It added the row, the suite pin and the `physical-span-class` plant. Scratch render: 42 index lines match in both readings, and the plant is red on `willow\t7–8@21\t`.
 - 2026-09-14: T11 checkpoint, not ticked until the full suite runs. `vetch` on page 37 opens a range on lr 3, marks lr 3, updates the counter to 1 and closes the range. The unchanged helper printed `vetch, iii–i, iii`. `qi-index-entry` now sorts single marks first, below the closing-page sort. Scratch render: 44 lines match in both readings, and the `range-first-same-page` plant is red on vetch.
 - 2026-09-14: T9 checkpoint, not ticked until the full suite runs. `cairn/DESIGN.md` now states the one-text range as a single mark, the included ends, the single-before-range tiebreak, and bold in the merge. It no longer says "No range is dropped". `site/typst.qmd` gained the merge placement, the tiebreak and the included ends, and splits "never removed" to name only ranges whose ends differ. The stale CHANGELOG span clause is removed, with its M098-AC7 row. The book `_quarto.yml` comment states the heading pages, read from a render (page 7 prints `ii`, page 11 prints `4`). New M100-AC6 claim rows and DESIGN phrases pass by direct run.
+- 2026-09-14: full `tests/run-tests.sh --self-test` passed at 6534ec8 (1669 checks), with `physical-span-class` red on willow and `range-first-same-page` red on vetch. T9 and T11 ticked.
+- claim audit: 250 claims read, 5 corrected — examples/typst-order.qmd, tests/typst-order.tsv, _extensions/index/modules/typst.lua, tests/run-tests.sh
+- 2026-09-14: the claim audit also found "Where both ends of a range are on one page, it prints that page alone" in `site/typst.qmd` false for vetch. It and its M098-AC7 claim row now add "with no page counter update between them". After the corrections, the order fixture rendered green in both readings (44 lines), and the M098 and M100 claim files for `site/typst.qmd` passed (34 and 13 claims).
+- 2026-09-14: compressed Tasks (T1 shapes, T4 plants) to pointers at the manifest comment and the suite block, after the plan-owned body reached 158 lines.
 
 ## Decisions
 

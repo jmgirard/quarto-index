@@ -41,13 +41,14 @@ local M = {}
 -- tree recorded. Each label is looked up while the document is typeset, and
 -- a label no element carries adds no locator rather than failing the render
 -- (IP2). The locators are ordered by the class and value of their opening
--- page, then by opening and closing physical page, one stable sort per field,
--- least significant first (M100). A range whose two ends print the same text
+-- page, then by opening and closing physical page, a single mark before a
+-- range, one stable sort per field, least significant first (M100). A range whose two ends print the same text
 -- prints that text alone, and is a single mark. A range whose two ends have
 -- one class, and whose closing value is greater, spans the values from its
 -- opening value to its closing value. A single mark of that class on a
 -- spanned value prints no locator of its own, bold or not, as makeindex drops
--- such a page in the PDF back-end (M098 review). No range is dropped. Of the
+-- such a page in the PDF back-end (M098 review). A span never drops a range
+-- whose two ends print different text. Of the
 -- locators left, those that print the same text are one locator, at the place
 -- of the first, bold where any is principal, and linked to the earliest
 -- opening physical page among them (M099, M100). Merging first would drop a

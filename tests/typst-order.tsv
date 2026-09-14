@@ -38,7 +38,8 @@
 #   page 34  `a`    5   e     ll 5
 #   page 35  `a`    9   i     ll 9
 #   page 36  `i`    1   i     lr 1
-#   page 37  `i`    3   iii   lr 3
+#   page 37  `i`    3   iii   lr 3 before the counter update on the page,
+#            and lr 1 printing `i` after it; the footer prints `i`
 #   page 38  `1`    1   the index, whose footer prints `1`
 #
 # A range spans values only where its two ends have one class and its closing

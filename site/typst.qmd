@@ -51,8 +51,8 @@ page.
 - The locator of a principal mention is set in bold. Where a principal and an
   ordinary mark of one term share a page, that page's one locator is bold.
 - A range prints its opening and closing pages, `12–15`, and links to the
-  opening page. Where both ends of a range are on one page, it prints that page
-  alone. Where the two ends print the same text, it prints that text alone.
+  opening page. Where both ends of a range are on one page, with no page
+  counter update between them, it prints that page alone. Where the two ends print the same text, it prints that text alone.
 - An entry's locators are ordered by the numbering of their opening pages, as
   the PDF index orders page numbers. Lower roman numbers come first, then upper
   roman numbers, arabic numbers, lowercase letters, uppercase letters, and then

@@ -29749,6 +29749,11 @@ text after	The text after the index starts on a new page too.
 groups	a `Symbols` group first, then one group per letter, each under its letter in bold
 depth	sub-entries nest as deep as you write them
 page shown	Each locator is the page number as the page shows it.
+two counters	Where your `page-numbering` pattern names two counters, such as `1 / 1`, a locator prints both, as the page footer does: `5 / 30`.
+no numbering	A page with no numbering prints its physical page number.
+same text	Locators that print the same text print it once, even from different pages, as after a page counter reset.
+same text link	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
+range same text	Where the two ends print the same text, it prints that text alone.
 links	An entry's locators are in page order, and each one links to its page.
 one page once	Several marks of one term on one page print that page once.
 principal	The locator of a principal mention is set in bold.

@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M102: The figure-marks checks run on every matrix leg, each shown able to fail
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -103,7 +103,7 @@ promised, because an upstream release alone can turn it red (D-025).
       the end and log its id. If the floor leg prints other lines for an
       engine reason, stop for an amendment gate and leave the manifest as it
       is. The reader runs on Python 3.12 in CI and on 3.9 here (LESSONS M082).
-- [ ] T7: Run `tests/run-tests.sh --self-test`, never two runs at once.
+- [x] T7: Run `tests/run-tests.sh --self-test`, never two runs at once.
       Remove KI300 and KI301 from `cairn/DESIGN.md`.
 
 ## Work log
@@ -120,6 +120,9 @@ promised, because an upstream release alone can turn it red (D-025).
 - 2026-09-14: T4 done. The new render-job commands, run by hand on a scratch copy, passed all six `after` checks. `versioncheck.py fixtures` still reads the same five fixture names. The HTML is checked before the EPUB render.
 - 2026-09-14: T5 done. The PDF job renders the fixture to PDF and reads it with `figuremarks.py pdf`, in two steps placed before the figure-marks Typst render. The job's header comments now name these steps and no longer say it renders two PDF fixtures and nothing more.
 - 2026-09-14: T6 done. Dispatched run 34899204830 on 5f26963. Attempt 1 failed the floor render leg in the book render, before the new steps (logged as KI302). The push run 34899205853 on the same commit passed that leg. After a rerun of the failed job, attempt 2 is green on all eight jobs. Each render leg printed six `after` ok lines. Each PDF leg printed the `figuremarks.py pdf` ok line for the six manifest lines.
+- 2026-09-14: T7 done. `tests/run-tests.sh --self-test` on 5f26963 passed all 1708 checks. The same-block plant was red on `not in the image's`, alt-strip was red on `image 4` in HTML and EPUB, and latex-move was red on the new PDF message. KI300 and KI301 are removed from `cairn/DESIGN.md`, and `cairn_validate` passes.
+- claim audit: not owed — internal tier
+- 2026-09-14: implement complete, status review.
 
 ## Decisions
 

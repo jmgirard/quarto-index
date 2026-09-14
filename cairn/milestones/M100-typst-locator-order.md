@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M100: A Typst index orders locators by the number the page prints
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** low
 - **Depends on:** —
 - **Driving RR:** —
@@ -100,7 +100,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 
 ## Tasks
 
-- [ ] T1: Write `examples/typst-order.qmd` with raw `#set page(numbering: ...)`
+- [x] T1: Write `examples/typst-order.qmd` with raw `#set page(numbering: ...)`
       and `#counter(page).update(...)` blocks and explicit page breaks, and
       derive its manifest by hand, each page's class and value in its comment.
       Keep each entry to two or three locators, so no index line wraps. Shapes,
@@ -118,13 +118,13 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       physical order disagree, with a locator of another text between them.
       End the fixture on a numbering whose index footer the reader drops.
       Show the unchanged helper red.
-- [ ] T2: In `qi-index-entry` (typst.lua:63), compute each locator's class and
+- [x] T2: In `qi-index-entry` (typst.lua:63), compute each locator's class and
       value, and sort once per key field, least significant first, with Typst's
       stable `sorted`, so no array comparison or packed key is needed.
-- [ ] T3: Replace the span filter (typst.lua:81-82) with the AC2 value rule,
+- [x] T3: Replace the span filter (typst.lua:81-82) with the AC2 value rule,
       keep drop-then-merge, and link a merged locator to its earliest opening
       physical page (typst.lua:84-96).
-- [ ] T4: In the suite self-test, plant one defect per AC1 and AC2 clause and
+- [x] T4: In the suite self-test, plant one defect per AC1 and AC2 clause and
       show each red on its row. Order plants: physical order, each adjacent
       class pair swapped, function or none page in the wrong class, value
       ignored, reversed physical tiebreak, range before single mark. Span
@@ -134,17 +134,17 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
       range removing a range, equal end values spanning. Merge plants: link to
       the first in order, placement at the earliest physical page, bold from
       the first merged mark only.
-- [ ] T5: Rederive by hand the `tests/typst-numbering.tsv` rows the rules change
+- [x] T5: Rederive by hand the `tests/typst-numbering.tsv` rows the rules change
       (`birch`, `fern`, `holly`, `lime`), their M099 row pins (run-tests.sh:29136)
       and the M099 plants the rules now make correct (`textspan`, :29258-29345).
-- [ ] T6: Write `examples/book-typst-reset/` (`_quarto.yml` with an author, and
+- [x] T6: Write `examples/book-typst-reset/` (`_quarto.yml` with an author, and
       the `_extensions` link), its manifest with its page arithmetic, and a
       suite section beside the M098 book section (`tests/run-tests.sh:29496`).
       List both fixtures where the gallery check requires it.
-- [ ] T7: Add `examples/typst-order.qmd`, with its index page's `--footer` pattern, to
+- [x] T7: Add `examples/typst-order.qmd`, with its index page's `--footer` pattern, to
       the Typst step of `.github/workflows/versions.yml` (near :427). Run
       `tests/run-tests.sh --self-test`, then dispatch the matrix on the branch.
-- [ ] T8: Update `site/typst.qmd` (:38), `cairn/DESIGN.md` (:437), `CHANGELOG.md`,
+- [x] T8: Update `site/typst.qmd` (:38), `cairn/DESIGN.md` (:437), `CHANGELOG.md`,
       and item 4 of `site/back-end-differences.qmd` (:35).
 
 ## Work log
@@ -168,6 +168,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: matrix run 34875158566 at 4b5d330: typst-order read green on the pinned and release legs, but failed to compile on the 1.5.52 floor leg with `invalid numbering pattern` at `#set page(numbering: "α")`. Page 7 now uses `*` (prints `†`). Rendered and read green locally, and the letters-other plant is red on `elder\t†@7, A@9`.
 - 2026-09-14: matrix run 34875436802 at 4015196: the floor leg compiled typst-order, but its Typst set `fig` with the `ﬁ` ligature, and pdftotext read `ﬁg, 40, f2`. That was the one row that differed. Renamed the term `fennel`. The same run's floor HTML render failed on `examples/book/_book/last.html` having no index section, which passed in push run 34875437053 at the same commit.
 - claim audit: 230 claims read, 4 corrected — site/typst.qmd, CHANGELOG.md, examples/typst-order.qmd, tests/run-tests.sh
+- 2026-09-14: dispatched matrix run 34875703808 at aa7ae0b green on all legs, and typst-order read green on the floor, pinned and release legs (AC5). Full `tests/run-tests.sh --self-test` passed at aa7ae0b (1667 checks). T1-T8 ticked, and status set to review.
 
 ## Decisions
 

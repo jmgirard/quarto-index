@@ -58,15 +58,18 @@ page.
   roman numbers, arabic numbers, lowercase letters, uppercase letters, and then
   any other numbering. The first counting symbol of the page numbering pattern
   sets the kind, so `1 / 1` is arabic. A page with no numbering counts as
-  arabic, and a numbering function counts as other. Numbers of one kind are
-  ordered by the page counter's value, and then by page. So after a page
-  counter reset, `1` comes before a `3` from an earlier page.
-- A range whose two ends are numbers of one kind, with a higher closing number,
-  spans the numbers from its opening number to its closing number. A mark of
-  the term on a spanned number of that kind prints no locator of its own, even
-  on a page after the range, as after a page counter reset. A principal mention
-  there loses its bold. Any other range spans nothing, and a range never
-  removes another range.
+  arabic, with its physical page as its number, and a numbering function
+  counts as other. Numbers of one kind are ordered by value, the page
+  counter's value or the physical page where a page has no numbering, and
+  then by page. So after a page counter reset, `1` comes before a `3` from an
+  earlier page.
+- A range whose two ends print different numbers of one kind, with a higher
+  closing number, spans the numbers from its opening number to its closing
+  number. A mark of the term on a spanned number of that kind prints no
+  locator of its own, even on a page after the range, as after a page counter
+  reset. A principal mention there loses its bold. A range whose two ends
+  print the same text counts as a single mark, and a span removes it the same
+  way. Any other range spans nothing and is never removed.
 - Pages you marked separately stay separate: marks on pages 3, 4 and 5 print
   `3, 4, 5`. Only a range you write prints as a range. A mark on the page just
   after a range prints its own locator, `2–3, 4`, where the PDF index prints

@@ -17,7 +17,8 @@ numbering. An entry's locators print in class order, then by value, then by
 physical page.
 
 Every page starts at a raw Typst `set page` rule, which starts a new page
-itself, and each rule is followed by a page counter update. So the physical
+itself, and each rule but the one for page 13, which has no numbering, is
+followed by a page counter update. So the physical
 page, the pattern and the counter value of each page are facts of this source.
 The manifest, tests/typst-order.tsv, states them from here and nowhere else.
 Each term is one case, and no two cases share an entry.

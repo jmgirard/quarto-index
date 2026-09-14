@@ -29290,7 +29290,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # span tested by printed text, the merge run before the drop, and the span
   # without its opening page were red on are now this manifest's own rows. The
   # span without its closing page is the M100 span-close plant. The M100
-  # self-test plants each of those clauses on examples/typst-order.qmd.
+  # self-test plants the merge-first, span-open and span-close clauses on
+  # examples/typst-order.qmd, and birch's row here holds the text span.
 
   # The span drop applied to a range that spans values too: each such range
   # spans its own opening value.
@@ -29363,8 +29364,9 @@ fi
 # ---------------------------------------------------------------------------
 # M100-AC1/AC2 — a Typst index orders locators and spans ranges by the number the page prints.
 #
-# examples/typst-order.qmd starts every page with a raw Typst `set page` rule
-# and a page counter update, so the physical page, the pattern and the
+# examples/typst-order.qmd starts every page with a raw Typst `set page` rule,
+# and every page but page 13, which has no numbering, with a page counter
+# update, so the physical page, the pattern and the
 # counter of each page are facts of its source. The manifest,
 # tests/typst-order.tsv, is derived by hand from that source under the ORACLE
 # RULE above, and its comment gives each page's class and value and each
@@ -30394,11 +30396,12 @@ cat > "$WORK/m100-typst-claims.txt" <<'M100PAGE'
 order	An entry's locators are ordered by the numbering of their opening pages, as the PDF index orders page numbers.
 classes	Lower roman numbers come first, then upper roman numbers, arabic numbers, lowercase letters, uppercase letters, and then any other numbering.
 symbol	The first counting symbol of the page numbering pattern sets the kind, so `1 / 1` is arabic.
-none and function	A page with no numbering counts as arabic, and a numbering function counts as other.
-value	Numbers of one kind are ordered by the page counter's value, and then by page.
+none and function	A page with no numbering counts as arabic, with its physical page as its number, and a numbering function counts as other.
+value	Numbers of one kind are ordered by value, the page counter's value or the physical page where a page has no numbering, and then by page.
 reset	So after a page counter reset, `1` comes before a `3` from an earlier page.
-span	A range whose two ends are numbers of one kind, with a higher closing number, spans the numbers from its opening number to its closing number.
-no span	Any other range spans nothing, and a range never removes another range.
+span	A range whose two ends print different numbers of one kind, with a higher closing number, spans the numbers from its opening number to its closing number.
+one text	A range whose two ends print the same text counts as a single mark, and a span removes it the same way.
+no span	Any other range spans nothing and is never removed.
 merge	That one locator links to the earliest of those pages, and it is bold where any of their marks is a principal mention.
 M100PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m100-typst-claims.txt" \
@@ -30410,7 +30413,7 @@ python3 tests/sitecheck.py phrase-absent "$WORK/m100-retired.txt" \
   || fail "M100-AC6: a page a reader meets still states Typst page numbers in page order (its own FAIL line is above)"
 cat > "$WORK/m100-changelog-claims.txt" <<'M100CHANGE'
 order	A Typst index orders an entry's page numbers as the PDF index does
-span	A range spans the numbers from its opening number to a higher closing number of the same kind, and a mark of that entry on a spanned number of that kind prints no page number of its own, even on a page after the range.
+span	A range whose two ends print different numbers spans the numbers from its opening number to a higher closing number of the same kind, and a mark of that entry on a spanned number of that kind prints no page number of its own, even on a page after the range.
 M100CHANGE
 python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m100-changelog-claims.txt" \
   || fail "M100-AC6: CHANGELOG.md does not state the Typst order and span rules (its own FAIL line is above)"

@@ -44,7 +44,7 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 
 ## Acceptance criteria
 
-- [ ] AC1: In a Typst render of `examples/typst-numbering.qmd`, each locator
+- [x] AC1: In a Typst render of `examples/typst-numbering.qmd`, each locator
       prints the text that the numbering pattern of its page prints in that
       page's footer. For a pattern that names two counters, this is the
       pattern filled with the page counter's value on that page and its final
@@ -56,7 +56,7 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
       counting symbols (such as `i of I`), a one-counter pattern with text
       around its counter (such as `- 1 -`), and no numbering. Shown by `tests/typstindex.py`, which reads the render against manifests
       derived by hand from the fixture source.
-- [ ] AC2: In that render, a single mark that sits on a page a range of the
+- [x] AC2: In that render, a single mark that sits on a page a range of the
       entry spans across two or more physical pages, its end pages included,
       prints no locator, as today. Of the locators left, those of one entry
       that print the same text print that text once. The one locator sits at
@@ -80,17 +80,17 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
         different patterns
       - a range whose closing text is lower than its opening text.
       Shown by the same reading.
-- [ ] AC3: `examples/typst-index.qmd` still matches
+- [x] AC3: `examples/typst-index.qmd` still matches
       `tests/typst-index-main.tsv` and `tests/typst-index-people.tsv`, both
       unchanged from main, shown by the M098 checks in `tests/run-tests.sh`.
       `tests/run-tests.sh --self-test` passes.
-- [ ] AC4: The version matrix renders `examples/typst-numbering.qmd` to Typst
+- [x] AC4: The version matrix renders `examples/typst-numbering.qmd` to Typst
       on each leg of its existing Typst step. The Quarto 1.5 floor leg is one
       of these legs. The matrix reads the level and text of each index line, locators
       included, against the AC1 and AC2 manifests. Shown by a green
       dispatched run of `.github/workflows/versions.yml` on the milestone
       branch.
-- [ ] AC5: The Locators section of `site/typst.qmd` states the locator text
+- [x] AC5: The Locators section of `site/typst.qmd` states the locator text
       rule of AC1 and the merge rule of AC2, and `CHANGELOG.md` carries an
       entry for both.
 
@@ -172,3 +172,26 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
 ## Decisions
 
 ## Review
+
+Evidence run 2026-09-14 at 55e8144: `tests/run-tests.sh --self-test`, all checks passed (1630).
+
+- AC1: the suite's M099-AC1/AC2 section rendered `examples/typst-numbering.qmd` with no warning and `tests/typstindex.py` matched all 24 lines of `tests/typst-numbering.tsv`, faces and links included. The section's needle check found the `1 / 1`, `i of I`, `- 1 -` and none numberings in the source. The plants `alwaysboth` and `neverboth` were red on their rows.
+- AC2: the same reading matched the rows the section holds for each AC2 shape (apple, birch, cedar, dune, elm, fern, holly, kale, lime). The 12 AC2 plants were each red on the row the clause decides: physicalmerge, physicalrange, firstbold, laterlink, laterplace, textspan, mergefirst, spanopen, spanclose, dropranges, countermerge, reorder.
+- AC3: the M098 checks matched 26 lines of `tests/typst-index-main.tsv` and 52 of `tests/typst-index-people.tsv`. `git diff main..HEAD` on both manifests is empty. The run above was `--self-test` and passed.
+- AC4: dispatched run 34800224758 of `versions.yml` at 586a6e7 concluded success. Its steps "Render examples/typst-numbering.qmd to Typst" and "Read the Typst page-numbering index against its manifest" succeeded on the floor (1.5.52), pinned (1.10.18) and release legs. `git diff 586a6e7 HEAD` outside `cairn/` is empty.
+- AC5: the suite's docs check (M52 reader over the M098-AC7 list) found all 34 claims in `site/typst.qmd`, including the five M099 rows for the two-counter text, no numbering, the same-text merge, its link and bold, and a range whose ends print one text. `CHANGELOG.md:13-16` carries the entry for both rules.
+
+Consistency gate: `cairn_validate.py` all checks passed. The generic profile names no toolchain checks. No principle changed, so no impact report.
+
+Independent review, three lenses. Blame-history: no findings. Prior-review: the M098 review's F3 and F9 are the items this milestone fixes, no regression, and no PR comment threads exist. Diff-bug (Opus), ranked, dispositions pending the gate:
+
+- R1 `typst.lua:50-55`: a page numbering set as a Typst function fails the render with "missing argument: total", because the helper passes only the page value. Confirmed by a probe. The line predates M099.
+- R2 `DESIGN.md` KI297: says the locator and footer "can differ", where the common result is a failed render.
+- R3 `tests/typstindex.py:282-297`: the reader strips a comma after the last locator at the end of a line, where main kept it and failed, so a stray trailing separator reads as correct.
+- R4 `site/typst.qmd:40-43`: "the page number as the page shows it" is false where a page counter update sits mid-page after a mark (locator `1 / 7`, footer `6 / 7`). Predates M099.
+- R5 `tests/run-tests.sh` M099 header: dated 2026-09-14, the UTC date of a run the work log dates 2026-09-13.
+- R6 `tests/pdfindex.py:113-117`: drops the lowest line matching the footer pattern anywhere, where `typstindex.py` tests only the bottom line.
+- R7 `tests/typstindex.py:272-297`: a numbering pattern containing a comma splits one locator in two.
+- R8 `tests/pdfindex.py` `_fold_continuations`: a wrapped Typst locator line such as `2 / 5` would not fold.
+- R9 `typst.lua:22-23` says "character" where the code counts clusters, and DESIGN.md's Typst paragraph does not state drop-before-merge.
+- R10 `typst.lua:47-52`: repeated `numbering` calls per locator and a quadratic merge scan, unmeasured.

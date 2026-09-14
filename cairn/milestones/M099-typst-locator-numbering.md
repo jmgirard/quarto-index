@@ -51,13 +51,10 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
       value in the document. For a pattern that names one counter, it is the
       pattern filled with the value on that page alone. On a page whose
       numbering is none, the locator prints the physical page number. The
-      fixture carries a mark under each of these four numberings:
-      - a two-counter pattern of digits (`1 / 1`)
-      - a two-counter pattern of other counting symbols (such as `i of I`)
-      - a one-counter pattern with text around its counter (such as `- 1 -`)
-      - no numbering.
-
-      Shown by `tests/typstindex.py`, which reads the render against manifests
+      fixture carries a mark under each of these four numberings: a
+      two-counter pattern of digits (`1 / 1`), a two-counter pattern of other
+      counting symbols (such as `i of I`), a one-counter pattern with text
+      around its counter (such as `- 1 -`), and no numbering. Shown by `tests/typstindex.py`, which reads the render against manifests
       derived by hand from the fixture source.
 - [ ] AC2: In that render, a single mark that sits on a page a range of the
       entry spans across two or more physical pages, its end pages included,
@@ -82,7 +79,6 @@ render and read the fixture. The Locators section of `site/typst.qmd`, and
       - two pages with one counter value that print different text under
         different patterns
       - a range whose closing text is lower than its opening text.
-
       Shown by the same reading.
 - [ ] AC3: `examples/typst-index.qmd` still matches
       `tests/typst-index-main.tsv` and `tests/typst-index-people.tsv`, both

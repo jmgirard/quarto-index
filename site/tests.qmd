@@ -32,7 +32,9 @@ distribution and a package from a third-party repository, so its red can trace
 to upstream mirror state rather than to a commit. The same leg renders
 `typst-index.qmd` to Typst on each version and reads both of its indexes
 against the acceptance suite's manifests for that fixture: every entry in
-order, each locator on the page the manifest gives.
+order, each locator on the page the manifest gives. It reads
+`typst-numbering.qmd` the same way, whose locators print the page numbering's
+own text.
 
 No PDF is compared across legs. Two Quarto versions typeset through different
 TeX engines, and an engine difference lands in a PDF's text layer, where a

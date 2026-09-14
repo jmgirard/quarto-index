@@ -8,14 +8,25 @@
   each declared index that holds at least one mark, with page locators, in two
   columns, and needs no Typst package. Entries are ordered and grouped by letter as in HTML, and
   nest as deep as they are written. A principal mention's page number is set
-  in bold, a range prints its first and last pages, a page a range spans
-  prints no page number of its own, and each page number
+  in bold, a range prints its first and last pages, and each page number
   links to its page. A page number prints as the page's own numbering prints
   it, so a page numbering pattern with two counters, such as `1 / 1`,
   prints `5 / 30`. Page numbers that print the same text, as they can after a
   page counter reset, print once. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
   book template needs an `author:`.
+- A Typst index orders an entry's page numbers as the PDF index does: lower
+  roman numbers first, then upper roman numbers, arabic numbers, lowercase
+  letters, uppercase letters, and any other numbering, and inside each kind by
+  the page counter's value, or by the physical page on a page with no
+  numbering. So after a page counter reset, `1` comes before a
+  `3` from an earlier page. A range whose two ends print different numbers
+  spans the numbers from its opening number to a higher closing number of the
+  same kind, and a mark of that entry on a spanned number of that kind prints
+  no page number of its own, even on a page after the range. A range whose
+  two ends print the same text counts as a single mark. Page numbers that
+  print the same text print once, at the place of the first of them in this
+  order, linked to the earliest of their pages.
 - A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no
   longer a language tag under any system locale. The HTML and EPUB index
   keeps its English words for it, and an index the document does not declare

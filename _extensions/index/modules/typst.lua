@@ -24,6 +24,13 @@ local M = {}
 -- `c` is one when the pattern `c1` filled with 2 does not print `c2`. A
 -- numbering function gets both values, as the footer calls it with both.
 --
+-- `qi-index-rank` gives a location's `(class, value)`, the key makeindex
+-- orders a PDF index's page numbers by (M100). The class is the page
+-- numbering's first counting symbol: 0 for `i`, 1 for `I`, 2 for `1`, 3 for
+-- `a`, 4 for `A`, and 5 for any other symbol, for a pattern with no counting
+-- symbol, and for a numbering function. A page with no numbering is class 2, and its value is
+-- its physical page. Every other value is the page counter's first value there.
+--
 -- Each locator links to its mark's position rather than to its location.
 -- A link to a location on a page whose numbering is a function of two
 -- arguments fails to compile, because Typst calls that function with the
@@ -33,23 +40,40 @@ local M = {}
 -- `(opening label, closing label or none, principal)` triple per locator the
 -- tree recorded. Each label is looked up while the document is typeset, and
 -- a label no element carries adds no locator rather than failing the render
--- (IP2). The locators are ordered by physical page. A range whose two ends
--- print the same text prints that text alone. A page that a range of the same
--- entry spans, its two end pages included, prints no locator of its own, bold
--- or not, as makeindex drops such a page in the PDF back-end (M098 review).
--- The pages a range spans are physical pages, and they are dropped first.
--- Of the locators left, those that print the same text are one locator, at
--- the place of the first, bold where any is principal, and linked to the
--- first (M099). Merging first would drop a later locator with the first
--- when the first sits in a range (M099 claim audit). makeindex also folds a page just after a range into
--- the range, which this does not. Three
+-- (IP2). The locators are ordered by the class and value of their opening
+-- page, then by opening and closing physical page, a single mark before a
+-- range, one stable sort per field, least significant first (M100). A range whose two ends print the same text
+-- prints that text alone, and is a single mark. A range whose two ends have
+-- one class, and whose closing value is greater, spans the values from its
+-- opening value to its closing value. A single mark of that class on a
+-- spanned value prints no locator of its own, bold or not, as makeindex drops
+-- such a page in the PDF back-end (M098 review). A span never drops a range
+-- whose two ends print different text. Of the
+-- locators left, those that print the same text are one locator, at the place
+-- of the first, bold where any is principal, and linked to the earliest
+-- opening physical page among them (M099, M100). Merging first would drop a
+-- later locator with the first when the first is spanned (M099 claim audit).
+-- makeindex also folds a page just after a range into the range, which this
+-- does not. Three
 -- marks on consecutive pages print three locators: only an author's range
 -- prints as a range (the M098 question gate). The separators are the ones
 -- the LaTeX back-end's makeindex prints, a comma before each locator and
 -- before the first cross-reference, and a semicolon between two
 -- cross-references.
 local TYPST_HELPERS = [[
-#let qi-index-counters(pattern) = pattern.clusters().filter(c => numbering(c + "1", 2) != c + "2").len()
+#let qi-index-symbols(pattern) = pattern.clusters().filter(c => numbering(c + "1", 2) != c + "2")
+#let qi-index-counters(pattern) = qi-index-symbols(pattern).len()
+#let qi-index-rank(loc) = {
+  let pattern = loc.page-numbering()
+  if pattern == none {
+    (2, loc.page())
+  } else if type(pattern) != str {
+    (5, counter(page).at(loc).first())
+  } else {
+    let symbol = qi-index-symbols(pattern).at(0, default: "")
+    (("i": 0, "I": 1, "1": 2, "a": 3, "A": 4).at(symbol, default: 5), counter(page).at(loc).first())
+  }
+}
 #let qi-index-page(loc) = {
   let pattern = loc.page-numbering()
   if pattern == none {
@@ -74,12 +98,19 @@ local TYPST_HELPERS = [[
       let first = qi-index-page(start)
       let last = qi-index-page(stop)
       let shown = if first == last { first } else { first + "–" + last }
-      found.push((start: start, stop: stop, shown: shown, bold: item.at(2), spans: start.page() != stop.page()))
+      let single = first == last
+      let (class, value) = qi-index-rank(start)
+      let (high-class, high) = qi-index-rank(stop)
+      found.push((start: start, stop: stop, shown: shown, bold: item.at(2), class: class, value: value, high: high, single: single, spans: not single and high-class == class and high > value))
     }
   }
-  found = found.sorted(key: f => f.start.page() * 1000000 + f.stop.page())
+  found = found.sorted(key: f => if f.single { 0 } else { 1 })
+  found = found.sorted(key: f => f.stop.page())
+  found = found.sorted(key: f => f.start.page())
+  found = found.sorted(key: f => f.value)
+  found = found.sorted(key: f => f.class)
   let ranges = found.filter(f => f.spans)
-  found = found.filter(f => f.spans or ranges.all(r => f.start.page() < r.start.page() or f.start.page() > r.stop.page()))
+  found = found.filter(f => not f.single or ranges.all(r => f.class != r.class or f.value < r.value or f.value > r.high))
   let merged = ()
   for f in found {
     let at = merged.position(m => m.shown == f.shown)
@@ -88,6 +119,7 @@ local TYPST_HELPERS = [[
     } else {
       let kept = merged.at(at)
       kept.bold = kept.bold or f.bold
+      if f.start.page() < kept.start.page() { kept.start = f.start }
       merged.at(at) = kept
     }
   }

@@ -55,14 +55,14 @@ range shares, and a mark after the reset prints that page's text again:
 
 The page counter is 2.
 
-A mark inside the range of `birch`, which prints one text:
-[birch]{.index}.
+A mark between the pages of the range of `birch`, which prints one text and
+so spans nothing: [birch]{.index}.
 
 The first range of `dune` closes here: [dune]{.index range="close"}.
 
 A range opens here and closes after the reset, on a page that prints a lower
-number: [fern]{.index range="open"}. A mark on the range's opening page
-prints nothing: [fern]{.index}.
+number: [fern]{.index range="open"}. A mark on the range's opening page,
+which that range does not span: [fern]{.index}.
 
 The second mark of `kale`: [kale]{.index}.
 

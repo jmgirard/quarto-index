@@ -1,0 +1,31 @@
+# The index examples/book-typst-reset/ prints in a Typst render (M100).
+#
+# Derived BY HAND from the chapter sources, under the ORACLE RULE at the head
+# of tests/run-tests.sh, and never copied from a render. The row shape is the
+# one tests/typst-index-main.tsv states, with no link on a locator: Quarto's
+# Typst book template adds title, contents, blank and chapter opening pages,
+# so a mark's physical page is not a fact of these sources. The suite reads
+# this manifest with `tests/typstindex.py pages`, which compares text alone.
+#
+# Page arithmetic. Each chapter's body starts at a raw `set page` rule and a
+# counter update, and each `{{< pagebreak >}}` starts the next page, whose
+# counter is one more:
+#   index.qmd  `i`, counter 1        yam            lower roman 1, prints `i`
+#   two.qmd    `1`, counter 1        yam            arabic 1
+#              counter 2             yam opens      arabic 2
+#              counter 3             zinnia         arabic 3
+#   three.qmd  `1`, counter 1        yam, zinnia    arabic 1
+#              counter 2             no mark
+#              counter 3             yam closes     arabic 3
+#              counter updated to 2  yam            arabic 2
+#
+#   yam     lower roman `i` first. The range 2–3 has one class and a greater
+#           closing value, so it spans values 2 and 3. The two marks on value
+#           1 print `1` once, before the range. The mark on value 2 in the
+#           third chapter, after the range closes, is spanned and prints
+#           nothing.
+#   zinnia  value 1 in the third chapter before value 3 in the second.
+group	Y
+entry	0	yam	i, 1, 2–3
+group	Z
+entry	0	zinnia	1, 3

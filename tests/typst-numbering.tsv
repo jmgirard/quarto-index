@@ -23,28 +23,36 @@
 # So a locator prints `1 / 5` on pages 1 and 3, `2 / 5` on pages 2 and 4,
 # `ii of V` on page 5, `- 3 -` on page 6, and the physical page `7` on page 7.
 #
+# Under M100 a locator's class and value order the locators, and a range spans
+# the values from its opening value to a greater closing value of one class.
+# Pages 1 to 4 and 6 are arabic, `1 / 1` and `- 1 -` both naming `1` first,
+# with the counter as the value. Page 5 is lower roman, value 2. Page 7, with
+# no numbering, is arabic with its physical page, 7, as the value. The rows
+# for birch, fern, holly and lime were rederived under these rules in M100.
+#
 #   apple    pages 1 and 3 print one text: one locator, linked to page 1
-#   birch    a range from page 1 to page 3, both ends `1 / 5`: that text alone;
-#            the mark on page 2 lies inside the range and prints nothing
+#   birch    a range from page 1 to page 3, both ends `1 / 5`: a single mark,
+#            value 1, that spans nothing; the mark on page 2, value 2, prints
 #   cedar    ordinary on page 1, principal on page 3, one text: one bold
 #            locator, linked to page 1
 #   dune     ranges 1-2 and 3-4, both `1 / 5–2 / 5`: one locator, linked to 1
 #   elm      a range opened and closed on page 1 and a mark on page 3, one
 #            text: one locator, linked to page 1
-#   fern     a range from page 2 to page 3, closing on a lower number; a mark
-#            on page 2, the range's opening page, prints nothing
+#   fern     a range from page 2 to page 3, closing on a lower value, spans
+#            nothing; a mark on page 2, the range's opening page, prints, and
+#            before the range, as a single mark closes on an earlier page
 #   gorse    one mark under `i of I`, page 5
-#   holly    page 4 and page 5 share counter 2 under two patterns: two locators
+#   holly    page 4 (arabic 2) and page 5 (lower roman 2) print two texts: two
+#            locators, lower roman first
 #   iris     one mark under `- 1 -`, page 6
 #   juniper  one mark on page 7, which has no numbering
 #   kale     pages 1, 2 and 3: `1 / 5` once, where page 1 puts it, then `2 / 5`
-#   lime     a range from page 1 to page 2, a mark on page 2 inside it and a
-#            mark on page 4, which prints `2 / 5` as page 2 does: the page 2
-#            mark prints nothing, and page 4 prints its own locator
+#   lime     a range from page 1 to page 2 spans values 1 and 2; the marks on
+#            page 2 and page 4 both have value 2 and print nothing
 group	A
 entry	0	apple	1 / 5@1
 group	B
-entry	0	birch	1 / 5@1
+entry	0	birch	1 / 5@1, 2 / 5@2
 group	C
 entry	0	cedar	1 / 5*@1
 group	D
@@ -52,11 +60,11 @@ entry	0	dune	1 / 5–2 / 5@1
 group	E
 entry	0	elm	1 / 5@1
 group	F
-entry	0	fern	2 / 5–1 / 5@2
+entry	0	fern	2 / 5@2, 2 / 5–1 / 5@2
 group	G
 entry	0	gorse	ii of V@5
 group	H
-entry	0	holly	2 / 5@4, ii of V@5
+entry	0	holly	ii of V@5, 2 / 5@4
 group	I
 entry	0	iris	- 3 -@6
 group	J
@@ -64,4 +72,4 @@ entry	0	juniper	7@7
 group	K
 entry	0	kale	1 / 5@1, 2 / 5@2
 group	L
-entry	0	lime	1 / 5–2 / 5@1, 2 / 5@4
+entry	0	lime	1 / 5–2 / 5@1

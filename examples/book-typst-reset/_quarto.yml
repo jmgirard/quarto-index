@@ -1,0 +1,28 @@
+# The Typst book fixture for page counter resets (M100). Three chapters: the
+# first under lower roman numbering, the second and the third each resetting
+# the page counter to 1 under arabic numbering. The chapter heading of the
+# second and the third sits on a page of its own under the numbering before
+# it (page 7 prints `ii`), and the chapter's numbering starts on the page
+# after it. No mark is on a heading page. A range opens in the second
+# chapter and closes in the third on a greater value, and the third chapter
+# updates the counter again after that close, so a page outside the range
+# prints a value inside it. The manifest, tests/typst-book-reset.tsv, is
+# derived by hand from the chapter sources.
+project:
+  type: book
+
+book:
+  title: "Index Reset Book Fixture"
+  # Quarto's Typst book template fails to compile a book with no author
+  # (observed on Quarto 1.10.18, M098).
+  author: "Index Book Author"
+  chapters:
+    - index.qmd
+    - two.qmd
+    - three.qmd
+
+format:
+  typst: default
+
+filters:
+  - index

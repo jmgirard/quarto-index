@@ -32,8 +32,9 @@ numbers; the [Typst](typst.qmd) page describes it.
    accented or non-Latin text the way a language would, which is what sort
    keys are for.
 4. **Locators are numbered links in HTML**, in the order the marks are
-   written, where LaTeX gives page numbers. Typst gives page numbers too, in
-   page order, and each one links to its page.
+   written, where LaTeX gives page numbers. Typst gives page numbers too,
+   ordered as `makeindex` orders them, by kind of numbering and then by
+   number, and each one links to its page.
 5. **Cross-reference targets are hyperlinked in HTML** when the target names an
    entry in the same index, and are plain text otherwise. In the LaTeX and
    Typst indexes a target is always plain text.

@@ -1,0 +1,34 @@
+```{=typst}
+#set page(numbering: "1")
+#counter(page).update(1)
+```
+
+# Third chapter
+
+The pattern is `1` and the page counter is reset to 1 again.
+
+A mark on value 1 inside the range, which does not span that value:
+[yam]{.index}.
+
+The second mark of `zinnia`, on value 1: [zinnia]{.index}.
+
+{{< pagebreak >}}
+
+The page counter is 2.
+
+{{< pagebreak >}}
+
+The page counter is 3.
+
+The range of `yam` closes here, on value 3: [yam]{.index range="close"}.
+
+{{< pagebreak >}}
+
+```{=typst}
+#counter(page).update(2)
+```
+
+The page counter is updated to 2.
+
+A mark on value 2, on a page after the range that its values span:
+[yam]{.index}.

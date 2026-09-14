@@ -40,7 +40,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
 
 ## Acceptance criteria
 
-- [ ] AC1: This criterion covers HTML, EPUB, PDF and Typst renders of
+- [x] AC1: This criterion covers HTML, EPUB, PDF and Typst renders of
       `examples/figure-marks.qmd`. A caption mark on a figure with no id files
       one locator. A caption mark on a figure with an id also files one. The
       fixture opens a range in a no-id caption and closes it later in the
@@ -51,7 +51,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       `tests/pdfindex.py` and `tests/typstindex.py` read the four indexes in
       `tests/run-tests.sh`. The log of each of the four renders carries no
       report from the extension, shown by a log check in `tests/run-tests.sh`.
-- [ ] AC2: A mark in an image's alt text files one locator at the image. This
+- [x] AC2: A mark in an image's alt text files one locator at the image. This
       holds for every image except one that is the only content of a figure
       whose caption equals the image's alt text. In the HTML and EPUB renders
       of `examples/figure-marks.qmd`, each such locator links to an id. The
@@ -62,7 +62,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       of the fixture. Every index link names an id that the linked page
       carries. The `alt` attribute of each image equals the text the check
       states for it, derived by hand from the fixture's source.
-- [ ] AC3: In an HTML book, a mark in a figure caption files one locator for
+- [x] AC3: In an HTML book, a mark in a figure caption files one locator for
       its chapter on both routes: where the chapter's stored record is read,
       and where the chapter's terms are recovered from its source. The book
       cases open a range in a caption of a figure with no id. They open a
@@ -70,7 +70,7 @@ closes KI295. `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md`.
       later in the chapter. The index matches a manifest derived by hand, and
       the render log carries no report on these marks. Shown by one case per
       route in `tests/run-tests.sh`.
-- [ ] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
+- [x] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
       passes.
 - [x] AC5: On each leg of `.github/workflows/versions.yml`, the Quarto 1.5
       floor leg included, the Typst render of `examples/figure-marks.qmd`
@@ -177,3 +177,65 @@ Evidence gathered 2026-09-14 on `m101-figure-caption-marks` at 826fb1c, which
   `cairn/DESIGN.md` (lines 172 to 803) states the caption rule at line 213 and
   the alt-text move at line 433. `grep` for KI294 and KI295 in `cairn/DESIGN.md`
   finds nothing.
+- AC1: `tests/run-tests.sh --self-test` on 826fb1c exited 0 with 1704 checks.
+  The M101 section printed `ok` for the HTML manifest (12 rows in order) and
+  for the EPUB manifest (12 rows). It printed `ok` for the PDF manifest (6
+  lines) and for the Typst manifest (12 lines, faces and links). It printed
+  `ok` for alder's link to `#alder-mark`, and its summary line names the
+  no-id, id and range cases in all four formats. The four log checks
+  (`check_extension_warning_count ... 0`) passed, and the no-declass plant
+  turned each of them red on "expected 0 warning(s) from this extension".
+- AC2: the same run printed `ok` for dogwood (plain role) and elder
+  (principal role) in HTML. In the HTML render, every id is unique and all 6
+  index links resolve. In the EPUB render, all 6 of 6 index links resolve. It printed `ok` for the `alt` attributes of the 5 images in
+  HTML and in EPUB. It printed `ok` for the six `after` checks in HTML and
+  EPUB. Dogwood and elder link after image 4 in the same `<p>`. Hazel links
+  after image 5 in the same `<div>`. The PDF and Typst manifests above print the
+  image's page for each alt-text term. The html-move plant turned the link
+  check red, and the latex-move plant turned the PDF manifest red.
+- AC3: the same run printed `ok` for the record route, with 1 index section
+  and all 5 manifest rows in order. It printed `ok` for the recovery route,
+  with all 5 rows in order.
+  The record-route log check (0 reports) passed. The recovery-route log held
+  exactly one store report, WARN_STORE_NEVER_RECOVERED, and no report on the
+  marks. The probe printed `ok` for two marks of each term on the recovery
+  route. The no-declass plant turned the record route red, and the
+  book-declass plant turned the probe red.
+- AC4: `tests/run-tests.sh --self-test` on 826fb1c exited 0 and printed "All
+  checks passed (1704 checks)", with no failing line. A self-test run holds
+  every check the plain run holds, so the plain run's checks passed in it.
+  The M101 T5 plant summary printed `ok`.
+
+Consistency gate: `cairn_validate.py` passed all checks (exit 0). No DESIGN
+principle changed, so `cairn_impact.py` did not run. The generic profile names
+no toolchain checks.
+
+Independent review: three fresh reviewers ran. The blame-history reviewer and
+the prior-review reviewer reported no findings. The diff reviewer reported
+nine, ranked most severe first. Dispositions are set at the merge gate.
+
+- F1: a Quarto shortcode in a figure caption stops the copy detection
+  (`marks.lua:647`). Quarto gives the shortcode in the caption and in the alt
+  copy two different custom ids, so the Lua equality fails. The mark files
+  twice, one HTML link names no element, and a range opened there reports
+  "already open". Confirmed at review in a scratch render on Quarto 1.10.18.
+  `site/syntax.qmd` and `CHANGELOG.md` state the rule with no condition.
+- F2: in that case the empty span that takes a moved alt-text id is dropped
+  by Quarto's figure renderer (`html.lua:685`, `latex.lua:410`), so the link
+  dangles. Reachable only through F1.
+- F3: the version matrix compares HTML index hrefs to the pinned leg but does
+  not check that a target id exists on the page. The HTML, EPUB and LaTeX
+  moves are shown only on the pinned Quarto, and no Known issue says so.
+- F4: the `after` check's same-block condition and the `alts` check have no
+  plant under `--self-test`.
+- F5: the LaTeX move's `\index` prefix has no `{` or `[` after it
+  (`latex.lua:395`), so it also moves author raw LaTeX such as `\indexspace`.
+- F6: the `passes.lua:59` header still says the tagging pass does "Two other
+  things". It now does a third.
+- F7: the M43 section renders the fixture to HTML a second time
+  (`run-tests.sh:22327`). Run time only.
+- F8: a non-index span with an author id in a no-id caption keeps its id in
+  the copy, so the id census counts it twice. The same happens on main.
+- F9: a heading with an alt-text mark now puts `\index` in its LaTeX short
+  title. A probe with a table of contents and running heads printed no extra
+  locator.

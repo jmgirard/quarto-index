@@ -135,8 +135,10 @@ jobs:
           version: ${{ matrix.leg.version }}
 
       # This job renders the fixtures to HTML, and the comparison below is
-      # over that HTML alone. It renders no PDF and installs no TeX; the PDF
-      # job at the end of this file does that, on its own schedule.
+      # over that HTML alone. It also renders the figure-marks fixture to EPUB,
+      # which it checks on this leg and does not upload or compare. It renders
+      # no PDF and installs no TeX; the PDF job at the end of this file does
+      # that, on its own schedule.
       #
       # Nothing here compares a PDF, and the PDF job compares nothing either.
       # That is deliberate. Two Quarto releases typeset PDF through different
@@ -148,8 +150,8 @@ jobs:
       # A cross-leg PDF comparison waits on an extraction shown engine-neutral
       # across lualatex and xelatex, and is no part of what M51 restored.
       #
-      # Each render below is followed immediately by its extraction. With one
-      # format the four renders write four distinct paths and none can overtake
+      # Each render below is followed immediately by its extraction or its
+      # check. The HTML renders write distinct paths and none can overtake
       # another; the ordering is kept because a second format would render into
       # a path an earlier one already wrote — the book renders into `_book`
       # whatever the format — and the interleaving is what made that safe.
@@ -186,6 +188,24 @@ jobs:
           quarto render examples/figure-marks.qmd --to html
           python3 tests/indexdump.py html examples/figure-marks.html \
             > "$OUT/figure-marks.html.txt"
+
+          # Where an alt-text mark's locator lands (M102). The HTML and EPUB
+          # writers print alt text as a string, so the back-end moves each
+          # mark's id to an empty span just after its image. `figuremarks.py
+          # after` fails unless every locator of the term links to an element
+          # after that image, in the image's own block. The terms and image
+          # numbers are the ones the acceptance suite checks, and `qi-index`
+          # is the suite's HTML_SECTION_ID. The HTML is read before the EPUB
+          # render runs, and the EPUB writes a path of its own.
+          for pair in dogwood:4 elder:4 hazel:5; do
+            python3 tests/figuremarks.py after html examples/figure-marks.html \
+              qi-index "${pair%%:*}" "${pair##*:}"
+          done
+          quarto render examples/figure-marks.qmd --to epub
+          for pair in dogwood:4 elder:4 hazel:5; do
+            python3 tests/figuremarks.py after epub examples/figure-marks.epub \
+              qi-index "${pair%%:*}" "${pair##*:}"
+          done
 
           wc -l "$OUT"/*.txt
 

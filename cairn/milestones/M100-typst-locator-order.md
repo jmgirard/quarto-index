@@ -159,6 +159,7 @@ Typst paragraph of `cairn/DESIGN.md`, and `CHANGELOG.md`. Item 4 of
 - 2026-09-14: /milestone-implement started on branch m100-typst-locator-order.
 - 2026-09-14: question gate amended Scope In to add item 4 of `site/back-end-differences.qmd` and its claim row, because its "in page order" claim becomes false. T8 extended to match.
 - 2026-09-14: T1 wrote `examples/typst-order.qmd` (37 marked pages, 20 entries) and `tests/typst-order.tsv` by hand. The unchanged helper rendered it red on 14 of 20 rows (scratch render). Deviation: the lime principal mark sits on the range's closing value, so the spanned-bold plant tests bold handed to the range. Quince's ranges are sequential in the source, since one term holds one open range, and nest or overlap by value after counter resets. Added thyme for the merge-first plant.
+- 2026-09-14: T2/T3 rewrote `qi-index-entry` with `qi-index-rank` (class, value), four stable sorts, the value span, and the earliest-page link. Targeted renders: typst-order matches all 40 lines, typst-index both manifests unchanged, typst-numbering differs only on birch, fern, holly and lime, as rederived before the code.
 
 ## Decisions
 

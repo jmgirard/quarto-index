@@ -130,6 +130,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 - 2026-10-01: implement started on branch m105-m095-check-gaps. No question gate, because the plan left nothing open.
 - 2026-10-01: T1 code landed: the `check_cells` guard and `KEPT` in `tests/stateprobe.py`, run in the M26 section with a self-test plant. Run in isolation, it is green on the tree (26 reset lines) and red on the planted copy, naming the line. T1 stays unticked until a full suite run passes.
+- 2026-10-01: T2 code landed: an own-page `Bramble` plant under `--self-test` after the M095-AC3 check, and the borrowed probe and its pass clause removed from the M063 T2 leg. Run in isolation on the last capture, it is green on the copy and red naming `two.html`, with one line of the page changed. T2 stays unticked until a full suite run passes.
 
 ## Decisions
 

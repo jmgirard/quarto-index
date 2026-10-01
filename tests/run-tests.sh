@@ -11365,6 +11365,32 @@ HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
 check_entry_locators "$CAPTURE_ROOT/place-oldstore/_book/index.html" \
   "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
   "M095-AC3 (an upgraded store: Bramble links by the anchor two.qmd's record carries)"
+if [ "${1:-}" = "--self-test" ]; then
+  # M105-AC2: the Bramble check against a copy of this same page, first
+  # unchanged and then with Bramble's href alone losing its anchor — the value
+  # a record route dropping the anchor would print. One substitution, and the
+  # page carries that href at exactly one site before it and at none after.
+  M105_BRAMBLE="$WORK/m105-bramble-index.html"
+  M105_PAGE="$CAPTURE_ROOT/place-oldstore/_book/index.html"
+  cp "$M105_PAGE" "$M105_BRAMBLE"
+  check_entry_locators "$M105_BRAMBLE" "$HTML_SECTION_ID-alpha" Bramble \
+    "two.html#qi-mark-1" "M105-AC2 self-test (an unchanged copy of the page)" \
+    || fail "M105-AC2 self-test: the Bramble check is red on an unchanged copy of the page, so a red below would be the copy and not the href planted in it"
+  sed 's|href="two\.html#qi-mark-1"|href="two.html"|' "$M105_PAGE" > "$M105_BRAMBLE"
+  M105_BEFORE=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_PAGE" || true; } | wc -l | tr -d ' ')
+  M105_AFTER=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_BRAMBLE" || true; } | wc -l | tr -d ' ')
+  [ "$M105_BEFORE" = "1" ] && [ "$M105_AFTER" = "0" ] \
+    || fail "M105-AC2 self-test: the page carries Bramble's anchored href at $M105_BEFORE site(s) before the plant and $M105_AFTER after, want 1 and 0, so the plant did not change exactly one site"
+  if M105_OUT=$( ( check_entry_locators "$M105_BRAMBLE" "$HTML_SECTION_ID-alpha" \
+                     Bramble "two.html#qi-mark-1" "M105-AC2 probe" ) 2>&1 ); then
+    fail "M105-AC2 self-test: the Bramble check passed on a copy of the page whose Bramble links to two.html alone"
+  fi
+  case "$M105_OUT" in
+    *"'Bramble' links to <<two.html>>"*) : ;;
+    *) fail "M105-AC2 self-test: the Bramble check failed on the planted copy, but not by naming the href it read (<<$M105_OUT>>)" ;;
+  esac
+  pass "M105-AC2 self-test: the Bramble check is green on an unchanged copy of the page and red on one whose Bramble href alone loses its anchor, naming two.html"
+fi
 pass "M063-AC2: over a store whose records all stand at the current version and carry the three fields this milestone retired — one of them holding a value the superseded validator would have refused — a whole-book render prints the same sections and every one of the terms the fixture marks, and the book's last chapter reading those records on its own says nothing at all"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -11427,18 +11453,7 @@ MANIFEST
   check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
     "$HTML_SECTION_ID-alpha" Bramble "two.html" \
     "M063 T2 self-test (the refused record's chapter is recovered from its source, so its locator loses the anchor the record carried)"
-  # M095-AC3's Bramble check against this render, where Bramble's href lost
-  # the anchor: the plant that changes the href that check reads.
-  if M095_OUT=$( ( check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
-                     "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
-                     "M095-AC3 probe" ) 2>&1 ); then
-    fail "M095-AC3 self-test: the Bramble check passed on a render whose Bramble links to two.html alone"
-  fi
-  case "$M095_OUT" in
-    *"'Bramble' links to <<two.html>>"*) : ;;
-    *) fail "M095-AC3 self-test: the Bramble check failed on the refused-record render, but not by naming the href it read (<<$M095_OUT>>)" ;;
-  esac
-  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do, and the M095-AC3 check that the run above links it by the record's anchor is red here, naming the anchorless href"
+  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do"
 fi
 
 # Back to a store every record of which was written by the chapter it belongs

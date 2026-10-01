@@ -23,7 +23,14 @@ report names which artifact moved — a `.tex`, an HTML page, or the warning
 stream. The unplanted tree is required to pass every pair first, or no failure
 below would be evidence of anything.
 
+Before any of that, the cell guard (M105) reads every module's reset from
+source. A line there that is neither a CELLS statement for its module nor, in
+indexes.lua, one of the KEPT lines would get no per-cell probe, and the
+reset:indexes probe would keep it; the guard fails naming it instead. The
+suite runs the guard alone on every run, since it renders nothing.
+
 Usage:  python3 tests/stateprobe.py [cell-or-probe-name ...]
+        python3 tests/stateprobe.py --check-cells [module-dir]
 
 Like tests/suitescan.py, this file is inside the set that file's checks read,
 so it spells neither the render command nor a rendered artifact's path out in
@@ -89,6 +96,20 @@ CELLS = [
 INDEXES_RESTORES = [statement for _, module, statement in CELLS
                     if module == 'indexes']
 
+# The lines of indexes.lua's reset that restore no cell, and which the
+# reset:indexes probe keeps: the two installing the unnamed index, and the
+# `read(doc.meta)` call with the `if` around it. Each is matched stripped, as
+# reset_body's lines are.
+KEPT = [
+    'order[1] = UNNAMED',
+    'titles[UNNAMED] = DEFAULT_TITLE',
+    'if doc ~= nil then',
+    'read(doc.meta)',
+    'end',
+]
+
+RESET_OPENER = 'local function reset('
+
 # The cells whose reset cannot be load-bearing, and why. Each is probed like
 # every other; its PASSING is what the criterion records.
 EXEMPT = {
@@ -113,7 +134,7 @@ def reset_body(lines):
     """The 0-based line numbers of the statements inside `reset`."""
     start = None
     for i, line in enumerate(lines):
-        if line.strip().startswith('local function reset('):
+        if line.strip().startswith(RESET_OPENER):
             start = i
             break
     if start is None:
@@ -126,6 +147,53 @@ def reset_body(lines):
         if text and not text.startswith('--'):
             body.append(j)
     raise SystemExit('unterminated reset function')
+
+
+def check_cells(module_dir):
+    """Every reset line is a CELLS statement for its module, or a KEPT line.
+
+    The modules are found by searching `module_dir` for a reset, never named,
+    so a module that gains one is read without an edit here. Every module
+    CELLS names must be among them, which keeps the search from passing on a
+    directory where it found nothing to read.
+    """
+    found = []
+    for entry in sorted(os.listdir(module_dir)):
+        if not entry.endswith('.lua'):
+            continue
+        text = open(os.path.join(module_dir, entry), encoding='utf-8').read()
+        if any(line.strip().startswith(RESET_OPENER)
+               for line in text.split('\n')):
+            found.append((entry[:-len('.lua')], text.split('\n')))
+    names = [name for name, _ in found]
+    missing = sorted({module for _, module, _ in CELLS} - set(names))
+    if missing:
+        print('FAIL: cell guard: no reset found in %s for %s, which CELLS names'
+              % (module_dir, ', '.join(m + '.lua' for m in missing)),
+              file=sys.stderr)
+        return 1
+    stray = []
+    lines_read = 0
+    for name, lines in found:
+        allowed = {statement for _, module, statement in CELLS
+                   if module == name}
+        if name == 'indexes':
+            allowed.update(KEPT)
+        for n in reset_body(lines):
+            lines_read += 1
+            if lines[n].strip() not in allowed:
+                stray.append('%s.lua line %d: <<%s>>'
+                             % (name, n + 1, lines[n].strip()))
+    if stray:
+        print('FAIL: cell guard: these reset lines are neither a CELLS '
+              'statement for their module nor a KEPT line of indexes.lua, so '
+              'no probe would drop them alone:\n  ' + '\n  '.join(stray),
+              file=sys.stderr)
+        return 1
+    print('ok   cell guard: all %d reset line(s) across %s are a CELLS '
+          'statement for their module or a KEPT line of indexes.lua'
+          % (lines_read, ', '.join(n + '.lua' for n in names)))
+    return 0
 
 
 def plant(module, statements):
@@ -231,6 +299,12 @@ def probes():
 
 
 def main(argv):
+    if argv[1:2] == ['--check-cells']:
+        if len(argv) > 3:
+            raise SystemExit(__doc__)
+        return check_cells(argv[2] if len(argv) == 3 else MODULE_DIR)
+    if check_cells(MODULE_DIR) != 0:
+        return 1
     wanted = set(argv[1:])
     pats = warn_patterns()
     work = tempfile.mkdtemp(prefix='stateprobe-')

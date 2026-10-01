@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it changes test-suite checks only, and no author or other consumer of the extension relies on them
-- **Branch/PR:** —
+- **Branch/PR:** m105-m095-check-gaps
 
 ## Goal
 
@@ -127,6 +127,9 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: plan gate chose to run the guard in every suite run over the state probe alone, because the probe's renders run only by hand; falsified by the guard turning a suite run red on a tree whose resets are covered.
 - 2026-10-01: plan chose to move the `Bramble` control off the M063 T2 leg over keeping both, because the borrowed control adds no evidence the new plant lacks; falsified by a defect the refused-record page catches and the planted copy does not.
 - 2026-10-01: plan chose call arguments for the two tags in `outside-heading` over fixing `section` and `h2` inside the mode, because the mode is general and the shape belongs to the M095-AC3 call; falsified by a second caller needing a different rule than two tags.
+
+- 2026-10-01: implement started on branch m105-m095-check-gaps. No question gate, because the plan left nothing open.
+- 2026-10-01: T1 code landed: the `check_cells` guard and `KEPT` in `tests/stateprobe.py`, run in the M26 section with a self-test plant. Run in isolation, it is green on the tree (26 reset lines) and red on the planted copy, naming the line. T1 stays unticked until a full suite run passes.
 
 ## Decisions
 

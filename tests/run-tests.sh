@@ -17747,6 +17747,35 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # which fixture each cell actually moves is that script's own output.
 # ---------------------------------------------------------------------------
 section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
+# M105-AC1: every line of every module's reset is a `CELLS` statement for that
+# module or one of the lines indexes.lua's reset keeps, so no line the reset
+# gains goes without a per-cell probe. The probe itself renders and runs by
+# hand; this guard renders nothing and runs here on every run.
+python3 tests/stateprobe.py --check-cells \
+  || fail "M105-AC1: a reset line is neither a CELLS statement for its module nor a kept line of indexes.lua (tests/stateprobe.py's own FAIL line names it above)"
+pass "M105-AC1: every module's reset holds only CELLS statements and indexes.lua's kept lines"
+if [ "${1:-}" = "--self-test" ]; then
+  # The guard against a copy of the modules whose indexes.lua reset gains one
+  # line restoring a cell CELLS does not hold. The unplanted copy first, so a
+  # red below is the plant and not the copy.
+  M105_MODS="$WORK/m105-modules"
+  rm -rf "$M105_MODS"
+  cp -R _extensions/index/modules "$M105_MODS"
+  python3 tests/stateprobe.py --check-cells "$M105_MODS" > /dev/null \
+    || fail "M105-AC1 self-test: the guard is red on an unplanted copy of the modules, so a red below would be the copy and not the line planted in it"
+  perl -0pi -e 's/^  declared = false\n/  declared = false\n  qi_core.empty(planted_cell)\n/m' \
+    "$M105_MODS/indexes.lua"
+  cmp -s "$M105_MODS/indexes.lua" _extensions/index/modules/indexes.lua \
+    && fail "M105-AC1 self-test: the plant changed nothing in indexes.lua, so the case below is about the unplanted reset"
+  if M105_OUT=$(python3 tests/stateprobe.py --check-cells "$M105_MODS" 2>&1); then
+    fail "M105-AC1 self-test: the guard passed on an indexes.lua reset holding a line no CELLS row names"
+  fi
+  case "$M105_OUT" in
+    *"indexes.lua line "*": <<qi_core.empty(planted_cell)>>"*) : ;;
+    *) fail "M105-AC1 self-test: the guard failed on the planted copy, but without naming indexes.lua and the planted line (<<$M105_OUT>>)" ;;
+  esac
+  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the modules and red on one whose indexes.lua reset gains a line, naming that line"
+fi
 state_reuse_pair() {
   local stem="$1" fmt="$2" ext="$3" want="$4" v
   for v in 1 0; do

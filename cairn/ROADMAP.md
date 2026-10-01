@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M105 | Three M095 checks each fail on the gap its review found | planned | — | normal | milestones/M105-m095-check-gaps.md |
+| M105 | Three M095 checks each fail on the gap its review found | in-progress | — | normal | milestones/M105-m095-check-gaps.md |
 | M104 | A caption mark beside a shortcode files one locator | done | — | normal | milestones/archive/M104-shortcode-caption-marks.md |
 | M103 | The two site-check clauses M46 withdrew hold again | done | — | normal | milestones/archive/M103-site-check-clauses.md |
 | M102 | The figure-marks checks run on every matrix leg, each shown able to fail | done | — | normal | milestones/archive/M102-figure-marks-checks.md |

@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M105 | Three M095 checks each fail on the gap its review found | planned | — | normal | milestones/M105-m095-check-gaps.md |
 | M104 | A caption mark beside a shortcode files one locator | done | — | normal | milestones/archive/M104-shortcode-caption-marks.md |
 | M103 | The two site-check clauses M46 withdrew hold again | done | — | normal | milestones/archive/M103-site-check-clauses.md |
 | M102 | The figure-marks checks run on every matrix leg, each shown able to fail | done | — | normal | milestones/archive/M102-figure-marks-checks.md |
@@ -20,7 +21,6 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- Close the four check gaps M095's review left in the state probe and three suite checks. Promote on a seventh index cell, or with any other pass over the state probe — added 2026-09-11 — M095 review — KI284-KI287
 - Read every index section of a document in `tests/epubcheck.py unique`, which M083 narrows its verdict to the one section per document it reads instead; promote on a publication reaching that check whose document carries two index sections, or on an index locator into a second section found dangling — added 2026-09-07 — M079 review F9, M083 review — KI264
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - Suite-run shape follow-ups (clustered): parallel independent legs; a named-subset run, blocked until the three whole-run accumulator sweeps declare their own domains; per-render rather than per-section timing. Promote on a section growing past a couple of minutes, or on M075's section profile proving too coarse — added 2026-09-03, clustered 2026-09-06 — M075 plan gate — KI238, KI241-KI245

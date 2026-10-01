@@ -74,7 +74,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       check is red and names `div`. In the other, that heading's opening and
       closing tags are renamed to `h3`, and the check is red and names `h3`.
       Each copy is otherwise unchanged.
-- [ ] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
+- [x] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
@@ -172,6 +172,56 @@ M105 check ran.
   It is green on `four.html` from both `place-blocked` renders, with two `ok`
   lines that name the `<section>` and the `<h2>`. `M105-AC3 self-test`
   is red on the `div` and the `h3` copies, each naming its tag.
+- AC4: `tests/run-tests.sh --self-test` passed (1738 checks), and then
+  `tests/run-tests.sh` passed (898 checks). The two runs were sequential, with
+  no suite edits during either.
 - Consistency gate: `cairn_validate.py` exits 0, all checks passed. No
   DESIGN principle changed, so no impact report. The generic profile names no
   toolchain checks.
+
+Independent review: three fresh reviewers (Opus diff-bug, Sonnet
+blame-history, Sonnet prior-review). Findings merged where two reviewers
+named one defect. Each line gives the proposed disposition, decided at the
+merge gate.
+
+- R1 (diff-bug 2, reproduced here): a column-0 `end` inside the reset ends
+  `reset_body`'s read, so later lines pass unseen. AC1 fails. Proposed: fix
+  now, a return to implement.
+- R2 (diff-bug 1, blame 1): the guard is a scan of the extension's source,
+  which D-011 refuses without a superseding entry. KI10 still says D-011
+  refuses that scan. Proposed: fix now, an entry that narrows D-011 for this
+  guard and a KI10 edit.
+- R3 (diff-bug 4): lines inside a `--[[ ]]` block comment are read as
+  statements, a false red. AC1 reads non-comment lines only. Proposed: fix
+  now with R1.
+- R4 (diff-bug 3): a guard failure that is not a stray line prints a false
+  suite message. An unterminated reset names no module. Proposed: fix now.
+- R5 (prior 2, diff-bug 6, blame 3): the M26 comment and the docstring say
+  no gained line goes without a probe. A duplicate of an allowed line passes
+  (plan Out). Proposed: fix the wording now, reject the guard change.
+- R6 (diff-bug 5): the docstring says a module that gains a reset is read
+  with no edit. A reset in another form is not found (AC1 names the form).
+  Proposed: fix the wording now.
+- R7 (blame 5, prior 1): the plant-builder comment still says three copies,
+  and the pass line at 9092 names only the moved-id plants. Proposed: fix now.
+- R8 (blame 2): the guard lists `modules/` itself, not through
+  `tests/filtersrc.py` (M16-AC2). Proposed: fix now with R1.
+- R9 (diff-bug 7): `rename()` does not assert it renamed the intended tag.
+  Proposed: fix now.
+- R10 (diff-bug 8): AC2's "nothing else changes" rests on the href count
+  alone. BSD `sed` can add a final newline. Proposed: fix now, assert that
+  one line differs.
+- R11 (diff-bug 9): the AC1 self-test `case` pattern can match across two
+  report lines. Proposed: fix now, match one line.
+- R12 (diff-bug 11): `outside_heading` still names its container id
+  `section`. Proposed: fix now.
+- R13 (diff-bug 10): the M063-AC2 pass line now prints after the M105-AC2
+  lines. Proposed: reject, output order only.
+- R14 (blame 4): KI287 is struck with no edit. Proposed: reject, the plan
+  gate chose this.
+- R15 (blame 6): the `Bramble` control is now a planted copy, not a second
+  render. Proposed: reject, the plan and AC2 chose this.
+- R16 (blame 7): T3 ran Python 3.14.7, not 3.12. Proposed: reject, logged
+  in the work log, and 3.9 and 3.14 bracket 3.12.
+- R17 (prior 3): a `CELLS` row whose statement left the reset is caught only
+  by the hand-run probe. Proposed: reject, plan Out.

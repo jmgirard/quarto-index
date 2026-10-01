@@ -268,7 +268,7 @@ jobs:
   # and value order (M100). And that `quarto render --to pdf` and
   # `quarto render --to typst` each succeed on examples/figure-marks.qmd and
   # print its index as a manifest states it, one locator a mark in a figure
-  # caption or an image's alt text (M101): the LaTeX index is the six lines of
+  # caption or an image's alt text (M101): the LaTeX index is the eight lines of
   # tests/figure-marks-pdf.txt (M102), and the Typst index is
   # tests/figure-marks-typst.tsv. The render alone is not the check: a PDF
   # that typesets at exit 0 while the index prints empty is exactly the break

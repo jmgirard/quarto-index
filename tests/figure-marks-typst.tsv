@@ -17,6 +17,11 @@
 #   hazel    a mark in the alt text of an image in a figure div, page 6. The
 #            image is not the only content of its paragraph, so it holds no
 #            copied caption and its mark files one locator
+#   juniper  a caption mark on a figure with no id, page 7, whose caption also
+#            holds a shortcode twice, once inside emphasis. The copy of that
+#            caption files nothing: one locator
+#   larch    a range opened in that same caption on page 7, closed in the
+#            text on page 8: one range, linked to page 7
 group	A
 entry	0	alder	1@1
 group	B
@@ -29,3 +34,7 @@ group	E
 entry	0	elder	5*@5
 group	H
 entry	0	hazel	6@6
+group	J
+entry	0	juniper	7@7
+group	L
+entry	0	larch	7–8@7

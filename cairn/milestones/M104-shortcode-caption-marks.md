@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M104: A caption mark beside a shortcode files one locator
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the locators and the reports every back-end gives an author
-- **Branch/PR:** —
+- **Branch/PR:** m104-shortcode-caption-marks
 
 ## Goal
 
@@ -124,3 +124,5 @@ and removes KI299.
 - 2026-10-01: created by /milestone-plan. Promotes the KI299 candidate row (M101 review F1, F2), which the plan commit removes.
 - 2026-10-01: criteria audit (full mode, fresh Opus reader) returned 12 findings, all with one clear fix, applied before the gate: printed-index claim per format, reader and `alt`-checker wording dropped, a nested shortcode and a walk at every depth, DESIGN wording on equal nodes, a self-test plant, AC4 leg wording and the release leg, the 1.5.52 floor risk, five count sentences, the candidate row.
 - 2026-10-01: plan gate chose to drop `__quarto_custom_id` before comparing over comparing plain text (it counts any alt text with the same words as a copy) and over reading Quarto's custom-node store (an internal table that can move between versions); falsified by a Quarto version whose caption and copy differ in more than that id, or by an author-written alt text that differs from its figure's caption only in which shortcode it holds.
+- 2026-10-01: implement started on branch m104-shortcode-caption-marks; question gate skipped, nothing left open by the plan.
+- 2026-10-01: checkpoint, T1 and T2 written and unticked: the suite with --self-test is running and has not yet passed. On the unchanged extension (Quarto 1.10.18, scratch render) the new case is red on the log check in all four formats, the HTML and EPUB manifests (two links each for juniper and larch) and the HTML and EPUB link checks (qi-mark-9, qi-mark-10 dangling); the PDF and Typst manifests are green, since both merge the copy's same-page locator.

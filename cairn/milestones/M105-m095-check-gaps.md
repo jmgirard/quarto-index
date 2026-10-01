@@ -74,7 +74,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       check is red and names `div`. In the other, that heading's opening and
       closing tags are renamed to `h3`, and the check is red and names `h3`.
       Each copy is otherwise unchanged.
-- [ ] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
+- [x] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
@@ -187,6 +187,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: claim audit: not owed — internal tier.
 - 2026-10-01: status set to review.
 - 2026-10-01: review run 3 started at 1a9f5f8, branch holding `origin/main`. AC1 not met: the guard does not find a module whose `local function reset(` line has its parameter list on the next line (Review section). Self-test run in progress.
+- 2026-10-01: both suite runs passed at 1a9f5f8 (1738 and 898 checks), so AC2 to AC4 are ticked. Validate passed. Review return 3 (defect): AC1 fails on a reset opener whose parameter list is on the next line. The disposition goes to the user.
 
 ## Decisions
 
@@ -408,3 +409,16 @@ The branch holds `origin/main`, and `main` has no unpushed commits. Runs used
   green: the check is red on the `div` copy and on the `h3` copy, each time
   naming the tag it found. Called with the tags each copy carries, it is green
   on that copy.
+- AC4: at 1a9f5f8, `tests/run-tests.sh --self-test` passed (1738 checks), and
+  then `tests/run-tests.sh` passed (898 checks). The two runs were sequential,
+  with no suite edits during either. The commits between them touched only
+  the milestone file.
+- Consistency gate: `cairn_validate.py` exits 0, all checks passed, with one
+  advisory (12 tasks, over the split tripwire). No DESIGN principle text
+  changed. The generic profile names no toolchain checks.
+
+Thrash count: this is defect return 3 (no amendment returns). AC1 failed in
+runs 1, 2 and 3. Each time the guard missed part of what AC1 promises, by a
+new mechanism: an inner `end`, a commented-out opener, and now a parameter
+list on the next line. The independent review was not run, because AC1 fails
+and the third return puts the disposition to the user.

@@ -113,7 +113,7 @@ and removes KI299.
       on the second opening of `larch`'s range in each of the four formats.
       Make sure that the no-declass plant's cedar count still holds. Show the
       T1 checks green.
-- [ ] T3: Dispatch `.github/workflows/versions.yml` on the branch. Record each
+- [x] T3: Dispatch `.github/workflows/versions.yml` on the branch. Record each
       leg's result in the work log. A red result on the release leg alone
       becomes a Known issue (D-025), not a failed criterion.
 - [ ] T4: Edit `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md` as AC5
@@ -129,3 +129,4 @@ and removes KI299.
 - 2026-10-01: T1, T2 done. `tests/run-tests.sh --self-test` passed, 1732 checks. The custom-id plant is red on the log check in all four formats, with one report of the second opening of larch's range in each. The no-declass plant's cedar count still holds. A native dump on Quarto 1.10.18 showed the caption and copy differ only in `__quarto_custom_id` and each shortcode span is empty, so the code comment states that two shortcodes of one type compare equal and why that is safe.
 - 2026-10-01: T3 started. The branch is pushed and `versions.yml` is dispatched as run 36878545802, which is not finished.
 - 2026-10-01: checkpoint, T4 written and unticked. The suite with --self-test is running again over the T4 edits.
+- 2026-10-01: T3 done. Dispatched run 36878545802 on 5595c5e is green in all eight jobs. On the floor leg (1.5.52) and the release leg, the figure-marks HTML index matches the pinned leg's byte for byte, 17 rows. The PDF jobs on the floor, pinned and release legs read the 8 lines of `tests/figure-marks-pdf.txt` and the 16 lines of `tests/figure-marks-typst.tsv`.

@@ -20,9 +20,10 @@ filters:
 The fixture for marks in a figure caption and in an image's alt text (M101).
 Pandoc copies the caption of a figure into the alt text of the image it holds,
 so a caption mark on a figure with no id reaches the filter twice (Quarto
-empties the copy on a figure with an id); the copy must file nothing. A mark
-an author writes in the alt text of an image that is not a figure's copy files
-one locator at the image.
+empties the copy on a figure with an id); the copy must file nothing. That
+holds when the caption also holds a shortcode, which Quarto gives a different
+id in the caption and in the copy (M104). A mark an author writes in the alt
+text of an image that is not a figure's copy files one locator at the image.
 
 Every case but the last ends in an explicit page break, so the page each mark sits on is a
 fact of this source: page 1 is this page, and each break starts the next.
@@ -67,3 +68,14 @@ paragraph, so Pandoc makes no figure of it and copies no caption into it:
 
 The caption of the figure div.
 :::
+
+{{< pagebreak >}}
+
+A figure with no id, whose caption holds a shortcode twice, once inside
+emphasis, beside a plain mark and a range that closes on the next page:
+
+![The {{< meta title >}} fixture, *{{< meta title >}}*, marks [juniper]{.index} and opens [larch]{.index range="open"}.](dot.png)
+
+{{< pagebreak >}}
+
+The range of larch closes here: [larch]{.index range="close"}.

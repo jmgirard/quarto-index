@@ -30731,8 +30731,9 @@ fi
 # those writers print alt text as a flat string, and wrote no `\index` in
 # LaTeX, whose writer drops raw LaTeX there.
 #
-# examples/figure-marks.qmd holds one case a page, each but the last ending in
-# an explicit page break, so each mark's page is a fact of its source. Every manifest here
+# examples/figure-marks.qmd holds one case a page, with a range's closing text
+# on a page of its own and each page but the last ending in an explicit page
+# break, so each mark's page is a fact of its source. Every manifest here
 # is derived by hand from that source under the ORACLE RULE above; the Typst
 # one is the tracked file tests/figure-marks-typst.tsv, so the version matrix
 # reads the same rows. The terms, their pages and why each files one locator:
@@ -30748,13 +30749,25 @@ fi
 #   elder    page 5, a principal mark in that same alt text
 #   hazel    page 6, the alt text of an image in a figure div; the backslash
 #            after the image keeps it from being a figure of its own
+#   juniper  page 7, the caption of a figure with no id that also holds the
+#            shortcode `{{< meta title >}}` twice, once inside emphasis
+#            (M104). Quarto gives each shortcode in the caption and in the
+#            copy a different `__quarto_custom_id`, and the copy is still
+#            seen as one: one link in HTML and EPUB, page 7 in PDF and Typst
+#   larch    a range opened in that same caption on page 7 and closed in the
+#            text on page 8: one link in HTML and EPUB, the span 7–8 in PDF
+#            and Typst. A copy left a mark opened the range twice, which the
+#            log check below reports in every format; PDF and Typst merge the
+#            copy's locator into the caption's, so their manifests alone stay
+#            green on that defect
 # In PDF the fixture redefines the principal command to print `[P:<page>]`, so
 # the principal locator is visible to pdftotext.
 #
 # Which image's alt text each alt-text mark sits in, counted over the page's
 # images outside the index in document order: dogwood and elder in image 4,
-# hazel in image 5. The `alt` each image carries is stated below, and holding
-# it is what shows that neither the declassed copy nor the moved id changes it.
+# hazel in image 5. Image 6 is juniper's figure. The `alt` each image carries
+# is stated below, and holding it is what shows that neither the declassed
+# copy nor the moved id changes it.
 # ---------------------------------------------------------------------------
 section 'M101-AC1/AC2 — a mark in a figure caption or an image'\''s alt text files one locator.'
 for needle in '![A caption that marks [alder]{#alder-mark .index}.](dot.png)' \
@@ -30763,14 +30776,16 @@ for needle in '![A caption that marks [alder]{#alder-mark .index}.](dot.png)' \
     'The range of cedar closes here: [cedar]{.index range="close"}.' \
     '![alt text that marks [dogwood]{.index} and [elder]{.index mention="principal"}](dot.png),' \
     '![Alt text that marks [hazel]{.index}](dot.png)\' \
-    '::: {#fig-hazel}' 'fig-pos: H'; do
+    '::: {#fig-hazel}' 'fig-pos: H' \
+    '![The {{< meta title >}} fixture, *{{< meta title >}}*, marks [juniper]{.index} and opens [larch]{.index range="open"}.](dot.png)' \
+    'The range of larch closes here: [larch]{.index range="close"}.'; do
   grep -qxF -- "$needle" examples/figure-marks.qmd \
     || fail "M101-AC1/AC2: examples/figure-marks.qmd no longer carries the line <<$needle>>, so the case the manifests below state is no longer rendered"
 done
 M101_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/figure-marks.qmd || true; } | tr -d ' ')
-[ "$M101_BREAKS" = "5" ] \
-  || fail "M101-AC1/AC2: examples/figure-marks.qmd carries $M101_BREAKS page breaks, not the five its manifests number pages by"
-pass "M101-AC1/AC2: examples/figure-marks.qmd carries each case its manifests state, and five page breaks"
+[ "$M101_BREAKS" = "7" ] \
+  || fail "M101-AC1/AC2: examples/figure-marks.qmd carries $M101_BREAKS page breaks, not the seven its manifests number pages by"
+pass "M101-AC1/AC2: examples/figure-marks.qmd carries each case its manifests state, and seven page breaks"
 
 for fmt in html epub pdf typst; do
   quarto render examples/figure-marks.qmd --to "$fmt" \
@@ -30805,6 +30820,10 @@ letter	E
 0	elder	1
 letter	H
 0	hazel	1
+letter	J
+0	juniper	1
+letter	L
+0	larch	1
 MANIFEST
 check_html_index_manifest "$M101_HTML" "$M101_HTML_ROWS" "M101-AC1 (HTML)"
 check_locator_role "$M101_HTML" "$HTML_SECTION_ID" elder principal \
@@ -30848,9 +30867,11 @@ python3 tests/epubcheck.py links "$M101_EPUB" "$HTML_SECTION_ID" \
 # print as the text its marks show. Neither the declassed copy nor the moved id
 # is text, so neither changes any of these.
 printf '%s\n' '<none>' '<none>' '<none>' \
-  'alt text that marks dogwood and elder' '<none>' > "$WORK/figure-marks-html-alts.txt"
+  'alt text that marks dogwood and elder' '<none>' '<none>' \
+  > "$WORK/figure-marks-html-alts.txt"
 printf '%s\n' '<empty>' '<empty>' '<empty>' \
-  'alt text that marks dogwood and elder' '<empty>' > "$WORK/figure-marks-epub-alts.txt"
+  'alt text that marks dogwood and elder' '<empty>' '<empty>' \
+  > "$WORK/figure-marks-epub-alts.txt"
 python3 tests/figuremarks.py alts html "$M101_HTML" "$HTML_SECTION_ID" \
     "$WORK/figure-marks-html-alts.txt" \
   || fail "M101-AC2: an image of the HTML render carries another alt than its source gives it (the report is above)"
@@ -30871,7 +30892,7 @@ done
 
 # ORACLE — the printed LaTeX index: no letter groups, one line a term. The
 # lines are the tracked file tests/figure-marks-pdf.txt, so the version
-# matrix's PDF job reads the same six. A function, so the self-test plant
+# matrix's PDF job reads the same eight. A function, so the self-test plant
 # below runs this same comparison.
 m101_pdf_check() {   # <pdf>
   python3 tests/figuremarks.py pdf "$1" tests/figure-marks-pdf.txt
@@ -31049,6 +31070,11 @@ if [ "${1:-}" = "--self-test" ]; then
   #                edit of the captured page): the `after` check red
   #   alt-strip    the moved mark's text left out of the alt (html.lua): the
   #                `alts` check red in HTML and EPUB
+  # M104 adds one:
+  #   custom-id    the caption and its copy compared with Quarto's custom ids
+  #                left in (marks.lua), the test M101 shipped: the log check
+  #                red in all four formats, on the second opening of larch's
+  #                range
   # -------------------------------------------------------------------------
   M101P="$WORK/m101plant"
   rm -rf "$M101P"
@@ -31190,10 +31216,30 @@ M102IDPY
   m101_tree latex-move index.lua \
     's{  doc = qi_latex\.move_alt_commands\(doc\)\n}{}'
   m101_render latex-move pdf
-  m101_red "latex-move" "the printed index is not the 6 lines tests/figure-marks-pdf.txt states" \
+  m101_red "latex-move" "the printed index is not the 8 lines tests/figure-marks-pdf.txt states" \
     m101_pdf_check "$CAPTURE_ROOT/m101-latex-move-pdf/figure-marks.pdf"
 
-  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest; a moved id in a block of its own is red on the after check's same-block clause, and a moved mark's text left out of the alt is red on the alts check in HTML and EPUB (M102)"
+  # M104 custom-id: the comparison put back to the plain `~=` M101 shipped.
+  # The caption of juniper's figure then never equals its copy, so the copy's
+  # opening of larch's range is read as a second one. Larch's report is
+  # counted at one and cedar's at none, so the red is this case's and not
+  # cedar's.
+  m101_tree custom-id modules/marks.lua \
+    's{without_custom_ids\(image\.caption\) ~= without_custom_ids\(caption\.content\)}{image.caption ~= caption.content}'
+  for fmt in html epub pdf typst; do
+    m101_render custom-id "$fmt"
+    m101_red "custom-id, $fmt" "expected 0 warning(s) from this extension" \
+      check_extension_warning_count "$WORK/m101-custom-id-$fmt.log" 0 \
+      "M104 plant custom-id ($fmt)"
+    check_warning_count "$WORK/m101-custom-id-$fmt.log" \
+      'range="open" on term "larch" opens a range for a term whose range is already open' 1 \
+      "M104 plant custom-id ($fmt: the report drawn is the second opening of larch's range)"
+    check_warning_count "$WORK/m101-custom-id-$fmt.log" \
+      'range="open" on term "cedar" opens a range for a term whose range is already open' 0 \
+      "M104 plant custom-id ($fmt: cedar's caption is still read once)"
+  done
+
+  pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest; a moved id in a block of its own is red on the after check's same-block clause, and a moved mark's text left out of the alt is red on the alts check in HTML and EPUB (M102); comparing a caption with its copy with Quarto's custom ids left in is red in the four formats' log checks, on larch's range (M104)"
 fi
 
 # ---------------------------------------------------------------------------

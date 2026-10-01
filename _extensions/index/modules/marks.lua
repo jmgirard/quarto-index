@@ -615,9 +615,37 @@ end
 -- what it was.
 --
 -- A copy is the alt text of an image that is the figure's only content and
--- equals the figure's caption. An image whose alt text differs from the
--- caption, or that shares its paragraph with anything, holds marks the author
--- wrote there, and those stay marks.
+-- matches the figure's caption, compared as the next paragraph states. An
+-- image whose alt text differs from the caption, or that shares its paragraph
+-- with anything, holds marks the author wrote there, and those stay marks.
+--
+-- The two lists are compared without the `__quarto_custom_id` of each span
+-- that carries `__quarto_custom`, at every depth. Quarto turns an inline
+-- shortcode into such a span, and the caption and its copy each get one with
+-- an id of its own, so a caption holding a shortcode never equalled its copy
+-- (M104; on Quarto 1.10.18 the two lists differed in that attribute alone).
+-- A shortcode's span is empty, a nested shortcode's included (observed on
+-- Quarto 1.10.18): the id is the key under which Quarto stores what the
+-- shortcode holds, and the span's other attributes name its type. So two
+-- shortcodes compare equal whatever they hold. A custom node that keeps
+-- children in its span has them compared like any other inlines, with the
+-- same ids dropped. That is safe: an alt text that differs from its figure's
+-- caption only in what such nodes hold carries the same marks as the caption,
+-- in the same order and on the same figure, so the marks it stops filing are
+-- ones the caption already files. The walk returns a copy, so the ids Quarto
+-- resolves each node by stay where they are.
+local function without_custom_ids(inlines)
+  return inlines:walk({
+    Span = function(span)
+      if span.attributes["__quarto_custom"] == nil then
+        return nil
+      end
+      span.attributes["__quarto_custom_id"] = nil
+      return span
+    end,
+  })
+end
+
 local function declass_caption_copies(node)
   local function declass(span)
     if not span.classes:includes(qi_core.INDEX_CLASS) then
@@ -644,7 +672,8 @@ local function declass_caption_copies(node)
         return nil
       end
       local image = block.content[1]
-      if image.t ~= "Image" or image.caption ~= caption.content then
+      if image.t ~= "Image"
+          or without_custom_ids(image.caption) ~= without_custom_ids(caption.content) then
         return nil
       end
       image.caption = image.caption:walk({ Span = declass })

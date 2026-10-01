@@ -30403,7 +30403,7 @@ M098OTHER
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
   || fail "M098-AC7: site/books.qmd no longer states that a Typst book is merged (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
-matrix typst	The same leg renders `typst-index.qmd` to Typst on each version and reads both of its indexes
+matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS
 python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
   || fail "M098-AC7: site/tests.qmd no longer states the version matrix's Typst step (its own FAIL line is above)"

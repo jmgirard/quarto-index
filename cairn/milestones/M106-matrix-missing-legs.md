@@ -149,6 +149,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: T2 fix landed: the two-index render step has id `named_indexes_pdf`, and the cells step runs `if: !cancelled()` and that step succeeded. T4 and T5 are dispatched again on the new head.
 - 2026-10-01: T4 done: run 36941004216 at c143cd0, attempt 1, green on all three legs, with the 12 new reader `ok` lines. No leg was red at an older step, so no base-branch run was needed.
 - 2026-10-01: T5 done: probe 467a461 (c143cd0 plus the three row changes), run 36941009713, attempt 1. On all three legs the entries, cells and EPUB `sections` steps are red, each with its FAIL line and then the changed row (`<<Babbidge>>`, `<<Vesalius>> is printed`, `got`/`want` on Turing). The probe is kept at `refs/probes/m106-manifest-rows`, and its branch is deleted.
+- 2026-10-01: T6 suite run red at one check: M098-AC7 holds `site/tests.qmd` to a sentence of the old matrix section. The claim row now quotes the rewrite's Typst bullet. It passes on the new page and fails on main's page. T7 checkpoint: KI112 and KI113 removed. The `--self-test` run for T6 and T7 is in progress.
 
 ## Decisions
 

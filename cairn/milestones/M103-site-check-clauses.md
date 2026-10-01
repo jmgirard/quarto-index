@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M103: The two site-check clauses M46 withdrew hold again
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -83,12 +83,12 @@ not decode as UTF-8, by name, where today it raises (KI152).
 
 ## Tasks
 
-- [ ] T1: Rewrite the resolution in `check_links` (`tests/sitecheck.py:241`)
+- [x] T1: Rewrite the resolution in `check_links` (`tests/sitecheck.py:241`)
       over the walked set of regular files. Normalize the path before the
       base-segment test. Delete the `realpath` and `abspath` containment
       branch and its comments. Keep the `looked for` clause that the
       encoded-absolute plant reads.
-- [ ] T2: In `tests/run-tests.sh`, each link plant gets its own copy of the
+- [x] T2: In `tests/run-tests.sh`, each link plant gets its own copy of the
       captured site through `m40_plant_link`. Point the escape plants at the
       `names no file under` report, and the base-path escape plant at the
       `carries no` report. Invert the `linkinsidelink` plant, which today
@@ -96,11 +96,11 @@ not decode as UTF-8, by name, where today it raises (KI152).
       `index.html` symlink and the two base-normalization cases. Show that
       the pre-change `sitecheck.py` exits 0 on the directory symlink plant,
       so that plant fails against the old code.
-- [ ] T3: Make `sweep_rows` (`tests/sitecheck.py:569`) report a page that
+- [x] T3: Make `sweep_rows` (`tests/sitecheck.py:569`) report a page that
       does not decode as UTF-8 as unreadable, by name. Add one plant per
       mode with a non-UTF-8 page that also carries a retired sentence. Show
       each plant raising a traceback against the pre-change code.
-- [ ] T4: Records. Write a D-entry that supersedes the D-029 withdrawal of
+- [x] T4: Records. Write a D-entry that supersedes the D-029 withdrawal of
       the report clause. Update the site-check paragraph of DESIGN.md
       (near line 770) and strike KI152, KI153 and KI158. Run the `verify`
       slot with `--self-test`.
@@ -114,6 +114,11 @@ not decode as UTF-8, by name, where today it raises (KI152).
 
 - 2026-10-01: implement started on branch m103-site-check-clauses. No question gate: the plan left no choice open.
 - 2026-10-01: checkpoint, unverified. T1-T3 code and the T4 records (D-061, DESIGN.md) are written. The full suite with `--self-test` is running, so no task is ticked yet. `m40_plant_link` already gave each link plant its own copy, so T2 needed no change there.
+- 2026-10-01: T1 done. `check_links` looks a link up in the set `captured_files` builds from one `os.walk`, keeping regular files only. The base test reads the `posixpath.normpath` path. The unplanted capture sweeps 2163 links, the same count as the pre-change code.
+- 2026-10-01: T2 done. The escape plants now expect `names no file under`, and the base escape expects `carries no`. `linkinsidelink` is inverted. Added `linkdirindex`, `linkdirok`, `linkbasedot` and `linkbaseup`. Against the saved pre-change `sitecheck.py`, `linkdirindex` and `linkinsidelink` exit 0.
+- 2026-10-01: T3 done. `sweep_rows` reports a `UnicodeDecodeError` page as unreadable, by name. One plant per mode. Against the saved pre-change code, each plant ends in a `UnicodeDecodeError` traceback from the read.
+- 2026-10-01: T4 done. D-061 supersedes D-029. DESIGN.md link sentence rewritten, KI152, KI153 and KI158 struck. `tests/run-tests.sh --self-test` exit 0, 1716 checks. `cairn_validate` passes.
+- claim audit: not owed — internal tier
 
 ## Decisions
 

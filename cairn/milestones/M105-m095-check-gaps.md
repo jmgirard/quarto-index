@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -79,10 +79,10 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 ## Coverage
 
-- AC1 → T1, T5, T6
-- AC2 → T2, T7
-- AC3 → T3, T7
-- AC4 → T4, T8
+- AC1 → T1, T5, T6, T9, T11
+- AC2 → T2, T7, T11
+- AC3 → T3, T7, T11
+- AC4 → T4, T8, T12
 
 ## Tasks
 
@@ -131,6 +131,19 @@ probe's output instead of stating a count. The plan gate chose that form.
       asserts of R9, R10 and R11. Rename the parameter of R12.
 - [x] T8 (review return 1): Repeat T4's two suite runs and record each
       result in the work log.
+- [ ] T9 (review return 2): Find each module's reset with Quarto's Lua
+      (`quarto pandoc lua`): load the module and read the first and last
+      line of the exported `reset` from `debug.getinfo`. Stop counting
+      blocks by hand. Read the opener line's code too. Add self-test plants
+      for V1, V2 and V3, each red naming the stray line (V12, V14).
+- [ ] T10 (review return 2): Fix the wording of V4. Add one entry that
+      supersedes D-062's claim on what the probe drops (V5). Add Known issues
+      entries for the accepted gaps (V9). Fix KI10's "Four" (V10).
+- [ ] T11 (review return 2): Add the asserts and plants of V6, V7 and V8.
+      Plant the AC2 copy with `perl` (V11). Compare absolute paths before
+      the probes refuse to run (V13).
+- [ ] T12 (review return 2): Repeat T4's two suite runs and record each
+      result in the work log.
 
 ## Work log
 
@@ -164,6 +177,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: status set to review.
 - 2026-10-01: review run 2 started at 66991d0, branch holding `origin/main`. Validate passed. Three fresh reviewers reported 21 findings, logged in the Review section.
 - 2026-10-01: AC1 not met: a commented-out reset opener above the real one makes the guard read the copy, so a stray line in the real reset passes (V1, reproduced). The self-test run was stopped by hand at 876 checks, all M105 checks green, because the return makes its evidence stale.
+- 2026-10-01: review return 2 (defect): AC1 fails, because a commented-out reset opener above the real one makes the guard read the copy (V1). AC1 failed twice by the same shape, a hand-written reader that misplaces the reset. The user chose to let Quarto's Lua find the reset, and accepted the proposed dispositions. Status back to in-progress. Tasks T9 to T12 added, Coverage amended.
 
 ## Decisions
 
@@ -347,3 +361,10 @@ line gives the proposed disposition, decided at the merge gate.
 - V20 (prior 2): D-062 says "narrows" where D-011 says a superseding entry.
   Proposed: reject, D-038 uses that form and the user chose it.
 - V21 (blame 8): R13 and R14 again. Proposed: reject, already rejected.
+
+Gate 2026-10-01: the user chose to send M105 back to implement, with the
+guard finding each reset through Quarto's Lua rather than a hand-written
+reader (T9). V1 to V14 are fix-now, as tasks T9 to T11, and T12 repeats both
+suite runs. V15 to V21 are rejected for the reasons given. The plan's
+recorded alternative, a derived drop list with no guard, was offered and not
+chosen. A review brief was offered and not chosen.

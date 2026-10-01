@@ -186,6 +186,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: at b0d49c2, with `/usr/bin/python3` (3.9.6) first on the PATH and no suite edits during either run, `tests/run-tests.sh --self-test` passed (1738 checks) and `tests/run-tests.sh` passed (898 checks). T9, T11 and T12 are ticked.
 - 2026-10-01: claim audit: not owed — internal tier.
 - 2026-10-01: status set to review.
+- 2026-10-01: review run 3 started at 1a9f5f8, branch holding `origin/main`. AC1 not met: the guard does not find a module whose `local function reset(` line has its parameter list on the next line (Review section). Self-test run in progress.
 
 ## Decisions
 
@@ -376,3 +377,22 @@ reader (T9). V1 to V14 are fix-now, as tasks T9 to T11, and T12 repeats both
 suite runs. V15 to V21 are rejected for the reasons given. The plan's
 recorded alternative, a derived drop list with no guard, was offered and not
 chosen. A review brief was offered and not chosen.
+
+### Review run 3 (2026-10-01, at 1a9f5f8)
+
+The branch holds `origin/main`, and `main` has no unpushed commits. Runs used
+`/usr/bin/python3` (3.9.6) first on the PATH.
+
+- AC1 (not met): on the tree the guard exits 0, reading 26 reset lines across
+  indexes, latex, marks and sortkeys. Each hand plant on a scratch copy adds
+  `qi_core.empty(hidden)` to a reset. Six plants are red and name the line:
+  V1, V3, the R1 column-0 `end`, a line after a block comment, a `do` block,
+  and a one-line reset. V2 (two openers) is red and names both lines. A new
+  module `extra.lua` with a normal reset and an unlisted line is found and is
+  red. Then the same module puts the parameter `doc)` on the line after
+  `local function reset(`, which is valid Lua. The guard does not find it,
+  exits 0, and reads 26 lines over the four old modules. Its search pattern
+  needs the closing `)` on the opener line. AC1 promises every module whose
+  source defines `local function reset(`. This module does, and its unlisted
+  line passes. In a module that `CELLS` names, the same split is red, because
+  the module goes missing. Box left unticked.

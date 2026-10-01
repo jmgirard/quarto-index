@@ -23,7 +23,23 @@ report names which artifact moved — a `.tex`, an HTML page, or the warning
 stream. The unplanted tree is required to pass every pair first, or no failure
 below would be evidence of anything.
 
+Before any of that, the cell guard (M105) reads every module's reset from
+source. It fails on a reset line whose text is neither a CELLS statement for
+its module nor, in indexes.lua, one of the KEPT lines, naming the line. Where
+the reset starts and ends is Lua's answer, not this file's: Quarto's own Lua
+loads each module and reports the lines of the `reset` the module exports.
+The
+guard reads text, not count: a second copy of an allowed line passes it.
+plant() stops on a second copy of a CELLS statement when the probe runs, but
+it matches only CELLS statements, so a second copy of a KEPT line passes both. The suite runs the guard alone
+on every run, since it renders nothing.
+
 Usage:  python3 tests/stateprobe.py [cell-or-probe-name ...]
+        python3 tests/stateprobe.py --check-cells
+
+The guard reads the extension through tests/filtersrc.py, so QI_EXT_DIR points
+it at a copy. The probes plant and render the extension itself, and refuse to
+run while QI_EXT_DIR names anything else.
 
 Like tests/suitescan.py, this file is inside the set that file's checks read,
 so it spells neither the render command nor a rendered artifact's path out in
@@ -39,8 +55,12 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.insert(0, 'tests')
+import filtersrc
+
 FIXTURE_DIR = 'examples'
-MODULE_DIR = os.path.join('_extensions', 'index', 'modules')
+EXT_DIR = filtersrc.DEFAULT_EXT_DIR
+MODULE_DIR = os.path.join(EXT_DIR, 'modules')
 RENDER = ['quarto', 'render']
 
 # (fixture stem, Quarto format, artifact extension). Ordered cheapest-first:
@@ -89,6 +109,20 @@ CELLS = [
 INDEXES_RESTORES = [statement for _, module, statement in CELLS
                     if module == 'indexes']
 
+# The lines of indexes.lua's reset that restore no cell, and which the
+# reset:indexes probe keeps: the two installing the unnamed index, and the
+# `read(doc.meta)` call with the `if` around it. Each is matched stripped, as
+# reset_body's lines are.
+KEPT = [
+    'order[1] = UNNAMED',
+    'titles[UNNAMED] = DEFAULT_TITLE',
+    'if doc ~= nil then',
+    'read(doc.meta)',
+    'end',
+]
+
+RESET_OPENER = 'local function reset('
+
 # The cells whose reset cannot be load-bearing, and why. Each is probed like
 # every other; its PASSING is what the criterion records.
 EXEMPT = {
@@ -109,23 +143,256 @@ def module_path(name):
     return os.path.join(MODULE_DIR, name + '.lua')
 
 
-def reset_body(lines):
-    """The 0-based line numbers of the statements inside `reset`."""
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip().startswith('local function reset('):
-            start = i
-            break
-    if start is None:
-        raise SystemExit('no reset function found')
+class ResetShape(Exception):
+    """A reset the reader cannot delimit. The message names module and line."""
+
+
+LONG_OPEN = re.compile(r'\[(=*)\[')
+OPENER = re.compile(r'\s*local\s+function\s+reset\s*\([^)]*\)')
+
+# Run by Quarto's own Lua with the modules directory and module names as
+# arguments. For each name it prints the name, then either the source and the
+# first and last line of the `reset` function the module exports, or why there
+# is none. Lua's parser answers where the function ends, so a comment, a
+# string, or an `end` at any column cannot move that answer.
+BOUNDS_LUA = r'''
+local dir = arg[1]
+package.path = dir .. "/?.lua;" .. package.path
+for i = 2, #arg do
+  local name = arg[i]
+  local ok, m = pcall(require, "./" .. name)
+  if not ok then
+    print(name .. "\terror\t" .. (tostring(m):gsub("%s+", " ")))
+  elseif type(m) ~= "table" or type(m.reset) ~= "function" then
+    print(name .. "\tnone")
+  else
+    local info = debug.getinfo(m.reset, "S")
+    print(table.concat({name, "found", info.source,
+                        info.linedefined, info.lastlinedefined}, "\t"))
+  end
+end
+'''
+
+
+def lua_code(lines, start):
+    """(index, code) for each line from `start`: the line with its comments
+    removed and each string literal replaced by `""`.
+
+    A long comment or long string (`--[[ ]]`, `[==[ ]==]`) may span lines, and
+    so may a short string whose line ends in a backslash; a line wholly inside
+    one has no code. Read from the file's first line, so that a line inside a
+    comment is known to be one.
+    """
+    long_close = None
+    in_comment = False
+    quote = None
+    for i in range(start, len(lines)):
+        line = lines[i]
+        code = []
+        pos = 0
+        if quote is not None:
+            pos, quote = short_string(line, 0, quote)
+        while pos < len(line):
+            if long_close is not None:
+                close = line.find(long_close, pos)
+                if close < 0:
+                    break
+                pos = close + len(long_close)
+                if not in_comment:
+                    code.append('""')
+                long_close = None
+                continue
+            if line.startswith('--', pos):
+                m = LONG_OPEN.match(line, pos + 2)
+                if not m:
+                    break
+                long_close, in_comment = ']' + m.group(1) + ']', True
+                pos = m.end()
+                continue
+            m = LONG_OPEN.match(line, pos)
+            if m:
+                long_close, in_comment = ']' + m.group(1) + ']', False
+                pos = m.end()
+                continue
+            if line[pos] in '"\'':
+                pos, quote = short_string(line, pos + 1, line[pos])
+                code.append('""')
+                continue
+            code.append(line[pos])
+            pos += 1
+        yield i, ''.join(code)
+
+
+def short_string(line, pos, quote):
+    """Where a short string opened before `pos` ends: (the position after it,
+    the quote still open on the next line or None). A backslash ending the
+    line continues the string there, as Lua reads it."""
+    while pos < len(line):
+        if line[pos] == '\\':
+            if pos + 1 == len(line):
+                return len(line), quote
+            pos += 2
+        elif line[pos] == quote:
+            return pos + 1, None
+        else:
+            pos += 1
+    return len(line), None
+
+
+def opener_rows(codes):
+    """The 0-based rows whose code opens with `local function reset(`."""
+    return [i for i, code in enumerate(codes) if OPENER.match(code)]
+
+
+def lua_bounds(module_dir, names):
+    """{name: (source path, first line, last line)} for the `reset` each named
+    module exports, 1-based, as Quarto's Lua reads it; or {name: reason}
+    where it exports none or does not load."""
+    with tempfile.NamedTemporaryFile('w', suffix='.lua', delete=False) as f:
+        f.write(BOUNDS_LUA)
+    try:
+        run = subprocess.run(['quarto', 'pandoc', 'lua', f.name,
+                              os.path.abspath(module_dir)] + names,
+                             capture_output=True, text=True)
+    finally:
+        os.unlink(f.name)
+    if run.returncode != 0:
+        raise SystemExit('FAIL: cell guard: Quarto\'s Lua did not run (exit %d): '
+                         '%s' % (run.returncode, run.stderr.strip()))
+    out = {}
+    for row in run.stdout.splitlines():
+        cols = row.split('\t')
+        if len(cols) == 5 and cols[1] == 'found':
+            out[cols[0]] = (cols[2][1:], int(cols[3]), int(cols[4]))
+        elif len(cols) >= 2:
+            out[cols[0]] = ('it does not load: ' + cols[2] if cols[1] == 'error'
+                            else 'it exports no reset function as M.reset')
+    for name in names:
+        if name not in out:
+            raise SystemExit('FAIL: cell guard: Quarto\'s Lua printed nothing '
+                             'for %s.lua: %r' % (name, run.stdout))
+    return out
+
+
+def reset_body(name, path, lines, bound):
+    """The 0-based line numbers of the code lines inside `name`'s reset.
+
+    `bound` is lua_bounds's answer for the module. The module must have one
+    `local function reset(` line outside comments, and it must open the reset
+    the module exports. Between that line and the closing line, every line
+    with code is a body line. The opener line is one too when code follows
+    the parameter list, and the closing line when it holds more than `end`.
+    """
+    codes = [code for _, code in lua_code(lines, 0)]
+    rows = opener_rows(codes)
+    if len(rows) != 1:
+        raise ResetShape('%s.lua: %d lines open with %r outside comments '
+                         '(lines %s), and the guard reads one reset per module'
+                         % (name, len(rows), RESET_OPENER,
+                            ', '.join(str(r + 1) for r in rows) or 'none'))
+    if isinstance(bound, str):
+        raise ResetShape('%s.lua: a reset opens at line %d, but %s'
+                         % (name, rows[0] + 1, bound))
+    source, first, last = bound
+    if os.path.realpath(source) != os.path.realpath(path):
+        raise ResetShape('%s.lua: the reset it exports is defined in %s'
+                         % (name, source))
+    if first != rows[0] + 1:
+        raise ResetShape('%s.lua: a reset opens at line %d, but the reset it '
+                         'exports opens at line %d' % (name, rows[0] + 1, first))
     body = []
-    for j in range(start + 1, len(lines)):
-        if lines[j].rstrip() == 'end':
-            return body
-        text = lines[j].strip()
-        if text and not text.startswith('--'):
-            body.append(j)
-    raise SystemExit('unterminated reset function')
+    for i in range(first - 1, last):
+        code = codes[i]
+        if i == first - 1:
+            code = code[OPENER.match(code).end():]
+            if first == last:
+                code = re.sub(r'\bend\s*$', '', code)
+            if code.strip():
+                body.append(i)
+        elif i == last - 1:
+            if code.strip() != 'end':
+                body.append(i)
+        elif code.strip():
+            body.append(i)
+    return body
+
+
+def reset_lines(name, lines):
+    """reset_body for the probes, where a reset it cannot read ends the run."""
+    path = module_path(name)
+    try:
+        bound = lua_bounds(MODULE_DIR, [name])[name]
+        return reset_body(name, path, lines, bound)
+    except ResetShape as e:
+        raise SystemExit(str(e))
+
+
+def reset_modules():
+    """(name, path, lines) for each module under the extension's `modules/`
+    with a `local function reset(` line outside comments, read through
+    filtersrc so QI_EXT_DIR can name a copy."""
+    root = os.path.join(filtersrc.ext_dir(), 'modules')
+    found = []
+    for path in filtersrc.sources():
+        rel = os.path.relpath(path, root)
+        if rel.startswith(os.pardir):
+            continue
+        lines = filtersrc.read(path).split('\n')
+        if opener_rows([code for _, code in lua_code(lines, 0)]):
+            found.append((rel[:-len('.lua')], path, lines))
+    return found
+
+
+def check_cells():
+    """Every reset line is a CELLS statement for its module, or a KEPT line.
+
+    A module is found by its `local function reset(` line outside comments,
+    never by name. A reset written in another form is not found. Every module
+    CELLS names must be among those found, which keeps the search from passing
+    on a tree where it found nothing to read. Quarto's Lua then says where
+    each found module's exported reset starts and ends.
+    """
+    found = reset_modules()
+    names = [name for name, _, _ in found]
+    missing = sorted({module for _, module, _ in CELLS} - set(names))
+    if missing:
+        print('FAIL: cell guard: no %r line under %s in %s, which CELLS names'
+              % (RESET_OPENER, os.path.join(filtersrc.ext_dir(), 'modules'),
+                 ', '.join(m + '.lua' for m in missing)),
+              file=sys.stderr)
+        return 1
+    bounds = lua_bounds(os.path.join(filtersrc.ext_dir(), 'modules'), names)
+    stray = []
+    lines_read = 0
+    for name, path, lines in found:
+        allowed = {statement for _, module, statement in CELLS
+                   if module == name}
+        if name == 'indexes':
+            allowed.update(KEPT)
+        try:
+            body = reset_body(name, path, lines, bounds[name])
+        except ResetShape as e:
+            print('FAIL: cell guard: %s' % e, file=sys.stderr)
+            return 1
+        for n in body:
+            lines_read += 1
+            if lines[n].strip() not in allowed:
+                stray.append('%s.lua line %d: <<%s>>'
+                             % (name, n + 1, lines[n].strip()))
+    # The domain before the verdict, so a red run says what it read too.
+    print('cell guard: read %d reset line(s) across %s'
+          % (lines_read, ', '.join(n + '.lua' for n in names)),
+          file=sys.stderr if stray else sys.stdout)
+    if stray:
+        print('FAIL: cell guard: these reset lines are neither a CELLS '
+              'statement for their module nor a KEPT line of indexes.lua, so '
+              'no probe would drop them alone:\n  ' + '\n  '.join(stray),
+              file=sys.stderr)
+        return 1
+    print('ok   cell guard: all %d reset line(s) across %s are a CELLS '
+          'statement for their module or a KEPT line of indexes.lua'
+          % (lines_read, ', '.join(n + '.lua' for n in names)))
+    return 0
 
 
 def plant(module, statements):
@@ -133,7 +400,7 @@ def plant(module, statements):
     path = module_path(module)
     original = open(path, encoding='utf-8').read()
     lines = original.split('\n')
-    body = reset_body(lines)
+    body = reset_lines(module, lines)
     drop = set()
     for want in statements:
         hit = [n for n in body if lines[n].strip() == want]
@@ -231,6 +498,16 @@ def probes():
 
 
 def main(argv):
+    if argv[1:2] == ['--check-cells']:
+        if len(argv) > 2:
+            raise SystemExit(__doc__)
+        return check_cells()
+    if os.path.realpath(filtersrc.ext_dir()) != os.path.realpath(EXT_DIR):
+        raise SystemExit('QI_EXT_DIR names %r, but the probes plant and render '
+                         '%r; unset it to run them'
+                         % (filtersrc.ext_dir(), EXT_DIR))
+    if check_cells() != 0:
+        return 1
     wanted = set(argv[1:])
     pats = warn_patterns()
     work = tempfile.mkdtemp(prefix='stateprobe-')
@@ -250,7 +527,7 @@ def main(argv):
             drop = statements
             if drop is None:
                 lines = open(module_path(module), encoding='utf-8').read().split('\n')
-                drop = [lines[n].strip() for n in reset_body(lines)]
+                drop = [lines[n].strip() for n in reset_lines(module, lines)]
             original = plant(module, drop)
             try:
                 moved = sweep(pats, work)

@@ -8957,10 +8957,11 @@ for M061_PASS in one two; do
   # wrote `mullion-passage` on a mark inside a `##` heading, and the render
   # moves the id out of the heading into the section Quarto wraps it in. The
   # sweep above passes wherever on four.html the id sits once, so this is what
-  # says it left the heading and stayed in the section.
+  # says it left the heading and stayed in the section. The two tags are the
+  # shape a `##` heading renders to, a `<section>` holding an `<h2>` (M105).
   python3 tests/fragments.py outside-heading \
       "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/four.html" \
-      a-mullion-in-a-heading mullion-passage \
+      section h2 a-mullion-in-a-heading mullion-passage \
     || fail "M095-AC3 (render $M061_PASS: mullion-passage sits once in its heading's section and outside the heading; tests/fragments.py's own FAIL line is above)"
   # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
   # that states WHERE each locator points and what each cross-reference names.
@@ -9003,15 +9004,18 @@ pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would 
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M095-AC3 — the heading-mark check against three copies of four.html, each
-  # with `mullion-passage` MOVED rather than copied, since a copy fails the
-  # once-on-the-page clause before containment is read. Onto the `<h2>`, which
-  # a reader counting only a container's descendants would miss. Into the
-  # `<h2>`, the shape the render moves the id out of. Out of the section.
+  # M095-AC3 — the heading-mark check against five copies of four.html. In
+  # three, `mullion-passage` is MOVED rather than copied, since a copy fails
+  # the once-on-the-page clause before containment is read. Onto the `<h2>`,
+  # which a reader counting only a container's descendants would miss. Into
+  # the `<h2>`, the shape the render moves the id out of. Out of the section.
+  # In the other two the id stays where it is (M105-AC3): the section's
+  # opening and closing tags are renamed to `div`, and its heading's to `h3`,
+  # so the check is shown to read both tags the call names.
   # -------------------------------------------------------------------------
   M095_FOUR="$CAPTURE_ROOT/place-blocked-one/_book/four.html"
   if ! python3 - "$M095_FOUR" "$WORK" <<'M095PLANTPY'
-import os, sys
+import os, re, sys
 page, work = sys.argv[1:3]
 src = open(page, encoding='utf-8').read()
 span = '<span id="mullion-passage"></span>'
@@ -9029,31 +9033,84 @@ plants = {
     'into': base[:h2_end + 1] + span + base[h2_end + 1:],
     'out': base[:start] + span + base[start:],
 }
+
+
+def rename(text, open_at, tag, new):
+    """`text` with the element opening at `open_at` and its matching closing
+    tag renamed from `tag` to `new`, counting nested elements of that tag."""
+    if not re.match(r'<' + tag + r'[\s>]', text[open_at:]):
+        sys.exit(f'FAIL: M105-AC3 self-test: the plant was built wrong: offset '
+                 f'{open_at} of {page} opens no <{tag}> element')
+    depth, at = 0, open_at
+    while True:
+        opens = text.find('<' + tag, at)
+        closes = text.find('</' + tag + '>', at)
+        if closes < 0:
+            sys.exit(f'FAIL: M105-AC3 self-test: no closing </{tag}> for the '
+                     f'element opening at offset {open_at}')
+        if 0 <= opens < closes:
+            depth, at = depth + 1, opens + 1
+            continue
+        depth -= 1
+        if depth == 0:
+            break
+        at = closes + 1
+    out = (text[:open_at] + '<' + new + text[open_at + 1 + len(tag):closes]
+           + '</' + new + '>' + text[closes + 3 + len(tag):])
+    if out == text or out.count('<' + new) != text.count('<' + new) + 1:
+        sys.exit(f'FAIL: M105-AC3 self-test: renaming <{tag}> to <{new}> did '
+                 f'not change exactly one element of {page}')
+    return out
+
+
+at = src.index(section)
+heading_at = src.index('<h2', at)
+# The <h2> renamed must be the section's first heading child, the one the
+# check reads: nothing that could hold or be a heading opens before it.
+if re.search(r'<(?:h[1-6]|section)[\s>]', src[src.index('>', at) + 1:heading_at]):
+    sys.exit(f'FAIL: M105-AC3 self-test: the plant was built wrong: a heading '
+             f'or a section opens in {page} between the section and its first '
+             f'<h2>, so that <h2> may not be the heading the check reads')
+plants['div'] = rename(src, at, 'section', 'div')
+plants['h3'] = rename(src, heading_at, 'h2', 'h3')
 for name, text in plants.items():
     with open(os.path.join(work, f'm095-four-{name}.html'), 'w',
               encoding='utf-8') as out:
         out.write(text)
-print(f'ok   M095-AC3 self-test: three heading-mark plants built from {page}')
+print(f'ok   M095-AC3 self-test: five heading-mark plants built from {page}')
 M095PLANTPY
   then
     fail "M095-AC3 self-test: the heading-mark plants could not be built (their own FAIL line is above)"
   fi
-  for M095_PLANT in "onto:sits on or within the <h2> heading" \
-                    "into:sits on or within the <h2> heading" \
-                    "out:sits outside the element"; do
+  for M095_PLANT in "onto:'mullion-passage' sits on or within the <h2> heading" \
+                    "into:'mullion-passage' sits on or within the <h2> heading" \
+                    "out:'mullion-passage' sits outside the element" \
+                    "div:is a <div>, want <section>" \
+                    "h3:is a <h3>, want <h2>"; do
     M095_NAME="${M095_PLANT%%:*}"
     M095_WANT="${M095_PLANT#*:}"
     if M095_OUT=$(python3 tests/fragments.py outside-heading \
                     "$WORK/m095-four-$M095_NAME.html" \
-                    a-mullion-in-a-heading mullion-passage 2>&1); then
-      fail "M095-AC3 self-test: the heading-mark check passed on four.html with mullion-passage moved $M095_NAME"
+                    section h2 a-mullion-in-a-heading mullion-passage 2>&1); then
+      fail "M095-AC3 self-test: the heading-mark check passed on the $M095_NAME plant of four.html"
     fi
     case "$M095_OUT" in
-      *"'mullion-passage' $M095_WANT"*) : ;;
-      *) fail "M095-AC3 self-test: the heading-mark check failed with mullion-passage moved $M095_NAME, but not by saying it $M095_WANT (<<$M095_OUT>>)" ;;
+      *"$M095_WANT"*) : ;;
+      *) fail "M095-AC3 self-test: the heading-mark check failed on the $M095_NAME plant of four.html, but not by saying <<$M095_WANT>> (<<$M095_OUT>>)" ;;
     esac
   done
-  pass "M095-AC3 self-test: the heading-mark check is red on four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
+  # The same two copies pass when the call names the tags they now carry, so
+  # the tags the check holds the page to are the call's and not built in.
+  for M095_PLANT in "div:div h2" "h3:section h3"; do
+    M095_NAME="${M095_PLANT%%:*}"
+    # shellcheck disable=SC2086
+    python3 tests/fragments.py outside-heading \
+        "$WORK/m095-four-$M095_NAME.html" \
+        ${M095_PLANT#*:} a-mullion-in-a-heading mullion-passage > /dev/null \
+      || fail "M105-AC3 self-test: the heading-mark check is red on the $M095_NAME plant of four.html called with the tags it carries, ${M095_PLANT#*:}"
+  done
+  pass "M095-AC3 self-test: the heading-mark check is red on the three copies of four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
+  pass "M105-AC3 self-test: the heading-mark check is red on four.html with its section renamed to a div and with its heading renamed to an h3, each time naming the tag it found, and green on each copy called with the tags it carries"
 
   # -------------------------------------------------------------------------
   # M063 T7 — the same held store path against a copy of the tree whose only
@@ -11365,6 +11422,40 @@ HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
 check_entry_locators "$CAPTURE_ROOT/place-oldstore/_book/index.html" \
   "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
   "M095-AC3 (an upgraded store: Bramble links by the anchor two.qmd's record carries)"
+if [ "${1:-}" = "--self-test" ]; then
+  # M105-AC2: the Bramble check against a copy of this same page, first
+  # unchanged and then with Bramble's href alone losing its anchor — the value
+  # a record route dropping the anchor would print. One substitution, and the
+  # page carries that href at exactly one site before it and at none after.
+  M105_BRAMBLE="$WORK/m105-bramble-index.html"
+  M105_PAGE="$CAPTURE_ROOT/place-oldstore/_book/index.html"
+  cp "$M105_PAGE" "$M105_BRAMBLE"
+  check_entry_locators "$M105_BRAMBLE" "$HTML_SECTION_ID-alpha" Bramble \
+    "two.html#qi-mark-1" "M105-AC2 self-test (an unchanged copy of the page)" \
+    || fail "M105-AC2 self-test: the Bramble check is red on an unchanged copy of the page, so a red below would be the copy and not the href planted in it"
+  # perl, not sed: GNU sed adds a final newline a page may lack, and the byte
+  # count below would then read that as a second change.
+  perl -pe 's|href="two\.html#qi-mark-1"|href="two.html"|' "$M105_PAGE" > "$M105_BRAMBLE"
+  M105_BEFORE=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_PAGE" || true; } | wc -l | tr -d ' ')
+  M105_AFTER=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_BRAMBLE" || true; } | wc -l | tr -d ' ')
+  [ "$M105_BEFORE" = "1" ] && [ "$M105_AFTER" = "0" ] \
+    || fail "M105-AC2 self-test: the page carries Bramble's anchored href at $M105_BEFORE site(s) before the plant and $M105_AFTER after, want 1 and 0, so the plant did not change exactly one site"
+  # Nothing else changes: one line differs, and the copy is shorter by the 10
+  # bytes of `#qi-mark-1` alone, so no newline or other byte was added.
+  M105_LINES=$( { diff "$M105_PAGE" "$M105_BRAMBLE" || true; } | grep -c '^<' || true)
+  M105_SHRANK=$(( $(wc -c < "$M105_PAGE") - $(wc -c < "$M105_BRAMBLE") ))
+  [ "$M105_LINES" = "1" ] && [ "$M105_SHRANK" = "10" ] \
+    || fail "M105-AC2 self-test: the planted copy differs from the page on $M105_LINES line(s) and is $M105_SHRANK byte(s) shorter, want 1 and 10, so the plant changed more than the href"
+  if M105_OUT=$( ( check_entry_locators "$M105_BRAMBLE" "$HTML_SECTION_ID-alpha" \
+                     Bramble "two.html#qi-mark-1" "M105-AC2 probe" ) 2>&1 ); then
+    fail "M105-AC2 self-test: the Bramble check passed on a copy of the page whose Bramble links to two.html alone"
+  fi
+  case "$M105_OUT" in
+    *"'Bramble' links to <<two.html>>"*) : ;;
+    *) fail "M105-AC2 self-test: the Bramble check failed on the planted copy, but not by naming the href it read (<<$M105_OUT>>)" ;;
+  esac
+  pass "M105-AC2 self-test: the Bramble check is green on an unchanged copy of the page and red on one whose Bramble href alone loses its anchor, naming two.html"
+fi
 pass "M063-AC2: over a store whose records all stand at the current version and carry the three fields this milestone retired — one of them holding a value the superseded validator would have refused — a whole-book render prints the same sections and every one of the terms the fixture marks, and the book's last chapter reading those records on its own says nothing at all"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -11427,18 +11518,7 @@ MANIFEST
   check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
     "$HTML_SECTION_ID-alpha" Bramble "two.html" \
     "M063 T2 self-test (the refused record's chapter is recovered from its source, so its locator loses the anchor the record carried)"
-  # M095-AC3's Bramble check against this render, where Bramble's href lost
-  # the anchor: the plant that changes the href that check reads.
-  if M095_OUT=$( ( check_entry_locators "$CAPTURE_ROOT/m063-refuseold/_book/index.html" \
-                     "$HTML_SECTION_ID-alpha" Bramble "two.html#qi-mark-1" \
-                     "M095-AC3 probe" ) 2>&1 ); then
-    fail "M095-AC3 self-test: the Bramble check passed on a render whose Bramble links to two.html alone"
-  fi
-  case "$M095_OUT" in
-    *"'Bramble' links to <<two.html>>"*) : ;;
-    *) fail "M095-AC3 self-test: the Bramble check failed on the refused-record render, but not by naming the href it read (<<$M095_OUT>>)" ;;
-  esac
-  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do, and the M095-AC3 check that the run above links it by the record's anchor is red here, naming the anchorless href"
+  pass "M063 T2 self-test: with a retired field policed again and nothing else changed, the same planted store has two.qmd's record refused — \`Bramble\` is read back out of that chapter's source and links to its page alone — which is what a validator that ignores a field nothing reads does not do"
 fi
 
 # Back to a store every record of which was written by the chapter it belongs
@@ -17747,6 +17827,79 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # which fixture each cell actually moves is that script's own output.
 # ---------------------------------------------------------------------------
 section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
+# M105-AC1: every line of every module's reset is a `CELLS` statement for that
+# module or one of the lines indexes.lua's reset keeps. The guard compares
+# text, so a line it passes has a per-cell probe or is kept, and a second copy
+# of such a line passes too. plant() stops on a second copy of a CELLS
+# statement when the probe runs, and on no copy of a kept line. The
+# probe itself renders and runs by hand; this guard renders nothing and runs
+# here on every run.
+python3 tests/stateprobe.py --check-cells \
+  || fail "M105-AC1: the cell guard failed (tests/stateprobe.py's own FAIL line above names the module and the cause)"
+pass "M105-AC1: every module's reset holds only CELLS statements and indexes.lua's kept lines"
+if [ "${1:-}" = "--self-test" ]; then
+  # The guard against copies of the extension, read through QI_EXT_DIR. Each
+  # plant is one substitution in indexes.lua's reset, asserted to change the
+  # file. The unplanted copy runs first, so a red below is a plant and not the
+  # copy, and the block-comment copy shows a commented-out line stays silent.
+  M105_EXT="$WORK/m105-ext"
+  m105_copy() {
+    rm -rf "$M105_EXT"
+    cp -R _extensions/index "$M105_EXT"
+    [ -n "$1" ] || return 0
+    perl -0pi -e "$1" "$M105_EXT/modules/indexes.lua"
+    if cmp -s "$M105_EXT/modules/indexes.lua" _extensions/index/modules/indexes.lua; then
+      fail "M105-AC1 self-test: the plant <<$1>> changed nothing in indexes.lua, so the case below is about the unplanted reset"
+    fi
+  }
+  m105_green() {
+    m105_copy "$1"
+    QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells > /dev/null \
+      || fail "M105-AC1 self-test: the guard is red on a copy of the extension $2"
+  }
+  m105_red() {
+    m105_copy "$1"
+    if M105_OUT=$(QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells 2>&1); then
+      fail "M105-AC1 self-test: the guard passed on a copy whose indexes.lua reset $3"
+    fi
+    # The red run states what it read, over all four modules (LESSONS M45).
+    printf '%s\n' "$M105_OUT" \
+      | grep -Eq '^cell guard: read [1-9][0-9]* reset line\(s\) across indexes\.lua, latex\.lua, marks\.lua, sortkeys\.lua$' \
+      || fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua reset $3, but no line states the reset lines it read across the four modules (<<$M105_OUT>>)"
+    # One report line must name indexes.lua and the planted line whole.
+    printf '%s\n' "$M105_OUT" \
+      | awk -v want=": <<$2>>" 'index($0, "  indexes.lua line ") == 1 && substr($0, length($0) - length(want) + 1) == want { hit = 1 } END { exit !hit }' \
+      || fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua reset $3, but no report line names indexes.lua and <<$2>> (<<$M105_OUT>>)"
+  }
+  m105_green '' "with nothing planted, so a red below would be the copy"
+  m105_green 's/^  declared = false\n/  declared = false\n  --[[\n  qi_core.empty(commented_out)\n  ]]\n/m' \
+    "whose indexes.lua reset holds a block comment, whose lines are no statements"
+  m105_red 's/^  declared = false\n/  declared = false\n  qi_core.empty(planted_cell)\n/m' \
+    "qi_core.empty(planted_cell)" "gains a line no CELLS row names"
+  m105_red 's/^    read\(doc\.meta\)\n  end\nend\n/    read(doc.meta)\nend\n  qi_core.empty(planted_after)\nend\n/m' \
+    "qi_core.empty(planted_after)" "closes its if block with an end at column 0 and gains a line after it"
+  # A commented-out copy of the opener above the real one: a reader that took
+  # the first opener it met would read the copy's empty body and pass.
+  # A line after a block comment: a reader that took the comment's opening for
+  # the reset's end would pass the copy above and this one alike.
+  m105_red 's/^  declared = false\n/  declared = false\n  --[[\n  qi_core.empty(commented_out)\n  ]]\n  qi_core.empty(planted_after_comment)\n/m' \
+    "qi_core.empty(planted_after_comment)" "gains a line after a block comment"
+  m105_red 's/^local function reset\(doc\)\n/--[[\nlocal function reset(doc)\nend\n]]\nlocal function reset(doc)\n  qi_core.empty(planted_hidden)\n/m' \
+    "qi_core.empty(planted_hidden)" "follows a commented-out copy of its opener and gains a line"
+  m105_red 's/^local function reset\(doc\)\n/local function reset(doc) qi_core.empty(planted_opener)\n/m' \
+    "local function reset(doc) qi_core.empty(planted_opener)" "gains a statement on its opener line"
+  # A second definition after the first: Lua exports the later one, so the
+  # guard refuses to choose and names both opener lines.
+  m105_copy 's/^(    read\(doc\.meta\)\n  end\nend\n)/$1local function reset(doc)\n  qi_core.empty(planted_second)\nend\n/m'
+  if M105_OUT=$(QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells 2>&1); then
+    fail "M105-AC1 self-test: the guard passed on a copy whose indexes.lua defines reset twice"
+  fi
+  case "$M105_OUT" in
+    *"FAIL: cell guard: indexes.lua: 2 lines open with 'local function reset(' outside comments (lines "*) ;;
+    *) fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua defines reset twice, but not naming the two opener lines (<<$M105_OUT>>)" ;;
+  esac
+  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the extension and on one whose indexes.lua reset holds a block comment, and red, naming the line, on one whose reset gains a line, on one where that line follows an inner end at column 0, on one where it follows a block comment, on one where it follows a commented-out copy of the opener, and on one with a statement on the opener line, and red naming both openers on one that defines reset twice"
+fi
 state_reuse_pair() {
   local stem="$1" fmt="$2" ext="$3" want="$4" v
   for v in 1 0; do

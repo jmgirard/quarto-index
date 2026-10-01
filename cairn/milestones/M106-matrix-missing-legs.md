@@ -93,7 +93,7 @@ to M102. KI112 and KI113 close.
 
 ## Tasks
 
-- [ ] T1: Move three manifests to tracked files. `M49_PDF_ENTRIES`
+- [x] T1: Move three manifests to tracked files. `M49_PDF_ENTRIES`
       (`tests/run-tests.sh:19041`) goes to
       `tests/named-indexes-pdf-entries.txt`. `M49_PDF_CELLS` (`:19066`) goes
       to `tests/named-indexes-pdf-cells.txt`. `BOOK_EPUB_INDEX` (`:24225`)
@@ -140,6 +140,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: implement started on branch m106-matrix-missing-legs. Question gate: T1 makes one docstring sentence of `tests/epubcheck.py` false, and the user chose a comment-only edit to it. Scope Out's reader-module clause is read as code changes.
 - 2026-10-01: T1 checkpoint, not done: three manifests moved to tracked files and the suite repointed. The `--self-test` run is in progress.
 - 2026-10-01: the first T1 suite run stopped at check 138 on the D-030 PyYAML guard. The `python3` on PATH is now `/usr/local/bin/python3` 3.14.6, which has no PyYAML. The re-run puts a scratch `python3` link to `/usr/bin/python3` (3.9.6, with PyYAML) first on PATH. Nothing is installed.
+- 2026-10-01: T1 done. The three tracked files equal the heredoc output (`cmp`). `--self-test` passed, 1738 checks. M49-AC1, M49-AC2, M52-AC3 and the 11 namedpdf plants read the tracked files.
 
 ## Decisions
 

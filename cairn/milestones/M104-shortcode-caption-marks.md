@@ -85,7 +85,7 @@ and removes KI299.
 
 ## Tasks
 
-- [ ] T1: Add the case after the hazel case of `examples/figure-marks.qmd`.
+- [x] T1: Add the case after the hazel case of `examples/figure-marks.qmd`.
       The hazel case gains a page break, and the fixture then carries seven.
       No new term holds `fi` (M30 lesson). Derive every manifest row by hand
       from the source, with its derivation comment (check-design M06). Update
@@ -104,7 +104,7 @@ and removes KI299.
       and the matrix stay as they are. Record in the work log, per format,
       which check is red on main: LaTeX can merge two locators on one page,
       so the PDF manifest can stay green there.
-- [ ] T2: In `declass_caption_copies`, replace the `image.caption ~=
+- [x] T2: In `declass_caption_copies`, replace the `image.caption ~=
       caption.content` test (`marks.lua:647`). Compare the two lists after a
       walk at every depth drops `__quarto_custom_id` from each span that
       carries `__quarto_custom`. Update the function's comment. Add a
@@ -126,3 +126,4 @@ and removes KI299.
 - 2026-10-01: plan gate chose to drop `__quarto_custom_id` before comparing over comparing plain text (it counts any alt text with the same words as a copy) and over reading Quarto's custom-node store (an internal table that can move between versions); falsified by a Quarto version whose caption and copy differ in more than that id, or by an author-written alt text that differs from its figure's caption only in which shortcode it holds.
 - 2026-10-01: implement started on branch m104-shortcode-caption-marks; question gate skipped, nothing left open by the plan.
 - 2026-10-01: checkpoint, T1 and T2 written and unticked: the suite with --self-test is running and has not yet passed. On the unchanged extension (Quarto 1.10.18, scratch render) the new case is red on the log check in all four formats, the HTML and EPUB manifests (two links each for juniper and larch) and the HTML and EPUB link checks (qi-mark-9, qi-mark-10 dangling); the PDF and Typst manifests are green, since both merge the copy's same-page locator.
+- 2026-10-01: T1, T2 done. `tests/run-tests.sh --self-test` passed, 1732 checks. The custom-id plant is red on the log check in all four formats, with one report of the second opening of larch's range in each. The no-declass plant's cedar count still holds. A native dump on Quarto 1.10.18 showed the caption and copy differ only in `__quarto_custom_id` and each shortcode span is empty, so the code comment states that two shortcodes of one type compare equal and why that is safe.

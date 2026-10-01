@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M104: A caption mark beside a shortcode files one locator
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -116,7 +116,7 @@ and removes KI299.
 - [x] T3: Dispatch `.github/workflows/versions.yml` on the branch. Record each
       leg's result in the work log. A red result on the release leg alone
       becomes a Known issue (D-025), not a failed criterion.
-- [ ] T4: Edit `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md` as AC5
+- [x] T4: Edit `site/syntax.qmd`, `CHANGELOG.md` and `cairn/DESIGN.md` as AC5
       states.
 
 ## Work log
@@ -130,3 +130,6 @@ and removes KI299.
 - 2026-10-01: T3 started. The branch is pushed and `versions.yml` is dispatched as run 36878545802, which is not finished.
 - 2026-10-01: checkpoint, T4 written and unticked. The suite with --self-test is running again over the T4 edits.
 - 2026-10-01: T3 done. Dispatched run 36878545802 on 5595c5e is green in all eight jobs. On the floor leg (1.5.52) and the release leg, the figure-marks HTML index matches the pinned leg's byte for byte, 17 rows. The PDF jobs on the floor, pinned and release legs read the 8 lines of `tests/figure-marks-pdf.txt` and the 16 lines of `tests/figure-marks-typst.tsv`.
+- 2026-10-01: T4 done. The exception sentences in `site/syntax.qmd`, the CHANGELOG's still-files-twice sentence and KI299 are removed. The DESIGN Architecture paragraph states the custom-id drop and why it is safe. `tests/run-tests.sh --self-test` passed again, 1732 checks, and `cairn_validate` passed.
+- claim audit: 30 claims read, 0 corrected — _extensions/index/modules/marks.lua, tests/run-tests.sh, tests/figure-marks-pdf.txt, tests/figure-marks-typst.tsv, examples/figure-marks.qmd, site/syntax.qmd, CHANGELOG.md, .github/workflows/versions.yml
+- 2026-10-01: status set to review.

@@ -257,7 +257,10 @@ by the index a mark files in (corrected M38); and `index.lua` returns it as the 
 table's element functions. **A new accumulator joins its module's `reset` in
 the commit that adds it** — that is the convention, and `tests/stateprobe.py`
 is what holds the existing ones to it, removing each in turn and requiring a
-paired render to differ (corrected M26).
+paired render to differ (corrected M26). Its renders run by hand. Every suite
+run also runs the guard `tests/stateprobe.py --check-cells`. It requires each
+reset line to be a `CELLS` statement for its module or a line `indexes.lua`'s
+reset keeps, so a reset line with no `CELLS` row fails it (corrected M105).
 
 Without that, an accumulator lasts as long as the Lua state holding it. Nothing
 in Quarto reuses one today — it runs one pandoc process per document — so the
@@ -1880,28 +1883,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   mutant drew no write-failure report or drew one with the wrong cause. Its
   ERROR probe counts one `ERROR (` line and does not check that the line is
   four.qmd's. — M094 review F6
-- **KI284.** The `reset:indexes` whole-module probe in `tests/stateprobe.py`
-  builds its drop list from `CELLS` rather than from the reset body, as the
-  other three whole-module probes do, because it has to keep the two
-  installation lines and the `read` call. A seventh cell added to
-  `indexes.lua`'s `reset` and not to `CELLS` therefore gets no per-cell probe
-  and stays restored under the module probe, so both run green. — M095 review
-  F3
-- **KI285.** The `Bramble` check's negative control in `tests/run-tests.sh`
-  reuses the `m063-refuseold` capture rather than planting a changed href on
-  the page the check reads. It is red for the right reason today, but it shows
-  the check red on another page, not red on this one with this href moved.
-  — M095 review F7
-- **KI286.** `outside-heading` in `tests/fragments.py` requires the container
-  to carry the named id and to have some `h1`-`h6` as a direct child. It does
-  not require the container to be a `<section>` or the heading to be an `<h2>`,
-  which is the shape M095-AC3 names. A Quarto change to a `<div>` wrapper or a
-  different heading level would leave the check green on a page the criterion
-  no longer describes. — M095 review F8
-- **KI287.** The M26 leg's comment in `tests/run-tests.sh` stated a count of
-  cells and of the cells a fixture reaches. M095 replaced both with "some" and
-  "the cells its marks fill" rather than recomputing them, so the leg says less
-  about its own domain than it did. — M095 review F14
 - **KI288.** The retired-sentence sweep compares case-sensitively, where its
   sibling `phrase-absent` over the same domain folds case. A retired sentence
   restored with a different opening capital is caught by one of the two sweeps

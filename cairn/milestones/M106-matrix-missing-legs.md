@@ -103,14 +103,14 @@ to M102. KI112 and KI113 close.
       read. Move every site that reads the old `$WORK` copies: the M49 T9
       plants (`:19179-19217`) and the read of `$WORK/book-epub-index.txt` at
       `:24464`. Run `tests/run-tests.sh --self-test`.
-- [ ] T2: In the `pdf` job, add a step rendering
+- [x] T2: In the `pdf` job, add a step rendering
       `examples/named-indexes.qmd` to PDF. Add one step for
       `namedpdf.py entries` and one for `cells` after it. Put them before any
       later render that writes the same PDF path. Rewrite the job's "WHAT IT
       CHECKS" and "WHAT IT DELIBERATELY DOES NOT CHECK" paragraphs
       (`versions.yml:241-288`). Rewrite the book-extraction comment that
       calls a second declared index no part of the job.
-- [ ] T3: In the `render` job, after the upload step, add a step rendering
+- [x] T3: In the `render` job, after the upload step, add a step rendering
       the book to EPUB. Add a step after it running `epubcheck.py sections`
       and `links` on the EPUB under `examples/book/_book/` with `qi-index`.
       Rewrite the render-job comment (`versions.yml:137-160`) that says the
@@ -143,6 +143,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: T1 done. The three tracked files equal the heredoc output (`cmp`). `--self-test` passed, 1738 checks. M49-AC1, M49-AC2, M52-AC3 and the 11 namedpdf plants read the tracked files.
 - 2026-10-01: T2 checkpoint: the `pdf` job renders the two-index fixture and reads it in two steps, and its comments are rewritten. Both step commands pass on the suite's captured PDF. The suite run is shared with T3.
 - 2026-10-01: T3 checkpoint: the `render` job renders the book to EPUB after the upload and reads it with `epubcheck.py sections` and `links`. Both commands pass on the suite's captured EPUB. The suite run for T2 and T3 is in progress.
+- 2026-10-01: T2 and T3 done. The suite passed, 898 checks, with the workflow edits in place.
 
 ## Decisions
 

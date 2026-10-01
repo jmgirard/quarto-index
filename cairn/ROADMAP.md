@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M103 | The two site-check clauses M46 withdrew hold again | planned | — | normal | milestones/M103-site-check-clauses.md |
+| M103 | The two site-check clauses M46 withdrew hold again | in-progress | — | normal | milestones/M103-site-check-clauses.md |
 | M102 | The figure-marks checks run on every matrix leg, each shown able to fail | done | — | normal | milestones/archive/M102-figure-marks-checks.md |
 | M101 | A mark in a figure caption or an image's alt text files one locator | done | — | normal | milestones/archive/M101-figure-caption-marks.md |
 | M100 | A Typst index orders locators by the number the page prints | done | — | low | milestones/archive/M100-typst-locator-order.md |

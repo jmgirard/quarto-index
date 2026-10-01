@@ -18,13 +18,16 @@
       scheme, whatever that scheme is.
 
       The path part is percent-DECODED before it is compared: `%20` is a space
-      on disk, not two characters of a filename. Resolution is confined to the
-      captured directory, so a path normalizing outside it is a failure and
-      never a file read from somewhere the render never wrote. With a BASE PATH
-      given, a root-relative link must carry that segment: the site is served
-      under it, so `/syntax.html` 404s in production however well it resolves
-      against the capture root. With no base path given there is no segment to
-      require and a root-relative link resolves against that root (M46).
+      on disk, not two characters of a filename. The path resolves only if
+      its normalized form, or that form joined with `index.html`, is a regular
+      file that one walk of the capture lists. The walk follows no symlink, so
+      a path that leaves the capture or passes through a symlink is a failure
+      and never a file read from somewhere the render never wrote (M103). With
+      a BASE PATH given, a root-relative link must carry that segment once
+      normalized: the site is served under it, so `/syntax.html` 404s in
+      production however well it resolves against the capture root. With no
+      base path given there is no segment to require and a root-relative link
+      resolves against that root (M46).
 
   headings <old-readme> <new-readme> <site-dir> [overlay]
       Every `##`/`###` heading the old README carried, other than the three the
@@ -96,7 +99,9 @@ Exits non-zero with a `FAIL:` line naming what it found.
 
 import html
 import os
+import posixpath
 import re
+import stat
 import subprocess
 import sys
 import urllib.parse
@@ -238,27 +243,41 @@ class Page(HTMLParser):
             self.hrefs.append(attr['href'])
 
 
-def check_links(captured, base_path=''):
-    base = base_path.strip('/')
-    pages = {}
+def captured_files(captured):
+    """Every regular file in the capture, as a path relative to it.
+
+    One `os.walk`, which does not descend into a directory symlink, and each
+    entry it lists is kept only if `lstat` reads it as a regular file, so a
+    symlink to a file is left out too. The set is the whole of what a link may
+    resolve to (M103). A path built from `..` segments or through a symlink is
+    not in it, however the file system would resolve that path. M46 confined
+    resolution with a containment test over resolved paths instead, and that
+    test let a link through four times.
+    """
+    found = set()
     for root, _dirs, files in os.walk(captured):
         for name in files:
-            if not name.endswith('.html'):
-                continue
             full = os.path.join(root, name)
-            parser = Page()
-            parser.feed(open(full, encoding='utf-8', errors='replace').read())
-            pages[os.path.relpath(full, captured)] = parser
+            if stat.S_ISREG(os.lstat(full).st_mode):
+                found.add(os.path.relpath(full, captured))
+    return found
+
+
+def check_links(captured, base_path=''):
+    base = base_path.strip('/')
+    files = captured_files(captured)
+    pages = {}
+    for rel in sorted(files):
+        if not rel.endswith('.html'):
+            continue
+        parser = Page()
+        parser.feed(open(os.path.join(captured, rel), encoding='utf-8',
+                         errors='replace').read())
+        pages[rel] = parser
     if not pages:
         return fail(f'{captured} holds no rendered page at all, so the link '
                     f'check would sweep nothing')
 
-    root = os.path.abspath(captured)
-    # The containment test below compares resolved paths, so the root it
-    # compares against is resolved too: on a checkout reached through a
-    # symlinked parent (`/tmp` -> `/private/tmp`) an unresolved root would
-    # make every link inside the capture read as an escape.
-    real_root = os.path.realpath(root)
     bad = []
     swept = 0
     for rel, page in pages.items():
@@ -282,7 +301,12 @@ def check_links(captured, base_path=''):
                 # `os.path.join` discarded the capture root against the
                 # absolute path decoding produced (M46).
                 if path.startswith('/'):
+                    # Normalized BEFORE the base-segment test, so the test
+                    # reads the segment the link reaches and not the text it
+                    # opens with: `/./docs/x.html` carries the segment and
+                    # `/docs/../x.html` does not (M103).
                     stripped = path.lstrip('/')
+                    stripped = posixpath.normpath(stripped) if stripped else ''
                     if base:
                         # The site is served UNDER the base path, so a
                         # root-relative link that does not carry that segment
@@ -298,43 +322,27 @@ def check_links(captured, base_path=''):
                                        f'and not a page of this site')
                             continue
                         stripped = stripped[len(base):].lstrip('/')
-                    target = os.path.normpath(stripped) if stripped else ''
+                    target = stripped
                 else:
-                    target = os.path.normpath(
-                        os.path.join(os.path.dirname(rel), path))
-                # Resolution is confined to the capture. `../../notes.html`
-                # leaves it, and joining that onto the captured root reads a
-                # file the render never produced — the check would then call a
-                # link resolved on the strength of something outside the site
-                # it is about (M46). The test is on the path the join actually
-                # reaches, not on the text of the target: a `..` sitting behind
-                # an existing segment (`/x/../../outside.html`) leaves no
-                # leading `../` for a textual test to match (M46).
-                on_disk = os.path.abspath(os.path.join(root, target))
-                # Both sides are resolved through their symlinks. `abspath`
-                # normalizes text only, so a link through a symlink that sits
-                # inside the capture and points above it reached a file
-                # outside the site while the textual test saw a path under
-                # the root (M46). `capture` copies with `cp -R`, which
-                # preserves a link the render wrote.
-                reached = os.path.realpath(on_disk)
-                if reached != real_root \
-                        and not reached.startswith(real_root + os.sep):
-                    bad.append(f'  {rel}: <<{href}>> resolves to {reached}, '
-                               f'which is outside the captured site under '
-                               f'{captured}')
-                    continue
-                if os.path.isdir(on_disk):
-                    target = os.path.join(target, 'index.html')
-                    on_disk = os.path.join(on_disk, 'index.html')
-                if not os.path.exists(on_disk):
+                    target = posixpath.normpath(
+                        posixpath.join(posixpath.dirname(rel), path))
+                # Resolution is a lookup in the set of files the walk listed,
+                # and nothing else reads the file system. A target that leaves
+                # the capture keeps a leading `..` after normalization, and one
+                # through a symlink names a path the walk never listed, so
+                # neither is in the set (M103). A directory link resolves to
+                # the `index.html` the walk listed inside it.
+                index = posixpath.normpath(posixpath.join(target, 'index.html'))
+                found = target if target in files \
+                    else index if index in files else None
+                if found is None:
                     bad.append(f'  {rel}: <<{href}>> names no file under '
                                f'{captured} (looked for {target})')
                     continue
-                if fragment and target in pages \
-                        and fragment not in pages[target].ids:
+                if fragment and found in pages \
+                        and fragment not in pages[found].ids:
                     bad.append(f'  {rel}: <<{href}>> names no element with '
-                               f'that id in {target}')
+                               f'that id in {found}')
             elif fragment:
                 if fragment not in page.ids:
                     bad.append(f'  {rel}: <<{href}>> names no element with '
@@ -594,6 +602,14 @@ def sweep_rows(rows, overlay=None, fold=False):
             text_read = open(source, encoding='utf-8').read()
         except OSError as exc:
             unreadable.append(f'  {path}: {exc.strerror}')
+            continue
+        # A page that does not decode is reported by name in the same way.
+        # The error is a ValueError and not an OSError, so until M103 it left
+        # the loop as a traceback that named no page and no sentence (D-029).
+        except UnicodeDecodeError as exc:
+            unreadable.append(f'  {path}: does not decode as UTF-8 (byte '
+                              f'{exc.object[exc.start]:#04x} at offset '
+                              f'{exc.start})')
             continue
         body = flatten(text_read)
         if fold:

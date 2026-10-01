@@ -772,13 +772,12 @@ stood between eighteen such sentence sets and the pages they were compared
 against until M46 retired it (D-027, D-028), taking fourteen of the sets with
 it. `tests/sitecheck.py` carries the website's own checks: the render writes a
 page for every tracked source; every link the site makes to its own content
-resolves — its path part percent-decoded, resolved against files inside the
-captured directory in every shape but one, a link naming a directory whose
-`index.html` symlinks above the capture, which the containment test does not
-reach because `index.html` is appended after it (M46 left that escape open and
-withdrew the criterion promising otherwise; the candidate row carries it), and,
-where a base path is given, required to carry that segment, since the site is
-served under it; README is still the short pointer;
+resolves — its path part percent-decoded and normalized, then looked up, as
+itself or joined with `index.html`, in the set of regular files one walk of the
+capture lists, so a path that leaves the capture or passes through a symlink
+names no file (M103, replacing the containment test M46 could not hold), and,
+where a base path is given, required to carry that segment once normalized,
+since the site is served under it; README is still the short pointer;
 and — for the migration itself, run against the merge base rather than standing
 in the suite — every moved heading landed and no prose was lost.
 
@@ -1240,8 +1239,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI151.** The gallery build carries a dead `has_pdf` parameter. — M41 review
 - **KI156.** `text=True` decodes a non-UTF-8 tracked path strictly. — M46
   review F21
-- **KI158.** The base-segment comparison runs before `os.path.normpath`, a
-  false report only. — M46 review F27
 - **KI241.** Three checks sweep what the whole run has accumulated rather than
   a domain they declare: M13's AC5 report scan globs every warning log under
   `$WORK`, M15's untouched-artifact comparison holds the whole capture root to
@@ -1507,15 +1504,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   review
 - **KI146.** A gallery plant helper discards its mutation's exit status. — M41
   review
-- **KI152.** The pre-release check's report clause — a `FAIL:` line naming the
-  offending file for every tracked page its domain admits — is unheld: a
-  non-UTF-8 byte still aborts before printing. The repair ships unpromised.
-  — M46 descope amendment, M46 review rounds 1-4
-- **KI153.** `tests/sitecheck.py links`' containment clause failed by four
-  mechanisms of one shape: unnormalized root-relative path, percent-encoded
-  absolute path, symlink inside the capture, and directory `index.html`
-  symlinked above it. The repair ships unpromised. — M46 descope amendment,
-  M46 review rounds 1-4
 - **KI155.** `DOMAIN_FLOOR = 11` in `tests/sitecheck.py` stands below the
   live domain, pinned by nothing. M096 kept it rather than invent a drift
   threshold (corrected M096: the constant was `FLOOR`, the domain 21). — M46

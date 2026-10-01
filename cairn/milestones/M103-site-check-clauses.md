@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M103: The two site-check clauses M46 withdrew hold again
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal, because it changes checks over the repo's own documentation site and no author-facing behavior
-- **Branch/PR:** —
+- **Branch/PR:** m103-site-check-clauses
 
 ## Goal
 
@@ -111,6 +111,9 @@ not decode as UTF-8, by name, where today it raises (KI152).
 - 2026-09-30: criteria audit (reduced mode, internal tier) returned three wording fixes, all made: the base-path escape moved to AC3, AC4 names the page on a report line rather than the `FAIL:` line, and T2 says the new plant fails against the old code. It also found the `linkinsidelink` plant, which the gate settled.
 - 2026-09-30: plan gate chose resolving links against the walked file set over patching the containment test in place, because the containment code failed four times in M46 and a fifth patch keeps its shape; falsified by a Quarto render that writes a symlink into the site.
 - 2026-09-30: plan gate chose failing on a non-UTF-8 page, by name, over sweeping it with bad bytes replaced, because a docs page with bad bytes is a defect in its own right; falsified by a tracked docs page that legitimately holds non-UTF-8 bytes.
+
+- 2026-10-01: implement started on branch m103-site-check-clauses. No question gate: the plan left no choice open.
+- 2026-10-01: checkpoint, unverified. T1-T3 code and the T4 records (D-061, DESIGN.md) are written. The full suite with `--self-test` is running, so no task is ticked yet. `m40_plant_link` already gave each link plant its own copy, so T2 needed no change there.
 
 ## Decisions
 

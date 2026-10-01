@@ -19649,45 +19649,36 @@ if [ "${1:-}" = "--self-test" ]; then
     'carries no `docs` base segment' \
     python3 tests/sitecheck.py links "$M40W/linknobase" "docs"
 
-  # Containment. The escaping href names a file that EXISTS, one directory
-  # above the capture: without the clause the check joins the escaping path
-  # onto the capture root, reads that file and calls the link resolved.
+  # Containment. A link resolves only to a regular file one walk of the
+  # capture lists, so every escape below is reported as naming no file
+  # (M103). Each escaping href names a file that EXISTS outside the capture:
+  # a check that joined the path onto the capture root and read the result
+  # would find that file and call the link resolved.
   printf '<html><body>outside the site</body></html>\n' > "$M40W/outside.html"
   [ -f "$M40W/outside.html" ] \
     || fail "M40 self-test: the file outside the capture was not written, so the escaping href below would be an ordinary dangling link"
   m40_plant_link linkescape '<a href="../outside.html">x</a>'
   m40_planted 'an href resolving to a file outside the captured site' \
-    'which is outside the captured site under' \
+    'names no file under' \
     python3 tests/sitecheck.py links "$M40W/linkescape" ""
 
-  # Containment, the root-relative shape, with and without a base path. The
-  # `..` sits BEHIND a segment, so the normalized path carries no leading
-  # `../` — which is the whole case: until M46's second pass the root-relative
-  # branch never normalized at all and the containment test was a textual
-  # prefix test this shape walked straight past, reading the file above the
-  # capture at exit 0. Under the base path the same escape is written after
-  # the segment, so it clears the base clause and reaches containment.
+  # Containment, the root-relative shape. The `..` sits BEHIND a segment, so
+  # the href carries no leading `../` for a textual test to match. M46's
+  # containment test walked straight past this shape at exit 0 before its
+  # second pass.
   m40_plant_link linkescaperoot '<a href="/sub/../../outside.html">x</a>'
   mkdir -p "$M40W/linkescaperoot/sub"
   [ -d "$M40W/linkescaperoot/sub" ] \
-    || fail "M40 self-test: the segment the escaping href walks back through was not created, so the pre-M46 reader would have called the href dangling for the wrong reason"
+    || fail "M40 self-test: the segment the escaping href walks back through was not created, so the href below would be about a path with no such segment"
   m40_planted 'a root-relative href escaping the captured site with a `..` behind a segment' \
-    'which is outside the captured site under' \
+    'names no file under' \
     python3 tests/sitecheck.py links "$M40W/linkescaperoot" ""
-  m40_plant_link linkescaperootbase '<a href="/docs/sub/../../outside.html">x</a>'
-  mkdir -p "$M40W/linkescaperootbase/sub"
-  [ -d "$M40W/linkescaperootbase/sub" ] \
-    || fail "M40 self-test: the segment the escaping href walks back through was not created, so the pre-M46 reader would have called the href dangling for the wrong reason"
-  m40_planted 'the same escape written after the base segment, under the base path' \
-    'which is outside the captured site under' \
-    python3 tests/sitecheck.py links "$M40W/linkescaperootbase" "docs"
 
-  # Containment, the symlink shape. `os.path.abspath` normalizes text and does
-  # not follow links, so until M46's third pass a link through a symlink that
-  # sits INSIDE the capture and points above it read a file outside the site
-  # while the textual test saw a path under the capture root, and every link
-  # was reported resolved at exit 0 (M46). `capture` copies with `cp -R`,
-  # which preserves a link the render wrote.
+  # Containment, the symlink shapes. `capture` copies with `cp -R`, which
+  # preserves a link the render wrote. A link THROUGH a symlink names a path
+  # the walk never lists, whether the symlink points above the capture or
+  # inside it. M46 resolved symlinks and accepted the inside one, which is the
+  # shape that let a later symlink escape through (M103).
   m40_plant_link linkescapelink '<a href="above/outside.html">x</a>'
   ln -s .. "$M40W/linkescapelink/above"
   [ -L "$M40W/linkescapelink/above" ] \
@@ -19695,21 +19686,61 @@ if [ "${1:-}" = "--self-test" ]; then
   [ -f "$M40W/linkescapelink/above/outside.html" ] \
     || fail "M40 self-test: the file the symlink reaches is absent, so the href below would be dangling rather than escaping"
   m40_planted 'an href resolving through a symlink inside the capture to a file above it' \
-    'which is outside the captured site under' \
+    'names no file under' \
     python3 tests/sitecheck.py links "$M40W/linkescapelink" ""
 
-  # And the direction the clause must stay SILENT in: a symlink inside the
-  # capture that points inside it resolves as it always did. Resolving both
-  # sides of the containment test is what keeps this green — the capture root
-  # is resolved too, so a checkout reached through a symlinked parent does not
-  # turn every link into an escape.
   m40_plant_link linkinsidelink '<a href="alias/syntax.html">x</a>'
   ln -s . "$M40W/linkinsidelink/alias"
   [ -f "$M40W/linkinsidelink/alias/syntax.html" ] \
     || fail "M40 self-test: the symlink inside the capture does not reach syntax.html, so the case below would be an ordinary dangling link"
-  python3 tests/sitecheck.py links "$M40W/linkinsidelink" "" > /dev/null \
-    || fail "M40 self-test: a link through a symlink that stays inside the capture is refused, so the containment clause refuses symlinks rather than escapes"
-  printf 'ok   self-test: a link through a symlink that stays inside the capture still resolves, so the containment clause refuses the escape and not the symlink\n'
+  m40_planted 'an href resolving through a symlink inside the capture to a page inside it' \
+    'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkinsidelink" ""
+
+  # The directory shape. The link names a directory the render could have
+  # written, and the `index.html` inside it is a symlink to the file above the
+  # capture. M46's test resolved the DIRECTORY, found it inside the capture,
+  # and then read the symlinked `index.html` at exit 0 (M103).
+  m40_plant_link linkdirindex '<a href="dirlink/">x</a>'
+  mkdir -p "$M40W/linkdirindex/dirlink"
+  ln -s ../../outside.html "$M40W/linkdirindex/dirlink/index.html"
+  [ -L "$M40W/linkdirindex/dirlink/index.html" ] \
+    && [ -f "$M40W/linkdirindex/dirlink/index.html" ] \
+    || fail "M40 self-test: the directory's index.html is not a symlink reaching the file above the capture, so the href below would be an ordinary dangling link"
+  m40_planted 'a directory href whose index.html is a symlink to a file above the capture' \
+    'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkdirindex" ""
+
+  # And the directions the walk must stay SILENT in: a relative link and a
+  # directory link to pages the render wrote still resolve. `gallery/` names
+  # the directory the gallery's own `index.html` sits in.
+  m40_plant_link linkdirok '<a href="gallery/">x</a><a href="./syntax.html">y</a>'
+  [ -f "$M40W/linkdirok/gallery/index.html" ] && [ ! -L "$M40W/linkdirok/gallery/index.html" ] \
+    || fail "M40 self-test: the capture holds no regular gallery/index.html, so the directory href below would be about a page the render never wrote"
+  python3 tests/sitecheck.py links "$M40W/linkdirok" "" > /dev/null \
+    || fail "M40 self-test: a directory href and a relative href to pages the render wrote are refused, so the walk refuses ordinary links rather than escapes"
+  printf 'ok   self-test: a directory href and a relative href to pages the render wrote still resolve\n'
+
+  # The base-segment test reads the NORMALIZED path (M103). The same capture
+  # under the base path `docs`: a `.` before the segment still carries it, and
+  # a `..` after the segment takes the link back out of it, however the text
+  # opens. `/docs/sub/../../outside.html` is the escape above written after the
+  # segment, so it never reaches the walk.
+  m40_plant_link linkbasedot '<a href="/./docs/index.html">x</a>'
+  python3 tests/sitecheck.py links "$M40W/linkbasedot" "docs" > /dev/null \
+    || fail "M40 self-test: a root-relative href that carries the base segment behind a \`.\` is refused, so the base test reads the text and not the normalized path"
+  printf 'ok   self-test: a root-relative href carrying the base segment behind a `.` resolves under that base path\n'
+  m40_plant_link linkbaseup '<a href="/docs/../index.html">x</a>'
+  m40_planted 'a root-relative href whose `..` leaves the base segment it opens with' \
+    'carries no `docs` base segment' \
+    python3 tests/sitecheck.py links "$M40W/linkbaseup" "docs"
+  m40_plant_link linkescaperootbase '<a href="/docs/sub/../../outside.html">x</a>'
+  mkdir -p "$M40W/linkescaperootbase/sub"
+  [ -d "$M40W/linkescaperootbase/sub" ] \
+    || fail "M40 self-test: the segment the escaping href walks back through was not created, so the href below would be about a path with no such segment"
+  m40_planted 'the escape written after the base segment, under the base path' \
+    'carries no `docs` base segment' \
+    python3 tests/sitecheck.py links "$M40W/linkescaperootbase" "docs"
 
   # Containment, the percent-encoded absolute shape. `%2Fetc%2Fpasswd` decodes
   # to an absolute path; until M46's second pass the branch was chosen on the
@@ -20178,7 +20209,39 @@ M40OLD
   m40_planted 'the second retired sentence restored into the site front page, re-wrapped across a line break at a different column' \
     'site/index.qmd (fluid syntax)' \
     check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-wrapped"
-  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href reaching above the capture through a symlink inside it (beside one through a symlink that stays inside, which must still resolve), a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, a sentence row carrying no tab, a sentence row with nothing after its tab and one holding a blockquote marker that flattens to the same nothing, an empty sentence list asserted twice on the list it names and on what it now forbids, a directory that is no git repository, a repository tracking no README, and a repository whose domain names a page the working tree no longer holds — that last one asserted twice, on the report covering the domain and on the page it names; and the site project file's output-directory pin on a copy whose output directory is renamed"
+
+  # A page that does not decode as UTF-8 and also carries a retired sentence.
+  # Until M103 the decode error left the sweep as a traceback, which named
+  # neither the page nor the sentence (D-029). The report is required to fail,
+  # to carry a FAIL line, to name the page on a line of its own, and to hold no
+  # traceback. The phrase sweep takes the same plant in the M52 block below.
+  # <label> <tracked page> <command...>
+  m103_undecodable() {
+    local label="$1" page="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): the sweep passed over a page that does not decode, so it covered a domain it never read"; }
+    printf '%s\n' "$out" | grep -q '^FAIL: ' \
+      || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): the sweep failed with no FAIL line, so its failure is not this module's report"; }
+    printf '%s\n' "$out" | grep -qF -- "  $page: does not decode as UTF-8" \
+      || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): no report line names $page as a page that does not decode"; }
+    printf '%s\n' "$out" | grep -q 'Traceback' \
+      && { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): the sweep printed a traceback, so it raised on the page rather than reporting it"; }
+    pass "M103-AC4 ($label): the sweep fails with a FAIL line, names $page as a page that does not decode as UTF-8, and prints no traceback"
+  }
+  # <overlay dir>: the page in it must hold the bytes no UTF-8 reader decodes.
+  m103_assert_undecodable() {
+    python3 -c 'import sys; open(sys.argv[1], encoding="utf-8").read()' "$1/site/index.qmd" 2> /dev/null \
+      && fail "M103 self-test: the overlay copy of site/index.qmd decodes as UTF-8, so the case below is about an ordinary page"
+    return 0
+  }
+  m44_restore site/index.qmd "> $M44SENTENCE" "$M40W/prerelease-undecodable"
+  printf 'caf\351\n' >> "$M40W/prerelease-undecodable/site/index.qmd"
+  m103_assert_undecodable "$M40W/prerelease-undecodable"
+  m103_undecodable 'prerelease-absent' site/index.qmd \
+    check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-undecodable"
+  pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href through a symlink inside the capture whether it points above the capture or inside it, a directory href whose index.html is a symlink to a file above the capture (beside a directory href and a relative href to pages the render wrote, which must still resolve), a root-relative href whose base segment sits behind a \`.\` (which must resolve) or is left by a \`..\`, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, a sentence row carrying no tab, a sentence row with nothing after its tab and one holding a blockquote marker that flattens to the same nothing, an empty sentence list asserted twice on the list it names and on what it now forbids, a directory that is no git repository, a repository tracking no README, and a repository whose domain names a page the working tree no longer holds — that last one asserted twice, on the report covering the domain and on the page it names; and the site project file's output-directory pin on a copy whose output directory is renamed"
 fi
 
 # ---------------------------------------------------------------------------
@@ -24760,6 +24823,18 @@ M52DOCPY
     'site/epub.qmd (back-end count)' \
     python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
       "$M52D/overquote"
+
+  # The page that does not decode, through the phrase sweep (M103). The
+  # helper and its assertions are the ones the pre-release plant uses above.
+  mkdir -p "$M52D/undecodable/site"
+  { cat site/index.qmd; printf '\nThe marking syntax means the same thing in the two back-ends.\ncaf\351\n'; } \
+    > "$M52D/undecodable/site/index.qmd"
+  grep -qF 'in the two back-ends.' "$M52D/undecodable/site/index.qmd" \
+    || fail "M103 self-test: the overlay page carries no forbidden phrase, so the case below is about a page the sweep would pass on its words"
+  m103_assert_undecodable "$M52D/undecodable"
+  m103_undecodable 'phrase-absent' site/index.qmd \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
+      "$M52D/undecodable"
 
   : > "$M52D/nophrases.txt"
   m52_planted 'a phrase list that forbids nothing' \

@@ -43,7 +43,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 ## Acceptance criteria
 
-- [x] AC1: `python3 tests/stateprobe.py --check-cells` reads each module
+- [ ] AC1: `python3 tests/stateprobe.py --check-cells` reads each module
       under `_extensions/index/modules/` that has exactly one line, outside
       comments and strings, opening with `local function reset(` and
       closing its parameter list on that same line, where that line opens
@@ -182,6 +182,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: thrash rule (third return): the user chose to narrow M105 over parking, a re-plan or a brief. Status back to in-progress for the amendment alone. Removing AC1 changes the Goal, so the narrowing keeps AC1 and limits its domain.
 - 2026-10-01: the amendment put the plan-owned body at 150 lines, so T1 to T4 were compressed in one rewrite: line-number pointers dropped, meaning kept.
 - 2026-10-01: status set to review. AC1 ticked against the amended wording, from the run-3 plants and suite runs, since no code changed. Independent review next.
+- 2026-10-01: three fresh reviewers reported 15 findings (W1 to W15, Review section). Review return 4 (defect): AC1 fails on its amended wording, because a new module that hides its reset from the guard's lexer (`\z` string, `#!` first line, or a `..` file name) passes unread. AC1 unticked. The disposition goes to the user.
 - re-audit: AC1 (reduced) — first reader: a module with two openers, or whose opener is not the exported reset, fails without naming a stray line. Fixed by limiting the domain to one opener that opens the exported reset. Pre-existing wording (trailing comments, the self-test sentence) left as is.
 - re-audit: AC1 (reduced) — second reader: no in-domain stray line passes, except a module behind a symbolic link, which `tests/filtersrc.py` does not follow. Recorded in KI308. Other findings fail closed.
 - 2026-10-01: AC1 amended at the mini gate, chosen by the user: "reads each module under `_extensions/index/modules/` that has exactly one line, outside comments and strings, opening with `local function reset(` and closing its parameter list on that same line, where that line opens the function the module exports as `reset`". KI308 in `cairn/DESIGN.md` now records the split-parameter and symbolic-link forms.
@@ -433,3 +434,50 @@ with one same-line reset opener that opens the exported reset.
   run prints `M105-AC1` green, so `tests/run-tests.sh` runs the guard. The
   split-parameter opener and two-opener modules are outside the amended
   domain, and KI308 records the first.
+- AC1 (amended wording, not met after review): the diff reviewer's W1 and W2
+  below were reproduced here. Each adds a new module `extra.lua` whose reset
+  holds an unlisted line. Quarto's Lua loads it and reports the reset's
+  lines. The guard exits 0, reading 26 lines over the four old modules. In
+  W1a, a `\z` string continuation holds `--[[`. In W1b, a first line `#! --[[`
+  is one Lua skips. In W2, the file is named `..extra.lua`. Each module has
+  one same-line opener outside comments and strings as Lua reads them, so it
+  sits in the amended domain. Box unticked.
+
+Independent review, run 3: three fresh reviewers (Opus diff-bug, Sonnet
+blame-history, Sonnet prior-review). Merged where two named one defect. Each
+line gives the proposed disposition.
+
+- W1 (diff-bug 1, reproduced here): the guard's own lexer decides where
+  comments are, so a `\z` string or a `#!` first line hides a new module's
+  reset. AC1 fails. Proposed: a return.
+- W2 (diff-bug 2, reproduced here): `rel.startswith(os.pardir)` also skips
+  `..extra.lua`. AC1 fails. Proposed: with W1.
+- W3 (diff-bug 3): some reds name the module and not the stray line, such as
+  a second opener with odd spacing or a line inside a long string. Fails
+  loud. Proposed: with W1.
+- W4 (diff-bug 4, blame 4): the AC1 self-test pins the four module names, so
+  a correct new reset module turns it red. Proposed: fix now, derive the list.
+- W5 (diff-bug 5): KI308 says the guard passes another form, but for a module
+  `CELLS` names it fails as missing. It omits W1 and W2. Proposed: fix now.
+- W6 (diff-bug 6): code after the closing `end` on that line is a false red.
+  Proposed: reject, fails loud, as V15.
+- W7 (diff-bug 7): `sys.path.insert(0, 'tests')` needs the repo root as the
+  working directory. Proposed: reject, paths were relative before.
+- W8 (diff-bug 8, blame 6, prior 3): the `stateprobe.py` docstring has a lone
+  "The" line and one long line. Proposed: fix now.
+- W9 (blame 1): the DESIGN.md accumulator sentence says the guard covers each
+  reset line, wider than AC1's domain. Proposed: fix now, name the domain.
+- W10 (blame 2): D-063 does not say that a hand lexer still finds the opener.
+  Proposed: record in KI308, no new entry.
+- W11 (blame 3): a reset outside `modules/` is never read. Proposed: reject,
+  AC1 names `modules/`, or record in KI308.
+- W12 (blame 5, prior 2): the commented-out-opener comment sits above the
+  block-comment plant. Proposed: fix now.
+- W13 (blame 7): the `Bramble` control is a planted copy. Proposed: reject, as
+  R15.
+- W14 (blame 8): `--check-cells` works only as the first argument. Proposed:
+  reject, a usage detail.
+- W15 (prior 1): KI287 struck with no edit. Proposed: reject, as R14.
+
+Thrash count: defect return 4. AC1 has failed in every run, each time by a
+new way the guard's own Lua reading misses part of the domain.

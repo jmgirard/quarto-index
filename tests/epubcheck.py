@@ -6,8 +6,9 @@ have, and it is what lets the self-test run each clause against a deliberately
 broken artifact: a check written inline in run-tests.sh can be run on this
 run's output and on nothing else, so its green says only that this run passed.
 
-Every expected value reaching this module comes from a manifest file the
-shell writes out of a hand-derived heredoc (the ORACLE RULE in run-tests.sh).
+Every expected value reaching this module comes from a hand-derived manifest
+(the ORACLE RULE in run-tests.sh): a file the shell writes out of a heredoc,
+or a tracked file under tests/ that the version matrix also reads.
 Nothing here derives an expectation from a rendered artifact — with one named
 exception, the `same` subcommand, whose whole question is whether two
 artifacts agree, and which refuses to run unless a hand-written manifest has

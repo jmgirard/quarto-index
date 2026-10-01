@@ -124,7 +124,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       its module and cause, and make the suite message match (R1, R3, R4,
       R8). Add a self-test plant with a column-0 inner `end` and a stray line
       after it, red naming that line.
-- [ ] T6 (review return 1): Add a D-entry that narrows D-011 for this guard,
+- [x] T6 (review return 1): Add a D-entry that narrows D-011 for this guard,
       with its reason, and edit KI10's sentence that says D-011 refuses the
       scan (R2).
 - [ ] T7 (review return 1): Fix the wording of R5, R6 and R7. Add the
@@ -157,6 +157,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: review return 1 (defect): AC1 fails, because `reset_body` stops at a column-0 inner `end`, so the guard never reads the reset lines after it. Status back to in-progress. The user chose send-back at the gate, and a D-entry that allows the guard (R2). Tasks T5 to T8 added, Coverage amended, AC2 to AC4 unticked.
 - 2026-10-01: implement resumed on the branch, `main` unmoved. No question gate, because the review gate settled the one open choice (R2).
 - 2026-10-01: T5 code landed. `reset_body` counts Lua blocks over code with comments and strings removed. Modules come through `tests/filtersrc.py` under `modules/`, and every guard failure names its module and cause. The self-test adds a column-0 `end` plant (red, naming the line) and a block-comment copy (green), and matches one whole report line (R11, same block). The R5 and R6 wording in this block and in `tests/stateprobe.py` landed here too. On the real modules the new reader returns the same lines as the old one. Under Python 3.9.6 and 3.14.7, the extracted block passes. It is red against a mutant with the old `end` rule, and against one that reads `--[[` as a line comment. T5 stays unticked until T8's suite runs.
+- 2026-10-01: T6 done. D-062 narrows D-011 so the cell guard may read reset source, and KI10 now names the direction the guard checks. Tracking only, so ticked now.
 
 ## Decisions
 

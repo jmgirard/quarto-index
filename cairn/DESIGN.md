@@ -892,7 +892,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI10.** The filter's per-document accumulators are module-level state,
   latent if Lua state is ever reused across documents. A `reset` each module
   owns returns them between documents; a cell added that joins no `reset` is
-  unguarded, and D-011 refuses to pin that with a source scan. Four carry more
+  unguarded, and D-011 refuses to pin that with a source scan. The cell guard
+  checks the other direction, each reset line against `CELLS`, which D-062
+  allows (corrected M105). Four carry more
   than a skewed count. A leaked `pending_xrefs` emits reports naming marks in a
   different file, so it reads as a filter bug rather than a stale number.
   `principal_ordinals` is the first whose value reaches an on-disk artifact, the

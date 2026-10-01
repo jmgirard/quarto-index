@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -131,7 +131,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       asserts of R9, R10 and R11. Rename the parameter of R12.
 - [x] T8 (review return 1): Repeat T4's two suite runs and record each
       result in the work log.
-- [ ] T9 (review return 2): Find each module's reset with Quarto's Lua
+- [x] T9 (review return 2): Find each module's reset with Quarto's Lua
       (`quarto pandoc lua`): load the module and read the first and last
       line of the exported `reset` from `debug.getinfo`. Stop counting
       blocks by hand. Read the opener line's code too. Add self-test plants
@@ -140,10 +140,10 @@ probe's output instead of stating a count. The plan gate chose that form.
 - [x] T10 (review return 2): Fix the wording of V4. Add one entry that
       supersedes D-062's claim on what the probe drops (V5). Add Known issues
       entries for the accepted gaps (V9). Fix KI10's "Four" (V10).
-- [ ] T11 (review return 2): Add the asserts and plants of V6, V7 and V8.
+- [x] T11 (review return 2): Add the asserts and plants of V6, V7 and V8.
       Plant the AC2 copy with `perl` (V11). Compare absolute paths before
       the probes refuse to run (V13).
-- [ ] T12 (review return 2): Repeat T4's two suite runs and record each
+- [x] T12 (review return 2): Repeat T4's two suite runs and record each
       result in the work log.
 
 ## Work log
@@ -183,6 +183,9 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: T9 code landed. `tests/stateprobe.py` takes each reset's first and last line from Quarto's Lua (`debug.getinfo` on the exported `reset`), needs one opener line outside comments per module, and reads code after the opener's parameter list. A short string continued by a backslash now spans lines (V14). On the real modules the probes' `reset_lines` returns the same rows as before. Eleven earlier hand plants behave as before, and V1, V3 and a one-line reset are red naming the line (V12). V2 is red naming both opener lines, so T9's wording now says so (minor edit). The three new self-test plants each turn the block red when run against the pre-T9 reader. T9 stays unticked until T12's suite runs.
 - 2026-10-01: T10 done. The R5 wording in `tests/stateprobe.py` and the M26 comment now says `plant()` stops only on a second copy of a `CELLS` statement (V4). D-063 supersedes D-062's sentences on what the probe drops, and records that Quarto's Lua gives each reset's bounds (V5). KI306 to KI308 record the accepted gaps (V9), and KI10 says "Four of the accumulators" (V10). Tracking and comments only, so ticked now.
 - 2026-10-01: T11 code landed. A red AC1 plant puts a stray line after a block comment, and is red against a mutant reader that never leaves a block comment (V6). The guard prints the lines it read before its verdict, and each red plant asserts that line over the four modules, which goes red when the line is renamed (V8). The `div` and `h3` copies pass when called with the tags they carry, and that turns red against a mutant that ignores its tag arguments (V7). The AC2 plant uses `perl` (V11). The probes compare real paths before refusing (V13). Run alone, the AC1, AC2 and AC3 blocks pass on the last captures under Python 3.9.6, and the AC3 block under 3.14.6. T11 stays unticked until T12's suite runs.
+- 2026-10-01: at b0d49c2, with `/usr/bin/python3` (3.9.6) first on the PATH and no suite edits during either run, `tests/run-tests.sh --self-test` passed (1738 checks) and `tests/run-tests.sh` passed (898 checks). T9, T11 and T12 are ticked.
+- 2026-10-01: claim audit: not owed — internal tier.
+- 2026-10-01: status set to review.
 
 ## Decisions
 

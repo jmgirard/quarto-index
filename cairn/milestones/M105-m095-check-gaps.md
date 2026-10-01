@@ -479,5 +479,5 @@ line gives the proposed disposition.
   reject, a usage detail.
 - W15 (prior 1): KI287 struck with no edit. Proposed: reject, as R14.
 
-Thrash count: defect return 4. AC1 has failed in every run, each time by a
+Thrash count: defect return 4. AC1 failed in every run, each time by a
 new way the guard's own Lua reading misses part of the domain.

@@ -219,9 +219,10 @@ jobs:
           path: ${{ runner.temp }}/extract
           if-no-files-found: error
 
-      # The book's EPUB (M106), after the upload because the book renders
-      # into `_book` whatever the format, and the HTML extraction above has
-      # already read `_book/last.html`. One Pandoc process renders an EPUB
+      # The book's EPUB (M106). It runs after the HTML extraction above has
+      # read `_book/last.html`, because the book renders into `_book` whatever
+      # the format. It runs after the upload too, so a red EPUB step cannot
+      # stop this leg's HTML extraction from reaching the comparison. One Pandoc process renders an EPUB
       # book, so each of its three declared indexes prints a section of its
       # own. The reading is `tests/epubcheck.py sections` against
       # tests/book-epub-index.txt, the manifest the acceptance suite reads at
@@ -312,8 +313,9 @@ jobs:
   # red about the TeX engine. The reports the two-index fixture's LaTeX
   # render draws, which the acceptance suite reads on one Quarto version:
   # they quote block positions, and each Quarto version counts those over the
-  # document it hands the filter. The book PDF's second declared index, since
-  # the two-index fixture is where this job reads a second index. And the
+  # document it hands the filter. The book PDF's indexes after the first (People
+  # and Places), since the two-index fixture is where this job reads an
+  # index after the first. And the
   # acceptance suite, which pins a PDF engine and so cannot run green on the
   # floor leg at all.
   #

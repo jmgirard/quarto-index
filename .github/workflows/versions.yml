@@ -135,10 +135,11 @@ jobs:
           version: ${{ matrix.leg.version }}
 
       # This job renders the fixtures to HTML, and the comparison below is
-      # over that HTML alone. It also renders the figure-marks fixture to EPUB,
-      # which it checks on this leg and does not upload or compare. It renders
-      # no PDF and installs no TeX; the PDF job at the end of this file does
-      # that, on its own schedule.
+      # over that HTML alone. It also renders two fixtures to EPUB, which it
+      # checks on this leg and does not upload or compare: the figure-marks
+      # fixture, in this step, and the book, in the two steps after the upload
+      # (M106). It renders no PDF and installs no TeX. The PDF job at the end
+      # of this file does that, on its own schedule.
       #
       # Nothing here compares a PDF, and the PDF job compares nothing either.
       # That is deliberate. Two Quarto releases typeset PDF through different
@@ -217,6 +218,32 @@ jobs:
           name: index-${{ matrix.leg.name }}
           path: ${{ runner.temp }}/extract
           if-no-files-found: error
+
+      # The book's EPUB (M106), after the upload because the book renders
+      # into `_book` whatever the format, and the HTML extraction above has
+      # already read `_book/last.html`. One Pandoc process renders an EPUB
+      # book, so each of its three declared indexes prints a section of its
+      # own. The reading is `tests/epubcheck.py sections` against
+      # tests/book-epub-index.txt, the manifest the acceptance suite reads at
+      # M52-AC3: every section, letter and entry row, each entry with its
+      # locator count. Then `links` holds every link inside those sections
+      # that stays in the publication to an element it carries. `qi-index` is the suite's
+      # HTML_SECTION_ID, the prefix each section id opens with.
+      - name: Render examples/book to EPUB
+        shell: bash
+        run: |
+          set -euo pipefail
+          ( cd examples/book && quarto render --to epub )
+
+      - name: Read the book EPUB's index sections against their manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/epubcheck.py sections \
+            examples/book/_book/Index-Book-Fixture.epub qi-index \
+            tests/book-epub-index.txt
+          python3 tests/epubcheck.py links \
+            examples/book/_book/Index-Book-Fixture.epub qi-index
 
   compare:
     needs: [plan, render]

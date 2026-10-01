@@ -139,6 +139,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: M51's Scope Out kept the two-index fixture off the matrix, because a red there was the TeX installation's. This plan reverses that. D-031 says a stock TinyTeX builds the second index, so a red on CI tests a Quarto version or that documented claim.
 - 2026-10-01: implement started on branch m106-matrix-missing-legs. Question gate: T1 makes one docstring sentence of `tests/epubcheck.py` false, and the user chose a comment-only edit to it. Scope Out's reader-module clause is read as code changes.
 - 2026-10-01: T1 checkpoint, not done: three manifests moved to tracked files and the suite repointed. The `--self-test` run is in progress.
+- 2026-10-01: the first T1 suite run stopped at check 138 on the D-030 PyYAML guard, because `python3` on PATH is now `/usr/local/bin/python3` 3.14.6, which has no PyYAML. The re-run puts a scratch `python3` link to `/usr/bin/python3` (3.9.6, has PyYAML) first on PATH, and nothing is installed.
 
 ## Decisions
 

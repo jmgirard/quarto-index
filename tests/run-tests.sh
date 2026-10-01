@@ -30731,8 +30731,9 @@ fi
 # those writers print alt text as a flat string, and wrote no `\index` in
 # LaTeX, whose writer drops raw LaTeX there.
 #
-# examples/figure-marks.qmd holds one case a page, each but the last ending in
-# an explicit page break, so each mark's page is a fact of its source. Every manifest here
+# examples/figure-marks.qmd holds one case a page, with a range's closing text
+# on a page of its own and each page but the last ending in an explicit page
+# break, so each mark's page is a fact of its source. Every manifest here
 # is derived by hand from that source under the ORACLE RULE above; the Typst
 # one is the tracked file tests/figure-marks-typst.tsv, so the version matrix
 # reads the same rows. The terms, their pages and why each files one locator:
@@ -30764,8 +30765,9 @@ fi
 #
 # Which image's alt text each alt-text mark sits in, counted over the page's
 # images outside the index in document order: dogwood and elder in image 4,
-# hazel in image 5. Image 6 is juniper's figure. The `alt` each image carries is stated below, and holding
-# it is what shows that neither the declassed copy nor the moved id changes it.
+# hazel in image 5. Image 6 is juniper's figure. The `alt` each image carries
+# is stated below, and holding it is what shows that neither the declassed
+# copy nor the moved id changes it.
 # ---------------------------------------------------------------------------
 section 'M101-AC1/AC2 — a mark in a figure caption or an image'\''s alt text files one locator.'
 for needle in '![A caption that marks [alder]{#alder-mark .index}.](dot.png)' \
@@ -31219,8 +31221,9 @@ M102IDPY
 
   # M104 custom-id: the comparison put back to the plain `~=` M101 shipped.
   # The caption of juniper's figure then never equals its copy, so the copy's
-  # opening of larch's range is read as a second one. The report counted is
-  # larch's alone, so the red is this case's and not cedar's.
+  # opening of larch's range is read as a second one. Larch's report is
+  # counted at one and cedar's at none, so the red is this case's and not
+  # cedar's.
   m101_tree custom-id modules/marks.lua \
     's{without_custom_ids\(image\.caption\) ~= without_custom_ids\(caption\.content\)}{image.caption ~= caption.content}'
   for fmt in html epub pdf typst; do
@@ -31231,6 +31234,9 @@ M102IDPY
     check_warning_count "$WORK/m101-custom-id-$fmt.log" \
       'range="open" on term "larch" opens a range for a term whose range is already open' 1 \
       "M104 plant custom-id ($fmt: the report drawn is the second opening of larch's range)"
+    check_warning_count "$WORK/m101-custom-id-$fmt.log" \
+      'range="open" on term "cedar" opens a range for a term whose range is already open' 0 \
+      "M104 plant custom-id ($fmt: cedar's caption is still read once)"
   done
 
   pass "M101 T5 self-test: undoing the caption declass is red in the four formats' log checks and on the record route, undoing it in the recovery reader is red in the probe, a copy keeping its id is red on alder's link, and undoing either alt-text move is red on the HTML link check or the PDF manifest; a moved id in a block of its own is red on the after check's same-block clause, and a moved mark's text left out of the alt is red on the alts check in HTML and EPUB (M102); comparing a caption with its copy with Quarto's custom ids left in is red in the four formats' log checks, on larch's range (M104)"

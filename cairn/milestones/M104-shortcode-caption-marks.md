@@ -133,6 +133,8 @@ and removes KI299.
 - 2026-10-01: T4 done. The exception sentences in `site/syntax.qmd`, the CHANGELOG's still-files-twice sentence and KI299 are removed. The DESIGN Architecture paragraph states the custom-id drop and why it is safe. `tests/run-tests.sh --self-test` passed again, 1732 checks, and `cairn_validate` passed.
 - claim audit: 30 claims read, 0 corrected — _extensions/index/modules/marks.lua, tests/run-tests.sh, tests/figure-marks-pdf.txt, tests/figure-marks-typst.tsv, examples/figure-marks.qmd, site/syntax.qmd, CHANGELOG.md, .github/workflows/versions.yml
 - 2026-10-01: status set to review.
+- step-7 approval: m104-shortcode-caption-marks approved for merge, with F1-F6 fixed first and F7-F11 rejected as proposed.
+- 2026-10-01: F1-F6 fixed on the branch. A nested-shortcode probe on Quarto 1.10.18 showed its span empty too, so the F3 wording names shortcodes and says that children a custom node keeps are compared with ids dropped. The F2 cedar-at-0 check counts 1 in each no-declass plant log and 0 in each custom-id log from the review run.
 
 ## Review
 
@@ -159,3 +161,5 @@ Review fan-out: three fresh reviewers (Opus diff-bug, Sonnet blame-history, Sonn
 - F9 (blame-history 3): no HTML book case holds a shortcode caption. Proposed: reject, because the plan put it Out. The recovery parse yields no custom spans, and the record route makes the same call.
 - F10 (diff-bug 3, blame-history 5): the new HTML and EPUB rows have no plant of their own. Proposed: reject. The M101 html-move plant already shows the link check red, the manifest check is generic, and T2 asked for a log-check plant.
 - F11 (diff-bug 5): AC1's "page 7" cannot be a printed page number in HTML and EPUB. Proposed: no change needed. The AC1 evidence reads it by the fixture's own page definition and shows it holds.
+
+Gate triage (2026-10-01): F1-F6 fix now, F7-F11 rejected for the reasons above. The fixes changed only comments, the CHANGELOG sentence and one added plant assertion.

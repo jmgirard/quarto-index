@@ -212,17 +212,18 @@ The modules, in dependency order:
   author's copy of the tag first (added M071). In every format the same
   document hook calls `marks.declass_caption_copies`, which takes the index
   class and the id off each span in the alt text of an image that is a
-  figure's only content and equals the figure's caption: Pandoc's reader copies
-  a figure's caption there, so a caption mark is read once, in the caption.
-  The HTML book's recovery reader applies it to the blocks it walks (added
-  M101). The comparison drops the `__quarto_custom_id` Quarto gives each
-  inline custom node, at every depth: Quarto gives a shortcode in the caption
-  and in the copy different ids. Such a node is an empty span whose content
-  Quarto keeps under that id, so two such nodes of one type compare equal
-  whatever they hold. That is safe, because an alt text that differs from the
-  caption only there carries the caption's marks, in the same order and on
-  the same figure, and the marks it stops filing are ones the caption files
-  (added M104). Then three that only read — one
+  figure's only content and matches the figure's caption: Pandoc's reader
+  copies a figure's caption there, so a caption mark is read once, in the
+  caption. The HTML book's recovery reader applies it to the blocks it walks
+  (added M101). The match is equality after dropping the `__quarto_custom_id`
+  Quarto gives each inline custom node, at every depth: Quarto gives a
+  shortcode in the caption and in the copy different ids. A shortcode's node
+  is an empty span whose content Quarto keeps under that id, so two such
+  nodes of one type compare equal whatever they hold. A custom node that keeps
+  children in its span has them compared with the same ids dropped. That is
+  safe, because an alt text that differs from the caption only there carries
+  the caption's marks, in the same order and on the same figure, and the
+  marks it stops filing are ones the caption files (added M104). Then three that only read — one
   registering sort keys, one deciding which keys are contested, one pairing
   page ranges — and the emitting pass that rewrites the mark, reading the tag
   off and, in an HTML book chapter, filing a tagged mark as a page locator

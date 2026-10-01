@@ -5,7 +5,9 @@
 # tests/typst-index-main.tsv states.
 #
 # The pages come from the source's explicit page breaks: page 1 runs to the
-# first break, and each break starts the next page. Each term is one case.
+# first break, and each break starts the next page. Each term is one case,
+# except that dogwood and elder share one image, and juniper and larch one
+# caption.
 #   alder    a caption mark on a figure with no id, page 1, carrying an id of
 #            its author's. Pandoc copies the caption into the image's alt
 #            text, and the copy files nothing: one locator

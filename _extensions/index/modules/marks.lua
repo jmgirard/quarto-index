@@ -615,22 +615,25 @@ end
 -- what it was.
 --
 -- A copy is the alt text of an image that is the figure's only content and
--- equals the figure's caption. An image whose alt text differs from the
--- caption, or that shares its paragraph with anything, holds marks the author
--- wrote there, and those stay marks.
+-- matches the figure's caption, compared as the next paragraph states. An
+-- image whose alt text differs from the caption, or that shares its paragraph
+-- with anything, holds marks the author wrote there, and those stay marks.
 --
 -- The two lists are compared without the `__quarto_custom_id` of each span
 -- that carries `__quarto_custom`, at every depth. Quarto turns an inline
 -- shortcode into such a span, and the caption and its copy each get one with
 -- an id of its own, so a caption holding a shortcode never equalled its copy
 -- (M104; on Quarto 1.10.18 the two lists differed in that attribute alone).
--- The span is empty: the id is the key under which Quarto stores what the
--- node holds, and the span's other attributes name its type. So two such
--- spans of one type compare equal whatever they hold. That is safe: an alt
--- text that differs from its figure's caption only there carries the same
--- marks as the caption, in the same order and on the same figure, so the
--- marks it stops filing are ones the caption already files. The walk returns
--- a copy, so the ids Quarto resolves each node by stay where they are.
+-- A shortcode's span is empty, a nested shortcode's included (observed on
+-- Quarto 1.10.18): the id is the key under which Quarto stores what the
+-- shortcode holds, and the span's other attributes name its type. So two
+-- shortcodes compare equal whatever they hold. A custom node that keeps
+-- children in its span has them compared like any other inlines, with the
+-- same ids dropped. That is safe: an alt text that differs from its figure's
+-- caption only in what such nodes hold carries the same marks as the caption,
+-- in the same order and on the same figure, so the marks it stops filing are
+-- ones the caption already files. The walk returns a copy, so the ids Quarto
+-- resolves each node by stay where they are.
 local function without_custom_ids(inlines)
   return inlines:walk({
     Span = function(span)

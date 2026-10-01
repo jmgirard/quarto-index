@@ -18,13 +18,18 @@
       scheme, whatever that scheme is.
 
       The path part is percent-DECODED before it is compared: `%20` is a space
-      on disk, not two characters of a filename. Resolution is confined to the
-      captured directory, so a path normalizing outside it is a failure and
-      never a file read from somewhere the render never wrote. With a BASE PATH
-      given, a root-relative link must carry that segment: the site is served
-      under it, so `/syntax.html` 404s in production however well it resolves
-      against the capture root. With no base path given there is no segment to
-      require and a root-relative link resolves against that root (M46).
+      on disk, not two characters of a filename. The path resolves only if
+      its normalized form, or that form joined with `index.html`, is a regular
+      file that one walk of the capture lists. The walk descends no directory
+      symlink and keeps only regular files, so a path that leaves the capture
+      or passes through a symlink is a failure and never a file read from
+      somewhere the render never wrote. A page the walk lists that is not a
+      regular file is a failure too, named, since its links go unread (M103).
+      With a BASE PATH given, a root-relative link must carry that segment
+      once normalized: the site is served under it, so `/syntax.html` 404s in
+      production however well it resolves against the capture root. With no
+      base path given there is no segment to require and a root-relative link
+      resolves against that root (M46).
 
   headings <old-readme> <new-readme> <site-dir> [overlay]
       Every `##`/`###` heading the old README carried, other than the three the
@@ -56,6 +61,9 @@
       rather than written down, and asserted non-empty so a collapsed
       enumeration reads as collapsed and not as a pass. A row whose phrase
       flattens to nothing is refused, as it would report every page swept.
+      A page in the domain that cannot be read, or does not decode as UTF-8,
+      is a failure that names it, reported beside every page that does carry
+      a row (M103).
 
   prerelease-absent <sentence-file> [overlay]
       No tracked page a reader meets carries a sentence of the retired
@@ -96,7 +104,9 @@ Exits non-zero with a `FAIL:` line naming what it found.
 
 import html
 import os
+import posixpath
 import re
+import stat
 import subprocess
 import sys
 import urllib.parse
@@ -238,27 +248,55 @@ class Page(HTMLParser):
             self.hrefs.append(attr['href'])
 
 
-def check_links(captured, base_path=''):
-    base = base_path.strip('/')
-    pages = {}
+def captured_files(captured):
+    """(regular, other): the capture's files, as paths relative to it.
+
+    One `os.walk`, which descends into no directory symlink. Of the file
+    entries it lists, `regular` holds each one `lstat` reads as a regular
+    file and `other` holds the rest, a symlink to a file among them. The
+    regular set is the whole of what a link may resolve to (M103). A path
+    built from `..` segments or through a symlink is not in it, however the
+    file system would resolve that path. M46 confined resolution with a
+    containment test over resolved paths instead, and that test let a link
+    through four times.
+    """
+    regular, other = set(), set()
     for root, _dirs, files in os.walk(captured):
         for name in files:
-            if not name.endswith('.html'):
-                continue
             full = os.path.join(root, name)
-            parser = Page()
-            parser.feed(open(full, encoding='utf-8', errors='replace').read())
-            pages[os.path.relpath(full, captured)] = parser
-    if not pages:
+            rel = os.path.relpath(full, captured)
+            if stat.S_ISREG(os.lstat(full).st_mode):
+                regular.add(rel)
+            else:
+                other.add(rel)
+    return regular, other
+
+
+def check_links(captured, base_path=''):
+    base = base_path.strip('/')
+    files, other = captured_files(captured)
+    # A page the walk lists that is not a regular file is never parsed, so
+    # the links it makes would go unchecked with no report. It is reported
+    # instead, beside whatever else the check finds (M103 review).
+    report = []
+    unread = sorted(rel for rel in other if rel.endswith('.html'))
+    if unread:
+        report.append(f'{len(unread)} page(s) under {captured} are not '
+                      f'regular files, so the links they make were not read '
+                      f'and no link resolves to them:\n'
+                      + '\n'.join(f'  {rel}' for rel in unread))
+    pages = {}
+    for rel in sorted(files):
+        if not rel.endswith('.html'):
+            continue
+        parser = Page()
+        parser.feed(open(os.path.join(captured, rel), encoding='utf-8',
+                         errors='replace').read())
+        pages[rel] = parser
+    if not pages and not unread:
         return fail(f'{captured} holds no rendered page at all, so the link '
                     f'check would sweep nothing')
 
-    root = os.path.abspath(captured)
-    # The containment test below compares resolved paths, so the root it
-    # compares against is resolved too: on a checkout reached through a
-    # symlinked parent (`/tmp` -> `/private/tmp`) an unresolved root would
-    # make every link inside the capture read as an escape.
-    real_root = os.path.realpath(root)
     bad = []
     swept = 0
     for rel, page in pages.items():
@@ -282,7 +320,12 @@ def check_links(captured, base_path=''):
                 # `os.path.join` discarded the capture root against the
                 # absolute path decoding produced (M46).
                 if path.startswith('/'):
+                    # Normalized BEFORE the base-segment test, so the test
+                    # reads the segment the link reaches and not the text it
+                    # opens with: `/./docs/x.html` carries the segment and
+                    # `/docs/../x.html` does not (M103).
                     stripped = path.lstrip('/')
+                    stripped = posixpath.normpath(stripped) if stripped else ''
                     if base:
                         # The site is served UNDER the base path, so a
                         # root-relative link that does not carry that segment
@@ -298,54 +341,41 @@ def check_links(captured, base_path=''):
                                        f'and not a page of this site')
                             continue
                         stripped = stripped[len(base):].lstrip('/')
-                    target = os.path.normpath(stripped) if stripped else ''
+                    target = stripped
                 else:
-                    target = os.path.normpath(
-                        os.path.join(os.path.dirname(rel), path))
-                # Resolution is confined to the capture. `../../notes.html`
-                # leaves it, and joining that onto the captured root reads a
-                # file the render never produced — the check would then call a
-                # link resolved on the strength of something outside the site
-                # it is about (M46). The test is on the path the join actually
-                # reaches, not on the text of the target: a `..` sitting behind
-                # an existing segment (`/x/../../outside.html`) leaves no
-                # leading `../` for a textual test to match (M46).
-                on_disk = os.path.abspath(os.path.join(root, target))
-                # Both sides are resolved through their symlinks. `abspath`
-                # normalizes text only, so a link through a symlink that sits
-                # inside the capture and points above it reached a file
-                # outside the site while the textual test saw a path under
-                # the root (M46). `capture` copies with `cp -R`, which
-                # preserves a link the render wrote.
-                reached = os.path.realpath(on_disk)
-                if reached != real_root \
-                        and not reached.startswith(real_root + os.sep):
-                    bad.append(f'  {rel}: <<{href}>> resolves to {reached}, '
-                               f'which is outside the captured site under '
-                               f'{captured}')
-                    continue
-                if os.path.isdir(on_disk):
-                    target = os.path.join(target, 'index.html')
-                    on_disk = os.path.join(on_disk, 'index.html')
-                if not os.path.exists(on_disk):
+                    target = posixpath.normpath(
+                        posixpath.join(posixpath.dirname(rel), path))
+                # Resolution is a lookup in the set of files the walk listed,
+                # and nothing else reads the file system. A target that leaves
+                # the capture keeps a leading `..` after normalization, and one
+                # through a symlink names a path the walk never listed, so
+                # neither is in the set (M103). A directory link resolves to
+                # the `index.html` the walk listed inside it.
+                index = posixpath.normpath(posixpath.join(target, 'index.html'))
+                found = target if target in files \
+                    else index if index in files else None
+                if found is None:
                     bad.append(f'  {rel}: <<{href}>> names no file under '
                                f'{captured} (looked for {target})')
                     continue
-                if fragment and target in pages \
-                        and fragment not in pages[target].ids:
+                if fragment and found in pages \
+                        and fragment not in pages[found].ids:
                     bad.append(f'  {rel}: <<{href}>> names no element with '
-                               f'that id in {target}')
+                               f'that id in {found}')
             elif fragment:
                 if fragment not in page.ids:
                     bad.append(f'  {rel}: <<{href}>> names no element with '
                                f'that id in the page carrying it')
-    if not swept:
+    if not swept and not report:
         return fail(f'the {len(pages)} rendered page(s) under {captured} make '
                     f'no link to their own content at all, so this check '
                     f'passed over an empty set')
     if bad:
-        return fail(f'{len(bad)} of {swept} link(s) the rendered site makes to '
-                    f'its own content do not resolve:\n' + '\n'.join(bad))
+        report.append(f'{len(bad)} of {swept} link(s) the rendered site makes '
+                      f'to its own content do not resolve:\n'
+                      + '\n'.join(bad))
+    if report:
+        return fail('\n'.join(report))
     print(f'ok   M40-AC2: all {swept} link(s) the {len(pages)} rendered '
           f'page(s) make to their own content resolve — the path to a file the '
           f'render produced, and each `#fragment` to an id that file carries')
@@ -567,7 +597,10 @@ def swept_domain():
 
 
 def sweep_rows(rows, overlay=None, fold=False):
-    """((hits, domain), None), or (None, message) on anything that stops it.
+    """((hits, domain), unread), or (None, message) when the domain fails.
+
+    `unread` is None, or a report on the domain's files the sweep could not
+    read. The hits on the files it could read come back with it either way.
 
     One sweep of the `swept_domain` for every row, used by every mode that
     forbids a sentence on a page a reader meets. A hit is one report line
@@ -595,6 +628,14 @@ def sweep_rows(rows, overlay=None, fold=False):
         except OSError as exc:
             unreadable.append(f'  {path}: {exc.strerror}')
             continue
+        # A page that does not decode is reported by name in the same way.
+        # The error is a ValueError and not an OSError, so until M103 it left
+        # the loop as a traceback that named no page and no sentence (D-029).
+        except UnicodeDecodeError as exc:
+            unreadable.append(f'  {path}: does not decode as UTF-8 (byte '
+                              f'{exc.object[exc.start]:#04x} at offset '
+                              f'{exc.start})')
+            continue
         body = flatten(text_read)
         if fold:
             body = body.lower()
@@ -604,10 +645,15 @@ def sweep_rows(rows, overlay=None, fold=False):
                 needle = needle.lower()
             if needle in body:
                 hits.append(f'  {path} ({label}): <<{text}>>')
+    # The hits on the pages that WERE read are returned beside the report on
+    # the ones that were not. Returning the report alone left the page that
+    # carries a forbidden row unnamed whenever another page failed to read
+    # (M103 review).
     if unreadable:
-        return None, (f'{len(unreadable)} of the {len(domain)} file(s) in the '
-                      f'swept domain could not be read, so the sweep does not '
-                      f'cover the domain it names:\n' + '\n'.join(unreadable))
+        return (hits, domain), (
+            f'{len(unreadable)} of the {len(domain)} file(s) in the swept '
+            f'domain could not be read, so the sweep does not cover the '
+            f'domain it names:\n' + '\n'.join(unreadable))
     return (hits, domain), None
 
 
@@ -647,13 +693,16 @@ def check_phrase_absent(phrase_path, overlay=None):
     # same fragment opening one is capitalized. A case-SENSITIVE sweep for
     # `two back-ends` read `Two back-ends ship` as clean, on the first line of
     # README.md and of the site's landing page (M52 review F1).
-    swept, problem = sweep_rows(rows, overlay, fold=True)
-    if problem:
-        return fail_m52(problem)
+    swept, unread = sweep_rows(rows, overlay, fold=True)
+    if swept is None:
+        return fail_m52(unread)
     still, domain = swept
+    report = [unread] if unread else []
     if still:
-        return fail_m52(f'a page a reader meets carries a forbidden phrase; '
-                    f'swept {len(domain)} file(s):\n' + '\n'.join(still))
+        report.append(f'a page a reader meets carries a forbidden phrase; '
+                      f'swept {len(domain)} file(s):\n' + '\n'.join(still))
+    if report:
+        return fail_m52('\n'.join(report))
     print(f'ok   M52: none of the {len(rows)} forbidden phrase(s) is present '
           f'in any of the {len(domain)} file(s) swept — every tracked page '
           f'under site/ plus README.md, enumerated by `git ls-files` — '
@@ -677,14 +726,17 @@ def check_prerelease_absent(sentence_path, overlay=None):
     rows, problem = read_rows(sentence_path, 'sentence', 'retired-sentence')
     if problem:
         return fail(problem, 'M44-AC1')
-    swept, problem = sweep_rows(rows, overlay, fold=False)
-    if problem:
-        return fail(problem, 'M44-AC1')
+    swept, unread = sweep_rows(rows, overlay, fold=False)
+    if swept is None:
+        return fail(unread, 'M44-AC1')
     still, domain = swept
+    report = [unread] if unread else []
     if still:
-        return fail(f'the retired pre-release warning is back on a page a '
-                    f'reader meets; swept {len(domain)} file(s):\n'
-                    + '\n'.join(still), 'M44-AC1')
+        report.append(f'the retired pre-release warning is back on a page a '
+                      f'reader meets; swept {len(domain)} file(s):\n'
+                      + '\n'.join(still))
+    if report:
+        return fail('\n'.join(report), 'M44-AC1')
     print(f'ok   M44-AC1: none of the {len(rows)} retired pre-release '
           f'sentence(s) is present in any of the {len(domain)} file(s) swept '
           f'— every tracked page under site/ plus README.md, enumerated by '

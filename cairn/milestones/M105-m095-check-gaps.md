@@ -56,14 +56,14 @@ probe's output instead of stating a count. The plan gate chose that form.
       on the merged tree. `tests/run-tests.sh` runs it.
       `tests/run-tests.sh --self-test` shows it red, naming the line, on a
       copy of the modules whose `indexes.lua` reset holds one added line.
-- [ ] AC2: In `tests/run-tests.sh --self-test`, the M095-AC3 `Bramble` check
+- [x] AC2: In `tests/run-tests.sh --self-test`, the M095-AC3 `Bramble` check
       reads a copy of the `place-oldstore` capture's `index.html`. In the
       copy, the href of `Bramble`'s locator in the `alpha` section changes
       from `two.html#qi-mark-1` to `two.html`, and nothing else changes. On
       that copy the check is red and names the href it read. The same check
       passes on an unchanged copy of that page. The M063 T2 leg no longer
       runs the M095-AC3 check.
-- [ ] AC3: `tests/fragments.py outside-heading` takes two tags from the call.
+- [x] AC3: `tests/fragments.py outside-heading` takes two tags from the call.
       The element carrying the named id must have the first tag. Its first
       direct child tagged `h1` to `h6` must have the second. If either
       differs, the check fails and names the tag it found. The M095-AC3 call
@@ -396,3 +396,15 @@ The branch holds `origin/main`, and `main` has no unpushed commits. Runs used
   source defines `local function reset(`. This module does, and its unlisted
   line passes. In a module that `CELLS` names, the same split is red, because
   the module goes missing. Box left unticked.
+- AC2: `tests/run-tests.sh --self-test` at 1a9f5f8 passed (1738 checks). It
+  prints `M105-AC2 self-test (an unchanged copy of the page)` green, with
+  `Bramble` linking to `two.html#qi-mark-1`. It prints `M105-AC2 self-test`
+  green: the check passes on the unchanged copy and is red on the planted
+  copy, naming `two.html`. The M063 T2 leg (lines 11463 to 11525) holds no
+  `M095` text, and its four output lines name no `M095-AC3` check.
+- AC3: in the same run, the M095-AC3 call passes `section h2` and prints two
+  `ok` lines for `four.html`, one per `place-blocked` render. Each line names
+  the `<section>` element and its `<h2>` heading. `M105-AC3 self-test` is
+  green: the check is red on the `div` copy and on the `h3` copy, each time
+  naming the tag it found. Called with the tags each copy carries, it is green
+  on that copy.

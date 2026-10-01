@@ -25,7 +25,10 @@ below would be evidence of anything.
 
 Before any of that, the cell guard (M105) reads every module's reset from
 source. It fails on a reset line whose text is neither a CELLS statement for
-its module nor, in indexes.lua, one of the KEPT lines, naming the line. The
+its module nor, in indexes.lua, one of the KEPT lines, naming the line. Where
+the reset starts and ends is Lua's answer, not this file's: Quarto's own Lua
+loads each module and reports the lines of the `reset` the module exports.
+The
 guard reads text, not count: a second copy of an allowed line passes it, and
 plant() stops on that copy when the probe runs. The suite runs the guard alone
 on every run, since it renders nothing.
@@ -144,25 +147,50 @@ class ResetShape(Exception):
 
 
 LONG_OPEN = re.compile(r'\[(=*)\[')
-BLOCK_OPEN = re.compile(r'\b(?:function|if|do|repeat)\b')
-BLOCK_CLOSE = re.compile(r'\b(?:end|until)\b')
+OPENER = re.compile(r'\s*local\s+function\s+reset\s*\([^)]*\)')
+
+# Run by Quarto's own Lua with the modules directory and module names as
+# arguments. For each name it prints the name, then either the source and the
+# first and last line of the `reset` function the module exports, or why there
+# is none. Lua's parser answers where the function ends, so a comment, a
+# string, or an `end` at any column cannot move that answer.
+BOUNDS_LUA = r'''
+local dir = arg[1]
+package.path = dir .. "/?.lua;" .. package.path
+for i = 2, #arg do
+  local name = arg[i]
+  local ok, m = pcall(require, "./" .. name)
+  if not ok then
+    print(name .. "\terror\t" .. (tostring(m):gsub("%s+", " ")))
+  elseif type(m) ~= "table" or type(m.reset) ~= "function" then
+    print(name .. "\tnone")
+  else
+    local info = debug.getinfo(m.reset, "S")
+    print(table.concat({name, "found", info.source,
+                        info.linedefined, info.lastlinedefined}, "\t"))
+  end
+end
+'''
 
 
 def lua_code(lines, start):
     """(index, code) for each line from `start`: the line with its comments
     removed and each string literal replaced by `""`.
 
-    A long comment or long string (`--[[ ]]`, `[==[ ]==]`) may span lines; a
-    line wholly inside one has no code. The keywords that open and close a
-    block are then counted over code alone, so an `end` in a comment or a
-    string closes nothing.
+    A long comment or long string (`--[[ ]]`, `[==[ ]==]`) may span lines, and
+    so may a short string whose line ends in a backslash; a line wholly inside
+    one has no code. Read from the file's first line, so that a line inside a
+    comment is known to be one.
     """
     long_close = None
     in_comment = False
+    quote = None
     for i in range(start, len(lines)):
         line = lines[i]
         code = []
         pos = 0
+        if quote is not None:
+            pos, quote = short_string(line, 0, quote)
         while pos < len(line):
             if long_close is not None:
                 close = line.find(long_close, pos)
@@ -186,11 +214,7 @@ def lua_code(lines, start):
                 pos = m.end()
                 continue
             if line[pos] in '"\'':
-                quote = line[pos]
-                pos += 1
-                while pos < len(line) and line[pos] != quote:
-                    pos += 2 if line[pos] == '\\' else 1
-                pos += 1
+                pos, quote = short_string(line, pos + 1, line[pos])
                 code.append('""')
                 continue
             code.append(line[pos])
@@ -198,50 +222,114 @@ def lua_code(lines, start):
         yield i, ''.join(code)
 
 
-def reset_body(name, lines):
+def short_string(line, pos, quote):
+    """Where a short string opened before `pos` ends: (the position after it,
+    the quote still open on the next line or None). A backslash ending the
+    line continues the string there, as Lua reads it."""
+    while pos < len(line):
+        if line[pos] == '\\':
+            if pos + 1 == len(line):
+                return len(line), quote
+            pos += 2
+        elif line[pos] == quote:
+            return pos + 1, None
+        else:
+            pos += 1
+    return len(line), None
+
+
+def opener_rows(codes):
+    """The 0-based rows whose code opens with `local function reset(`."""
+    return [i for i, code in enumerate(codes) if OPENER.match(code)]
+
+
+def lua_bounds(module_dir, names):
+    """{name: (source path, first line, last line)} for the `reset` each named
+    module exports, 1-based, as Quarto's Lua reads it; or {name: reason}
+    where it exports none or does not load."""
+    with tempfile.NamedTemporaryFile('w', suffix='.lua', delete=False) as f:
+        f.write(BOUNDS_LUA)
+    try:
+        run = subprocess.run(['quarto', 'pandoc', 'lua', f.name,
+                              os.path.abspath(module_dir)] + names,
+                             capture_output=True, text=True)
+    finally:
+        os.unlink(f.name)
+    if run.returncode != 0:
+        raise SystemExit('FAIL: cell guard: Quarto\'s Lua did not run (exit %d): '
+                         '%s' % (run.returncode, run.stderr.strip()))
+    out = {}
+    for row in run.stdout.splitlines():
+        cols = row.split('\t')
+        if len(cols) == 5 and cols[1] == 'found':
+            out[cols[0]] = (cols[2][1:], int(cols[3]), int(cols[4]))
+        elif len(cols) >= 2:
+            out[cols[0]] = ('it does not load: ' + cols[2] if cols[1] == 'error'
+                            else 'it exports no reset function as M.reset')
+    for name in names:
+        if name not in out:
+            raise SystemExit('FAIL: cell guard: Quarto\'s Lua printed nothing '
+                             'for %s.lua: %r' % (name, run.stdout))
+    return out
+
+
+def reset_body(name, path, lines, bound):
     """The 0-based line numbers of the code lines inside `name`'s reset.
 
-    The function ends where its blocks balance: `function`, `if`, `do` and
-    `repeat` open one, `end` and `until` close one. An inner `end` at column 0
-    is therefore read as the inner block's, and the lines after it are still
-    read. The closing line is a body line too when it holds more than `end`.
+    `bound` is lua_bounds's answer for the module. The module must have one
+    `local function reset(` line outside comments, and it must open the reset
+    the module exports. Between that line and the closing line, every line
+    with code is a body line. The opener line is one too when code follows
+    the parameter list, and the closing line when it holds more than `end`.
     """
-    start = next((i for i, line in enumerate(lines)
-                  if line.strip().startswith(RESET_OPENER)), None)
-    if start is None:
-        raise ResetShape('%s.lua: no line opens with %r'
-                         % (name, RESET_OPENER))
-    depth = 0
+    codes = [code for _, code in lua_code(lines, 0)]
+    rows = opener_rows(codes)
+    if len(rows) != 1:
+        raise ResetShape('%s.lua: %d lines open with %r outside comments '
+                         '(lines %s), and the guard reads one reset per module'
+                         % (name, len(rows), RESET_OPENER,
+                            ', '.join(str(r + 1) for r in rows) or 'none'))
+    if isinstance(bound, str):
+        raise ResetShape('%s.lua: a reset opens at line %d, but %s'
+                         % (name, rows[0] + 1, bound))
+    source, first, last = bound
+    if os.path.realpath(source) != os.path.realpath(path):
+        raise ResetShape('%s.lua: the reset it exports is defined in %s'
+                         % (name, source))
+    if first != rows[0] + 1:
+        raise ResetShape('%s.lua: a reset opens at line %d, but the reset it '
+                         'exports opens at line %d' % (name, rows[0] + 1, first))
     body = []
-    for i, code in lua_code(lines, start):
-        depth += len(BLOCK_OPEN.findall(code)) - len(BLOCK_CLOSE.findall(code))
-        if i == start:
-            if depth != 1:
-                raise ResetShape('%s.lua line %d: the reset opener shares its '
-                                 'line with other blocks, which this reader '
-                                 'reads a line at a time' % (name, i + 1))
-            continue
-        if depth == 0:
+    for i in range(first - 1, last):
+        code = codes[i]
+        if i == first - 1:
+            code = code[OPENER.match(code).end():]
+            if first == last:
+                code = re.sub(r'\bend\s*$', '', code)
+            if code.strip():
+                body.append(i)
+        elif i == last - 1:
             if code.strip() != 'end':
                 body.append(i)
-            return body
-        if code.strip():
+        elif code.strip():
             body.append(i)
-    raise ResetShape('%s.lua: the reset opened at line %d never closes'
-                     % (name, start + 1))
+    return body
 
 
 def reset_lines(name, lines):
     """reset_body for the probes, where a reset it cannot read ends the run."""
+    path = module_path(name)
     try:
-        return reset_body(name, lines)
+        bound = lua_bounds(MODULE_DIR, [name])[name]
+        return reset_body(name, path, lines, bound)
     except ResetShape as e:
         raise SystemExit(str(e))
 
 
 def reset_modules():
-    """(name, lines) for each module under the extension's `modules/` that
-    opens a reset, read through filtersrc so QI_EXT_DIR can name a copy."""
+    """(name, path, lines) for each module under the extension's `modules/`
+    with a `local function reset(` line outside comments, read through
+    filtersrc so QI_EXT_DIR can name a copy."""
     root = os.path.join(filtersrc.ext_dir(), 'modules')
     found = []
     for path in filtersrc.sources():
@@ -249,21 +337,22 @@ def reset_modules():
         if rel.startswith(os.pardir):
             continue
         lines = filtersrc.read(path).split('\n')
-        if any(line.strip().startswith(RESET_OPENER) for line in lines):
-            found.append((rel[:-len('.lua')], lines))
+        if opener_rows([code for _, code in lua_code(lines, 0)]):
+            found.append((rel[:-len('.lua')], path, lines))
     return found
 
 
 def check_cells():
     """Every reset line is a CELLS statement for its module, or a KEPT line.
 
-    A module is found by its `local function reset(` line, never by name.
-    A reset written in another form is not found. Every module CELLS names
-    must be among those found, which keeps the search from passing on a
-    tree where it found nothing to read.
+    A module is found by its `local function reset(` line outside comments,
+    never by name. A reset written in another form is not found. Every module
+    CELLS names must be among those found, which keeps the search from passing
+    on a tree where it found nothing to read. Quarto's Lua then says where
+    each found module's exported reset starts and ends.
     """
     found = reset_modules()
-    names = [name for name, _ in found]
+    names = [name for name, _, _ in found]
     missing = sorted({module for _, module, _ in CELLS} - set(names))
     if missing:
         print('FAIL: cell guard: no %r line under %s in %s, which CELLS names'
@@ -271,15 +360,16 @@ def check_cells():
                  ', '.join(m + '.lua' for m in missing)),
               file=sys.stderr)
         return 1
+    bounds = lua_bounds(os.path.join(filtersrc.ext_dir(), 'modules'), names)
     stray = []
     lines_read = 0
-    for name, lines in found:
+    for name, path, lines in found:
         allowed = {statement for _, module, statement in CELLS
                    if module == name}
         if name == 'indexes':
             allowed.update(KEPT)
         try:
-            body = reset_body(name, lines)
+            body = reset_body(name, path, lines, bounds[name])
         except ResetShape as e:
             print('FAIL: cell guard: %s' % e, file=sys.stderr)
             return 1

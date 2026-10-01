@@ -17861,7 +17861,23 @@ if [ "${1:-}" = "--self-test" ]; then
     "qi_core.empty(planted_cell)" "gains a line no CELLS row names"
   m105_red 's/^    read\(doc\.meta\)\n  end\nend\n/    read(doc.meta)\nend\n  qi_core.empty(planted_after)\nend\n/m' \
     "qi_core.empty(planted_after)" "closes its if block with an end at column 0 and gains a line after it"
-  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the extension and on one whose indexes.lua reset holds a block comment, and red, naming the line, on one whose reset gains a line and on one where that line follows an inner end at column 0"
+  # A commented-out copy of the opener above the real one: a reader that took
+  # the first opener it met would read the copy's empty body and pass.
+  m105_red 's/^local function reset\(doc\)\n/--[[\nlocal function reset(doc)\nend\n]]\nlocal function reset(doc)\n  qi_core.empty(planted_hidden)\n/m' \
+    "qi_core.empty(planted_hidden)" "follows a commented-out copy of its opener and gains a line"
+  m105_red 's/^local function reset\(doc\)\n/local function reset(doc) qi_core.empty(planted_opener)\n/m' \
+    "local function reset(doc) qi_core.empty(planted_opener)" "gains a statement on its opener line"
+  # A second definition after the first: Lua exports the later one, so the
+  # guard refuses to choose and names both opener lines.
+  m105_copy 's/^(    read\(doc\.meta\)\n  end\nend\n)/$1local function reset(doc)\n  qi_core.empty(planted_second)\nend\n/m'
+  if M105_OUT=$(QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells 2>&1); then
+    fail "M105-AC1 self-test: the guard passed on a copy whose indexes.lua defines reset twice"
+  fi
+  case "$M105_OUT" in
+    *"FAIL: cell guard: indexes.lua: 2 lines open with 'local function reset(' outside comments (lines "*) ;;
+    *) fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua defines reset twice, but not naming the two opener lines (<<$M105_OUT>>)" ;;
+  esac
+  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the extension and on one whose indexes.lua reset holds a block comment, and red, naming the line, on one whose reset gains a line, on one where that line follows an inner end at column 0, on one where it follows a commented-out copy of the opener, and on one with a statement on the opener line, and red naming both openers on one that defines reset twice"
 fi
 state_reuse_pair() {
   local stem="$1" fmt="$2" ext="$3" want="$4" v

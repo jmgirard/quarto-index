@@ -135,7 +135,8 @@ probe's output instead of stating a count. The plan gate chose that form.
       (`quarto pandoc lua`): load the module and read the first and last
       line of the exported `reset` from `debug.getinfo`. Stop counting
       blocks by hand. Read the opener line's code too. Add self-test plants
-      for V1, V2 and V3, each red naming the stray line (V12, V14).
+      for V1 and V3, each red naming the stray line, and for V2, red naming
+      both opener lines (V12, V14).
 - [ ] T10 (review return 2): Fix the wording of V4. Add one entry that
       supersedes D-062's claim on what the probe drops (V5). Add Known issues
       entries for the accepted gaps (V9). Fix KI10's "Four" (V10).
@@ -178,6 +179,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: review run 2 started at 66991d0, branch holding `origin/main`. Validate passed. Three fresh reviewers reported 21 findings, logged in the Review section.
 - 2026-10-01: AC1 not met: a commented-out reset opener above the real one makes the guard read the copy, so a stray line in the real reset passes (V1, reproduced). The self-test run was stopped by hand at 876 checks, all M105 checks green, because the return makes its evidence stale.
 - 2026-10-01: review return 2 (defect): AC1 fails, because a commented-out reset opener above the real one makes the guard read the copy (V1). AC1 failed twice by the same shape, a hand-written reader that misplaces the reset. The user chose to let Quarto's Lua find the reset, and accepted the proposed dispositions. Status back to in-progress. Tasks T9 to T12 added, Coverage amended.
+- 2026-10-01: implement resumed on the branch, `main` unmoved. No question gate, because `quarto pandoc lua` loads each module and reports its exported reset's lines, so the gate's choice works as stated.
+- 2026-10-01: T9 code landed. `tests/stateprobe.py` takes each reset's first and last line from Quarto's Lua (`debug.getinfo` on the exported `reset`), needs one opener line outside comments per module, and reads code after the opener's parameter list. A short string continued by a backslash now spans lines (V14). On the real modules the probes' `reset_lines` returns the same rows as before. Eleven earlier hand plants behave as before, and V1, V3 and a one-line reset are red naming the line (V12). V2 is red naming both opener lines, so T9's wording now says so (minor edit). The three new self-test plants each turn the block red when run against the pre-T9 reader. T9 stays unticked until T12's suite runs.
 
 ## Decisions
 

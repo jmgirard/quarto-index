@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -117,7 +117,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       `tests/run-tests.sh` and `tests/run-tests.sh --self-test` with no
       edits to the suite during either run (LESSONS M073), and record each
       result in the work log.
-- [ ] T5 (review return 1): Make `reset_body` read to the function's own
+- [x] T5 (review return 1): Make `reset_body` read to the function's own
       closing `end` by counting Lua blocks, not by the first column-0 `end`.
       Skip the lines of a `--[[ ]]` block comment. Find the modules through
       `tests/filtersrc.py`, kept to `modules/`. Make each guard failure name
@@ -127,9 +127,9 @@ probe's output instead of stating a count. The plan gate chose that form.
 - [x] T6 (review return 1): Add a D-entry that narrows D-011 for this guard,
       with its reason, and edit KI10's sentence that says D-011 refuses the
       scan (R2).
-- [ ] T7 (review return 1): Fix the wording of R5, R6 and R7. Add the
+- [x] T7 (review return 1): Fix the wording of R5, R6 and R7. Add the
       asserts of R9, R10 and R11. Rename the parameter of R12.
-- [ ] T8 (review return 1): Repeat T4's two suite runs and record each
+- [x] T8 (review return 1): Repeat T4's two suite runs and record each
       result in the work log.
 
 ## Work log
@@ -159,6 +159,9 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: T5 code landed. `reset_body` counts Lua blocks over code with comments and strings removed. Modules come through `tests/filtersrc.py` under `modules/`, and every guard failure names its module and cause. The self-test adds a column-0 `end` plant (red, naming the line) and a block-comment copy (green), and matches one whole report line (R11, same block). The R5 and R6 wording in this block and in `tests/stateprobe.py` landed here too. On the real modules the new reader returns the same lines as the old one. Under Python 3.9.6 and 3.14.7, the extracted block passes. It is red against a mutant with the old `end` rule, and against one that reads `--[[` as a line comment. T5 stays unticked until T8's suite runs.
 - 2026-10-01: T6 done. D-062 narrows D-011 so the cell guard may read reset source, and KI10 now names the direction the guard checks. Tracking only, so ticked now.
 - 2026-10-01: T7 code landed. The plant-builder comment names five copies, and the M095-AC3 pass line names its three (R7). If `rename()` or the `h3` plant aims at an element the check does not read, the plant builder now stops (R9). The AC2 plant asserts one changed line and a copy shorter by 10 bytes (R10). The `outside_heading` parameter is now `container` (R12), renamed by a short script inside that one function. Run alone on the last captures under Python 3.9.6 and 3.14.7, both blocks pass. The R9 assert is red on a copy with a heading before the `<h2>`. The R10 assert is red on a plant that changes a second byte. The macOS `sed` keeps a missing final newline, so R10's newline case does not arise here. T7 stays unticked until T8's suite runs.
+- 2026-10-01: at cf7a4b4, with `/usr/bin/python3` (3.9.6) first on the PATH and no suite edits during either run, `tests/run-tests.sh --self-test` passed (1738 checks) and `tests/run-tests.sh` passed (898 checks). T5, T7 and T8 are ticked.
+- 2026-10-01: claim audit: not owed — internal tier.
+- 2026-10-01: status set to review.
 
 ## Decisions
 

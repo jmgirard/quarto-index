@@ -121,6 +121,7 @@ not decode as UTF-8, by name, where today it raises (KI152).
 - claim audit: not owed — internal tier
 - 2026-10-01: review fix-now [A]. The sweeps return their hits beside the unreadable-page report, and each mode prints both. A plant per mode pairs an undecodable README with a front page carrying a row and requires both names.
 - 2026-10-01: review fix-now [B]. `captured_files` also returns the non-regular entries, and `check_links` names each `.html` among them as a page whose links were not read. Three plants cover this: a symlinked page, a capture whose only page is a symlink, and the directory symlink plant. Fix-now [C] is the docstring wording, the stale `/etc/passwd` comment and guard, the DESIGN.md absence sentence, four `looked for` pins, and a domain-coverage assertion in `m103_undecodable`.
+- step-7 approval: m103-site-check-clauses approved for merge
 
 ## Decisions
 

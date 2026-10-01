@@ -9004,18 +9004,18 @@ pass "M063-AC3/M064-AC1/M064-AC2: where the store path a chapter's record would 
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
-  # M095-AC3 — the heading-mark check against three copies of four.html, each
-  # with `mullion-passage` MOVED rather than copied, since a copy fails the
-  # once-on-the-page clause before containment is read. Onto the `<h2>`, which
-  # a reader counting only a container's descendants would miss. Into the
-  # `<h2>`, the shape the render moves the id out of. Out of the section.
-  # Then two copies with the id left where it is (M105-AC3): the section's
-  # opening and closing tags renamed to `div`, and its heading's to `h3`, so
-  # the check is shown to read both tags the call names.
+  # M095-AC3 — the heading-mark check against five copies of four.html. In
+  # three, `mullion-passage` is MOVED rather than copied, since a copy fails
+  # the once-on-the-page clause before containment is read. Onto the `<h2>`,
+  # which a reader counting only a container's descendants would miss. Into
+  # the `<h2>`, the shape the render moves the id out of. Out of the section.
+  # In the other two the id stays where it is (M105-AC3): the section's
+  # opening and closing tags are renamed to `div`, and its heading's to `h3`,
+  # so the check is shown to read both tags the call names.
   # -------------------------------------------------------------------------
   M095_FOUR="$CAPTURE_ROOT/place-blocked-one/_book/four.html"
   if ! python3 - "$M095_FOUR" "$WORK" <<'M095PLANTPY'
-import os, sys
+import os, re, sys
 page, work = sys.argv[1:3]
 src = open(page, encoding='utf-8').read()
 span = '<span id="mullion-passage"></span>'
@@ -9038,6 +9038,9 @@ plants = {
 def rename(text, open_at, tag, new):
     """`text` with the element opening at `open_at` and its matching closing
     tag renamed from `tag` to `new`, counting nested elements of that tag."""
+    if not re.match(r'<' + tag + r'[\s>]', text[open_at:]):
+        sys.exit(f'FAIL: M105-AC3 self-test: the plant was built wrong: offset '
+                 f'{open_at} of {page} opens no <{tag}> element')
     depth, at = 0, open_at
     while True:
         opens = text.find('<' + tag, at)
@@ -9061,8 +9064,15 @@ def rename(text, open_at, tag, new):
 
 
 at = src.index(section)
+heading_at = src.index('<h2', at)
+# The <h2> renamed must be the section's first heading child, the one the
+# check reads: nothing that could hold or be a heading opens before it.
+if re.search(r'<(?:h[1-6]|section)[\s>]', src[src.index('>', at) + 1:heading_at]):
+    sys.exit(f'FAIL: M105-AC3 self-test: the plant was built wrong: a heading '
+             f'or a section opens in {page} between the section and its first '
+             f'<h2>, so that <h2> may not be the heading the check reads')
 plants['div'] = rename(src, at, 'section', 'div')
-plants['h3'] = rename(src, src.index('<h2', at), 'h2', 'h3')
+plants['h3'] = rename(src, heading_at, 'h2', 'h3')
 for name, text in plants.items():
     with open(os.path.join(work, f'm095-four-{name}.html'), 'w',
               encoding='utf-8') as out:
@@ -9089,7 +9099,7 @@ M095PLANTPY
       *) fail "M095-AC3 self-test: the heading-mark check failed on the $M095_NAME plant of four.html, but not by saying <<$M095_WANT>> (<<$M095_OUT>>)" ;;
     esac
   done
-  pass "M095-AC3 self-test: the heading-mark check is red on four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
+  pass "M095-AC3 self-test: the heading-mark check is red on the three copies of four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
   pass "M105-AC3 self-test: the heading-mark check is red on four.html with its section renamed to a div and with its heading renamed to an h3, each time naming the tag it found"
 
   # -------------------------------------------------------------------------
@@ -11418,6 +11428,12 @@ if [ "${1:-}" = "--self-test" ]; then
   M105_AFTER=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_BRAMBLE" || true; } | wc -l | tr -d ' ')
   [ "$M105_BEFORE" = "1" ] && [ "$M105_AFTER" = "0" ] \
     || fail "M105-AC2 self-test: the page carries Bramble's anchored href at $M105_BEFORE site(s) before the plant and $M105_AFTER after, want 1 and 0, so the plant did not change exactly one site"
+  # Nothing else changes: one line differs, and the copy is shorter by the 10
+  # bytes of `#qi-mark-1` alone, so no newline or other byte was added.
+  M105_LINES=$( { diff "$M105_PAGE" "$M105_BRAMBLE" || true; } | grep -c '^<' || true)
+  M105_SHRANK=$(( $(wc -c < "$M105_PAGE") - $(wc -c < "$M105_BRAMBLE") ))
+  [ "$M105_LINES" = "1" ] && [ "$M105_SHRANK" = "10" ] \
+    || fail "M105-AC2 self-test: the planted copy differs from the page on $M105_LINES line(s) and is $M105_SHRANK byte(s) shorter, want 1 and 10, so the plant changed more than the href"
   if M105_OUT=$( ( check_entry_locators "$M105_BRAMBLE" "$HTML_SECTION_ID-alpha" \
                      Bramble "two.html#qi-mark-1" "M105-AC2 probe" ) 2>&1 ); then
     fail "M105-AC2 self-test: the Bramble check passed on a copy of the page whose Bramble links to two.html alone"

@@ -144,26 +144,26 @@ def containment(path, container, wanted, want_inside):
 HEADINGS = ('h1', 'h2', 'h3', 'h4', 'h5', 'h6')
 
 
-def outside_heading(path, container_tag, heading_tag, section, wanted):
+def outside_heading(path, container_tag, heading_tag, container, wanted):
     doc = H.parse(path)
     name = os.path.basename(path)
-    if H.count_id(doc, section) != 1:
+    if H.count_id(doc, container) != 1:
         return fail('%s carries the id %r %d time(s), want exactly 1'
-                    % (name, section, H.count_id(doc, section)))
-    box = H.find_id(doc, section)
+                    % (name, container, H.count_id(doc, container)))
+    box = H.find_id(doc, container)
     if box.tag != container_tag:
         return fail('%s: the element %r is a <%s>, want <%s>'
-                    % (name, section, box.tag, container_tag))
+                    % (name, container, box.tag, container_tag))
     heading = next((n for n in box.children
                     if isinstance(n, H.Node) and n.tag in HEADINGS), None)
     if heading is None:
         return fail('%s: the element %r has no heading element among its '
                     'children, so there is no heading to be outside of'
-                    % (name, section))
+                    % (name, container))
     if heading.tag != heading_tag:
         return fail('%s: the first heading among the children of the element '
                     '%r is a <%s>, want <%s>'
-                    % (name, section, heading.tag, heading_tag))
+                    % (name, container, heading.tag, heading_tag))
     # The heading's own id counts, which `containment` never reads for its
     # container: `walk` yields descendants only.
     on_heading = {n.attrs['id'] for n in [heading, *H.walk(heading)]
@@ -177,13 +177,13 @@ def outside_heading(path, container_tag, heading_tag, section, wanted):
         if identifier in on_heading:
             return fail('%s: the id %r sits on or within the <%s> heading of '
                         'the element %r' % (name, identifier, heading.tag,
-                                            section))
+                                            container))
         if identifier not in within:
             return fail('%s: the id %r sits outside the element %r'
-                        % (name, identifier, section))
+                        % (name, identifier, container))
     print('ok   %s: %d id(s) each on the page once, inside the <%s> element '
           '%r and outside its <%s> heading: %s'
-          % (name, len(wanted), box.tag, section, heading.tag,
+          % (name, len(wanted), box.tag, container, heading.tag,
              ' '.join(wanted)))
     return 0
 

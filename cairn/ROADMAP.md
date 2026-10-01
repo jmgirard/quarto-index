@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-01 (M104 merged as PR #104 and archived. KI299 closed. Validate green.)_
+_Last hygiene check: 2026-10-01 (M105 merged as PR #105 and archived. KI284-KI287 closed, KI306-KI308 added. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M105 | Three M095 checks each fail on the gap its review found | review | — | normal | milestones/M105-m095-check-gaps.md |
+| M105 | Three M095 checks each fail on the gap its review found | done | — | normal | milestones/archive/M105-m095-check-gaps.md |
 | M104 | A caption mark beside a shortcode files one locator | done | — | normal | milestones/archive/M104-shortcode-caption-marks.md |
 | M103 | The two site-check clauses M46 withdrew hold again | done | — | normal | milestones/archive/M103-site-check-clauses.md |
-| M102 | The figure-marks checks run on every matrix leg, each shown able to fail | done | — | normal | milestones/archive/M102-figure-marks-checks.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

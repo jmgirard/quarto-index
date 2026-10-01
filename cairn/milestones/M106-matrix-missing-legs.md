@@ -146,6 +146,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: T2 and T3 done. The suite passed, 898 checks, with the workflow edits in place.
 - 2026-10-01: T4: run 36940692551 at 42e4b1f, attempt 1, green on all three legs (floor 1.5.52, pinned 1.10.18, release). Each new step prints its reader's `ok` line.
 - 2026-10-01: T5 first probe, run 36940741757 at 460498d: entries and EPUB `sections` red on all three legs with the changed row in the detail line. The cells step was skipped after the entries step failed, so AC3 is not met. Minor T2 fix: the cells step runs whenever the two-index render succeeded. T6 drafts are in this checkpoint, not yet checked.
+- 2026-10-01: T2 fix landed: the two-index render step has id `named_indexes_pdf`, and the cells step runs `if: !cancelled()` and that step succeeded. T4 and T5 are dispatched again on the new head.
 
 ## Decisions
 

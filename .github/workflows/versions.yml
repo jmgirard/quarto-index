@@ -474,10 +474,14 @@ jobs:
       # manifests the acceptance suite reads at its M49 checks: every entry
       # line of each printed index, compared both ways, and the four
       # below-marker cells, one of them a term that must be absent. Each
-      # reading is a step of its own, so a red one names its manifest. No
-      # later step renders examples/named-indexes.qmd, so nothing writes over
-      # this PDF before both read it.
+      # reading is a step of its own, so a red one names its manifest. The
+      # cells step runs whenever the render step succeeded, even after a red
+      # entries step: GitHub skips a step once an earlier one has failed, and
+      # a skipped step would say nothing about the cells. No later step
+      # renders examples/named-indexes.qmd, so nothing writes over this PDF
+      # before both read it.
       - name: Render examples/named-indexes.qmd to PDF
+        id: named_indexes_pdf
         shell: bash
         run: |
           set -euo pipefail
@@ -491,6 +495,7 @@ jobs:
             tests/named-indexes-pdf-entries.txt 'Two-index PDF entries'
 
       - name: Read the below-marker cells of examples/named-indexes.pdf against their manifest
+        if: ${{ !cancelled() && steps.named_indexes_pdf.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail

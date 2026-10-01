@@ -131,3 +131,28 @@ Evidence, 2026-10-01, branch head de082a6.
 - AC3: under base path `docs`, `/./docs/index.html` exits 0. `/docs/../index.html` and `/docs/sub/../../outside.html` each exit 1 with a line containing `carries no`.
 - AC4: overlay `site/index.qmd` is the tracked page plus a retired sentence, a forbidden phrase and the byte 0xe9. A UTF-8 read of it raises `UnicodeDecodeError`. `prerelease-absent` and `phrase-absent` each exit 1 and print a `FAIL:` line. The next line of each report is `site/index.qmd: does not decode as UTF-8 (byte 0xe9 at offset 2276)`. Neither output contains `Traceback`.
 - Consistency gate: `cairn_validate` exit 0, all checks passed. No DESIGN.md principle changed, so `cairn_impact` is skipped. The generic profile names no toolchain checks.
+
+Findings, three fresh reviewers (O = Opus diff-bug, H = Sonnet blame-history, P = Sonnet prior-review). The PR-comment probe returned none. Ranked as reported. Proposed group in brackets: [A] fix now, [B] fix now, [C] fix now (docs and plant pins), [D] Known issues entry, [R] reject with reason.
+
+- O1 (medium), H4: `sweep_rows` drops every hit when any page is unreadable, so with a bad `README.md` the page carrying a retired sentence goes unnamed. D-061 says the report clause is restored. [A]
+- O2 (medium), H1, O15: a symlinked `.html` page is no longer parsed, so its own links go unswept with no report, and "holds no rendered page" misleads when every page is a symlink. [B]
+- O3: D-061, the docstring and DESIGN.md do not say symlinked pages left the parsed domain. [B]
+- O4, H5: lookup is byte-exact, so a case or Unicode-form mismatch that APFS accepted is now reported. [D]
+- O5: `/../index.html` and a link leaving and re-entering the capture are reported. [R] AC2 requires reporting these shapes.
+- O6: `syntax.html/` resolves. [R] pre-existing.
+- O7: a query string stays in the path. [R] pre-existing.
+- O8: `base_path` is not normalized. [R] the one caller passes a literal.
+- O9: DESIGN.md absence-check sentence does not mention the decode report. [C]
+- O10, H8: the M40 summary pass line omits the undecodable plant. [R] that plant has its own pass line.
+- O11: `m103_*` helpers defined in one self-test block and used in another. [R] both blocks run under `--self-test`, in order.
+- O12: escape plants grep only `names no file under`. [C] also pin `looked for <target>`.
+- O13: docstring says the walk "follows no symlink". [C] reword to "descends no directory symlink and keeps only regular files".
+- O14, H7: `os.walk` skips an unreadable directory silently. [D]
+- O16: `mkdir sub` guards have no effect on the new code. [R] they keep the old-code demonstration honest.
+- H2: report for a link through a symlink to a real file says "names no file", and a directory link's `looked for` names the directory. [R] D-061 records the wording.
+- H3: `claims`, `prose`, `headings`, `readme` and `read_rows` still raise on a page that does not decode. [D]
+- H6: the encoded `/etc/passwd` plant's comment describes a hazard the new code no longer has. [C]
+- P1: `m103_undecodable` does not assert the domain-coverage wording. [C]
+- P2: the undecodable plants assert nothing about the planted sentence. [R] the page cannot be read, so no hit is possible.
+- P3: report literals re-typed across plants. [R] pre-existing pattern.
+- P4: the undecodable page is built in two edits. [R] each edit has its own guard.

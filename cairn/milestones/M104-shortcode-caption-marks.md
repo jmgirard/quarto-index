@@ -163,3 +163,4 @@ Review fan-out: three fresh reviewers (Opus diff-bug, Sonnet blame-history, Sonn
 - F11 (diff-bug 5): AC1's "page 7" cannot be a printed page number in HTML and EPUB. Proposed: no change needed. The AC1 evidence reads it by the fixture's own page definition and shows it holds.
 
 Gate triage (2026-10-01): F1-F6 fix now, F7-F11 rejected for the reasons above. The fixes changed only comments, the CHANGELOG sentence and one added plant assertion.
+After the fixes, `tests/run-tests.sh --self-test` at c73fa48 passed, 1732 checks, 0 FAIL.

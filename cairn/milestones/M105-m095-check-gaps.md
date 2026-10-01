@@ -137,7 +137,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       blocks by hand. Read the opener line's code too. Add self-test plants
       for V1 and V3, each red naming the stray line, and for V2, red naming
       both opener lines (V12, V14).
-- [ ] T10 (review return 2): Fix the wording of V4. Add one entry that
+- [x] T10 (review return 2): Fix the wording of V4. Add one entry that
       supersedes D-062's claim on what the probe drops (V5). Add Known issues
       entries for the accepted gaps (V9). Fix KI10's "Four" (V10).
 - [ ] T11 (review return 2): Add the asserts and plants of V6, V7 and V8.
@@ -181,6 +181,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: review return 2 (defect): AC1 fails, because a commented-out reset opener above the real one makes the guard read the copy (V1). AC1 failed twice by the same shape, a hand-written reader that misplaces the reset. The user chose to let Quarto's Lua find the reset, and accepted the proposed dispositions. Status back to in-progress. Tasks T9 to T12 added, Coverage amended.
 - 2026-10-01: implement resumed on the branch, `main` unmoved. No question gate, because `quarto pandoc lua` loads each module and reports its exported reset's lines, so the gate's choice works as stated.
 - 2026-10-01: T9 code landed. `tests/stateprobe.py` takes each reset's first and last line from Quarto's Lua (`debug.getinfo` on the exported `reset`), needs one opener line outside comments per module, and reads code after the opener's parameter list. A short string continued by a backslash now spans lines (V14). On the real modules the probes' `reset_lines` returns the same rows as before. Eleven earlier hand plants behave as before, and V1, V3 and a one-line reset are red naming the line (V12). V2 is red naming both opener lines, so T9's wording now says so (minor edit). The three new self-test plants each turn the block red when run against the pre-T9 reader. T9 stays unticked until T12's suite runs.
+- 2026-10-01: T10 done. The R5 wording in `tests/stateprobe.py` and the M26 comment now says `plant()` stops only on a second copy of a `CELLS` statement (V4). D-063 supersedes D-062's sentences on what the probe drops, and records that Quarto's Lua gives each reset's bounds (V5). KI306 to KI308 record the accepted gaps (V9), and KI10 says "Four of the accumulators" (V10). Tracking and comments only, so ticked now.
 
 ## Decisions
 

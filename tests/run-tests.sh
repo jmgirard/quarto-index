@@ -17818,7 +17818,8 @@ section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 # M105-AC1: every line of every module's reset is a `CELLS` statement for that
 # module or one of the lines indexes.lua's reset keeps. The guard compares
 # text, so a line it passes has a per-cell probe or is kept, and a second copy
-# of such a line passes too (plant() stops on it when the probe runs). The
+# of such a line passes too. plant() stops on a second copy of a CELLS
+# statement when the probe runs, and on no copy of a kept line. The
 # probe itself renders and runs by hand; this guard renders nothing and runs
 # here on every run.
 python3 tests/stateprobe.py --check-cells \

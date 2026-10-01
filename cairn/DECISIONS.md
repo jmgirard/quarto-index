@@ -469,3 +469,11 @@
 **Decision:** D-011 does not reach this guard. The user chose this at the M105 review gate over removing the guard. The guard certifies no behavior of the filter. It certifies that the state probe's table covers every reset line, because the probe drops only the lines that table names. No render can show that: a line the table omits is never dropped, so no render ever moves for it. The probe's renders stay the evidence that each reset is load-bearing (M26). The guard reads the source through `tests/filtersrc.py`, as every source-reading check does.
 
 **Consequences:** the other direction of KI10 stays open. A declared cell that joins no `reset` is still unguarded, and D-011 still refuses a scan for it. Any other new or widened scan over the extension's source still takes a superseding entry. Falsified by the guard and the probe disagreeing on which reset lines the table covers.
+
+### D-063 (2026-10-01): the cell guard covers the lines no probe drops alone, and Quarto's Lua says where each reset ends (supersedes D-062's Decision sentences on what the probe drops)
+
+**Context:** D-062 says the probe drops only the lines its table names, so a line the table omits never moves a render. That holds for each per-cell probe and for `reset:indexes`. `reset:marks`, `reset:latex` and `reset:sortkeys` drop every reset line. The M105 review also found the guard's own reader misplacing a reset's first or last line, twice.
+
+**Decision:** D-062's reason is restated. A reset line no `CELLS` row names gets no per-cell probe. In `indexes.lua` the whole-module probe also keeps it, so no render shows that the line goes unprobed. The guard takes each reset's first and last line from Quarto's Lua, which loads the module and reads the `reset` it exports. It still reads each line's text through `tests/filtersrc.py`.
+
+**Consequences:** the rest of D-062 stands, its narrowing of D-011 included. The guard needs `quarto` on the PATH, as the suite already does. Falsified by a module whose exported reset Quarto's Lua cannot load outside a render.

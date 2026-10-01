@@ -29,8 +29,9 @@ its module nor, in indexes.lua, one of the KEPT lines, naming the line. Where
 the reset starts and ends is Lua's answer, not this file's: Quarto's own Lua
 loads each module and reports the lines of the `reset` the module exports.
 The
-guard reads text, not count: a second copy of an allowed line passes it, and
-plant() stops on that copy when the probe runs. The suite runs the guard alone
+guard reads text, not count: a second copy of an allowed line passes it.
+plant() stops on a second copy of a CELLS statement when the probe runs, but
+it matches only CELLS statements, so a second copy of a KEPT line passes both. The suite runs the guard alone
 on every run, since it renders nothing.
 
 Usage:  python3 tests/stateprobe.py [cell-or-probe-name ...]

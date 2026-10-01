@@ -894,8 +894,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   owns returns them between documents; a cell added that joins no `reset` is
   unguarded, and D-011 refuses to pin that with a source scan. The cell guard
   checks the other direction, each reset line against `CELLS`, which D-062
-  allows (corrected M105). Four carry more
-  than a skewed count. A leaked `pending_xrefs` emits reports naming marks in a
+  allows (corrected M105). Four of the accumulators carry
+  more than a skewed count. A leaked `pending_xrefs` emits reports naming marks in a
   different file, so it reads as a filter bug rather than a stale number.
   `principal_ordinals` is the first whose value reaches an on-disk artifact, the
   `.aux` registry keys, so a reused state would offset the next document's
@@ -1889,3 +1889,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   sibling `phrase-absent` over the same domain folds case. A retired sentence
   restored with a different opening capital is caught by one of the two sweeps
   and not by the other. — M096
+- **KI306.** The cell guard (`tests/stateprobe.py --check-cells`) compares
+  each reset line's text. A second copy of a line it allows passes it. The
+  probes' `plant()` stops on a second copy of a `CELLS` statement, but it
+  never reads the kept lines of `indexes.lua`. A second copy of a kept line
+  passes both. — M105 review R5, V4
+- **KI307.** A `CELLS` row whose statement no longer sits in its module's
+  reset passes the cell guard, which reads from the reset to the table and
+  not back. Only the hand-run probe's `plant()` stops on it. — M105 plan
+  Out, review R17
+- **KI308.** The cell guard finds a module by a `local function reset(` line
+  outside comments. A module whose reset is written in another form, such as
+  `function M.reset(`, is not read, and the guard passes it. — M105 review
+  R6

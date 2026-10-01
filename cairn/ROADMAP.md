@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M103 | The two site-check clauses M46 withdrew hold again | planned | — | normal | milestones/M103-site-check-clauses.md |
 | M102 | The figure-marks checks run on every matrix leg, each shown able to fail | done | — | normal | milestones/archive/M102-figure-marks-checks.md |
 | M101 | A mark in a figure caption or an image's alt text files one locator | done | — | normal | milestones/archive/M101-figure-caption-marks.md |
 | M100 | A Typst index orders locators by the number the page prints | done | — | low | milestones/archive/M100-typst-locator-order.md |
@@ -29,7 +30,7 @@ _Released 0.4.0 2026-09-11._
 - Make the acceptance suite and its PDF comparison version-portable, and give the matrix its missing legs; promote the comparison on an extraction shown engine-neutral across the two engines, the legs with it or sooner on the restored PDF leg running a clean schedule cycle — added 2026-08-26 — M43/M51/M52 — KI110, KI111, KI112, KI113
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
-- Repair the site, gallery and publishing checks, and hold the two containment clauses M46 could not; promote on any turning a run red for a reason that is not the defect it names, on a publish run failing, or on a containment approach testing the resolved path after every rewrite — added 2026-08-26, clustered 2026-09-04 — M41, M42, M46, M074 reviews — KI84, KI85, KI140-KI162, KI249
+- Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249
 - Restore byte-level evidence that `resolve_markers` is output-neutral; D-004 refused the merge-base oracle and D-012 licenses a same-tree one — added 2026-08-17 — M04 review F12 — KI12, KI52
 - Pin the after-heading anchor relocation against Quarto's own filter ordering — added 2026-08-17 — M03 review pass 3 F8 — KI13
 - Scope the M083 EPUB plants' derived index locator to the links the sweep reads: it takes any relative `href` in the member, where `tests/epubcheck.py unique` counts only anchors inside the index section. Promote on the fixture writing a link outside that section, or with any other pass over the M083 plants — added 2026-09-08 — M084 review F2 — KI264

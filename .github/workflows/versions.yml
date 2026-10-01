@@ -256,7 +256,11 @@ jobs:
   # WHAT IT CHECKS. That `quarto render --to pdf` succeeds on
   # examples/demo.qmd and examples/book under this leg's Quarto, and that
   # `tests/indexdump.py pdf` finds a printed index with at least one entry in
-  # each rendered PDF. And that
+  # each rendered PDF. And that `quarto render --to pdf` succeeds on
+  # examples/named-indexes.qmd and prints both of its declared indexes as
+  # tests/named-indexes-pdf-entries.txt states them, with the four
+  # below-marker cells of tests/named-indexes-pdf-cells.txt present or absent
+  # as that file states (M106). And that
   # `quarto render --to typst` succeeds on examples/typst-index.qmd and prints
   # both of its indexes as their manifests state them, in order and on the
   # stated pages (M098). And that `quarto render --to typst` succeeds on
@@ -273,16 +277,18 @@ jobs:
   # tests/figure-marks-typst.tsv. The render alone is not the check: a PDF
   # that typesets at exit 0 while the index prints empty is exactly the break
   # this job exists to catch, and the reading step after each render
-  # (`indexdump.py`, `typstindex.py` or `figuremarks.py`) is what makes the
-  # difference between the two visible.
+  # (`indexdump.py`, `namedpdf.py`, `typstindex.py` or `figuremarks.py`) is
+  # what makes the difference between the two visible.
   #
   # WHAT IT DELIBERATELY DOES NOT CHECK. Whether two legs print the SAME
-  # index — see the render job's note above on why a PDF comparison would be
-  # red about the TeX engine. The extension's own named-index fixture, whose
-  # second index is built under TeX's restricted shell escape (D-031) and
-  # whose failure mode would be an installation's rather than a Quarto
-  # version's. And the acceptance suite, which pins a PDF engine and so
-  # cannot run green on the floor leg at all.
+  # index. See the render job's note above on why a PDF comparison would be
+  # red about the TeX engine. The reports the two-index fixture's LaTeX
+  # render draws, which the acceptance suite reads on one Quarto version:
+  # they quote block positions, and each Quarto version counts those over the
+  # document it hands the filter. The book PDF's second declared index, since
+  # the two-index fixture is where this job reads a second index. And the
+  # acceptance suite, which pins a PDF engine and so cannot run green on the
+  # floor leg at all.
   #
   # It runs only where `tests/versioncheck.py pdf` said so, which the `plan`
   # job captured — a scheduled or manually dispatched run, and not a push.
@@ -421,9 +427,9 @@ jobs:
       # index's are not folded in after them.
       #
       # This reads the FIRST declared index and not both. The question here is
-      # whether a Quarto version typesets the book and prints an index in it;
-      # what a second declared index does under TeX's restricted shell escape
-      # is D-031's subject and no part of what this job asks.
+      # whether a Quarto version typesets the book and prints an index in it.
+      # A second declared index is read on the two-index fixture below, where
+      # imakeidx builds it under TeX's restricted shell escape (D-031).
       - name: Extract the index printed in the book's PDF
         shell: bash
         run: |
@@ -432,6 +438,37 @@ jobs:
             examples/book/_book/Index-Book-Fixture.pdf \
             'Index of Subjects' 'Index of People' \
             > "$RUNNER_TEMP/pdf/book.pdf.txt"
+
+      # Both indexes of the two-index fixture (M106). Quarto's own loop builds
+      # the first; imakeidx builds the second through TeX's restricted shell
+      # escape, which a stock TinyTeX permits (D-031), so a second index that
+      # prints empty here is red on this leg. The readings are
+      # `tests/namedpdf.py entries` and `cells`, against the two tracked
+      # manifests the acceptance suite reads at its M49 checks: every entry
+      # line of each printed index, compared both ways, and the four
+      # below-marker cells, one of them a term that must be absent. Each
+      # reading is a step of its own, so a red one names its manifest. No
+      # later step renders examples/named-indexes.qmd, so nothing writes over
+      # this PDF before both read it.
+      - name: Render examples/named-indexes.qmd to PDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/named-indexes.qmd --to pdf
+
+      - name: Read both printed indexes of examples/named-indexes.pdf against their manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/namedpdf.py entries examples/named-indexes.pdf \
+            tests/named-indexes-pdf-entries.txt 'Two-index PDF entries'
+
+      - name: Read the below-marker cells of examples/named-indexes.pdf against their manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/namedpdf.py cells examples/named-indexes.pdf \
+            tests/named-indexes-pdf-cells.txt 'Two-index PDF cells'
 
       # The Typst back-end (M098), in this job because it reads the PDF through
       # `pdftotext`, which the poppler step above installs, and needs no TeX.

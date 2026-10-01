@@ -141,6 +141,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: T1 checkpoint, not done: three manifests moved to tracked files and the suite repointed. The `--self-test` run is in progress.
 - 2026-10-01: the first T1 suite run stopped at check 138 on the D-030 PyYAML guard. The `python3` on PATH is now `/usr/local/bin/python3` 3.14.6, which has no PyYAML. The re-run puts a scratch `python3` link to `/usr/bin/python3` (3.9.6, with PyYAML) first on PATH. Nothing is installed.
 - 2026-10-01: T1 done. The three tracked files equal the heredoc output (`cmp`). `--self-test` passed, 1738 checks. M49-AC1, M49-AC2, M52-AC3 and the 11 namedpdf plants read the tracked files.
+- 2026-10-01: T2 checkpoint: the `pdf` job renders the two-index fixture and reads it in two steps, and its comments are rewritten. Both step commands pass on the suite's captured PDF. The suite run is shared with T3.
 
 ## Decisions
 

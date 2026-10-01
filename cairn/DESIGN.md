@@ -1551,8 +1551,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   section in one document has its links resolved by nothing. The ids inside it
   are still swept, the repeated-id clause reading whole documents, and the
   verdict names the section it read. KI51 records the neighbouring risk that
-  the first heading matched may not be a generated section at all. — M079
-  review F9, M083 T2
+  the first heading matched may not be a generated section at all. No EPUB
+  the extension writes carries two such sections in one document, and D-064
+  declines the change. — M079 review F9, M083 T2, D-064
 - **KI267.** `tests/epubcheck.py links` cannot be run over `id-collision.epub`
   at all. It finds index sections by the minted id prefix, and that fixture
   plants an element claiming the prefixed name with no heading inside it, on
@@ -1908,3 +1909,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the next line), when it is hidden from that lexer by a `\z` string or a `#!`
   first line, when its file name starts with `..`, or when it sits in a
   linked directory. — M105 review R6, run 3 W1, W2, W5, W10
+- **KI309.** `htmlindex.index_section` finds a section only by a heading whose
+  text is exactly `Index`. So `tests/epubcheck.py unique` reads no index
+  section with another title, such as `Index of Authors` or a translated
+  heading, and resolves none of its links. No publication `unique` reads today
+  carries one. KI51 records the opposite risk. — 2026-10-01 plan gate

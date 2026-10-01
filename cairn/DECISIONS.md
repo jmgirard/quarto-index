@@ -477,3 +477,11 @@
 **Decision:** D-062's reason is restated. A reset line no `CELLS` row names gets no per-cell probe. In `indexes.lua` the whole-module probe also keeps it, so no render shows that the line goes unprobed. The guard takes each reset's first and last line from Quarto's Lua, which loads the module and reads the `reset` it exports. It still reads each line's text through `tests/filtersrc.py`.
 
 **Consequences:** the rest of D-062 stands, its narrowing of D-011 included. The guard needs `quarto` on the PATH, as the suite already does. Falsified by a module whose exported reset Quarto's Lua cannot load outside a render.
+
+### D-064 (2026-10-01): `tests/epubcheck.py unique` keeps reading one index section per document, and its plants keep their member-wide locator
+
+**Context:** KI264 records that `unique` reads the first generated index section in each document. Two candidate rows proposed reading every section and limiting the M083 plants' derived locator to links inside the section. The extension gives every generated index section a level-1 heading (`html.lua`), and Pandoc's EPUB writer starts a new XHTML file at each level-1 heading. The 2026-10-01 plan gate rendered two named indexes to EPUB on Quarto 1.10.18 in three placements: adjacent, nested in a div, and inside a callout. Each placement put the two sections in separate files. In the captured members the plants read, every href `locators.py` can offer sits inside the index section.
+
+**Decision:** both changes are rejected, on D-059's precedent. Each would grow a checker that M079 and M083 shipped, over a shape that no output the extension writes produces. The gate also weighed a smaller change, which made `unique` fail on a document carrying a second index heading. It was declined for the same reason.
+
+**Consequences:** KI264 stays a known issue and cites this entry, and both candidate rows are removed. Falsified by an EPUB the extension writes that carries two generated index sections in one document. Two causes can make one: Pandoc no longer splitting at a level-1 heading, or the extension emitting a lower-level index heading. Also falsified by a member the plants read that carries a relative `.xhtml#` href outside its index section.

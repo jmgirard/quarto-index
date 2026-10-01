@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -44,8 +44,10 @@ probe's output instead of stating a count. The plan gate chose that form.
 ## Acceptance criteria
 
 - [ ] AC1: `python3 tests/stateprobe.py --check-cells` reads each module
-      under `_extensions/index/modules/` whose source defines
-      `local function reset(`. In each, it reads every non-blank, non-comment
+      under `_extensions/index/modules/` that has exactly one line, outside
+      comments and strings, opening with `local function reset(` and
+      closing its parameter list on that same line, where that line opens
+      the function the module exports as `reset`. In each, it reads every non-blank, non-comment
       line between that line and the function's closing `end`. The kept lines
       are the five `indexes.lua` lines `order[1] = UNNAMED`,
       `titles[UNNAMED] = DEFAULT_TITLE`, `if doc ~= nil then`,
@@ -188,6 +190,10 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: status set to review.
 - 2026-10-01: review run 3 started at 1a9f5f8, branch holding `origin/main`. AC1 not met: the guard does not find a module whose `local function reset(` line has its parameter list on the next line (Review section). Self-test run in progress.
 - 2026-10-01: both suite runs passed at 1a9f5f8 (1738 and 898 checks), so AC2 to AC4 are ticked. Validate passed. Review return 3 (defect): AC1 fails on a reset opener whose parameter list is on the next line. The disposition goes to the user.
+- 2026-10-01: thrash rule (third return): the user chose to narrow M105 over parking, a re-plan or a brief. Status back to in-progress for the amendment alone. Removing AC1 changes the Goal, so the narrowing keeps AC1 and limits its domain.
+- re-audit: AC1 (reduced) — first reader: a module with two openers, or whose opener is not the exported reset, fails without naming a stray line. Fixed by limiting the domain to one opener that opens the exported reset. Pre-existing wording (trailing comments, the self-test sentence) left as is.
+- re-audit: AC1 (reduced) — second reader: no in-domain stray line passes, except a module behind a symbolic link, which `tests/filtersrc.py` does not follow. Recorded in KI308. Other findings fail closed.
+- 2026-10-01: AC1 amended at the mini gate, chosen by the user: "reads each module under `_extensions/index/modules/` that has exactly one line, outside comments and strings, opening with `local function reset(` and closing its parameter list on that same line, where that line opens the function the module exports as `reset`". KI308 in `cairn/DESIGN.md` now records the split-parameter and symbolic-link forms.
 
 ## Decisions
 

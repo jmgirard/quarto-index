@@ -1898,7 +1898,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   reset passes the cell guard, which reads from the reset to the table and
   not back. Only the hand-run probe's `plant()` stops on it. — M105 plan
   Out, review R17
-- **KI308.** The cell guard finds a module by a `local function reset(` line
-  outside comments. A module whose reset is written in another form, such as
-  `function M.reset(`, is not read, and the guard passes it. — M105 review
-  R6
+- **KI308.** The cell guard finds a module by one `local function reset(`
+  line outside comments that closes its parameter list on that line. A module
+  whose reset is written in another form, such as `function M.reset(` or with
+  its parameter list continued on the next line, is not read, and the guard
+  passes it. A module in a directory reached through a symbolic link is not
+  read either, because `tests/filtersrc.py` does not follow one. — M105
+  review R6, review run 3

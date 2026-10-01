@@ -17800,33 +17800,52 @@ pass "M17-AC3: all $PARITY outputs — a standalone fixture and a book project, 
 # ---------------------------------------------------------------------------
 section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 # M105-AC1: every line of every module's reset is a `CELLS` statement for that
-# module or one of the lines indexes.lua's reset keeps, so no line the reset
-# gains goes without a per-cell probe. The probe itself renders and runs by
-# hand; this guard renders nothing and runs here on every run.
+# module or one of the lines indexes.lua's reset keeps. The guard compares
+# text, so a line it passes has a per-cell probe or is kept, and a second copy
+# of such a line passes too (plant() stops on it when the probe runs). The
+# probe itself renders and runs by hand; this guard renders nothing and runs
+# here on every run.
 python3 tests/stateprobe.py --check-cells \
-  || fail "M105-AC1: a reset line is neither a CELLS statement for its module nor a kept line of indexes.lua (tests/stateprobe.py's own FAIL line names it above)"
+  || fail "M105-AC1: the cell guard failed (tests/stateprobe.py's own FAIL line above names the module and the cause)"
 pass "M105-AC1: every module's reset holds only CELLS statements and indexes.lua's kept lines"
 if [ "${1:-}" = "--self-test" ]; then
-  # The guard against a copy of the modules whose indexes.lua reset gains one
-  # line restoring a cell CELLS does not hold. The unplanted copy first, so a
-  # red below is the plant and not the copy.
-  M105_MODS="$WORK/m105-modules"
-  rm -rf "$M105_MODS"
-  cp -R _extensions/index/modules "$M105_MODS"
-  python3 tests/stateprobe.py --check-cells "$M105_MODS" > /dev/null \
-    || fail "M105-AC1 self-test: the guard is red on an unplanted copy of the modules, so a red below would be the copy and not the line planted in it"
-  perl -0pi -e 's/^  declared = false\n/  declared = false\n  qi_core.empty(planted_cell)\n/m' \
-    "$M105_MODS/indexes.lua"
-  cmp -s "$M105_MODS/indexes.lua" _extensions/index/modules/indexes.lua \
-    && fail "M105-AC1 self-test: the plant changed nothing in indexes.lua, so the case below is about the unplanted reset"
-  if M105_OUT=$(python3 tests/stateprobe.py --check-cells "$M105_MODS" 2>&1); then
-    fail "M105-AC1 self-test: the guard passed on an indexes.lua reset holding a line no CELLS row names"
-  fi
-  case "$M105_OUT" in
-    *"indexes.lua line "*": <<qi_core.empty(planted_cell)>>"*) : ;;
-    *) fail "M105-AC1 self-test: the guard failed on the planted copy, but without naming indexes.lua and the planted line (<<$M105_OUT>>)" ;;
-  esac
-  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the modules and red on one whose indexes.lua reset gains a line, naming that line"
+  # The guard against copies of the extension, read through QI_EXT_DIR. Each
+  # plant is one substitution in indexes.lua's reset, asserted to change the
+  # file. The unplanted copy runs first, so a red below is a plant and not the
+  # copy, and the block-comment copy shows a commented-out line stays silent.
+  M105_EXT="$WORK/m105-ext"
+  m105_copy() {
+    rm -rf "$M105_EXT"
+    cp -R _extensions/index "$M105_EXT"
+    [ -n "$1" ] || return 0
+    perl -0pi -e "$1" "$M105_EXT/modules/indexes.lua"
+    if cmp -s "$M105_EXT/modules/indexes.lua" _extensions/index/modules/indexes.lua; then
+      fail "M105-AC1 self-test: the plant <<$1>> changed nothing in indexes.lua, so the case below is about the unplanted reset"
+    fi
+  }
+  m105_green() {
+    m105_copy "$1"
+    QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells > /dev/null \
+      || fail "M105-AC1 self-test: the guard is red on a copy of the extension $2"
+  }
+  m105_red() {
+    m105_copy "$1"
+    if M105_OUT=$(QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells 2>&1); then
+      fail "M105-AC1 self-test: the guard passed on a copy whose indexes.lua reset $3"
+    fi
+    # One report line must name indexes.lua and the planted line whole.
+    printf '%s\n' "$M105_OUT" \
+      | awk -v want=": <<$2>>" 'index($0, "  indexes.lua line ") == 1 && substr($0, length($0) - length(want) + 1) == want { hit = 1 } END { exit !hit }' \
+      || fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua reset $3, but no report line names indexes.lua and <<$2>> (<<$M105_OUT>>)"
+  }
+  m105_green '' "with nothing planted, so a red below would be the copy"
+  m105_green 's/^  declared = false\n/  declared = false\n  --[[\n  qi_core.empty(commented_out)\n  ]]\n/m' \
+    "whose indexes.lua reset holds a block comment, whose lines are no statements"
+  m105_red 's/^  declared = false\n/  declared = false\n  qi_core.empty(planted_cell)\n/m' \
+    "qi_core.empty(planted_cell)" "gains a line no CELLS row names"
+  m105_red 's/^    read\(doc\.meta\)\n  end\nend\n/    read(doc.meta)\nend\n  qi_core.empty(planted_after)\nend\n/m' \
+    "qi_core.empty(planted_after)" "closes its if block with an end at column 0 and gains a line after it"
+  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the extension and on one whose indexes.lua reset holds a block comment, and red, naming the line, on one whose reset gains a line and on one where that line follows an inner end at column 0"
 fi
 state_reuse_pair() {
   local stem="$1" fmt="$2" ext="$3" want="$4" v

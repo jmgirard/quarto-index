@@ -155,6 +155,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: review started. Self-test passed (1738 checks), AC2 and AC3 ticked. AC1 not met: a column-0 inner `end` hides later reset lines from the guard. Plain suite run pending.
 - 2026-10-01: plain suite run passed (898 checks). Three fresh reviewers reported 17 findings, logged in the Review section.
 - 2026-10-01: review return 1 (defect): AC1 fails, because `reset_body` stops at a column-0 inner `end`, so the guard never reads the reset lines after it. Status back to in-progress. The user chose send-back at the gate, and a D-entry that allows the guard (R2). Tasks T5 to T8 added, Coverage amended, AC2 to AC4 unticked.
+- 2026-10-01: implement resumed on the branch, `main` unmoved. No question gate, because the review gate settled the one open choice (R2).
+- 2026-10-01: T5 code landed. `reset_body` counts Lua blocks over code with comments and strings removed. Modules come through `tests/filtersrc.py` under `modules/`, and every guard failure names its module and cause. The self-test adds a column-0 `end` plant (red, naming the line) and a block-comment copy (green), and matches one whole report line (R11, same block). The R5 and R6 wording in this block and in `tests/stateprobe.py` landed here too. On the real modules the new reader returns the same lines as the old one. Under Python 3.9.6 and 3.14.7, the extracted block passes. It is red against a mutant with the old `end` rule, and against one that reads `--[[` as a line comment. T5 stays unticked until T8's suite runs.
 
 ## Decisions
 

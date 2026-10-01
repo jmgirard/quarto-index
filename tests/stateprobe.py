@@ -24,13 +24,18 @@ stream. The unplanted tree is required to pass every pair first, or no failure
 below would be evidence of anything.
 
 Before any of that, the cell guard (M105) reads every module's reset from
-source. A line there that is neither a CELLS statement for its module nor, in
-indexes.lua, one of the KEPT lines would get no per-cell probe, and the
-reset:indexes probe would keep it; the guard fails naming it instead. The
-suite runs the guard alone on every run, since it renders nothing.
+source. It fails on a reset line whose text is neither a CELLS statement for
+its module nor, in indexes.lua, one of the KEPT lines, naming the line. The
+guard reads text, not count: a second copy of an allowed line passes it, and
+plant() stops on that copy when the probe runs. The suite runs the guard alone
+on every run, since it renders nothing.
 
 Usage:  python3 tests/stateprobe.py [cell-or-probe-name ...]
-        python3 tests/stateprobe.py --check-cells [module-dir]
+        python3 tests/stateprobe.py --check-cells
+
+The guard reads the extension through tests/filtersrc.py, so QI_EXT_DIR points
+it at a copy. The probes plant and render the extension itself, and refuse to
+run while QI_EXT_DIR names anything else.
 
 Like tests/suitescan.py, this file is inside the set that file's checks read,
 so it spells neither the render command nor a rendered artifact's path out in
@@ -46,8 +51,12 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.insert(0, 'tests')
+import filtersrc
+
 FIXTURE_DIR = 'examples'
-MODULE_DIR = os.path.join('_extensions', 'index', 'modules')
+EXT_DIR = filtersrc.DEFAULT_EXT_DIR
+MODULE_DIR = os.path.join(EXT_DIR, 'modules')
 RENDER = ['quarto', 'render']
 
 # (fixture stem, Quarto format, artifact extension). Ordered cheapest-first:
@@ -130,46 +139,136 @@ def module_path(name):
     return os.path.join(MODULE_DIR, name + '.lua')
 
 
-def reset_body(lines):
-    """The 0-based line numbers of the statements inside `reset`."""
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip().startswith(RESET_OPENER):
-            start = i
-            break
+class ResetShape(Exception):
+    """A reset the reader cannot delimit. The message names module and line."""
+
+
+LONG_OPEN = re.compile(r'\[(=*)\[')
+BLOCK_OPEN = re.compile(r'\b(?:function|if|do|repeat)\b')
+BLOCK_CLOSE = re.compile(r'\b(?:end|until)\b')
+
+
+def lua_code(lines, start):
+    """(index, code) for each line from `start`: the line with its comments
+    removed and each string literal replaced by `""`.
+
+    A long comment or long string (`--[[ ]]`, `[==[ ]==]`) may span lines; a
+    line wholly inside one has no code. The keywords that open and close a
+    block are then counted over code alone, so an `end` in a comment or a
+    string closes nothing.
+    """
+    long_close = None
+    in_comment = False
+    for i in range(start, len(lines)):
+        line = lines[i]
+        code = []
+        pos = 0
+        while pos < len(line):
+            if long_close is not None:
+                close = line.find(long_close, pos)
+                if close < 0:
+                    break
+                pos = close + len(long_close)
+                if not in_comment:
+                    code.append('""')
+                long_close = None
+                continue
+            if line.startswith('--', pos):
+                m = LONG_OPEN.match(line, pos + 2)
+                if not m:
+                    break
+                long_close, in_comment = ']' + m.group(1) + ']', True
+                pos = m.end()
+                continue
+            m = LONG_OPEN.match(line, pos)
+            if m:
+                long_close, in_comment = ']' + m.group(1) + ']', False
+                pos = m.end()
+                continue
+            if line[pos] in '"\'':
+                quote = line[pos]
+                pos += 1
+                while pos < len(line) and line[pos] != quote:
+                    pos += 2 if line[pos] == '\\' else 1
+                pos += 1
+                code.append('""')
+                continue
+            code.append(line[pos])
+            pos += 1
+        yield i, ''.join(code)
+
+
+def reset_body(name, lines):
+    """The 0-based line numbers of the code lines inside `name`'s reset.
+
+    The function ends where its blocks balance: `function`, `if`, `do` and
+    `repeat` open one, `end` and `until` close one. An inner `end` at column 0
+    is therefore read as the inner block's, and the lines after it are still
+    read. The closing line is a body line too when it holds more than `end`.
+    """
+    start = next((i for i, line in enumerate(lines)
+                  if line.strip().startswith(RESET_OPENER)), None)
     if start is None:
-        raise SystemExit('no reset function found')
+        raise ResetShape('%s.lua: no line opens with %r'
+                         % (name, RESET_OPENER))
+    depth = 0
     body = []
-    for j in range(start + 1, len(lines)):
-        if lines[j].rstrip() == 'end':
+    for i, code in lua_code(lines, start):
+        depth += len(BLOCK_OPEN.findall(code)) - len(BLOCK_CLOSE.findall(code))
+        if i == start:
+            if depth != 1:
+                raise ResetShape('%s.lua line %d: the reset opener shares its '
+                                 'line with other blocks, which this reader '
+                                 'reads a line at a time' % (name, i + 1))
+            continue
+        if depth == 0:
+            if code.strip() != 'end':
+                body.append(i)
             return body
-        text = lines[j].strip()
-        if text and not text.startswith('--'):
-            body.append(j)
-    raise SystemExit('unterminated reset function')
+        if code.strip():
+            body.append(i)
+    raise ResetShape('%s.lua: the reset opened at line %d never closes'
+                     % (name, start + 1))
 
 
-def check_cells(module_dir):
+def reset_lines(name, lines):
+    """reset_body for the probes, where a reset it cannot read ends the run."""
+    try:
+        return reset_body(name, lines)
+    except ResetShape as e:
+        raise SystemExit(str(e))
+
+
+def reset_modules():
+    """(name, lines) for each module under the extension's `modules/` that
+    opens a reset, read through filtersrc so QI_EXT_DIR can name a copy."""
+    root = os.path.join(filtersrc.ext_dir(), 'modules')
+    found = []
+    for path in filtersrc.sources():
+        rel = os.path.relpath(path, root)
+        if rel.startswith(os.pardir):
+            continue
+        lines = filtersrc.read(path).split('\n')
+        if any(line.strip().startswith(RESET_OPENER) for line in lines):
+            found.append((rel[:-len('.lua')], lines))
+    return found
+
+
+def check_cells():
     """Every reset line is a CELLS statement for its module, or a KEPT line.
 
-    The modules are found by searching `module_dir` for a reset, never named,
-    so a module that gains one is read without an edit here. Every module
-    CELLS names must be among them, which keeps the search from passing on a
-    directory where it found nothing to read.
+    A module is found by its `local function reset(` line, never by name.
+    A reset written in another form is not found. Every module CELLS names
+    must be among those found, which keeps the search from passing on a
+    tree where it found nothing to read.
     """
-    found = []
-    for entry in sorted(os.listdir(module_dir)):
-        if not entry.endswith('.lua'):
-            continue
-        text = open(os.path.join(module_dir, entry), encoding='utf-8').read()
-        if any(line.strip().startswith(RESET_OPENER)
-               for line in text.split('\n')):
-            found.append((entry[:-len('.lua')], text.split('\n')))
+    found = reset_modules()
     names = [name for name, _ in found]
     missing = sorted({module for _, module, _ in CELLS} - set(names))
     if missing:
-        print('FAIL: cell guard: no reset found in %s for %s, which CELLS names'
-              % (module_dir, ', '.join(m + '.lua' for m in missing)),
+        print('FAIL: cell guard: no %r line under %s in %s, which CELLS names'
+              % (RESET_OPENER, os.path.join(filtersrc.ext_dir(), 'modules'),
+                 ', '.join(m + '.lua' for m in missing)),
               file=sys.stderr)
         return 1
     stray = []
@@ -179,7 +278,12 @@ def check_cells(module_dir):
                    if module == name}
         if name == 'indexes':
             allowed.update(KEPT)
-        for n in reset_body(lines):
+        try:
+            body = reset_body(name, lines)
+        except ResetShape as e:
+            print('FAIL: cell guard: %s' % e, file=sys.stderr)
+            return 1
+        for n in body:
             lines_read += 1
             if lines[n].strip() not in allowed:
                 stray.append('%s.lua line %d: <<%s>>'
@@ -201,7 +305,7 @@ def plant(module, statements):
     path = module_path(module)
     original = open(path, encoding='utf-8').read()
     lines = original.split('\n')
-    body = reset_body(lines)
+    body = reset_lines(module, lines)
     drop = set()
     for want in statements:
         hit = [n for n in body if lines[n].strip() == want]
@@ -300,10 +404,14 @@ def probes():
 
 def main(argv):
     if argv[1:2] == ['--check-cells']:
-        if len(argv) > 3:
+        if len(argv) > 2:
             raise SystemExit(__doc__)
-        return check_cells(argv[2] if len(argv) == 3 else MODULE_DIR)
-    if check_cells(MODULE_DIR) != 0:
+        return check_cells()
+    if os.path.normpath(filtersrc.ext_dir()) != os.path.normpath(EXT_DIR):
+        raise SystemExit('QI_EXT_DIR names %r, but the probes plant and render '
+                         '%r; unset it to run them'
+                         % (filtersrc.ext_dir(), EXT_DIR))
+    if check_cells() != 0:
         return 1
     wanted = set(argv[1:])
     pats = warn_patterns()
@@ -324,7 +432,7 @@ def main(argv):
             drop = statements
             if drop is None:
                 lines = open(module_path(module), encoding='utf-8').read().split('\n')
-                drop = [lines[n].strip() for n in reset_body(lines)]
+                drop = [lines[n].strip() for n in reset_lines(module, lines)]
             original = plant(module, drop)
             try:
                 moved = sweep(pats, work)

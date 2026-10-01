@@ -379,6 +379,10 @@ def check_cells():
             if lines[n].strip() not in allowed:
                 stray.append('%s.lua line %d: <<%s>>'
                              % (name, n + 1, lines[n].strip()))
+    # The domain before the verdict, so a red run says what it read too.
+    print('cell guard: read %d reset line(s) across %s'
+          % (lines_read, ', '.join(n + '.lua' for n in names)),
+          file=sys.stderr if stray else sys.stdout)
     if stray:
         print('FAIL: cell guard: these reset lines are neither a CELLS '
               'statement for their module nor a KEPT line of indexes.lua, so '
@@ -498,7 +502,7 @@ def main(argv):
         if len(argv) > 2:
             raise SystemExit(__doc__)
         return check_cells()
-    if os.path.normpath(filtersrc.ext_dir()) != os.path.normpath(EXT_DIR):
+    if os.path.realpath(filtersrc.ext_dir()) != os.path.realpath(EXT_DIR):
         raise SystemExit('QI_EXT_DIR names %r, but the probes plant and render '
                          '%r; unset it to run them'
                          % (filtersrc.ext_dir(), EXT_DIR))

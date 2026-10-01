@@ -9099,8 +9099,18 @@ M095PLANTPY
       *) fail "M095-AC3 self-test: the heading-mark check failed on the $M095_NAME plant of four.html, but not by saying <<$M095_WANT>> (<<$M095_OUT>>)" ;;
     esac
   done
+  # The same two copies pass when the call names the tags they now carry, so
+  # the tags the check holds the page to are the call's and not built in.
+  for M095_PLANT in "div:div h2" "h3:section h3"; do
+    M095_NAME="${M095_PLANT%%:*}"
+    # shellcheck disable=SC2086
+    python3 tests/fragments.py outside-heading \
+        "$WORK/m095-four-$M095_NAME.html" \
+        ${M095_PLANT#*:} a-mullion-in-a-heading mullion-passage > /dev/null \
+      || fail "M105-AC3 self-test: the heading-mark check is red on the $M095_NAME plant of four.html called with the tags it carries, ${M095_PLANT#*:}"
+  done
   pass "M095-AC3 self-test: the heading-mark check is red on the three copies of four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
-  pass "M105-AC3 self-test: the heading-mark check is red on four.html with its section renamed to a div and with its heading renamed to an h3, each time naming the tag it found"
+  pass "M105-AC3 self-test: the heading-mark check is red on four.html with its section renamed to a div and with its heading renamed to an h3, each time naming the tag it found, and green on each copy called with the tags it carries"
 
   # -------------------------------------------------------------------------
   # M063 T7 — the same held store path against a copy of the tree whose only
@@ -11423,7 +11433,9 @@ if [ "${1:-}" = "--self-test" ]; then
   check_entry_locators "$M105_BRAMBLE" "$HTML_SECTION_ID-alpha" Bramble \
     "two.html#qi-mark-1" "M105-AC2 self-test (an unchanged copy of the page)" \
     || fail "M105-AC2 self-test: the Bramble check is red on an unchanged copy of the page, so a red below would be the copy and not the href planted in it"
-  sed 's|href="two\.html#qi-mark-1"|href="two.html"|' "$M105_PAGE" > "$M105_BRAMBLE"
+  # perl, not sed: GNU sed adds a final newline a page may lack, and the byte
+  # count below would then read that as a second change.
+  perl -pe 's|href="two\.html#qi-mark-1"|href="two.html"|' "$M105_PAGE" > "$M105_BRAMBLE"
   M105_BEFORE=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_PAGE" || true; } | wc -l | tr -d ' ')
   M105_AFTER=$( { grep -o 'href="two\.html#qi-mark-1"' "$M105_BRAMBLE" || true; } | wc -l | tr -d ' ')
   [ "$M105_BEFORE" = "1" ] && [ "$M105_AFTER" = "0" ] \
@@ -17850,6 +17862,10 @@ if [ "${1:-}" = "--self-test" ]; then
     if M105_OUT=$(QI_EXT_DIR="$M105_EXT" python3 tests/stateprobe.py --check-cells 2>&1); then
       fail "M105-AC1 self-test: the guard passed on a copy whose indexes.lua reset $3"
     fi
+    # The red run states what it read, over all four modules (LESSONS M45).
+    printf '%s\n' "$M105_OUT" \
+      | grep -Eq '^cell guard: read [1-9][0-9]* reset line\(s\) across indexes\.lua, latex\.lua, marks\.lua, sortkeys\.lua$' \
+      || fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua reset $3, but no line states the reset lines it read across the four modules (<<$M105_OUT>>)"
     # One report line must name indexes.lua and the planted line whole.
     printf '%s\n' "$M105_OUT" \
       | awk -v want=": <<$2>>" 'index($0, "  indexes.lua line ") == 1 && substr($0, length($0) - length(want) + 1) == want { hit = 1 } END { exit !hit }' \
@@ -17864,6 +17880,10 @@ if [ "${1:-}" = "--self-test" ]; then
     "qi_core.empty(planted_after)" "closes its if block with an end at column 0 and gains a line after it"
   # A commented-out copy of the opener above the real one: a reader that took
   # the first opener it met would read the copy's empty body and pass.
+  # A line after a block comment: a reader that took the comment's opening for
+  # the reset's end would pass the copy above and this one alike.
+  m105_red 's/^  declared = false\n/  declared = false\n  --[[\n  qi_core.empty(commented_out)\n  ]]\n  qi_core.empty(planted_after_comment)\n/m' \
+    "qi_core.empty(planted_after_comment)" "gains a line after a block comment"
   m105_red 's/^local function reset\(doc\)\n/--[[\nlocal function reset(doc)\nend\n]]\nlocal function reset(doc)\n  qi_core.empty(planted_hidden)\n/m' \
     "qi_core.empty(planted_hidden)" "follows a commented-out copy of its opener and gains a line"
   m105_red 's/^local function reset\(doc\)\n/local function reset(doc) qi_core.empty(planted_opener)\n/m' \
@@ -17878,7 +17898,7 @@ if [ "${1:-}" = "--self-test" ]; then
     *"FAIL: cell guard: indexes.lua: 2 lines open with 'local function reset(' outside comments (lines "*) ;;
     *) fail "M105-AC1 self-test: the guard failed on a copy whose indexes.lua defines reset twice, but not naming the two opener lines (<<$M105_OUT>>)" ;;
   esac
-  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the extension and on one whose indexes.lua reset holds a block comment, and red, naming the line, on one whose reset gains a line, on one where that line follows an inner end at column 0, on one where it follows a commented-out copy of the opener, and on one with a statement on the opener line, and red naming both openers on one that defines reset twice"
+  pass "M105-AC1 self-test: the guard is green on an unplanted copy of the extension and on one whose indexes.lua reset holds a block comment, and red, naming the line, on one whose reset gains a line, on one where that line follows an inner end at column 0, on one where it follows a block comment, on one where it follows a commented-out copy of the opener, and on one with a statement on the opener line, and red naming both openers on one that defines reset twice"
 fi
 state_reuse_pair() {
   local stem="$1" fmt="$2" ext="$3" want="$4" v

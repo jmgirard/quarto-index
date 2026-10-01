@@ -119,6 +119,8 @@ not decode as UTF-8, by name, where today it raises (KI152).
 - 2026-10-01: T3 done. `sweep_rows` reports a `UnicodeDecodeError` page as unreadable, by name. One plant per mode. Against the saved pre-change code, each plant ends in a `UnicodeDecodeError` traceback from the read.
 - 2026-10-01: T4 done. D-061 supersedes D-029. DESIGN.md link sentence rewritten, KI152, KI153 and KI158 struck. `tests/run-tests.sh --self-test` exit 0, 1716 checks. `cairn_validate` passes.
 - claim audit: not owed — internal tier
+- 2026-10-01: review fix-now [A]. The sweeps return their hits beside the unreadable-page report, and each mode prints both. A plant per mode pairs an undecodable README with a front page carrying a row and requires both names.
+- 2026-10-01: review fix-now [B]. `captured_files` also returns the non-regular entries, and `check_links` names each `.html` among them as a page whose links were not read. Three plants cover this: a symlinked page, a capture whose only page is a symlink, and the directory symlink plant. Fix-now [C] is the docstring wording, the stale `/etc/passwd` comment and guard, the DESIGN.md absence sentence, four `looked for` pins, and a domain-coverage assertion in `m103_undecodable`.
 
 ## Decisions
 
@@ -156,3 +158,5 @@ Findings, three fresh reviewers (O = Opus diff-bug, H = Sonnet blame-history, P 
 - P2: the undecodable plants assert nothing about the planted sentence. [R] the page cannot be read, so no hit is possible.
 - P3: report literals re-typed across plants. [R] pre-existing pattern.
 - P4: the undecodable page is built in two edits. [R] each edit has its own guard.
+
+Triage at the gate, 2026-10-01: the user chose fix now for [A] and [B], and accepted [C], [D] and [R] as proposed. The [D] entries are written at post-merge hygiene. The suite run started for AC5 was stopped, because the fixes change the code it was testing.

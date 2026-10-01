@@ -19661,6 +19661,11 @@ if [ "${1:-}" = "--self-test" ]; then
   m40_planted 'an href resolving to a file outside the captured site' \
     'names no file under' \
     python3 tests/sitecheck.py links "$M40W/linkescape" ""
+  # The report also names the target it looked for, which is what tells this
+  # escape from an ordinary dangling link that prints the same clause.
+  m40_planted 'that escape, whose report names the escaping target' \
+    '(looked for ../outside.html)' \
+    python3 tests/sitecheck.py links "$M40W/linkescape" ""
 
   # Containment, the root-relative shape. The `..` sits BEHIND a segment, so
   # the href carries no leading `../` for a textual test to match. M46's
@@ -19672,6 +19677,9 @@ if [ "${1:-}" = "--self-test" ]; then
     || fail "M40 self-test: the segment the escaping href walks back through was not created, so the href below would be about a path with no such segment"
   m40_planted 'a root-relative href escaping the captured site with a `..` behind a segment' \
     'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkescaperoot" ""
+  m40_planted 'that escape, whose report names the normalized escaping target' \
+    '(looked for ../outside.html)' \
     python3 tests/sitecheck.py links "$M40W/linkescaperoot" ""
 
   # Containment, the symlink shapes. `capture` copies with `cp -R`, which
@@ -19688,6 +19696,9 @@ if [ "${1:-}" = "--self-test" ]; then
   m40_planted 'an href resolving through a symlink inside the capture to a file above it' \
     'names no file under' \
     python3 tests/sitecheck.py links "$M40W/linkescapelink" ""
+  m40_planted 'that link, whose report names the path through the symlink' \
+    '(looked for above/outside.html)' \
+    python3 tests/sitecheck.py links "$M40W/linkescapelink" ""
 
   m40_plant_link linkinsidelink '<a href="alias/syntax.html">x</a>'
   ln -s . "$M40W/linkinsidelink/alias"
@@ -19695,6 +19706,9 @@ if [ "${1:-}" = "--self-test" ]; then
     || fail "M40 self-test: the symlink inside the capture does not reach syntax.html, so the case below would be an ordinary dangling link"
   m40_planted 'an href resolving through a symlink inside the capture to a page inside it' \
     'names no file under' \
+    python3 tests/sitecheck.py links "$M40W/linkinsidelink" ""
+  m40_planted 'that link, whose report names the path through the symlink' \
+    '(looked for alias/syntax.html)' \
     python3 tests/sitecheck.py links "$M40W/linkinsidelink" ""
 
   # The directory shape. The link names a directory the render could have
@@ -19710,6 +19724,33 @@ if [ "${1:-}" = "--self-test" ]; then
   m40_planted 'a directory href whose index.html is a symlink to a file above the capture' \
     'names no file under' \
     python3 tests/sitecheck.py links "$M40W/linkdirindex" ""
+
+  # A page that is itself a symlink. The walk keeps only regular files, so
+  # such a page is never parsed and the links it makes are never read. The
+  # check names it rather than passing over it (M103 review). The directory
+  # plant above is one such page, so its report names it too.
+  m40_planted 'that directory index.html symlink, named as a page whose links were not read' \
+    '  dirlink/index.html' \
+    python3 tests/sitecheck.py links "$M40W/linkdirindex" ""
+  m40_plant_link linkpagelink '<a href="syntax.html">x</a>'
+  ln -s syntax.html "$M40W/linkpagelink/alias.html"
+  [ -L "$M40W/linkpagelink/alias.html" ] && [ -f "$M40W/linkpagelink/alias.html" ] \
+    || fail "M40 self-test: the page symlink inside the capture was not made or does not reach syntax.html, so the case below would be about no page at all"
+  m40_planted 'a page in the capture that is a symlink to a page the render wrote' \
+    'are not regular files, so the links they make were not read' \
+    python3 tests/sitecheck.py links "$M40W/linkpagelink" ""
+  m40_planted 'that symlinked page, named in the report' \
+    '  alias.html' \
+    python3 tests/sitecheck.py links "$M40W/linkpagelink" ""
+  # A capture whose only page is a symlink is reported by that name, and not
+  # as a capture holding no page at all.
+  rm -rf "$M40W/onlypagelink"; mkdir -p "$M40W/onlypagelink"
+  ln -s ../outside.html "$M40W/onlypagelink/index.html"
+  [ -f "$M40W/onlypagelink/index.html" ] \
+    || fail "M40 self-test: the lone page symlink does not reach the file above the capture, so the case below would be about a broken link"
+  m40_planted 'a capture whose only page is a symlink' \
+    'are not regular files, so the links they make were not read' \
+    python3 tests/sitecheck.py links "$M40W/onlypagelink" ""
 
   # And the directions the walk must stay SILENT in: a relative link and a
   # directory link to pages the render wrote still resolve. `gallery/` names
@@ -19742,16 +19783,14 @@ if [ "${1:-}" = "--self-test" ]; then
     'carries no `docs` base segment' \
     python3 tests/sitecheck.py links "$M40W/linkescaperootbase" "docs"
 
-  # Containment, the percent-encoded absolute shape. `%2Fetc%2Fpasswd` decodes
-  # to an absolute path; until M46's second pass the branch was chosen on the
-  # still-encoded text, so it took the relative branch and `os.path.join`
-  # discarded the capture root against the absolute path — the check read
-  # /etc/passwd, found it, and called the link resolved at exit 0. The report
-  # is required to name the capture-confined target, not merely to be a
-  # failure: that is what says the path was resolved under the capture root
-  # rather than at the filesystem root.
-  [ -f /etc/passwd ] \
-    || fail "M40 self-test: /etc/passwd is absent, so the encoded absolute href below would be an ordinary dangling link either way"
+  # The percent-encoded absolute shape. `%2Fetc%2Fpasswd` decodes to an
+  # absolute path. Until M46's second pass the branch was chosen on the
+  # still-encoded text, so the check joined the decoded path onto the file
+  # system, read /etc/passwd, and called the link resolved at exit 0. Since
+  # M103 resolution reads no file outside the walked set, so that hazard is
+  # gone. The report is still required to name `etc/passwd`, the target the
+  # root-relative branch takes: a check that chose its branch on the encoded
+  # text would look for another target.
   m40_plant_link linkencodedabs '<a href="%2Fetc%2Fpasswd">x</a>'
   m40_planted 'a percent-encoded absolute href, which decoding turns into a path outside the capture' \
     'looked for etc/passwd' \
@@ -20224,6 +20263,8 @@ M40OLD
       || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): the sweep passed over a page that does not decode, so it covered a domain it never read"; }
     printf '%s\n' "$out" | grep -q '^FAIL: ' \
       || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): the sweep failed with no FAIL line, so its failure is not this module's report"; }
+    printf '%s\n' "$out" | grep -qF -- 'could not be read, so the sweep does not cover the domain it names' \
+      || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): the report does not say the sweep fell short of its domain"; }
     printf '%s\n' "$out" | grep -qF -- "  $page: does not decode as UTF-8" \
       || { printf '%s\n' "$out" >&2; fail "M103 self-test ($label): no report line names $page as a page that does not decode"; }
     printf '%s\n' "$out" | grep -q 'Traceback' \
@@ -20241,6 +20282,20 @@ M40OLD
   m103_assert_undecodable "$M40W/prerelease-undecodable"
   m103_undecodable 'prerelease-absent' site/index.qmd \
     check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-undecodable"
+
+  # The undecodable page and the page carrying the sentence are two different
+  # pages here. Until the M103 review the report on the first stood alone and
+  # the second went unnamed, so both are required in the one report.
+  m44_restore site/index.qmd "> $M44SENTENCE" "$M40W/prerelease-twopages"
+  { cat README.md; printf 'caf\351\n'; } > "$M40W/prerelease-twopages/README.md"
+  python3 -c 'import sys; open(sys.argv[1], encoding="utf-8").read()' "$M40W/prerelease-twopages/README.md" 2> /dev/null \
+    && fail "M103 self-test: the overlay copy of README.md decodes as UTF-8, so the case below is about an ordinary page"
+  m40_planted 'a README that does not decode beside a front page carrying the retired warning, where the README is named' \
+    '  README.md: does not decode as UTF-8' \
+    check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-twopages"
+  m40_planted 'that same pair, where the front page carrying the warning is named too' \
+    'site/index.qmd (warning header)' \
+    check_prerelease_absent "$WORK/prerelease-retired.txt" "$M40W/prerelease-twopages"
   pass "M40: each clause named above is planted on its own and shown red while the same check passes unplanted — the render check on a page with no output and on a source directory tracking nothing; the link check on a dangling relative href, a dangling cross-page fragment, a dangling same-page fragment, a root-relative href with and without the base path it is written under, a root-relative href carrying no base segment where a base path IS given, an href resolving outside the captured site by a leading \`../\`, a root-relative href escaping it with a \`..\` behind a real segment with and without a base path, a percent-encoded absolute href with and without one, an href through a symlink inside the capture whether it points above the capture or inside it, a directory href whose index.html is a symlink to a file above the capture (beside a directory href and a relative href to pages the render wrote, which must still resolve), a root-relative href whose base segment sits behind a \`.\` (which must resolve) or is left by a \`..\`, a capture holding no page, and a page making no local link; the heading-move check on a heading still in README, a heading whose text drifted on the page that now carries it, an old README that is not the seventeen-heading document it is about, and a destination tracking nothing; the prose check on a dropped word reaching no page, a destination tracking nothing, and dropped lines carrying no word long enough to compare; the README check on a link that does not resolve, a document past the line cap, a missing install line and a link naming something else; and the pre-release absence check on each of its two forbidden sentences restored into a tracked page through the overlay — the first into README.md and into the site front page, the second into the site front page re-wrapped across a line break at a different column — each case asserting the file and the sentence the report names, beside an overlay that changes nothing and must leave the check green, plus a repository whose tracked documentation has collapsed to one page, a repository holding a tracked page whose non-ASCII name git C-quotes, a sentence row carrying no tab, a sentence row with nothing after its tab and one holding a blockquote marker that flattens to the same nothing, an empty sentence list asserted twice on the list it names and on what it now forbids, a directory that is no git repository, a repository tracking no README, and a repository whose domain names a page the working tree no longer holds — that last one asserted twice, on the report covering the domain and on the page it names; and the site project file's output-directory pin on a copy whose output directory is renamed"
 fi
 
@@ -24835,6 +24890,20 @@ M52DOCPY
   m103_undecodable 'phrase-absent' site/index.qmd \
     python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" \
       "$M52D/undecodable"
+  # Two different pages: README.md does not decode, and the front page
+  # carries the phrase. The report names both (M103 review).
+  mkdir -p "$M52D/twopages/site"
+  { cat site/index.qmd; printf '\nThe marking syntax means the same thing in the two back-ends.\n'; } \
+    > "$M52D/twopages/site/index.qmd"
+  { cat README.md; printf 'caf\351\n'; } > "$M52D/twopages/README.md"
+  python3 -c 'import sys; open(sys.argv[1], encoding="utf-8").read()' "$M52D/twopages/README.md" 2> /dev/null \
+    && fail "M103 self-test: the overlay copy of README.md decodes as UTF-8, so the case below is about an ordinary page"
+  m52_planted 'a README that does not decode beside a front page carrying the phrase, where the README is named' \
+    '  README.md: does not decode as UTF-8' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" "$M52D/twopages"
+  m52_planted 'that same pair, where the front page carrying the phrase is named too' \
+    'site/index.qmd (back-end count)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/backend-count.txt" "$M52D/twopages"
 
   : > "$M52D/nophrases.txt"
   m52_planted 'a phrase list that forbids nothing' \

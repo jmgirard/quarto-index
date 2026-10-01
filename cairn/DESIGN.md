@@ -767,7 +767,9 @@ takes an overlay directory so the sentence can be planted into a tracked page
 without editing the repo. That check is two lines calling
 `tests/sitecheck.py`'s `prerelease-absent` mode, which enumerates the domain
 and holds the comparison (corrected M096; until then the check carried a copy
-of both). A `CLAIM_CONTAINERS` registry
+of both). A page in the domain that cannot be read or does not decode as UTF-8
+fails the check by name, and every page carrying a sentence is still named
+beside it (M103, D-061). A `CLAIM_CONTAINERS` registry
 stood between eighteen such sentence sets and the pages they were compared
 against until M46 retired it (D-027, D-028), taking fourteen of the sets with
 it. `tests/sitecheck.py` carries the website's own checks: the render writes a
@@ -775,7 +777,8 @@ page for every tracked source; every link the site makes to its own content
 resolves — its path part percent-decoded and normalized, then looked up, as
 itself or joined with `index.html`, in the set of regular files one walk of the
 capture lists, so a path that leaves the capture or passes through a symlink
-names no file (M103, replacing the containment test M46 could not hold), and,
+names no file (M103, replacing the containment test M46 could not hold), while
+a page that is itself a symlink is named as one whose links were not read, and,
 where a base path is given, required to carry that segment once normalized,
 since the site is served under it; README is still the short pointer;
 and — for the migration itself, run against the merge base rather than standing

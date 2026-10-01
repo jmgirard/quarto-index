@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -43,7 +43,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 ## Acceptance criteria
 
-- [ ] AC1: `python3 tests/stateprobe.py --check-cells` reads each module
+- [x] AC1: `python3 tests/stateprobe.py --check-cells` reads each module
       under `_extensions/index/modules/` that has exactly one line, outside
       comments and strings, opening with `local function reset(` and
       closing its parameter list on that same line, where that line opens
@@ -88,37 +88,26 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 ## Tasks
 
-- [x] T1: In `tests/stateprobe.py`, add a `KEPT` list holding the five
-      `indexes.lua` lines, and a guard that reads each module's reset with
-      `reset_body` (line 112). Find the modules by searching
-      `_extensions/index/modules/` for `local function reset(`, never by a
-      fixed list. `--check-cells [module-dir]` runs only the guard, and `main`
-      (line 233) runs it before the control sweep. Update the docstring. In
-      the M26 section of `tests/run-tests.sh` (line 17749), run the guard
-      before the renders. Under `--self-test`, copy the modules to `$WORK`.
-      Add one line to the copy's `indexes.lua` reset with one substitution,
-      and assert that the copy changed. Require the guard red and naming that
-      line. Show the unplanted copy green first (check-design M42).
-- [x] T2: Under `--self-test`, after the M095-AC3 `Bramble` check
-      (`tests/run-tests.sh:11365`), copy the `place-oldstore` `index.html`
-      to `$WORK`. Show the check green on the copy. Then rewrite the one
-      `Bramble` href in the `alpha` section with one substitution. Assert
-      that exactly one site changed, and require the check red, naming
-      `two.html`. Remove the M095-AC3 probe from the M063 T2 leg (lines
-      11429-11439) and the clause naming it in that leg's `pass` line.
-- [x] T3: In `tests/fragments.py`, give `outside-heading` two arguments, the
-      container tag and the heading tag, ahead of the ids. Update
-      `outside_heading` (line 145), its failure messages, and the docstring
-      (lines 28-33). Pass `section` and `h2` at the call
-      (`tests/run-tests.sh:8961`) and in the three plant runs (line 9046).
-      Add the `div` and `h3` plants to the plant builder near line 9013, each
-      asserting its rename changed the page. Run the mode's plants under
-      Python 3.9 and 3.12 (LESSONS M082).
-- [x] T4: Remove KI284 to KI287 from `cairn/DESIGN.md` Known issues, and add
-      the guard to the accumulator paragraph near line 258. Run
-      `tests/run-tests.sh` and `tests/run-tests.sh --self-test` with no
-      edits to the suite during either run (LESSONS M073), and record each
-      result in the work log.
+- [x] T1: In `tests/stateprobe.py`, add a `KEPT` list of the five
+      `indexes.lua` lines and a guard over every module's reset, found by
+      search, never by a fixed list. `--check-cells` runs only the guard, and
+      `main` runs it before the control sweep. The M26 section of
+      `tests/run-tests.sh` runs it before the renders. Under `--self-test`,
+      show an unplanted copy green, then a copy with one added `indexes.lua`
+      reset line red, naming that line (check-design M42).
+- [x] T2: Under `--self-test`, after the M095-AC3 `Bramble` check, show the
+      check green on a copy of the `place-oldstore` `index.html`, then red,
+      naming `two.html`, after one substitution of the one `Bramble` href in
+      `alpha`. Remove the M095-AC3 probe and its pass clause from the M063 T2
+      leg.
+- [x] T3: In `tests/fragments.py`, give `outside-heading` the container and
+      heading tags ahead of the ids, with its messages and docstring. Pass
+      `section` and `h2` at the call and in the plant runs. Add the `div` and
+      `h3` plants, each asserting its rename changed the page. Run the plants
+      under Python 3.9 and 3.12 (LESSONS M082).
+- [x] T4: Remove KI284 to KI287 from `cairn/DESIGN.md` Known issues, and name
+      the guard in the accumulator paragraph. Run both suite modes with no
+      suite edits during either run (LESSONS M073), and log each result.
 - [x] T5 (review return 1): Make `reset_body` read to the function's own
       closing `end` by counting Lua blocks, not by the first column-0 `end`.
       Skip the lines of a `--[[ ]]` block comment. Find the modules through
@@ -191,6 +180,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: review run 3 started at 1a9f5f8, branch holding `origin/main`. AC1 not met: the guard does not find a module whose `local function reset(` line has its parameter list on the next line (Review section). Self-test run in progress.
 - 2026-10-01: both suite runs passed at 1a9f5f8 (1738 and 898 checks), so AC2 to AC4 are ticked. Validate passed. Review return 3 (defect): AC1 fails on a reset opener whose parameter list is on the next line. The disposition goes to the user.
 - 2026-10-01: thrash rule (third return): the user chose to narrow M105 over parking, a re-plan or a brief. Status back to in-progress for the amendment alone. Removing AC1 changes the Goal, so the narrowing keeps AC1 and limits its domain.
+- 2026-10-01: the amendment put the plan-owned body at 150 lines, so T1 to T4 were compressed in one rewrite: line-number pointers dropped, meaning kept.
+- 2026-10-01: status set to review. AC1 ticked against the amended wording, from the run-3 plants and suite runs, since no code changed. Independent review next.
 - re-audit: AC1 (reduced) — first reader: a module with two openers, or whose opener is not the exported reset, fails without naming a stray line. Fixed by limiting the domain to one opener that opens the exported reset. Pre-existing wording (trailing comments, the self-test sentence) left as is.
 - re-audit: AC1 (reduced) — second reader: no in-domain stray line passes, except a module behind a symbolic link, which `tests/filtersrc.py` does not follow. Recorded in KI308. Other findings fail closed.
 - 2026-10-01: AC1 amended at the mini gate, chosen by the user: "reads each module under `_extensions/index/modules/` that has exactly one line, outside comments and strings, opening with `local function reset(` and closing its parameter list on that same line, where that line opens the function the module exports as `reset`". KI308 in `cairn/DESIGN.md` now records the split-parameter and symbolic-link forms.
@@ -428,3 +419,17 @@ runs 1, 2 and 3. Each time the guard missed part of what AC1 promises, by a
 new mechanism: an inner `end`, a commented-out opener, and now a parameter
 list on the next line. The independent review was not run, because AC1 fails
 and the third return puts the disposition to the user.
+
+Disposition: the user chose to narrow AC1 (work log). AC1 now covers modules
+with one same-line reset opener that opens the exported reset.
+
+- AC1 (amended wording): no file under `tests/` or `_extensions/` changed
+  since 1a9f5f8, so the runs above stand. All four reset modules are in the
+  amended domain, and the guard exits 0 on the tree, reading their 26 reset
+  lines. In-domain plants are red and name the stray line: V1, V3, the R1
+  column-0 `end`, a line after a block comment, a `do` block, a one-line
+  reset, and a new module `extra.lua`. The self-test prints
+  `M105-AC1 self-test` green, red on the added `indexes.lua` line. The plain
+  run prints `M105-AC1` green, so `tests/run-tests.sh` runs the guard. The
+  split-parameter opener and two-opener modules are outside the amended
+  domain, and KI308 records the first.

@@ -42,14 +42,14 @@ not decode as UTF-8, by name, where today it raises (KI152).
 
 ## Acceptance criteria
 
-- [ ] AC1: `tests/sitecheck.py links` counts the path part of a link as
+- [x] AC1: `tests/sitecheck.py links` counts the path part of a link as
       resolved only if its normalized target, or that target joined with
       `index.html`, is in one set. The set holds the regular files, not
       symlinks, that one `os.walk` of the capture lists without following
       directory links. The claim covers the definition of `check_links`,
       read top to bottom: no other call in it reads the file system to
       decide resolution.
-- [ ] AC2: `tests/sitecheck.py links` reports each link below with a report
+- [x] AC2: `tests/sitecheck.py links` reports each link below with a report
       line that contains `names no file under`:
   - `../outside.html`
   - `/sub/../../outside.html`
@@ -61,11 +61,11 @@ not decode as UTF-8, by name, where today it raises (KI152).
 
       A relative link and a directory link to pages that the render wrote
       still resolve, and the unplanted capture passes.
-- [ ] AC3: The base-segment test reads the normalized path. Under base path
+- [x] AC3: The base-segment test reads the normalized path. Under base path
       `docs`, `/./docs/index.html` resolves. Under base path `docs`,
       `/docs/../index.html` and `/docs/sub/../../outside.html` are each
       reported with a line that contains `carries no`.
-- [ ] AC4: Run the `prerelease-absent` and `phrase-absent` modes of
+- [x] AC4: Run the `prerelease-absent` and `phrase-absent` modes of
       `tests/sitecheck.py` with an overlay that holds a domain page that
       does not decode as UTF-8. Each mode exits non-zero and prints a
       failure report, and one line of that report names the page. Neither
@@ -123,3 +123,11 @@ not decode as UTF-8, by name, where today it raises (KI152).
 ## Decisions
 
 ## Review
+
+Evidence, 2026-10-01, branch head de082a6.
+
+- AC1: `check_links` makes two kinds of file-system call. `captured_files` runs one `os.walk` (default, no link following) and keeps each entry that `lstat` reads as a regular file. `open` reads page bodies for links and ids. Resolution is the lookup `target in files` / `index in files` only. Shown on a scratch tree holding a file symlink, a directory symlink out of the tree and one inside it: `captured_files` returned `['a.html', 'sub/b.html']`.
+- AC2: each shape was planted fresh into a copy of the captured site and run through `tests/sitecheck.py links` with no base path. The copy was rebuilt in scratch, because the review's suite run cleared `tests/.work`. These five each exit 1 with a line containing `names no file under`: `../outside.html`, `/sub/../../outside.html`, `above/outside.html` (`above` links to `..`), `alias/syntax.html` (`alias` links to `.`), and `dirlink/`. The `index.html` in `dirlink` is a symlink to `../../outside.html`. `gallery/` plus `./syntax.html` exits 0. The unplanted copy exits 0, 2163 links swept.
+- AC3: under base path `docs`, `/./docs/index.html` exits 0. `/docs/../index.html` and `/docs/sub/../../outside.html` each exit 1 with a line containing `carries no`.
+- AC4: overlay `site/index.qmd` is the tracked page plus a retired sentence, a forbidden phrase and the byte 0xe9. A UTF-8 read of it raises `UnicodeDecodeError`. `prerelease-absent` and `phrase-absent` each exit 1 and print a `FAIL:` line. The next line of each report is `site/index.qmd: does not decode as UTF-8 (byte 0xe9 at offset 2276)`. Neither output contains `Traceback`.
+- Consistency gate: `cairn_validate` exit 0, all checks passed. No DESIGN.md principle changed, so `cairn_impact` is skipped. The generic profile names no toolchain checks.

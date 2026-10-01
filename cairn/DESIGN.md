@@ -831,7 +831,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI2.** `\index` inside a moving argument (a section heading) is unprobed,
   and the typeset-time channel puts a second unprotected macro on that path,
   `\quartoindexregister`, whose `\protected@write` would expand inside a
-  `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7
+  `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7; routed
+  from candidates 2026-10-01, the row added 2026-08-16
 - **KI3.** The filter cannot place the index relative to content Quarto adds
   after filters run: the reference block is appended once the marker has already
   placed the index, so the default order is index first, references after, in
@@ -863,12 +864,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   jobname collides with the default index's files and a stale `.ind` from an
   earlier render is what `\printindex[X]` reads if a later makeindex call
   fails, which would print a WRONG index where D-031's shell-escape failure
-  documents an empty one. — M49 review F3
+  documents an empty one. — M49 review F3; routed from candidates
+  2026-10-01, the row added 2026-08-16
 - **KI107.** `passes.lua` emits `\index[<name>]{...}` whenever the format is
   LaTeX-derived while the preamble making that syntax legal rides Quarto's
   preamble channel, so under plain pandoc `-t latex` the `[<name>]` typesets
   into the body where the pre-M49 uniform `\index{...}` was harmless — the
-  extension documents no plain-pandoc support anywhere. — M49 review F4
+  extension documents no plain-pandoc support anywhere. — M49 review F4;
+  routed from candidates 2026-10-01, the row added 2026-08-16
 
 ### Entries, levels and sort keys
 
@@ -887,7 +890,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   chose LaTeX-aligned no-locator semantics and M15 keeps that semantics for a
   contested key — and the extension prints `see One Way; see Another Way` where
   a printed index would write `see One Way; Another Way`, repeating `\seename`
-  per same-kind target. — M03 gate, M15 review
+  per same-kind target. — M03 gate, M15 review; routed from candidates
+  2026-10-01, the row added 2026-08-16
 
 ### The HTML back-end and books
 
@@ -940,11 +944,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI12.** `resolve_markers` rebuilds every Blocks list in every format whether
   or not a marker exists. The LaTeX byte-diff that proved that output-neutral
   was deleted at M16 (D-004), so neither back-end has byte-level evidence for it
-  now. — M04 review F12
+  now. — M04 review F12; routed from candidates 2026-10-01, the row added
+  2026-08-17
 - **KI13.** Headings consumed by Quarto constructs (callout titles, tabsets)
   bypass the after-heading anchor relocation. No TOC copy today, so no defect;
   the invariant is unpinned against Quarto's own filter ordering. — M03 review
-  pass 3 F8
+  pass 3 F8; routed from candidates 2026-10-01, the row added 2026-08-17
 - **KI14.** Locator hrefs into chapter pages cannot be percent-escaped at the
   filter layer: Quarto normalizes a link target either way — verified, the
   filter emitted `later%20chapter.html` and output carried `later chapter.html`,
@@ -1113,7 +1118,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   received, so an ignored or duplicate marker standing above a named index's
   marker shifts the cited block number down. The comparison is sound, so this
   is a wrong number in a report and never a missed or spurious one, and
-  fencing it needs a fixture with an ignored marker above. — M49 review F2
+  fencing it needs a fixture with an ignored marker above. — M49 review F2;
+  routed from candidates 2026-10-01, the row added 2026-08-16
 
 ### The acceptance suite: what it reads and what it holds
 
@@ -1435,7 +1441,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   text font `,,` is the ligature for that glyph, merging the entry's own comma
   with the index style's delimiter. The entries for `'` and `` ` `` likewise
   print as the right and left single quotation marks, which is what those ASCII
-  positions hold in a T1 text font. — M30 T1
+  positions hold in a T1 text font. — M30 T1; routed from candidates
+  2026-10-01, the row added 2026-08-16
 - **KI74.** That a registered page actually prints emphasized is exercised only
   by M20's T9 checks and by no acceptance criterion, the criteria set having
   been held rather than widened, so the last leg of that chain has no criterion
@@ -1652,31 +1659,20 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   section, so no term is lost from anything it prints; what it costs is that
   its own page's view of the store is one chapter short, which nothing renders
   and nothing reports. A chapter that CAN print a section reads the missing
-  chapter's source, so the printed index no longer goes short. Narrowed M063
-  from the whole section being lost, M064 from every unreadable record to the
-  absent one, M065 from every absent record, M068 from every record behind a
-  listing store directory, and M069 from every chapter to the chapters that
-  print nothing. — M60 review F11, corrected M061 review F4, narrowed M063,
-  narrowed M064, narrowed M065, narrowed M068, narrowed M069
+  chapter's source, so the printed index no longer goes short. — M60 review
+  F11, corrected M061 review F4, narrowed M063, narrowed M064, narrowed M065,
+  narrowed M068, narrowed M069
 - **KI214.** A book prints no section for an index no marker names where the
   last chapter can read a usable record for none of the chapters that place
   one, and none of those records can be recovered. The proviso on M063's rule
   — some chapter of the book places an index — is `first`, which each chapter
-  derives from the records it could read plus its own marker. M064 puts a
-  recovered chapter's markers into that derivation, so a held or refused record
-  no longer hides a placement marker; what is left is the ABSENT record, which
-  recovery does not read — a chapter rendered on its own against a store no
-  earlier render wrote, its record's name in no listing (D-043, D-044).
-  Narrowed M064 from every unusable record: the two-held-paths arrangement this
-  was observed on is M064-AC3, where both renders now print `gamma` in
-  `five.html`; narrowed M065 from every absent record, since a store directory
-  that is there and cannot be listed now recovers every chapter and so settles
-  `first`; narrowed M069, which reads the sources of the chapters no record
-  has been written for in exactly the chapter this is about — the book's last —
-  so `first` is settled from every chapter's markers whether or not any record
-  exists, and what is left is a last chapter whose own source-reading also
-  fails, which is the unreadable-source case rather than the absent-record one.
-  — M063 AC3 criteria audit, narrowed M064, narrowed M065, narrowed M069
+  derives from the records it could read plus its own marker. Since M069 the
+  book's last chapter reads the source of every chapter no record has been
+  written for, so `first` is settled from every chapter's markers whether or
+  not any record exists. What is left is a last chapter whose own
+  source-reading also fails, which is the unreadable-source case rather than
+  the absent-record one. — M063 AC3 criteria audit, narrowed M064, narrowed
+  M065, narrowed M069
 - **KI215.** The two store reports repeat once more than
   `site/books.qmd` states in a book whose fallback set is entirely unmarked.
   The fallback loop sets `builds = true` for every index no marker names,

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-30 (status audit: no commits, issues, PRs or outside merges since M102. Validate green.)_
+_Last hygiene check: 2026-10-01 (M103 merged as PR #103 and archived. KI303-KI305 added. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M103 | The two site-check clauses M46 withdrew hold again | review | — | normal | milestones/M103-site-check-clauses.md |
+| M103 | The two site-check clauses M46 withdrew hold again | done | — | normal | milestones/archive/M103-site-check-clauses.md |
 | M102 | The figure-marks checks run on every matrix leg, each shown able to fail | done | — | normal | milestones/archive/M102-figure-marks-checks.md |
 | M101 | A mark in a figure caption or an image's alt text files one locator | done | — | normal | milestones/archive/M101-figure-caption-marks.md |
-| M100 | A Typst index orders locators by the number the page prints | done | — | low | milestones/archive/M100-typst-locator-order.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

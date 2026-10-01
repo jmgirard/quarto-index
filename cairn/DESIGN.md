@@ -1242,6 +1242,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI151.** The gallery build carries a dead `has_pdf` parameter. — M41 review
 - **KI156.** `text=True` decodes a non-UTF-8 tracked path strictly. — M46
   review F21
+- **KI303.** `tests/sitecheck.py links` matches a link against the walked
+  file set byte for byte. A difference in case or Unicode form that the macOS
+  file system accepts is reported. A case-sensitive web host fails such a
+  link too. — M103 review O4, H5
+- **KI304.** The link check's walk passes over a directory it cannot read
+  with no report. A link into that directory then reads as naming no file,
+  not as a link into an unreadable directory. — M103 review O14, H7
+- **KI305.** The `claims`, `prose`, `headings` and `readme` modes of
+  `tests/sitecheck.py`, and the row-list reader the sweeps share, still raise
+  a traceback on a file that does not decode as UTF-8. M103 fixed only the
+  two sweep modes. — M103 review H3
 - **KI241.** Three checks sweep what the whole run has accumulated rather than
   a domain they declare: M13's AC5 report scan globs every warning log under
   `$WORK`, M15's untouched-artifact comparison holds the whole capture root to

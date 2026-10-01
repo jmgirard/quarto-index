@@ -64,9 +64,9 @@ That job reads the printed index of each PDF:
 
 Where a Typst locator links to is read only by the acceptance suite.
 
-No PDF or EPUB is compared across versions. Two Quarto versions typeset
-through different TeX engines, and an engine difference lands in a PDF's text
-layer, where a comparison would be red about the engine rather than about this
-extension. The byte-for-byte comparison is over the HTML index alone. The
+No PDF or EPUB is compared across versions. For the LaTeX PDFs, two Quarto
+versions typeset through different TeX engines. An engine difference lands in
+a PDF's text layer, where a comparison would be red about the engine rather
+than about this extension. The byte-for-byte comparison is over the HTML index alone. The
 acceptance suite above renders and reads a printed PDF index on every run, on
 one Quarto version.

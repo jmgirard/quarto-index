@@ -1898,10 +1898,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   reset passes the cell guard, which reads from the reset to the table and
   not back. Only the hand-run probe's `plant()` stops on it. — M105 plan
   Out, review R17
-- **KI308.** The cell guard finds a module by one `local function reset(`
-  line outside comments that closes its parameter list on that line. A module
-  whose reset is written in another form, such as `function M.reset(` or with
-  its parameter list continued on the next line, is not read, and the guard
-  passes it. A module in a directory reached through a symbolic link is not
-  read either, because `tests/filtersrc.py` does not follow one. — M105
-  review R6, review run 3
+- **KI308.** The cell guard reads every module `CELLS` names, and fails
+  naming one whose reset it cannot find. A new module is read only when the
+  guard's own lexer finds one `local function reset(` line that closes its
+  parameter list there. A new module is not read, and the guard passes it,
+  when its reset is in another form (`function M.reset(`, a parameter list on
+  the next line), when it is hidden from that lexer by a `\z` string or a `#!`
+  first line, when its file name starts with `..`, or when it sits in a
+  linked directory. — M105 review R6, run 3 W1, W2, W5, W10

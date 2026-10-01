@@ -43,12 +43,13 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 ## Acceptance criteria
 
-- [ ] AC1: `python3 tests/stateprobe.py --check-cells` reads each module
-      under `_extensions/index/modules/` that has exactly one line, outside
-      comments and strings, opening with `local function reset(` and
-      closing its parameter list on that same line, where that line opens
-      the function the module exports as `reset`. In each, it reads every non-blank, non-comment
-      line between that line and the function's closing `end`. The kept lines
+- [x] AC1: `python3 tests/stateprobe.py --check-cells` reads the reset of
+      each module that `CELLS` names, in `_extensions/index/modules/`. If it
+      cannot find exactly one `local function reset(` line outside comments
+      that opens the reset the module exports, it exits non-zero and names
+      the module. Otherwise it reads every line that holds code outside
+      comments and strings, from that line to the function's closing `end`.
+      The kept lines
       are the five `indexes.lua` lines `order[1] = UNNAMED`,
       `titles[UNNAMED] = DEFAULT_TITLE`, `if doc ~= nil then`,
       `read(doc.meta)` and `end`. The statement of a `CELLS` row for its
@@ -183,6 +184,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: the amendment put the plan-owned body at 150 lines, so T1 to T4 were compressed in one rewrite: line-number pointers dropped, meaning kept.
 - 2026-10-01: status set to review. AC1 ticked against the amended wording, from the run-3 plants and suite runs, since no code changed. Independent review next.
 - 2026-10-01: three fresh reviewers reported 15 findings (W1 to W15, Review section). Review return 4 (defect): AC1 fails on its amended wording, because a new module that hides its reset from the guard's lexer (`\z` string, `#!` first line, or a `..` file name) passes unread. AC1 unticked. The disposition goes to the user.
+- 2026-10-01: thrash rule (fourth return): the user chose to narrow AC1 again over parking, a re-plan or a brief. No fresh reader ran, because AC1 already carries two re-audit lines, so the user approved the wording as shown. Status stayed review, because no code changed.
+- 2026-10-01: AC1 amended at the gate, chosen by the user: "reads the reset of each module that `CELLS` names, in `_extensions/index/modules/`. If it cannot find exactly one `local function reset(` line outside comments that opens the reset the module exports, it exits non-zero and names the module. Otherwise it reads every line that holds code outside comments and strings, from that line to the function's closing `end`." KI308 now records the new-module gaps (W1, W2, W5, W10). AC1 ticked on fresh hand plants.
 - re-audit: AC1 (reduced) — first reader: a module with two openers, or whose opener is not the exported reset, fails without naming a stray line. Fixed by limiting the domain to one opener that opens the exported reset. Pre-existing wording (trailing comments, the self-test sentence) left as is.
 - re-audit: AC1 (reduced) — second reader: no in-domain stray line passes, except a module behind a symbolic link, which `tests/filtersrc.py` does not follow. Recorded in KI308. Other findings fail closed.
 - 2026-10-01: AC1 amended at the mini gate, chosen by the user: "reads each module under `_extensions/index/modules/` that has exactly one line, outside comments and strings, opening with `local function reset(` and closing its parameter list on that same line, where that line opens the function the module exports as `reset`". KI308 in `cairn/DESIGN.md` now records the split-parameter and symbolic-link forms.
@@ -478,6 +481,22 @@ line gives the proposed disposition.
 - W14 (blame 8): `--check-cells` works only as the first argument. Proposed:
   reject, a usage detail.
 - W15 (prior 1): KI287 struck with no edit. Proposed: reject, as R14.
+
+Disposition: the user chose to narrow AC1 a second time, to the modules
+`CELLS` names (work log).
+
+- AC1 (second amended wording): no file under `tests/` or `_extensions/`
+  changed since 1a9f5f8, so the suite runs above stand. The guard reads the
+  four modules `CELLS` names and exits 0 on the tree, reading 26 reset lines.
+  Where it cannot find the one opener of the exported reset, it is red and
+  names the module: a `#!` first line or a `\z` string hiding `sortkeys.lua`'s
+  opener (missing), a parameter list on the next line (missing), an exported
+  reset other than the local one (line mismatch), and a second, oddly spaced
+  opener in `marks.lua` (two lines), as is V2 (two openers). Where it finds
+  the reset, every plant above in a `CELLS` module is red and names the line:
+  V1, V3, the R1 column-0 `end`, a line after a block comment, a `do` block, a
+  one-line reset, and a `#!` comment closed before the opener. The self-test
+  and plain-run lines for `M105-AC1` are as recorded above.
 
 Thrash count: defect return 4. AC1 failed in every run, each time by a
 new way the guard's own Lua reading misses part of the domain.

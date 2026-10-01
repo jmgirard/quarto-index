@@ -215,7 +215,14 @@ The modules, in dependency order:
   figure's only content and equals the figure's caption: Pandoc's reader copies
   a figure's caption there, so a caption mark is read once, in the caption.
   The HTML book's recovery reader applies it to the blocks it walks (added
-  M101). Then three that only read — one
+  M101). The comparison drops the `__quarto_custom_id` Quarto gives each
+  inline custom node, at every depth: Quarto gives a shortcode in the caption
+  and in the copy different ids. Such a node is an empty span whose content
+  Quarto keeps under that id, so two such nodes of one type compare equal
+  whatever they hold. That is safe, because an alt text that differs from the
+  caption only there carries the caption's marks, in the same order and on
+  the same figure, and the marks it stops filing are ones the caption files
+  (added M104). Then three that only read — one
   registering sort keys, one deciding which keys are contested, one pairing
   page ranges — and the emitting pass that rewrites the mark, reading the tag
   off and, in an HTML book chapter, filing a tagged mark as a page locator
@@ -1032,15 +1039,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   does not carry. No captured EPUB member carries a literal `<![CDATA[`, so
   nothing is red today; separating the two readings would take a builder that
   knows which of the two it is parsing. — M084 review F3
-- **KI299.** `marks.declass_caption_copies` does not see the alt-text copy of
-  a caption that holds a Quarto shortcode. Quarto gives the shortcode in the
-  caption and in the copy different custom ids, so the two inline lists are
-  not equal. A mark in the caption of such a figure with no id files twice.
-  In HTML the moved id of the copy's mark is dropped with the empty span
-  Quarto's figure renderer discards, so one index link names no element, and
-  a range opened there is reported as already open. The HTML book's recovery
-  route reads the shortcode as source text and files the mark once. Observed
-  on Quarto 1.10.18. — M101 review F1, F2
 
 ### The Typst back-end
 

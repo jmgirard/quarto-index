@@ -1,6 +1,6 @@
 index	Index	Below the first index
 index	Index of Authors	Below the second index
 present	Index	Underwood	it is filed in the default index and written below the default index's own marker, whose entry file the wrapped \printindex holds open
-present	Index	Vesalius	it is filed in the default index and written below a NAMED index's marker, whose close reaches that index's entry file alone
+absent	Index	Vesalius	it is filed in the default index and written below a NAMED index's marker, whose close reaches that index's entry file alone
 present	Index of Authors	Ockham	it is filed in a named index and written below the DEFAULT index's marker, which stands above its own
 absent	Index of Authors	Petrarch	it is filed in a named index and written below THAT index's own marker, where imakeidx has already closed that index's entry file

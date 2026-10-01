@@ -15,7 +15,7 @@ index	Index of Authors	Below the second index
 1	bee
 2	cee, dee, eff
 2	cee, dee, eff
-0	Babbage
+0	Babbidge
 0	Cantor
 0	Ockham
 0	Hague

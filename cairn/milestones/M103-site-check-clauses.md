@@ -70,7 +70,7 @@ not decode as UTF-8, by name, where today it raises (KI152).
       does not decode as UTF-8. Each mode exits non-zero and prints a
       failure report, and one line of that report names the page. Neither
       mode prints a Python traceback.
-- [ ] AC5: The `verify` slot in `cairn/PROFILE.md` runs clean, with
+- [x] AC5: The `verify` slot in `cairn/PROFILE.md` runs clean, with
       `--self-test`.
 
 ## Coverage
@@ -132,6 +132,8 @@ Evidence, 2026-10-01, branch head de082a6.
 - AC2: each shape was planted fresh into a copy of the captured site and run through `tests/sitecheck.py links` with no base path. The copy was rebuilt in scratch, because the review's suite run cleared `tests/.work`. These five each exit 1 with a line containing `names no file under`: `../outside.html`, `/sub/../../outside.html`, `above/outside.html` (`above` links to `..`), `alias/syntax.html` (`alias` links to `.`), and `dirlink/`. The `index.html` in `dirlink` is a symlink to `../../outside.html`. `gallery/` plus `./syntax.html` exits 0. The unplanted copy exits 0, 2163 links swept.
 - AC3: under base path `docs`, `/./docs/index.html` exits 0. `/docs/../index.html` and `/docs/sub/../../outside.html` each exit 1 with a line containing `carries no`.
 - AC4: overlay `site/index.qmd` is the tracked page plus a retired sentence, a forbidden phrase and the byte 0xe9. A UTF-8 read of it raises `UnicodeDecodeError`. `prerelease-absent` and `phrase-absent` each exit 1 and print a `FAIL:` line. The next line of each report is `site/index.qmd: does not decode as UTF-8 (byte 0xe9 at offset 2276)`. Neither output contains `Traceback`.
+- AC5: `tests/run-tests.sh --self-test` on head ec2c631, after the fix-now commit, exited 0 with `All checks passed (1728 checks).` Every M103 plant ran and passed, the review's new plants included.
+- AC1-AC4 after the fixes: on ec2c631, `captured_files` returns the regular set and the other entries from the same single walk. Resolution is still only the lookup in the regular set. The AC2-AC4 plants ran green in the AC5 run on ec2c631.
 - Consistency gate: `cairn_validate` exit 0, all checks passed. No DESIGN.md principle changed, so `cairn_impact` is skipped. The generic profile names no toolchain checks.
 
 Findings, three fresh reviewers (O = Opus diff-bug, H = Sonnet blame-history, P = Sonnet prior-review). The PR-comment probe returned none. Ranked as reported. Proposed group in brackets: [A] fix now, [B] fix now, [C] fix now (docs and plant pins), [D] Known issues entry, [R] reject with reason.

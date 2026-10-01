@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M106 | The version matrix reads the two-index PDF and the book EPUB | planned | — | normal | milestones/M106-matrix-missing-legs.md |
 | M105 | Three M095 checks each fail on the gap its review found | done | — | normal | milestones/archive/M105-m095-check-gaps.md |
 | M104 | A caption mark beside a shortcode files one locator | done | — | normal | milestones/archive/M104-shortcode-caption-marks.md |
 | M103 | The two site-check clauses M46 withdrew hold again | done | — | normal | milestones/archive/M103-site-check-clauses.md |
@@ -27,7 +28,6 @@ _Released 0.4.0 2026-09-11._
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy. Promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9, split 2026-10-01 — KI108
 - Narrow M32's HTML-cost check to the bibliography's own wrapper. Promote on that fixture growing a footnote or a Citation block — added 2026-08-24 — M32 review R2-F14, split 2026-10-01 — KI109
 - Make the acceptance suite and its PDF comparison version-portable. Promote on an extraction shown engine-neutral across the two engines — added 2026-08-26 — M43, split 2026-10-01 — KI110, KI111
-- Give the version matrix its missing legs, M49's two-index fixture and EPUB. Promote with the version-portable comparison, or sooner on the restored PDF leg running a clean schedule cycle — added 2026-08-26 — M51/M52, split 2026-10-01 — KI112, KI113
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249

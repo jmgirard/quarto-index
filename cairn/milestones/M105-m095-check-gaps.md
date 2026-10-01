@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -56,14 +56,14 @@ probe's output instead of stating a count. The plan gate chose that form.
       on the merged tree. `tests/run-tests.sh` runs it.
       `tests/run-tests.sh --self-test` shows it red, naming the line, on a
       copy of the modules whose `indexes.lua` reset holds one added line.
-- [x] AC2: In `tests/run-tests.sh --self-test`, the M095-AC3 `Bramble` check
+- [ ] AC2: In `tests/run-tests.sh --self-test`, the M095-AC3 `Bramble` check
       reads a copy of the `place-oldstore` capture's `index.html`. In the
       copy, the href of `Bramble`'s locator in the `alpha` section changes
       from `two.html#qi-mark-1` to `two.html`, and nothing else changes. On
       that copy the check is red and names the href it read. The same check
       passes on an unchanged copy of that page. The M063 T2 leg no longer
       runs the M095-AC3 check.
-- [x] AC3: `tests/fragments.py outside-heading` takes two tags from the call.
+- [ ] AC3: `tests/fragments.py outside-heading` takes two tags from the call.
       The element carrying the named id must have the first tag. Its first
       direct child tagged `h1` to `h6` must have the second. If either
       differs, the check fails and names the tag it found. The M095-AC3 call
@@ -74,15 +74,15 @@ probe's output instead of stating a count. The plan gate chose that form.
       check is red and names `div`. In the other, that heading's opening and
       closing tags are renamed to `h3`, and the check is red and names `h3`.
       Each copy is otherwise unchanged.
-- [x] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
+- [ ] AC4: `tests/run-tests.sh` passes, and `tests/run-tests.sh --self-test`
       passes.
 
 ## Coverage
 
-- AC1 → T1
-- AC2 → T2
-- AC3 → T3
-- AC4 → T4
+- AC1 → T1, T5, T6
+- AC2 → T2, T7
+- AC3 → T3, T7
+- AC4 → T4, T8
 
 ## Tasks
 
@@ -117,6 +117,20 @@ probe's output instead of stating a count. The plan gate chose that form.
       `tests/run-tests.sh` and `tests/run-tests.sh --self-test` with no
       edits to the suite during either run (LESSONS M073), and record each
       result in the work log.
+- [ ] T5 (review return 1): Make `reset_body` read to the function's own
+      closing `end` by counting Lua blocks, not by the first column-0 `end`.
+      Skip the lines of a `--[[ ]]` block comment. Find the modules through
+      `tests/filtersrc.py`, kept to `modules/`. Make each guard failure name
+      its module and cause, and make the suite message match (R1, R3, R4,
+      R8). Add a self-test plant with a column-0 inner `end` and a stray line
+      after it, red naming that line.
+- [ ] T6 (review return 1): Add a D-entry that narrows D-011 for this guard,
+      with its reason, and edit KI10's sentence that says D-011 refuses the
+      scan (R2).
+- [ ] T7 (review return 1): Fix the wording of R5, R6 and R7. Add the
+      asserts of R9, R10 and R11. Rename the parameter of R12.
+- [ ] T8 (review return 1): Repeat T4's two suite runs and record each
+      result in the work log.
 
 ## Work log
 
@@ -139,6 +153,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: claim audit: not owed — internal tier.
 - 2026-10-01: status set to review.
 - 2026-10-01: review started. Self-test passed (1738 checks), AC2 and AC3 ticked. AC1 not met: a column-0 inner `end` hides later reset lines from the guard. Plain suite run pending.
+- 2026-10-01: plain suite run passed (898 checks). Three fresh reviewers reported 17 findings, logged in the Review section.
+- 2026-10-01: review return 1 (defect): AC1 fails, because `reset_body` stops at a column-0 inner `end`, so the guard never reads the reset lines after it. Status back to in-progress. The user chose send-back at the gate, and a D-entry that allows the guard (R2). Tasks T5 to T8 added, Coverage amended, AC2 to AC4 unticked.
 
 ## Decisions
 
@@ -225,3 +241,10 @@ merge gate.
   in the work log, and 3.9 and 3.14 bracket 3.12.
 - R17 (prior 3): a `CELLS` row whose statement left the reset is caught only
   by the hand-run probe. Proposed: reject, plan Out.
+
+Gate 2026-10-01: the user chose to send M105 back to implement. R1 to R12
+are fix-now, as tasks T5 to T7, and T8 repeats both suite runs. R13 to R17
+are rejected for the reasons given. For R2, the user chose a new decision
+that allows the guard over removing it. AC2 to AC4 are unticked, because T7
+and T8 change the code their evidence covers. The next review takes fresh
+evidence for all four.

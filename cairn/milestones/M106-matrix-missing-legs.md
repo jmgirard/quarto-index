@@ -115,12 +115,12 @@ to M102. KI112 and KI113 close.
       and `links` on the EPUB under `examples/book/_book/` with `qi-index`.
       Rewrite the render-job comment (`versions.yml:137-160`) that says the
       job renders only the figure-marks fixture to EPUB.
-- [ ] T4: Push the branch and dispatch `versions.yml` at its head. Read every
+- [x] T4: Push the branch and dispatch `versions.yml` at its head. Read every
       leg's new steps (AC1, AC2). If a leg is red at a step this milestone
       did not add, dispatch on the base branch to compare. If a leg is red
       because of that version's Pandoc or TeX output, stop at the amendment
       gate. That pair leaves the milestone as Out states.
-- [ ] T5: On a probe branch, make one commit with the three row changes AC3
+- [x] T5: On a probe branch, make one commit with the three row changes AC3
       names, and dispatch at it. Read the run against AC3. Keep the commit
       under `refs/probes/m106-manifest-rows` and delete the branch.
 - [ ] T6: Rewrite the matrix section of `site/tests.qmd` and README's matrix
@@ -147,6 +147,8 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: T4: run 36940692551 at 42e4b1f, attempt 1, green on all three legs (floor 1.5.52, pinned 1.10.18, release). Each new step prints its reader's `ok` line.
 - 2026-10-01: T5 first probe, run 36940741757 at 460498d: entries and EPUB `sections` red on all three legs with the changed row in the detail line. The cells step was skipped after the entries step failed, so AC3 is not met. Minor T2 fix: the cells step runs whenever the two-index render succeeded. T6 drafts are in this checkpoint, not yet checked.
 - 2026-10-01: T2 fix landed: the two-index render step has id `named_indexes_pdf`, and the cells step runs `if: !cancelled()` and that step succeeded. T4 and T5 are dispatched again on the new head.
+- 2026-10-01: T4 done: run 36941004216 at c143cd0, attempt 1, green on all three legs, with the 12 new reader `ok` lines. No leg was red at an older step, so no base-branch run was needed.
+- 2026-10-01: T5 done: probe 467a461 (c143cd0 plus the three row changes), run 36941009713, attempt 1. On all three legs the entries, cells and EPUB `sections` steps are red, each with its FAIL line and then the changed row (`<<Babbidge>>`, `<<Vesalius>> is printed`, `got`/`want` on Turing). The probe is kept at `refs/probes/m106-manifest-rows`, and its branch is deleted.
 
 ## Decisions
 

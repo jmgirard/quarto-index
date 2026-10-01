@@ -162,6 +162,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: at cf7a4b4, with `/usr/bin/python3` (3.9.6) first on the PATH and no suite edits during either run, `tests/run-tests.sh --self-test` passed (1738 checks) and `tests/run-tests.sh` passed (898 checks). T5, T7 and T8 are ticked.
 - 2026-10-01: claim audit: not owed — internal tier.
 - 2026-10-01: status set to review.
+- 2026-10-01: review run 2 started at 66991d0, branch holding `origin/main`. Validate passed. Three fresh reviewers reported 21 findings, logged in the Review section.
+- 2026-10-01: AC1 not met: a commented-out reset opener above the real one makes the guard read the copy, so a stray line in the real reset passes (V1, reproduced). The self-test run was stopped by hand at 876 checks, all M105 checks green, because the return makes its evidence stale.
 
 ## Decisions
 
@@ -255,3 +257,93 @@ are rejected for the reasons given. For R2, the user chose a new decision
 that allows the guard over removing it. AC2 to AC4 are unticked, because T7
 and T8 change the code their evidence covers. The next review takes fresh
 evidence for all four.
+
+### Review run 2 (2026-10-01, at 66991d0)
+
+The branch holds `origin/main`, and `main` has no unpushed commits. Runs used
+`/usr/bin/python3` (3.9.6) first on the PATH.
+
+- AC1 (not met): on the tree the guard exits 0, reading 26 reset lines across
+  indexes, latex, marks and sortkeys. The self-test prints `M105-AC1` green and
+  `M105-AC1 self-test` green over its four cases. Eleven hand plants on scratch
+  copies all behave as AC1 states. They include the R1 column-0 `end`, a
+  `while` block and a one-line anonymous function. They also include `end`
+  inside a string and a comment, a `repeat`/`until` block, and a multi-line
+  long string. A block comment and a line comment stay green. Three further plants pass a stray
+  line unseen (V1 to V3 below). In each, `qi_core.empty(hidden)` is added to a
+  reset and the guard exits 0, reading 26 lines. V1 puts a commented-out copy
+  of `sortkeys.lua`'s reset (`--[[ ... ]]`) above the real one. V2 adds a
+  second `local function reset(doc)` after the first in `indexes.lua`. V3
+  puts the stray statement on the opener line. V1 fails AC1 as written. The
+  source defines the reset once, and the guard reads the commented copy in
+  place of the lines up to that function's closing `end`. Box left unticked.
+- AC2: the `--self-test` run was stopped by hand after AC1 was found failing,
+  at 876 `ok` lines and no `FAIL`. Before the stop, both `M105-AC2` self-test
+  lines printed `ok`. The check passed on the unchanged copy and was red on
+  the planted copy, naming `two.html`. Box not ticked,
+  because the return below changes the suite again.
+- AC3: the same run printed `M105-AC3 self-test` green, the check red on the
+  `div` and `h3` copies, each naming its tag. Box not ticked, for the same
+  reason.
+- AC4: not run to completion (stopped as above). Box not ticked.
+- Consistency gate: `cairn_validate.py` exits 0, all checks passed. No DESIGN
+  principle text changed. The generic profile names no toolchain checks.
+
+Thrash count: this is defect return 2 (no amendment returns). AC1 failed in
+run 1 and again here. Each time, the guard's hand-written Lua reader misplaces
+where the reset starts or ends, and a stray line goes unread. That is the same
+shape twice, the case the review skill reads as a wrong approach.
+
+Independent review: three fresh reviewers (Opus diff-bug, Sonnet
+blame-history, Sonnet prior-review). Merged where two named one defect. Each
+line gives the proposed disposition, decided at the merge gate.
+
+- V1 (diff-bug 1, blame 2, reproduced here): a commented-out
+  `local function reset(` above the real one is read as the reset. AC1 fails.
+  Proposed: fix now, a return to implement.
+- V2 (diff-bug 2, reproduced here): only the first of two reset definitions is
+  read, though Lua exports the later one. Proposed: fix now with V1.
+- V3 (diff-bug 3, reproduced here): code on the opener line is never read,
+  against the `check_cells` docstring and DESIGN.md line 263. Proposed: fix
+  now with V1.
+- V4 (diff-bug 4): the R5 wording says `plant()` stops on a second copy of an
+  allowed line. `plant()` matches only `CELLS` statements, so a duplicated
+  KEPT line passes both. Proposed: fix the wording now.
+- V5 (diff-bug 5, checked here): D-062 says the probe drops only the lines
+  the table names. `reset:marks`, `reset:latex` and `reset:sortkeys` drop
+  every reset line. Proposed: fix now, one entry that supersedes that
+  sentence.
+- V6 (diff-bug 6): the block-comment self-test checks only exit 0, and every
+  line after its comment is allowed, so a reader that stops at `--[[` passes
+  it. Proposed: fix now, a red plant with a stray line after a block comment.
+- V7 (diff-bug 7): every call and plant passes `section h2`, so a mode that
+  ignores its tag arguments passes. Proposed: fix now, one call with other
+  tags.
+- V8 (prior 1): the guard prints how many lines it read on a pass alone, not
+  on a failure (LESSONS M45). Proposed: fix now, print the domain before the verdict.
+- V9 (blame 1): the plan Out gaps and the R5 and R17 rejections have no Known
+  issues entry, though D-013 puts accepted coverage gaps there. Proposed: fix
+  now, entries in `cairn/DESIGN.md`.
+- V10 (blame 3, checked here): in KI10, "Four carry more than a skewed count"
+  follows the inserted guard sentence and so lost its referent. Proposed: fix
+  now.
+- V11 (diff-bug 11): the AC2 plant's 10-byte assert assumes BSD `sed`. GNU
+  `sed` adds a final newline. Proposed: fix now, plant with `perl`.
+- V12 (diff-bug 9): a one-line reset gets a message about other blocks on the
+  opener line. Proposed: fix now with V1.
+- V13 (diff-bug 12): the probes refuse `QI_EXT_DIR` set to the absolute path
+  of the tree they plant. Proposed: fix now, compare absolute paths.
+- V14 (diff-bug 8): a backslash-continued string ends at its line, so the
+  block count can stop early. Red anyway. Proposed: fix with V1, else reject.
+- V15 (diff-bug 10): a trailing comment or `;` on a cell line gives a false
+  red. It fails loud and matches `plant()`'s exact match. Proposed: reject.
+- V16 (blame 7): an old-arity `outside-heading` call fails with a tag
+  message, not usage. Loud. Proposed: reject.
+- V17 (blame 4): the `Bramble` control is a planted copy. Proposed: reject,
+  as R15.
+- V18 (blame 6): Python 3.12 not run. Proposed: reject, as R16.
+- V19 (blame 5): D-062 is longer than the template and records process
+  history. Proposed: reject as style, or fold into the V5 entry.
+- V20 (prior 2): D-062 says "narrows" where D-011 says a superseding entry.
+  Proposed: reject, D-038 uses that form and the user chose it.
+- V21 (blame 8): R13 and R14 again. Proposed: reject, already rejected.

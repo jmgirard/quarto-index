@@ -131,6 +131,8 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: implement started on branch m105-m095-check-gaps. No question gate, because the plan left nothing open.
 - 2026-10-01: T1 code landed: the `check_cells` guard and `KEPT` in `tests/stateprobe.py`, run in the M26 section with a self-test plant. Run in isolation, it is green on the tree (26 reset lines) and red on the planted copy, naming the line. T1 stays unticked until a full suite run passes.
 - 2026-10-01: T2 code landed: an own-page `Bramble` plant under `--self-test` after the M095-AC3 check, and the borrowed probe and its pass clause removed from the M063 T2 leg. Run in isolation on the last capture, it is green on the copy and red naming `two.html`, with one line of the page changed. T2 stays unticked until a full suite run passes.
+- 2026-10-01: the first full `--self-test` run at the T1 commit stopped at M063-AC1 on a Quarto segmentation fault inside Deno, before any M105 check ran. It is no evidence either way, and the run is repeated after T4.
+- 2026-10-01: T3 code landed: `outside-heading` takes the container and heading tags ahead of the ids, the call and plant runs pass `section h2`, and the `div` and `h3` plants are added. Run in isolation on the last capture under Python 3.9.6 and 3.14.7, the call passes on both `place-blocked` renders and each plant is red naming its tag. Python 3.12 is not installed here, so 3.14.7 stands in as the newest in reach. T3 stays unticked until a full suite run passes.
 
 ## Decisions
 

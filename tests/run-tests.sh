@@ -8957,10 +8957,11 @@ for M061_PASS in one two; do
   # wrote `mullion-passage` on a mark inside a `##` heading, and the render
   # moves the id out of the heading into the section Quarto wraps it in. The
   # sweep above passes wherever on four.html the id sits once, so this is what
-  # says it left the heading and stayed in the section.
+  # says it left the heading and stayed in the section. The two tags are the
+  # shape a `##` heading renders to, a `<section>` holding an `<h2>` (M105).
   python3 tests/fragments.py outside-heading \
       "$CAPTURE_ROOT/place-blocked-$M061_PASS/_book/four.html" \
-      a-mullion-in-a-heading mullion-passage \
+      section h2 a-mullion-in-a-heading mullion-passage \
     || fail "M095-AC3 (render $M061_PASS: mullion-passage sits once in its heading's section and outside the heading; tests/fragments.py's own FAIL line is above)"
   # M065-AC1 to M065-AC4 — the whole gamma section, row by row, in the form
   # that states WHERE each locator points and what each cross-reference names.
@@ -9008,6 +9009,9 @@ if [ "${1:-}" = "--self-test" ]; then
   # once-on-the-page clause before containment is read. Onto the `<h2>`, which
   # a reader counting only a container's descendants would miss. Into the
   # `<h2>`, the shape the render moves the id out of. Out of the section.
+  # Then two copies with the id left where it is (M105-AC3): the section's
+  # opening and closing tags renamed to `div`, and its heading's to `h3`, so
+  # the check is shown to read both tags the call names.
   # -------------------------------------------------------------------------
   M095_FOUR="$CAPTURE_ROOT/place-blocked-one/_book/four.html"
   if ! python3 - "$M095_FOUR" "$WORK" <<'M095PLANTPY'
@@ -9029,31 +9033,64 @@ plants = {
     'into': base[:h2_end + 1] + span + base[h2_end + 1:],
     'out': base[:start] + span + base[start:],
 }
+
+
+def rename(text, open_at, tag, new):
+    """`text` with the element opening at `open_at` and its matching closing
+    tag renamed from `tag` to `new`, counting nested elements of that tag."""
+    depth, at = 0, open_at
+    while True:
+        opens = text.find('<' + tag, at)
+        closes = text.find('</' + tag + '>', at)
+        if closes < 0:
+            sys.exit(f'FAIL: M105-AC3 self-test: no closing </{tag}> for the '
+                     f'element opening at offset {open_at}')
+        if 0 <= opens < closes:
+            depth, at = depth + 1, opens + 1
+            continue
+        depth -= 1
+        if depth == 0:
+            break
+        at = closes + 1
+    out = (text[:open_at] + '<' + new + text[open_at + 1 + len(tag):closes]
+           + '</' + new + '>' + text[closes + 3 + len(tag):])
+    if out == text or out.count('<' + new) != text.count('<' + new) + 1:
+        sys.exit(f'FAIL: M105-AC3 self-test: renaming <{tag}> to <{new}> did '
+                 f'not change exactly one element of {page}')
+    return out
+
+
+at = src.index(section)
+plants['div'] = rename(src, at, 'section', 'div')
+plants['h3'] = rename(src, src.index('<h2', at), 'h2', 'h3')
 for name, text in plants.items():
     with open(os.path.join(work, f'm095-four-{name}.html'), 'w',
               encoding='utf-8') as out:
         out.write(text)
-print(f'ok   M095-AC3 self-test: three heading-mark plants built from {page}')
+print(f'ok   M095-AC3 self-test: five heading-mark plants built from {page}')
 M095PLANTPY
   then
     fail "M095-AC3 self-test: the heading-mark plants could not be built (their own FAIL line is above)"
   fi
-  for M095_PLANT in "onto:sits on or within the <h2> heading" \
-                    "into:sits on or within the <h2> heading" \
-                    "out:sits outside the element"; do
+  for M095_PLANT in "onto:'mullion-passage' sits on or within the <h2> heading" \
+                    "into:'mullion-passage' sits on or within the <h2> heading" \
+                    "out:'mullion-passage' sits outside the element" \
+                    "div:is a <div>, want <section>" \
+                    "h3:is a <h3>, want <h2>"; do
     M095_NAME="${M095_PLANT%%:*}"
     M095_WANT="${M095_PLANT#*:}"
     if M095_OUT=$(python3 tests/fragments.py outside-heading \
                     "$WORK/m095-four-$M095_NAME.html" \
-                    a-mullion-in-a-heading mullion-passage 2>&1); then
-      fail "M095-AC3 self-test: the heading-mark check passed on four.html with mullion-passage moved $M095_NAME"
+                    section h2 a-mullion-in-a-heading mullion-passage 2>&1); then
+      fail "M095-AC3 self-test: the heading-mark check passed on the $M095_NAME plant of four.html"
     fi
     case "$M095_OUT" in
-      *"'mullion-passage' $M095_WANT"*) : ;;
-      *) fail "M095-AC3 self-test: the heading-mark check failed with mullion-passage moved $M095_NAME, but not by saying it $M095_WANT (<<$M095_OUT>>)" ;;
+      *"$M095_WANT"*) : ;;
+      *) fail "M095-AC3 self-test: the heading-mark check failed on the $M095_NAME plant of four.html, but not by saying <<$M095_WANT>> (<<$M095_OUT>>)" ;;
     esac
   done
   pass "M095-AC3 self-test: the heading-mark check is red on four.html with mullion-passage moved onto its heading, into its heading and out of its section, each time naming where it sits"
+  pass "M105-AC3 self-test: the heading-mark check is red on four.html with its section renamed to a div and with its heading renamed to an h3, each time naming the tag it found"
 
   # -------------------------------------------------------------------------
   # M063 T7 — the same held store path against a copy of the tree whose only

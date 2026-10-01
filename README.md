@@ -21,14 +21,16 @@ filters:
 ```
 
 Requires Quarto 1.5 or later. GitHub Actions renders the example fixtures on
-Quarto 1.5.52, the oldest non-prerelease release of that line, as well as on
-the version the documentation site is built with, and compares the HTML index
-each one emits. Weekly and on demand rather than on every push, the run also
-adds Quarto's current release and typesets two of the fixtures to PDF on each
-version it renders on, checking that an index printed; no PDF is compared
-across versions, because two Quarto versions typeset through different TeX
-engines. No other runtime dependencies: on the LaTeX side it uses `imakeidx`,
-which ships with mainstream TeX distributions.
+two Quarto versions: 1.5.52, the oldest non-prerelease release of that line,
+and the version the documentation site is built with. On every push it renders them to
+HTML and compares the HTML index each version emits. It also renders some of
+them to EPUB and reads each EPUB index against a manifest. Weekly and on
+demand, the run also adds Quarto's current release, and it typesets fixtures
+to PDF through LaTeX and through Typst on each version. It reads each printed
+index, and holds most of them to the acceptance suite's manifests. No PDF is
+compared across versions, because two Quarto versions typeset through
+different TeX engines. No other runtime dependencies: on the LaTeX side it
+uses `imakeidx`, which ships with mainstream TeX distributions.
 
 ## Documentation
 

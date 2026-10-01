@@ -258,9 +258,11 @@ table's element functions. **A new accumulator joins its module's `reset` in
 the commit that adds it** — that is the convention, and `tests/stateprobe.py`
 is what holds the existing ones to it, removing each in turn and requiring a
 paired render to differ (corrected M26). Its renders run by hand. Every suite
-run also runs the guard `tests/stateprobe.py --check-cells`. It requires each
-reset line to be a `CELLS` statement for its module or a line `indexes.lua`'s
-reset keeps, so a reset line with no `CELLS` row fails it (corrected M105).
+run also runs the guard `tests/stateprobe.py --check-cells`. In each module
+`CELLS` names, it requires each reset line to be a `CELLS` statement for its
+module or a line `indexes.lua`'s reset keeps, so a reset line with no `CELLS`
+row fails it. A new module is read only in the form KI308 states (corrected
+M105).
 
 Without that, an accumulator lasts as long as the Lua state holding it. Nothing
 in Quarto reuses one today — it runs one pandoc process per document — so the

@@ -186,6 +186,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: three fresh reviewers reported 15 findings (W1 to W15, Review section). Review return 4 (defect): AC1 fails on its amended wording, because a new module that hides its reset from the guard's lexer (`\z` string, `#!` first line, or a `..` file name) passes unread. AC1 unticked. The disposition goes to the user.
 - 2026-10-01: thrash rule (fourth return): the user chose to narrow AC1 again over parking, a re-plan or a brief. No fresh reader ran, because AC1 already carries two re-audit lines, so the user approved the wording as shown. Status stayed review, because no code changed.
 - 2026-10-01: AC1 amended at the gate, chosen by the user: "reads the reset of each module that `CELLS` names, in `_extensions/index/modules/`. If it cannot find exactly one `local function reset(` line outside comments that opens the reset the module exports, it exits non-zero and names the module. Otherwise it reads every line that holds code outside comments and strings, from that line to the function's closing `end`." KI308 now records the new-module gaps (W1, W2, W5, W10). AC1 ticked on fresh hand plants.
+- step-7 approval: m105-m095-check-gaps approved for merge (W9 fixed in DESIGN.md, W4, W8 and W12 to a candidate row).
 - re-audit: AC1 (reduced) — first reader: a module with two openers, or whose opener is not the exported reset, fails without naming a stray line. Fixed by limiting the domain to one opener that opens the exported reset. Pre-existing wording (trailing comments, the self-test sentence) left as is.
 - re-audit: AC1 (reduced) — second reader: no in-domain stray line passes, except a module behind a symbolic link, which `tests/filtersrc.py` does not follow. Recorded in KI308. Other findings fail closed.
 - 2026-10-01: AC1 amended at the mini gate, chosen by the user: "reads each module under `_extensions/index/modules/` that has exactly one line, outside comments and strings, opening with `local function reset(` and closing its parameter list on that same line, where that line opens the function the module exports as `reset`". KI308 in `cairn/DESIGN.md` now records the split-parameter and symbolic-link forms.
@@ -500,3 +501,9 @@ Disposition: the user chose to narrow AC1 a second time, to the modules
 
 Thrash count: defect return 4. AC1 failed in every run, each time by a
 new way the guard's own Lua reading misses part of the domain.
+
+Gate 2026-10-01: the user approved the merge with the proposed dispositions.
+W1 to W3 are closed by the AC1 narrowing and KI308. W5 and W10 are fixed in
+the KI308 text. W9 is fixed now: the DESIGN.md accumulator paragraph names
+the guard's domain. W4, W8 and W12 go to a new low-priority candidate row.
+W6, W7, W11, W13, W14 and W15 are rejected for the reasons given above.

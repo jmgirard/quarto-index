@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M105: Three M095 checks each fail on the gap its review found
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -86,7 +86,7 @@ probe's output instead of stating a count. The plan gate chose that form.
 
 ## Tasks
 
-- [ ] T1: In `tests/stateprobe.py`, add a `KEPT` list holding the five
+- [x] T1: In `tests/stateprobe.py`, add a `KEPT` list holding the five
       `indexes.lua` lines, and a guard that reads each module's reset with
       `reset_body` (line 112). Find the modules by searching
       `_extensions/index/modules/` for `local function reset(`, never by a
@@ -97,14 +97,14 @@ probe's output instead of stating a count. The plan gate chose that form.
       Add one line to the copy's `indexes.lua` reset with one substitution,
       and assert that the copy changed. Require the guard red and naming that
       line. Show the unplanted copy green first (check-design M42).
-- [ ] T2: Under `--self-test`, after the M095-AC3 `Bramble` check
+- [x] T2: Under `--self-test`, after the M095-AC3 `Bramble` check
       (`tests/run-tests.sh:11365`), copy the `place-oldstore` `index.html`
       to `$WORK`. Show the check green on the copy. Then rewrite the one
       `Bramble` href in the `alpha` section with one substitution. Assert
       that exactly one site changed, and require the check red, naming
       `two.html`. Remove the M095-AC3 probe from the M063 T2 leg (lines
       11429-11439) and the clause naming it in that leg's `pass` line.
-- [ ] T3: In `tests/fragments.py`, give `outside-heading` two arguments, the
+- [x] T3: In `tests/fragments.py`, give `outside-heading` two arguments, the
       container tag and the heading tag, ahead of the ids. Update
       `outside_heading` (line 145), its failure messages, and the docstring
       (lines 28-33). Pass `section` and `h2` at the call
@@ -112,7 +112,7 @@ probe's output instead of stating a count. The plan gate chose that form.
       Add the `div` and `h3` plants to the plant builder near line 9013, each
       asserting its rename changed the page. Run the mode's plants under
       Python 3.9 and 3.12 (LESSONS M082).
-- [ ] T4: Remove KI284 to KI287 from `cairn/DESIGN.md` Known issues, and add
+- [x] T4: Remove KI284 to KI287 from `cairn/DESIGN.md` Known issues, and add
       the guard to the accumulator paragraph near line 258. Run
       `tests/run-tests.sh` and `tests/run-tests.sh --self-test` with no
       edits to the suite during either run (LESSONS M073), and record each
@@ -134,6 +134,10 @@ probe's output instead of stating a count. The plan gate chose that form.
 - 2026-10-01: the first full `--self-test` run at the T1 commit stopped at M063-AC1 on a Quarto segmentation fault inside Deno, before any M105 check ran. It is no evidence either way, and the run is repeated after T4.
 - 2026-10-01: T3 code landed. `outside-heading` takes the container and heading tags ahead of the ids, and the call and plant runs pass `section h2`. The `div` and `h3` plants are new. Under Python 3.9.6 and 3.14.7 on the last capture, the call passes on both `place-blocked` renders. Each plant is red, naming its tag. Python 3.12 is not installed here, so 3.14.7 stands in as the newest in reach. T3 stays unticked until a full suite run passes.
 - 2026-10-01: T4 edits landed. KI284 to KI287 are struck from `cairn/DESIGN.md`, and the accumulator paragraph names the guard. KI288 stays. Both full suite runs are pending.
+- 2026-10-01: a `--self-test` run at 287507e in a scratch worktree passed all five M105 checks. It then stopped at M098-AC4's Typst render on a second Quarto segmentation fault inside Deno. The same run in the main checkout passed.
+- 2026-10-01: at 287507e, with no suite edits during either run, `tests/run-tests.sh --self-test` passed (1738 checks) and `tests/run-tests.sh` passed (898 checks). T1 to T4 are ticked.
+- 2026-10-01: claim audit: not owed — internal tier.
+- 2026-10-01: status set to review.
 
 ## Decisions
 

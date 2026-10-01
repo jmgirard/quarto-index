@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-09-14 (M102 archived, M099 row pruned. No lesson added: LESSONS is at 19,960 bytes. Validate green.)_
+_Last hygiene check: 2026-09-30 (status audit: no commits, issues, PRs or outside merges since M102. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._

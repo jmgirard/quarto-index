@@ -149,3 +149,7 @@ after the branch was cut (merge base 0eaaa8e).
   keeps the figure and its caption. Last, it says the HTML callout on
   1.10.18 loses `callout-empty-content`. So its title bar is drawn as on a
   titled callout with content.
+- Consistency gate: pass. `cairn_validate.py` exit 0, every check PASS or
+  OK, coverage complete among them. No DESIGN.md principle changed, so
+  `cairn_impact.py` did not run. The `generic` profile names no toolchain
+  checks.

@@ -130,6 +130,7 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - claim audit: not owed — internal tier
 - 2026-10-02: T1-T5 checked off. Status set to review.
 - 2026-10-02: review defect return 1: AC1 fails as written, because the gate counts PDFs only at the top of `_book`, so a refusal with a PDF in a subfolder skips (finding D3). The user chose return to implement at the step-7 chip. T6-T9 added. Status set to in-progress.
+- 2026-10-02: implement resumed on m109-typst-book-gate, main unmoved. Question gate skipped, since T6-T9 leave nothing open. Checkpoint: T6-T8 code written, suite runs pending. The gate takes the capture slug, counts PDFs at any depth there and sets `TYPST_BOOK_PDF`, which M098-AC5 reads. The self-test gains a nested-PDF control, a nested-PDF refusal, a near-miss warning and a planted running Quarto. A scratch harness ran the 10 gate cases green on bash 3.2, and five mutants each turned a case red: a top-level-only count, `grep -q WARN`, `grep -qi typst`, a pinned version in the skip line, and a working-tree count.
 
 ## Decisions
 

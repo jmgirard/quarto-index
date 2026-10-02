@@ -360,8 +360,9 @@ jobs:
   # (People and Places), since the two-index fixture is where this job reads
   # a LaTeX index after the first, the kind imakeidx builds. And the acceptance suite: it passes on
   # the floor Quarto run by hand, its checks about Quarto itself printing a
-  # `skip` line there (D-065), but no job here runs it, since it needs TeX,
-  # fonts, poppler and PyYAML on the runner.
+  # `skip` line there (D-065), and its Typst-book checks printing one because
+  # that Quarto refuses to render a Typst book (D-067). No job here runs it,
+  # since it needs TeX, fonts, poppler and PyYAML on the runner.
   #
   # It runs only where `tests/versioncheck.py pdf` said so, which the `plan`
   # job captured — a scheduled or manually dispatched run, and not a push.

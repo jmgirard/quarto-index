@@ -1,0 +1,32 @@
+section	qi-index-main	h1	Index of Subjects
+letter	A
+0	Alpha	1
+letter	B
+0	Beacon	1
+0	Beta	1
+letter	C
+0	Chapter Range	1
+0	Shared Term	3
+letter	D
+0	Delta	0	see-link Alpha
+letter	E
+0	Epsilon	0	see-plain No Such Entry
+letter	G
+0	Gamma	1
+letter	I
+0	Invisible Entry	1
+letter	K
+0	Kappa	0
+1	Sub Level	1
+letter	M
+0	Meridian	1
+letter	R
+0	Ranged Term	1
+letter	Z
+0	Zeta	1
+section	qi-index-people	h1	Index of People
+letter	T
+0	Turing	1
+section	qi-index-places	h1	Index of Places
+letter	L
+0	Lisbon	1

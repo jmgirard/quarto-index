@@ -5,8 +5,9 @@
 # milestone and would otherwise collide.
 #
 # ORACLE RULE — READ BEFORE EDITING A MANIFEST.
-# Every manifest row below is derived BY HAND from the `.qmd` source and the
-# documented semantics at each layer, in this order:
+# Every manifest row below, and every row of the tracked manifests under
+# tests/ that this script reads, is derived BY HAND from the `.qmd` source and
+# the documented semantics at each layer, in this order:
 #   1. Pandoc attribute-value unescaping (a quoted span attribute loses one
 #      backslash level: `\!` -> `!`, `\\` -> `\`, `\"` -> `"`), and markdown
 #      backslash-unescaping in visible text.
@@ -19006,9 +19007,12 @@ NAMED_PDF="$CAPTURE_ROOT/named-indexes-pdf/named-indexes.pdf"
 # ---------------------------------------------------------------------------
 # M49-AC1/AC2/AC4 — a PDF render builds every index the document declares.
 #
-# ORACLE — every row below is derived by hand from examples/named-indexes.qmd
-# and the documented semantics, never read off a render. tests/namedpdf.py
-# reads the captured artifact and produces no expected value of its own.
+# ORACLE — every row is derived by hand from examples/named-indexes.qmd and
+# the documented semantics, never read off a render. tests/namedpdf.py reads
+# the captured artifact and produces no expected value of its own. The entries
+# and cells rows are tracked files, tests/named-indexes-pdf-entries.txt and
+# tests/named-indexes-pdf-cells.txt, because the version matrix's PDF job
+# reads the same two files. The reports rows stay in the heredoc below.
 #
 #   entries    Each index carries exactly what its OWN marks derive. `main`:
 #              Aardvark; the two collision marks, which the back-end folds to
@@ -19038,39 +19042,8 @@ NAMED_PDF="$CAPTURE_ROOT/named-indexes-pdf/named-indexes.pdf"
 #              fixture's own, counted over the document Pandoc is handed.
 # ---------------------------------------------------------------------------
 section 'M49-AC1/AC2/AC4 — a PDF render builds every index the document declares.'
-read -r -d '' M49_PDF_ENTRIES <<'MANIFEST' || true
-index	Index	Below the first index
-0	Aardvark
-0	alpha
-1	beta
-2	gamma, delta
-2	gamma, delta
-0	Cantor
-0	Neighbour, see Aardvark
-0	Outsider, see Babbage
-0	Underwood
-0	Vesalius
-0	Hague
-index	Index of Authors	Below the second index
-0	ada
-1	bee
-2	cee, dee, eff
-2	cee, dee, eff
-0	Babbage
-0	Cantor
-0	Ockham
-0	Hague
-0	Stranger, see Aardvark
-MANIFEST
-
-read -r -d '' M49_PDF_CELLS <<'MANIFEST' || true
-index	Index	Below the first index
-index	Index of Authors	Below the second index
-present	Index	Underwood	it is filed in the default index and written below the default index's own marker, whose entry file the wrapped \printindex holds open
-present	Index	Vesalius	it is filed in the default index and written below a NAMED index's marker, whose close reaches that index's entry file alone
-present	Index of Authors	Ockham	it is filed in a named index and written below the DEFAULT index's marker, which stands above its own
-absent	Index of Authors	Petrarch	it is filed in a named index and written below THAT index's own marker, where imakeidx has already closed that index's entry file
-MANIFEST
+M49_PDF_ENTRIES=tests/named-indexes-pdf-entries.txt
+M49_PDF_CELLS=tests/named-indexes-pdf-cells.txt
 
 read -r -d '' M49_LATEX_REPORTS <<'MANIFEST' || true
 index entry in term "Hague" is already sorted as "Zebra" in index "main"; the sort key "Yankee" written here cannot apply as well, so the first one wins
@@ -19088,12 +19061,10 @@ index entries printed as "alpha!beta!gamma, delta" in index "main" file under mo
 1 index command(s) for the index named "authors" are written below that index's own placement marker (top-level block 17); imakeidx closes that index's entry file where the index is printed, so those entries reach no index at all — move that marker below the last mark filed in it. Block positions are counted over the document as this filter received it, after Quarto expanded any includes and executable cells, so they can differ from the positions in your source file
 MANIFEST
 
-printf '%s\n' "$M49_PDF_ENTRIES" > "$WORK/m49-entries.txt"
-python3 tests/namedpdf.py entries "$NAMED_PDF" "$WORK/m49-entries.txt" "M49-AC1" \
+python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49_PDF_ENTRIES" "M49-AC1" \
   || fail "M49-AC1: the printed indexes are not the entry sets their own marks derive"
 
-printf '%s\n' "$M49_PDF_CELLS" > "$WORK/m49-cells.txt"
-python3 tests/namedpdf.py cells "$NAMED_PDF" "$WORK/m49-cells.txt" "M49-AC2" \
+python3 tests/namedpdf.py cells "$NAMED_PDF" "$M49_PDF_CELLS" "M49-AC2" \
   || fail "M49-AC2: a below-marker cell does not read as the fixture states it"
 
 printf '%s\n' "$M49_LATEX_REPORTS" > "$WORK/m49-reports.txt"
@@ -19176,29 +19147,29 @@ if [ "${1:-}" = "--self-test" ]; then
     return 0
   }
 
-  m49_plant absent.txt "$WORK/m49-entries.txt" $'s|^0\tAardvark$|0\tAntelope|'
+  m49_plant absent.txt "$M49_PDF_ENTRIES" $'s|^0\tAardvark$|0\tAntelope|'
   m49_planted 'a manifest stating an entry the printed index does not carry' \
     'derived from the marks, not printed' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/absent.txt" M49-probe
 
-  m49_plant extra.txt "$WORK/m49-entries.txt" $'/^0\tUnderwood$/d'
+  m49_plant extra.txt "$M49_PDF_ENTRIES" $'/^0\tUnderwood$/d'
   m49_planted 'a manifest omitting an entry the printed index carries' \
     'printed, not derived from the marks' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/extra.txt" M49-probe
 
-  m49_plant nosection.txt "$WORK/m49-entries.txt" \
+  m49_plant nosection.txt "$M49_PDF_ENTRIES" \
     $'s|^index\tIndex of Authors\t|index\tIndex of Nobody\t|'
   m49_planted 'a manifest naming an index heading the PDF never prints' \
     'no index heading' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/nosection.txt" M49-probe
 
-  m49_plant nostop.txt "$WORK/m49-entries.txt" \
+  m49_plant nostop.txt "$M49_PDF_ENTRIES" \
     $'s|\tBelow the first index$|\tA line this PDF never prints|'
   m49_planted 'a manifest whose section-ending line the PDF never prints, which would read the second index as part of the first' \
     'this read is unbounded' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/nostop.txt" M49-probe
 
-  m49_plant orphanrow.txt "$WORK/m49-entries.txt" $'/^index\tIndex\t/d'
+  m49_plant orphanrow.txt "$M49_PDF_ENTRIES" $'/^index\tIndex\t/d'
   m49_planted 'a manifest whose first entry rows belong to no section, the row naming theirs having gone' \
     'belongs to no section' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/orphanrow.txt" M49-probe
@@ -19208,13 +19179,13 @@ if [ "${1:-}" = "--self-test" ]; then
     'names no index section at all' \
     python3 tests/namedpdf.py entries "$NAMED_PDF" "$M49W/noindexrow.txt" M49-probe
 
-  m49_plant flipped.txt "$WORK/m49-cells.txt" \
+  m49_plant flipped.txt "$M49_PDF_CELLS" \
     $'s|^present\tIndex\tUnderwood\t|absent\tIndex\tUnderwood\t|'
   m49_planted 'a cell stating a term absent from an index that prints it' \
     '<<Underwood>> is printed' \
     python3 tests/namedpdf.py cells "$NAMED_PDF" "$M49W/flipped.txt" M49-probe
 
-  m49_plant onlypresent.txt "$WORK/m49-cells.txt" $'/^absent\t/d'
+  m49_plant onlypresent.txt "$M49_PDF_CELLS" $'/^absent\t/d'
   m49_planted 'a cell manifest with no absent cell, which could not tell an index that dropped everything from one that dropped nothing' \
     'states cells of one kind only' \
     python3 tests/namedpdf.py cells "$NAMED_PDF" "$M49W/onlypresent.txt" M49-probe
@@ -24177,10 +24148,12 @@ pass "M52-AC3: examples/book/ renders to EPUB at exit 0"
 
 # ---------------------------------------------------------------------------
 # Manifest 10 — the two index sections the book fixture renders into its EPUB
-# (M52-AC3). EXHAUSTIVE per section, and stated in locator COUNTS rather than
-# hrefs: an EPUB's link targets are the files Pandoc's writer split the book
-# into (`text/ch005.xhtml`), which is a property of the writer and not of the
-# `.qmd` sources this manifest is derived from. AC2 is what holds those links
+# (M52-AC3). Its rows are the tracked file tests/book-epub-index.txt, because
+# the version matrix's render job reads the same file. EXHAUSTIVE per section,
+# and stated in locator COUNTS rather than hrefs: an EPUB's link targets are
+# the files Pandoc's writer split the book into (`text/ch005.xhtml`), which is
+# a property of the writer and not of the `.qmd` sources this manifest is
+# derived from. AC2 is what holds those links
 # to resolving, over the demo's EPUB, where the same writer splits the same
 # way.
 #
@@ -24222,40 +24195,7 @@ pass "M52-AC3: examples/book/ renders to EPUB at exit 0"
 #      `Chapter Range`.
 # ---------------------------------------------------------------------------
 section 'Manifest 10 — the two index sections the book fixture renders into its EPUB'
-read -r -d '' BOOK_EPUB_INDEX <<'MANIFEST' || true
-section	qi-index-main	h1	Index of Subjects
-letter	A
-0	Alpha	1
-letter	B
-0	Beacon	1
-0	Beta	1
-letter	C
-0	Chapter Range	1
-0	Shared Term	3
-letter	D
-0	Delta	0	see-link Alpha
-letter	E
-0	Epsilon	0	see-plain No Such Entry
-letter	G
-0	Gamma	1
-letter	I
-0	Invisible Entry	1
-letter	K
-0	Kappa	0
-1	Sub Level	1
-letter	M
-0	Meridian	1
-letter	R
-0	Ranged Term	1
-letter	Z
-0	Zeta	1
-section	qi-index-people	h1	Index of People
-letter	T
-0	Turing	1
-section	qi-index-places	h1	Index of Places
-letter	L
-0	Lisbon	1
-MANIFEST
+BOOK_EPUB_INDEX=tests/book-epub-index.txt
 
 # ---------------------------------------------------------------------------
 # M52 T4 — the EPUB back-end's checks. Each reads a capture through
@@ -24298,9 +24238,8 @@ python3 tests/epubcheck.py links "$M52_DEMO_EPUB" "$HTML_SECTION_ID" \
 # AC3. Three sections, each headed with its own declared title, and each
 # section's own term in no other section: the manifest is exhaustive per
 # section, so a term appearing twice fails as an extra row.
-printf '%s\n' "$BOOK_EPUB_INDEX" > "$WORK/book-epub-index.txt"
 python3 tests/epubcheck.py sections "$M52_BOOK_EPUB" "$HTML_SECTION_ID" \
-    "$WORK/book-epub-index.txt" \
+    "$BOOK_EPUB_INDEX" \
   || fail "M52-AC3: the book's EPUB does not carry the three declared index sections manifest 10 states, or their rows differ (its own FAIL line is above)"
 
 # AC2 over the BOOK too (M52 review F4). The demo's EPUB is one chapterless
@@ -24461,7 +24400,7 @@ M52ZIPPY
   m52_planted 'an EPUB book whose declared indexes were merged into one' \
     'does not match the manifest' \
     python3 tests/epubcheck.py sections "$M52_FOLD_EPUB" "$HTML_SECTION_ID" \
-      "$WORK/book-epub-index.txt"
+      "$BOOK_EPUB_INDEX"
 
   # (4) AC4 — a namespace identifier added to a rendered pass-through file.
   python3 - "$CAPTURE_ROOT/demo-gfm/demo.md" "$M52W/residue.md" \
@@ -30465,10 +30404,20 @@ M098OTHER
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
   || fail "M098-AC7: site/books.qmd no longer states that a Typst book is merged (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
-matrix typst	The same leg renders `typst-index.qmd` to Typst on each version and reads both of its indexes
+matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS
 python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
   || fail "M098-AC7: site/tests.qmd no longer states the version matrix's Typst step (its own FAIL line is above)"
+# The matrix readings M106 added, and the Typst render the row above no longer
+# names (M106 review R5). Each is a sentence of the Tests page's matrix
+# section, stated against .github/workflows/versions.yml.
+cat > "$WORK/m106-tests-claims.txt" <<'M106TESTS'
+matrix typst render	It renders four fixtures to Typst:
+matrix two-index	`named-indexes.qmd` must print both of its declared indexes as the acceptance suite's manifest states them
+matrix book epub	The book's EPUB is read against the acceptance suite's manifest for it.
+M106TESTS
+python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m106-tests-claims.txt" \
+  || fail "M106: site/tests.qmd no longer states the version matrix's Typst render, two-index PDF reading or book EPUB reading (its own FAIL line is above)"
 cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
 new back-end	A new back-end for Typst.
 what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package

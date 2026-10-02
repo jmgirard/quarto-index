@@ -1486,11 +1486,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   while README stays true. — M32 review R2-F14
 - **KI111.** M43 compares HTML indexes only, because the M30 and M33 lessons
   put engine and font differences in a PDF's text layer. — M43 Scope Out
-- **KI112.** M49's two-index fixture is deferred out of the version matrix, its
-  second index depending on TeX's restricted shell escape (D-031). — M51 Scope
-  Out
-- **KI113.** The version matrix has no EPUB leg, whose render target Pandoc's
-  EPUB writer moves with each Quarto version. — M52 plan gate
 - **KI118.** Documentation prose is pinned only where a check names its own
   page (D-027, narrowed by D-028), and three of the dropped sets banned a
   sentence rather than required one, so a page may also re-acquire a sentence

@@ -1,13 +1,13 @@
 # M109: The suite checks a Typst book on any Quarto that renders one
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — the acceptance suite is this repo's own test tooling, which no user of the extension runs
-- **Branch/PR:** —
+- **Branch/PR:** m109-typst-book-gate
 
 ## Goal
 
@@ -102,6 +102,8 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - 2026-10-02: plan gate chose to gate the Typst-book output checks on the render over keeping the pin and dropping the row. Their subject is the extension's output. Falsified by an off-pin red run of these checks traced to Quarto rather than the extension.
 - 2026-10-02: plan gate chose the book render's own outcome over a version threshold and over a separate probe book. This repo has not measured the version a threshold needs, and a probe costs a render and can disagree with the fixtures. Falsified by a Quarto that refuses Typst books with a different warning, which this gate fails on.
 - 2026-10-02: plan gate chose to keep the hand-written chapter pages off the pin over pinning the page-number checks behind a second gate. A template that moves a chapter turns the run red. Falsified by template moves on newer Quartos turning the run red often enough that the red carries no signal.
+- 2026-10-02: implement started on branch m109-typst-book-gate. Question gate skipped, since nothing in the plan was open. A probe in the scratchpad showed that Quarto 1.5.52 and 1.10.18 both empty a book's `_book` before a Typst render, so a PDF from the earlier LaTeX render cannot reach the gate. 1.5.52 logs the refusal in color, exits 0 and leaves `_book` empty.
+- 2026-10-02: checkpoint, T1 code written and not yet run in the suite: `running_quarto`, `typst_book_skip` and `typst_book_rendered` beside `on_pinned_quarto`, and six `--self-test` cases. A scratch harness ran the six cases green on bash 3.2, and four planted gate defects each turned their case red.
 
 ## Decisions
 

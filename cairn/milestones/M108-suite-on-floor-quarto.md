@@ -53,7 +53,7 @@ criterion. The plants added here run on the pinned Quarto.
       `M098-AC7 (the outline lists the index)` or `M098-AC7`. Exactly one
       `skip` line's label is exactly `M098-AC7`, and that line states that
       the book fixture with no author is not rendered.
-- [ ] AC4: The Books section of `site/typst.qmd` states that Quarto 1.5.52
+- [x] AC4: The Books section of `site/typst.qmd` states that Quarto 1.5.52
       does not render a Typst book. It quotes the warning that 1.5.52 prints:
       `The typst format is not supported by book projects`.
 
@@ -127,3 +127,5 @@ criterion. The plants added here run on the pinned Quarto.
 - 2026-10-01: M098-AC7's front-matter check reads from the PDF which front-matter fields the template prints. When a field prints, the check expects page 1 for its mark. Which fields print is the template's choice, and so the Quarto's: 1.5.52 prints the abstract alone. The rule the check tests stays fixed: a printed field's mark has a page, and an unprinted field's mark has none. The check requires one printed and one unprinted field, and on the pinned Quarto it still requires the subtitle and the abstract. Chosen at the second implement gate over a skip, because the check is about the extension's output.
 
 ## Review
+
+- AC4 evidence (2026-10-01, at 1466cbd): the Books section of `site/typst.qmd` says "Quarto 1.5.52 does not render a Typst book." It quotes the warning `The typst format is not supported by book projects`. The suite's Typst-page claim list holds both sentences. On their own, the claims check is green on the page and red, naming `floor book`, on a copy without the first sentence.

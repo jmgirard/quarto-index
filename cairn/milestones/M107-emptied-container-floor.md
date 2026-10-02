@@ -1,13 +1,13 @@
 # M107: An emptied container renders on Quarto 1.5.52
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP2
 - **Resolves:** —
 - **Surface tier:** user-facing — a render that stops on a supported Quarto is an author-visible failure
-- **Branch/PR:** —
+- **Branch/PR:** m107-emptied-container-floor
 
 ## Goal
 

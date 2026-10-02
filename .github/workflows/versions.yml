@@ -138,8 +138,10 @@ jobs:
       # over that HTML alone. It also renders two fixtures to EPUB, which it
       # checks on this leg and does not upload or compare: the figure-marks
       # fixture, in this step, and the book, in the two steps after the upload
-      # (M106). It renders no PDF and installs no TeX. The PDF job at the end
-      # of this file does that, on its own schedule.
+      # (M106). It installs no TeX and renders no LaTeX PDF. The PDF job at
+      # the end of this file does that, on its own schedule. Its one PDF is
+      # the marker-shapes fixture's Typst render (M107), which Quarto's own
+      # Typst typesets and nothing here reads.
       #
       # Nothing here compares a PDF, and the PDF job compares nothing either.
       # That is deliberate. Two Quarto releases typeset PDF through different
@@ -256,6 +258,34 @@ jobs:
           set -euo pipefail
           python3 tests/epubcheck.py links \
             examples/book/_book/Index-Book-Fixture.epub qi-index
+
+      # The marker-shapes fixture in four formats (M107). Each container it
+      # lists holds only a placement marker, which the filter removes, so the
+      # filter empties the container. The check is the render's exit status
+      # alone: an emptied container once stopped some of these renders on the
+      # floor leg. The acceptance suite reads this fixture's HTML, LaTeX and
+      # gfm output on one Quarto version. Each render is a step of its own, and
+      # each runs even after an earlier step is red, so one log shows every
+      # format that stops. Each writes a path of its own beside the fixture.
+      - name: Render examples/marker-shapes.qmd to gfm
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: quarto render examples/marker-shapes.qmd --to gfm
+
+      - name: Render examples/marker-shapes.qmd to docx
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: quarto render examples/marker-shapes.qmd --to docx
+
+      - name: Render examples/marker-shapes.qmd to epub
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: quarto render examples/marker-shapes.qmd --to epub
+
+      - name: Render examples/marker-shapes.qmd to typst
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: quarto render examples/marker-shapes.qmd --to typst
 
   compare:
     needs: [plan, render]

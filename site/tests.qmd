@@ -34,6 +34,11 @@ manifest for it. Each of its three index sections must carry exactly the letter
 and entry rows the manifest states, each entry with its locator count. Every
 link inside those sections that stays in the publication must resolve.
 
+The same job renders `marker-shapes.qmd` to GitHub markdown, Word, EPUB and
+Typst on each version. Each container that fixture lists holds only a
+placement marker, which the extension removes. Each of the four renders must
+exit 0.
+
 Weekly and on demand, and not on every push, a second job renders four
 fixtures to PDF through LaTeX on each version: `demo.qmd`, the book,
 `named-indexes.qmd` and `figure-marks.qmd`. It renders four fixtures to Typst:

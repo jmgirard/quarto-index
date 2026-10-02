@@ -10,15 +10,16 @@ Three readings of the one PDF are combined, word by word:
   * `pdftotext -bbox-layout` gives every word and its box, in points from the
     top of the page. It is the source of the text.
   * `pdftohtml -xml -fontfullname -zoom 1` gives runs of text, one font each,
-    with their boxes in the same points. A word takes the font of the run its
-    centre falls in. `-fontfullname` keeps the face in the name
-    (`LibertinusSerif-Bold`); without it the family name carries no weight.
+    with their boxes in the same points. A word takes the face of the run its
+    centre falls in: bold and italic are read from that font's descriptor in
+    the PDF (`_faces`), not from its name. `-fontfullname` gives the name the
+    PDF's font dictionary carries, which is how a run finds its descriptor.
     `-zoom 1` puts the runs in points, the unit the word boxes use.
   * The PDF's own link annotations give each link's rectangle and the page it
     goes to. A word is linked when its centre falls in a rectangle on its page.
-    Typst writes each annotation, its destination and the page tree as plain
-    dictionaries outside any compressed stream, so a regular expression reads
-    them; `_links` refuses a PDF where it finds no page tree.
+    Typst writes each annotation, its destination, the fonts and the page tree
+    as plain dictionaries outside any compressed stream, so a regular
+    expression reads them; `_links` refuses a PDF where it finds no page tree.
 
 The index is read in printed order, by page, then by column, then down the
 column, as tests/pdfindex.py reads it and for the reason its header gives.
@@ -41,6 +42,7 @@ to tell the two apart.
 import re
 import subprocess
 import sys
+import unicodedata
 import xml.etree.ElementTree as ET
 
 NS = {'x': 'http://www.w3.org/1999/xhtml'}
@@ -55,21 +57,47 @@ EDGE_TOLERANCE_PT = 3.0
 PAGE_NUMBER = re.compile(r'^[\divxlcdm]+$', re.I)
 
 
+# A face whose font descriptor's /StemV is above this is bold. Typst writes
+# /StemV from the face's weight: 95.4 for the regular and italic faces and
+# 168.6 for the bold face, in the PDFs of Typst 0.11.0 (Quarto 1.5.52) and of
+# the Typst Quarto 1.10.18 bundles (observed 2026-10-01). The threshold is the
+# midpoint.
+BOLD_STEM_V = 132.0
+
+# The /Flags bit a font descriptor sets for an italic face (PDF 1.7, 9.8.2).
+ITALIC_FLAG = 1 << 6
+
+def nfkc(text):
+    """`text` in Unicode NFKC, as the word-by-word reading (`Word`) returns it.
+
+    The `pages` mode, which reads through tests/pdfindex.py, does not fold.
+
+    The Typst that Quarto 1.5.52 bundles maps a glyph the font sets for a
+    letter sequence to one compatibility character: pdftotext reads `fig` as
+    `ﬁg` (observed 2026-09-13) and `L1!!L3` as `L1‼L3` (observed 2026-10-01).
+    NFKC spells each one out, as the Typst of Quarto 1.10.18 already does. No
+    fixture's source holds a character NFKC changes (checked 2026-10-01 over
+    examples/), so no expected text is folded.
+    """
+    return unicodedata.normalize('NFKC', text)
+
+
 class Word:
-    __slots__ = ('text', 'x0', 'y0', 'x1', 'y1', 'font', 'link')
+    __slots__ = ('text', 'x0', 'y0', 'x1', 'y1', 'face', 'link')
 
     def __init__(self, text, x0, y0, x1, y1):
-        self.text, self.x0, self.y0, self.x1, self.y1 = text, x0, y0, x1, y1
-        self.font = ''
+        self.text = nfkc(text)
+        self.x0, self.y0, self.x1, self.y1 = x0, y0, x1, y1
+        self.face = (False, False)
         self.link = None
 
     @property
     def bold(self):
-        return 'Bold' in self.font
+        return self.face[0]
 
     @property
     def italic(self):
-        return 'Italic' in self.font
+        return self.face[1]
 
     def centre(self):
         return ((self.x0 + self.x1) / 2.0, (self.y0 + self.y1) / 2.0)
@@ -81,6 +109,86 @@ def _objects(data):
     for match in re.finditer(rb'(?m)^(\d+) 0 obj\b(.*?)\bendobj', data, re.S):
         found[int(match.group(1))] = match.group(2)
     return found
+
+
+def _string_end(data, i):
+    """The index just past the PDF string that opens at `data[i]`.
+
+    A literal string `( ... )` nests its parentheses and escapes with a
+    backslash. A hex string is `< ... >`. Neither can close an array or a
+    dictionary, whatever brackets it holds (PDF 1.7, 7.3.4).
+    """
+    if data[i:i + 1] == b'<':
+        end = data.index(b'>', i + 1)
+        return end + 1
+    depth = 0
+    while i < len(data):
+        c = data[i:i + 1]
+        if c == b'\\':
+            i += 2
+            continue
+        if c == b'(':
+            depth += 1
+        elif c == b')':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    raise ValueError('a literal string runs to the end of the data')
+
+
+def _balanced(data, start, opener, closer):
+    """The text from `start`, which is `opener`, to its matching `closer`.
+
+    Brackets inside a PDF string are text, and are stepped over.
+    """
+    depth, i = 0, start
+    while i < len(data):
+        pair = data[i:i + 2]
+        if pair in (b'<<', b'>>') and not (data.startswith(opener, i)
+                                           or data.startswith(closer, i)):
+            i += 2
+            continue
+        if data[i:i + 1] == b'(' or (data[i:i + 1] == b'<' and pair != b'<<'):
+            i = _string_end(data, i)
+            continue
+        if data.startswith(opener, i):
+            depth += 1
+            i += len(opener)
+        elif data.startswith(closer, i):
+            depth -= 1
+            i += len(closer)
+            if depth == 0:
+                return data[start:i]
+        else:
+            i += 1
+    raise ValueError(f'no {closer!r} closes the {opener!r} at byte {start}')
+
+
+def _annotations(objects, page_body):
+    """Each annotation of a page, as the bytes of its dictionary.
+
+    Typst 0.11 writes the dictionaries inside the page's `/Annots` array, and
+    the Typst of Quarto 1.10.18 writes references to them there.
+    """
+    found = re.search(rb'/Annots\s*\[', page_body)
+    if found is None:
+        return []
+    array = _balanced(page_body, found.end() - 1, b'[', b']')[1:-1]
+    out, i = [], 0
+    while i < len(array):
+        if array.startswith(b'<<', i):
+            body = _balanced(array, i, b'<<', b'>>')
+            out.append(body)
+            i += len(body)
+            continue
+        ref = re.match(rb'(\d+)\s+0\s+R', array[i:])
+        if ref is not None:
+            out.append(objects.get(int(ref.group(1)), b''))
+            i += ref.end()
+            continue
+        i += 1
+    return out
 
 
 def _links(pdf_path):
@@ -123,18 +231,19 @@ def _links(pdf_path):
 
     links = {}
     for number in pages:
-        body = objects[number]
-        annots = re.search(rb'/Annots\s*\[([^\]]*)\]', body)
-        if annots is None:
-            continue
         height = box_height(number)
-        for ref in re.findall(rb'(\d+)\s+0\s+R', annots.group(1)):
-            annot = objects.get(int(ref), b'')
+        for annot in _annotations(objects, objects[number]):
             if not re.search(rb'/Subtype\s*/Link\b', annot):
                 continue
             rect = re.search(rb'/Rect\s*\[([^\]]*)\]', annot)
+            # The destination is a `/Dest` (the Typst of Quarto 1.10.18) or
+            # the `/D` of a `/GoTo` action (Typst 0.11, Quarto 1.5.52). Either
+            # is an array opening with the target page, or a reference to one.
             dest = re.search(rb'/Dest\s*(?:(\d+)\s+0\s+R|\[\s*(\d+)\s+0\s+R)',
                              annot)
+            if dest is None and re.search(rb'/S\s*/GoTo\b', annot):
+                dest = re.search(rb'/D\s*(?:(\d+)\s+0\s+R|\[\s*(\d+)\s+0\s+R)',
+                                 annot)
             if rect is None or dest is None:
                 continue
             if dest.group(1) is not None:
@@ -143,30 +252,95 @@ def _links(pdf_path):
                 target_obj = int(target.group(1))
             else:
                 target_obj = int(dest.group(2))
-            x0, y0, x1, y1 = (float(v) for v in rect.group(1).split())
+            # Typst 0.11 writes a rectangle's corners top first.
+            xa, ya, xb, yb = (float(v) for v in rect.group(1).split())
+            x0, x1 = sorted((xa, xb))
+            y0, y1 = sorted((ya, yb))
             links.setdefault(page_of[number], []).append(
                 (x0, height - y1, x1, height - y0, page_of[target_obj]))
     return links
 
 
+def _faces(pdf_path):
+    """`{font_name: (bold, italic)}` for every font with a descriptor.
+
+    Read from each font's descriptor rather than its name: the faces of the
+    Typst that Quarto 1.5.52 bundles are named `LinLibertineB` and
+    `LinLibertineI`. A composite font's descriptor sits on its descendant, and
+    its own name, the one pdftohtml reports, on the font itself.
+    """
+    objects = _objects(open(pdf_path, 'rb').read())
+
+    # A Type 3 font, such as the one Typst draws a colour emoji in, carries
+    # its name as /Name and no /BaseFont (observed 2026-10-01).
+    def name_of(body):
+        found = re.search(rb'/(?:BaseFont|Name)\s*/([^\s/\[\]<>()]+)', body)
+        return found and found.group(1).decode('latin-1')
+
+    # Bold is a stated /FontWeight of 600 or more where the descriptor gives
+    # one, as the Type 3 emoji font's does (400), and a /StemV above
+    # BOLD_STEM_V where it does not, as Typst's text faces do.
+    def face_of(body):
+        descriptor = re.search(rb'/FontDescriptor\s+(\d+)\s+0\s+R', body)
+        if descriptor is None:
+            return None
+        desc = objects.get(int(descriptor.group(1)), b'')
+        weight = re.search(rb'/FontWeight\s+([\d.]+)', desc)
+        stem = re.search(rb'/StemV\s+([\d.]+)', desc)
+        flags = re.search(rb'/Flags\s+(\d+)', desc)
+        if (weight is None and stem is None) or flags is None:
+            raise LookupError(f'{pdf_path}: font descriptor '
+                              f'{descriptor.group(1).decode()} carries no '
+                              f'/FontWeight or /StemV, or no /Flags, so its '
+                              f'face is unknown')
+        bold = (float(weight.group(1)) >= 600 if weight is not None
+                else float(stem.group(1)) > BOLD_STEM_V)
+        return (bold, bool(int(flags.group(1)) & ITALIC_FLAG))
+
+    faces = {}
+    for body in objects.values():
+        if not re.search(rb'/Type\s*/Font\b', body):
+            continue
+        name = name_of(body)
+        if name is None:
+            continue
+        face = face_of(body)
+        if face is None:
+            kids = re.search(rb'/DescendantFonts\s*\[\s*(\d+)\s+0\s+R', body)
+            if kids is not None:
+                face = face_of(objects.get(int(kids.group(1)), b''))
+        if face is not None:
+            faces[name] = face
+    return faces
+
+
 def _fonts(pdf_path):
-    """`{page: [(x0, y0, x1, y1, font_name), ...]}` from pdftohtml's runs."""
+    """`{page: [(x0, y0, x1, y1, (bold, italic)), ...]}` from pdftohtml's runs.
+
+    A run whose font `_faces` does not know raises LookupError, so a word is
+    never read as upright and regular for want of a descriptor.
+    """
     xml = subprocess.run(
         ['pdftohtml', '-xml', '-stdout', '-i', '-q', '-fontfullname',
          '-zoom', '1', pdf_path],
         check=True, capture_output=True, text=True).stdout
     root = ET.fromstring(xml)
+    faces = _faces(pdf_path)
     runs = {}
     names = {spec.get('id'): spec.get('family')
              for spec in root.iter('fontspec')}
     for page in root.iter('page'):
         number = int(page.get('number'))
         for text in page.iter('text'):
+            name = names.get(text.get('font'), '')
+            if name not in faces:
+                raise LookupError(f'{pdf_path}: page {number} sets text in '
+                                  f'{name!r}, which no font descriptor '
+                                  f'describes')
             x0, y0 = float(text.get('left')), float(text.get('top'))
             x1 = x0 + float(text.get('width'))
             y1 = y0 + float(text.get('height'))
-            runs.setdefault(number, []).append(
-                (x0, y0, x1, y1, names.get(text.get('font'), '')))
+            runs.setdefault(number, []).append((x0, y0, x1, y1, faces[name]))
     return runs
 
 
@@ -202,7 +376,7 @@ def _pages(pdf_path, footer_pattern=None):
                 centre = word.centre()
                 for run in fonts.get(number, []):
                     if _inside(centre, run):
-                        word.font = run[4]
+                        word.face = run[4]
                         break
                 for box in links.get(number, []):
                     if _inside(centre, box):

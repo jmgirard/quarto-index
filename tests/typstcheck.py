@@ -199,7 +199,7 @@ def order_main(argv):
     specs = argv[4:]
     text = subprocess.run(['pdftotext', pdf, '-'], check=True,
                           capture_output=True, text=True).stdout
-    lines = [l.strip() for l in text.split('\n')]
+    lines = [typstindex.nfkc(l.strip()) for l in text.split('\n')]
     at = -1
     for spec in specs:
         kind, want = spec[0], spec[1:]

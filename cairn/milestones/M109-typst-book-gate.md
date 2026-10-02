@@ -48,15 +48,15 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
       that exits non-zero, or that exits 0 and writes no PDF or two or more
       PDFs. It is also a render that logs the refusal warning and writes one
       or more PDFs.
-- [ ] AC2: The M098-AC7 no-author check still runs on the pinned Quarto
+- [x] AC2: The M098-AC7 no-author check still runs on the pinned Quarto
       alone, and the reason its `skip` line gives names Quarto's book
       template, the subject of that check, rather than the Typst-book refusal.
-- [ ] AC3: On Quarto 1.10.18, the pinned version, `tests/run-tests.sh` and
+- [x] AC3: On Quarto 1.10.18, the pinned version, `tests/run-tests.sh` and
       `tests/run-tests.sh --self-test` each pass and print no `skip` line.
-- [ ] AC4: On Quarto 1.5.52, `tests/run-tests.sh` passes, and the `skip`
+- [x] AC4: On Quarto 1.5.52, `tests/run-tests.sh` passes, and the `skip`
       lines it prints for M098-AC5, the M098-AC7 outline check and M100-AC3
       name Quarto's refusal warning, not the pin.
-- [ ] AC5: The comment above the M098-AC5 render, the comments above the
+- [x] AC5: The comment above the M098-AC5 render, the comments above the
       M100-AC3 and M098-AC7 outline gates, and the reason those three checks'
       `skip` lines give state the gate AC1 describes. A search of
       `tests/run-tests.sh` for `Typst book is rendered on the pinned` finds no
@@ -123,3 +123,32 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 ## Decisions
 
 ## Review
+
+Runs at 7cfe0b0 (2026-10-02), each in its own worktree, with a `python3` link to `/usr/bin/python3` 3.9.6 first on `PATH`. Default branch not moved since the branch was cut. `cairn_validate` exit 0, every check PASS or OK. No DESIGN.md principle changed, so `cairn_impact` was skipped. The `generic` profile names no toolchain checks.
+
+- AC1: not met as written. The run, skip and fail cases hold for a PDF at the top of `_book`. The seven `--self-test` gate cases pass (7 `ok M109 T1 self-test` lines). The diff-bug reviewer ran the 12 combinations of exit status, refusal and PDF count by hand on bash 3.2. The 1.5.52 run skips both books. But the gate counts PDFs with `find "$book/_book" -maxdepth 1` (`tests/run-tests.sh:201`). The diff-bug reviewer ran a refusal log with `_book/sub/x.pdf`, and the gate printed skip lines. AC1 says a render that logs the refusal and writes one or more PDFs under `_book` fails the run. Finding D3.
+- AC2: met. The no-author check is behind `on_pinned_quarto` (`tests/run-tests.sh:31171`). On 1.5.52 its skip line reads "the check's subject is the error Quarto's Typst book template raises for a book with no author". On 1.10.18 it prints `ok M098-AC7: the Typst book fails to compile without an author`.
+- AC3: met. Quarto 1.10.18 plain: "All checks passed (902 checks)", exit 0, 0 skip lines. Quarto 1.10.18 `--self-test`: "All checks passed (1765 checks)", exit 0, 0 skip lines. The plain run prints 8 `ok` lines for M098-AC5, M100-AC3 and the M098-AC7 outline check.
+- AC4: met. Quarto 1.5.52 plain: "All checks passed (884 checks)", exit 0, 17 skip lines. Eight are for M098-AC5 (5 labels), M100-AC3 (2) and the M098-AC7 outline check (1). Each reads "Quarto 1.5.52 refused to render examples/book[-typst-reset] to Typst, logging <<The typst format is not supported by book projects>>". None names the pin.
+- AC5: met. Three comments state the render-outcome gate: above the M098-AC5 render (30310), the M100-AC3 gate (30421) and the outline gate (31106). The shared skip text in `typst_book_skip` states it too. `grep -c 'Typst book is rendered on the pinned' tests/run-tests.sh` prints 0.
+
+Findings. Three fresh-context reviewers ran: Opus diff-bug (D), Sonnet blame-history (B), Sonnet prior-review (P). The PR-comment probe returned `[]`. Each reviewer's ranking is kept. Dispositions are proposed, pending the step-7 gate.
+
+- D3: the gate counts only top-level PDFs. A refusal with a PDF in a `_book` subfolder skips, where AC1 fails the run (verified by execution). Proposed: floor return. Count recursively, with a nested-PDF plant.
+- D1 (= B1, B5): the gate counts PDFs in the working tree `$book/_book`, while the checks read the capture. M24 says every read goes to the capture. Proposed: fix with the return. Count under the capture.
+- D2: the self-test does not hold the refusal match to its exact text. `grep -q WARN` and `grep -qi typst` mutants pass all seven cases (verified by execution). Proposed: fix with the return. Add a plant with a near-miss WARN line, no PDF and a non-zero exit, and expect FAIL.
+- D4: the count measures PDFs present, not PDFs this render wrote, and relies on Quarto emptying `_book`. Proposed: reject. The implement probe showed both Quartos empty it, and a leftover PDF fails loudly.
+- D5: on the pinned Quarto the self-test cannot tell the running version from the pinned one in a skip line. Proposed: fix with the return. Set a planted running version in the self-test.
+- D6 (= B3, P2b): `site/typst.qmd:99-101` says Quarto 1.5.52 "exits without an error", but a Typst-only book exits 1 there. The `floor warning` claim row (`tests/run-tests.sh:30768`) carries the same text. Proposed: follow-up, absorbed into the `site/books.qmd` candidate row.
+- D7 (= B2): a refusal skips at any exit status, so a later crash after the refusal also skips. Proposed: reject. The user chose this AC1 amendment at implement.
+- D8: `capture` reads `--refusable` only right after `--project`. Proposed: reject. Both call sites are correct.
+- D9: the outline check's skip branch reads the flag alone. Proposed: reject. The branch is correct while the gate either skips or exits.
+- D10: a missing log counts as no refusal. Proposed: reject. The redirect always creates it.
+- D11: the no-author skip label `M098-AC7` matches an unconditional `ok M098-AC7` line. Proposed: reject. Main has the same label.
+- D12: `printf | grep -q` under pipefail fails on a SIGPIPE that stops the `printf`. Proposed: reject. The output is far below the pipe buffer.
+- D13 (= B4): T2's reason for calling `m098_no_typst_warning` only on the run branch is wrong, since its regex does not match `WARN:`. Proposed: noted. The placement is still right.
+- B6: "the M108 F1 row is absorbed" names no row on main. Refuted: the plan commit e8cb144 removed it.
+- P1: the diff makes M108 F6's premise "on the pinned Quarto no skip can print" false. Proposed: reject. D-067 intends it, and AC3's no-skip run reads it.
+- P2a: the `.github/workflows/versions.yml` comment (361-364) says the floor skips are "its checks about Quarto itself". Proposed: fix with the return.
+- P3: `typst_book_rendered` runs with errexit off as an `if` condition. Proposed: reject. Its failure paths call `fail`.
+- P4: the M100 self-test plant has no gate call. Proposed: reject. It asserts exit 0, and the read fails loudly.

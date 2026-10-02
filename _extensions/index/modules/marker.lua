@@ -101,9 +101,10 @@ end
 -- content is spliced in where the marker stood and the author is told.
 local function marker_content(block)
   -- A list the strip below emptied holds only its fill, an empty Plain. An
-  -- empty Plain writes no text, so a marker holding nothing else is an empty
-  -- marker: such blocks are dropped here, and the list the marker stood in is
-  -- filled once if it empties, rather than once per level of nesting.
+  -- empty Plain writes no text, so such blocks are dropped here, and a marker
+  -- holding nothing else is an empty marker. Kept, the fill made an outer
+  -- marker whose nested marker was stripped read as non-empty and draw the
+  -- "marker is not empty" report (M107).
   local content = pandoc.Blocks({})
   for _, inner in ipairs(block.content) do
     if not (inner.t == "Plain" and #inner.content == 0) then

@@ -115,6 +115,7 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: the reader's re-read found all three corrections hold; its two wrap-width notes were fixed, with one more over-long workflow line.
 - 2026-10-01: implement complete. Pre-review check `tests/run-tests.sh --self-test` passed on 1e14279, 1741 checks, Python 3.9.6 first on `PATH`. Status set to review.
 - 2026-10-01: review checkpoint. AC1, AC3 and AC4 verified and ticked. The branch was pushed (no PR) so the matrix ran on the head. The AC2 suite run and the three reviewers are still in flight.
+- 2026-10-01: step-7 approval: m107-emptied-container-floor approved for merge. The gate also approved the six fix-now prose edits and a candidate row for the Word caption.
 
 ## Decisions
 
@@ -197,3 +198,10 @@ most severe first, with the disposition proposed at the gate:
   reject, both hold, and the check passed on both Quartos (T4).
 - F14 (blame history): the header says the suite cannot run green on the
   floor leg. Proposed: reject. Before M108 lands, the sentence is true.
+
+Gate triage, 2026-10-01: the user accepted every proposed disposition. The
+fix-now prose (F3 to F7, F10) landed on the branch in `marker.lua`,
+`tests/run-tests.sh`, `versions.yml`, `site/tests.qmd`, `README.md` and
+`cairn/DESIGN.md`. F1 and F2 became one ROADMAP candidate row. The other
+eight findings are rejected for the reasons above. No finding met the
+return floor, so the status stayed `review`.

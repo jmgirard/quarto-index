@@ -26,7 +26,7 @@ On every push, and on the weekly and on-demand runs, the workflow renders five
 fixtures to HTML on each version: `html-index.qmd`, `named-indexes.qmd`,
 `demo.qmd`, the book and `figure-marks.qmd`. The HTML index each version emits
 is compared byte for byte against the index the pinned version emits. The
-same job renders two fixtures to EPUB on each version: `figure-marks.qmd` and
+same job reads the EPUB of two fixtures on each version: `figure-marks.qmd` and
 the book. In the HTML and the EPUB of `figure-marks.qmd`, each alt-text mark
 the acceptance suite checks must link to a place after its image, in the
 image's own block. The book's EPUB is read against the acceptance suite's

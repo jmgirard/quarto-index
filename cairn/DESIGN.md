@@ -336,7 +336,11 @@ every depth and is never itself a place an author can find emptied. Counting
 that way is what keeps the rule free of per-container code, and so free of the
 gap that came with it: a table cell, a footnote body and a definition are block
 lists like any other here, where the kind-by-kind check M08 tried reached none
-of them.
+of them. A list the strip empties keeps one empty Plain, which writes no text.
+With no block left, Quarto 1.5.52 stopped on a captioned figure or a callout,
+and the LaTeX output dropped the figure with its caption. A marker's content is
+read with empty Plains removed, so a marker that holds only that fill is still
+an empty marker (added M107).
 
 One further misuse is reported rather than edited away (corrected M08): the marker class written where it cannot place an index — any block that is not a div, and any inline carrying attributes at all, a span, inline code, a link or an image among them — which leaves that element exactly as the author wrote it, class included. It is read from the document's blocks alone, never its metadata, so a class written in the title or the abstract is reported nowhere — and a marker written there is not resolved either, and survives into output (ROADMAP). One shared
 function then puts a back-end's index at the surviving marker, or at the end of

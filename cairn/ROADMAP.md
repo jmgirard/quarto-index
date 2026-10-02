@@ -11,6 +11,8 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M107 | An emptied container renders on Quarto 1.5.52 | planned | — | high | milestones/M107-emptied-container-floor.md |
+| M108 | The acceptance suite passes on Quarto 1.5.52 | planned | M107 | normal | milestones/M108-suite-on-floor-quarto.md |
 | M106 | The version matrix reads the two-index PDF and the book EPUB | done | — | normal | milestones/archive/M106-matrix-missing-legs.md |
 | M105 | Three M095 checks each fail on the gap its review found | done | — | normal | milestones/archive/M105-m095-check-gaps.md |
 | M104 | A caption mark beside a shortcode files one locator | done | — | normal | milestones/archive/M104-shortcode-caption-marks.md |
@@ -26,7 +28,8 @@ _Released 0.4.0 2026-09-11._
 - Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate
 - Make M32's marker-less plants read the captured artifact rather than the render's working copy. Promote with any other suite-wide capture sweep — added 2026-08-24 — M32 review R2-F9, split 2026-10-01 — KI108
 - Narrow M32's HTML-cost check to the bibliography's own wrapper. Promote on that fixture growing a footnote or a Citation block — added 2026-08-24 — M32 review R2-F14, split 2026-10-01 — KI109
-- Make the acceptance suite and its PDF comparison version-portable. Promote on an extraction shown engine-neutral across the two engines — added 2026-08-26 — M43, split 2026-10-01 — KI110, KI111
+- Make the version matrix's PDF comparison version-portable. M108 takes the suite half. Promote on an extraction shown engine-neutral across the two engines — added 2026-08-26 — M43, split 2026-10-01, narrowed 2026-10-01 by M108 — KI111
+- A CI job that runs the whole acceptance suite on the floor Quarto, which M108 makes pass locally. Promote on a floor-only regression that reaches the default branch unseen by the version matrix — added 2026-10-01 — M107/M108 plan gate
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249

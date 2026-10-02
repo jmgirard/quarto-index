@@ -485,3 +485,11 @@
 **Decision:** both changes are rejected, on D-059's precedent. Each would grow a checker that M079 and M083 shipped, over a shape that no output the extension writes produces. The gate also weighed a smaller change, which made `unique` fail on a document carrying a second index heading. It was declined for the same reason.
 
 **Consequences:** KI264 stays a known issue and cites this entry, and both candidate rows are removed. Falsified by an EPUB the extension writes that carries two generated index sections in one document. Two causes can make one: Pandoc no longer splitting at a level-1 heading, or the extension emitting a lower-level index heading. Also falsified by a member the plants read that carries a relative `.xhtml#` href outside its index section.
+
+### D-065 (2026-10-01): a suite check about Quarto's own behavior or the suite's own source runs on the pinned Quarto only, and prints a skip line on any other (annotates D-020)
+
+**Context:** M108 makes the acceptance suite pass on Quarto 1.5.52, the version matrix's floor. Some checks that fail there are about Quarto or about the suite, not about the extension. The no-engine control reads which engine wrote a PDF, and D-020 made it fail loudly on a Quarto with another default engine. Quarto 1.5.52 defaults to xelatex. The M57-AC7 ledger lists Quarto's own LaTeX preamble lines. Quarto 1.5.52 refuses Typst for book projects. The cell guard reads the suite's module source through Quarto's Lua.
+
+**Decision:** at the M107 and M108 plan gate, the user chose to port the readers whose subject is the extension's output. The checks above run only on the Quarto that `pages.yml` pins. On any other Quarto, each prints a `skip` line that names the check, the running Quarto and the reason. Porting every check to a per-version expectation was declined, because an expectation about Quarto's own behavior tests Quarto rather than the extension.
+
+**Consequences:** on the pinned Quarto, D-020's loud failure stands. On any other Quarto, it becomes a skip line, and the docs' "no engine set" paragraph keeps naming the engine of Quarto 1.10. Falsified by an extension defect on a non-pinned Quarto that a skipped check catches and the ported output checks miss.

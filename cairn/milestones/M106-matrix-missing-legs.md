@@ -156,6 +156,8 @@ to M102. KI112 and KI113 close.
 - claim audit: 85 claims read, 4 corrected — README.md, site/tests.qmd, .github/workflows/versions.yml
 - 2026-10-01: T6 and T7 done. `--self-test` at 35400ec passed, 1738 checks (AC5). Status set to review. The last dispatched matrix run is at c143cd0. Later commits change comments, prose, the suite and cairn/ only, so review dispatches at the final head for AC1 and AC2.
 - 2026-10-01: review pushed the branch before the approval gate, which step 2 defers to step 8. AC1 to AC3 need dispatched runs at the branch head, and no workflow here has a `pull_request` trigger, so D-138's concern does not arise. The push started the push-triggered `versions.yml` and `pages.yml` runs, and Pages deploys from main only.
+- 2026-10-01: correction to the plan's last work-log line (review R8). M51's plan gate kept the two-index fixture off the matrix because adding it "widens the restore into new coverage" (commit 9571046). The installation wording came from a workflow comment. M51's Scope Out promoted it once the restored leg ran a clean schedule cycle, which the five green scheduled runs meet, so the reversal stands.
+- 2026-10-01: gate triage accepted: R1-R9 fixed on the branch, R10-R11 follow-ups, R12-R14 rejected. R1 narrows the claim to a LaTeX index after the first. R2 moves the two-index steps after every other `pdf` reading. R3 splits the EPUB `links` into its own step with an `if:`. R4 rewrites the render-job ordering paragraph. R5 adds three claim rows, shown red on main's page. R6 makes README say "renders fixtures". R7 extends the ORACLE RULE to tracked manifests. R9 rewraps the Manifest 10 comment.
 
 ## Decisions
 

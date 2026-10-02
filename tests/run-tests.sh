@@ -5,8 +5,9 @@
 # milestone and would otherwise collide.
 #
 # ORACLE RULE — READ BEFORE EDITING A MANIFEST.
-# Every manifest row below is derived BY HAND from the `.qmd` source and the
-# documented semantics at each layer, in this order:
+# Every manifest row below, and every row of the tracked manifests under
+# tests/ that this script reads, is derived BY HAND from the `.qmd` source and
+# the documented semantics at each layer, in this order:
 #   1. Pandoc attribute-value unescaping (a quoted span attribute loses one
 #      backslash level: `\!` -> `!`, `\\` -> `\`, `\"` -> `"`), and markdown
 #      backslash-unescaping in visible text.
@@ -24149,10 +24150,10 @@ pass "M52-AC3: examples/book/ renders to EPUB at exit 0"
 # Manifest 10 — the two index sections the book fixture renders into its EPUB
 # (M52-AC3). Its rows are the tracked file tests/book-epub-index.txt, because
 # the version matrix's render job reads the same file. EXHAUSTIVE per section,
-# and stated in locator COUNTS rather than
-# hrefs: an EPUB's link targets are the files Pandoc's writer split the book
-# into (`text/ch005.xhtml`), which is a property of the writer and not of the
-# `.qmd` sources this manifest is derived from. AC2 is what holds those links
+# and stated in locator COUNTS rather than hrefs: an EPUB's link targets are
+# the files Pandoc's writer split the book into (`text/ch005.xhtml`), which is
+# a property of the writer and not of the `.qmd` sources this manifest is
+# derived from. AC2 is what holds those links
 # to resolving, over the demo's EPUB, where the same writer splits the same
 # way.
 #
@@ -30407,6 +30408,16 @@ matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance 
 M098TESTS
 python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
   || fail "M098-AC7: site/tests.qmd no longer states the version matrix's Typst step (its own FAIL line is above)"
+# The matrix readings M106 added, and the Typst render the row above no longer
+# names (M106 review R5). Each is a sentence of the Tests page's matrix
+# section, stated against .github/workflows/versions.yml.
+cat > "$WORK/m106-tests-claims.txt" <<'M106TESTS'
+matrix typst render	It renders four fixtures to Typst:
+matrix two-index	`named-indexes.qmd` must print both of its declared indexes as the acceptance suite's manifest states them
+matrix book epub	The book's EPUB is read against the acceptance suite's manifest for it.
+M106TESTS
+python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m106-tests-claims.txt" \
+  || fail "M106: site/tests.qmd no longer states the version matrix's Typst render, two-index PDF reading or book EPUB reading (its own FAIL line is above)"
 cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
 new back-end	A new back-end for Typst.
 what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package

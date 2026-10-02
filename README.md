@@ -20,10 +20,10 @@ filters:
 ---
 ```
 
-Requires Quarto 1.5 or later. GitHub Actions renders the example fixtures on
-two Quarto versions: 1.5.52, the oldest non-prerelease release of that line,
-and the version the documentation site is built with. On every push it renders
-them to HTML and compares the HTML index each version emits. It also renders
+Requires Quarto 1.5 or later. GitHub Actions renders example fixtures on two
+Quarto versions: 1.5.52, the oldest non-prerelease release of that line, and
+the version the documentation site is built with. On every push it renders
+fixtures to HTML and compares the HTML index each version emits. It also renders
 the book and the figure fixture to EPUB. It reads the book's EPUB index
 against a manifest, and checks where the figure fixture's alt-text locators
 link. Weekly and on demand, the run also adds Quarto's current release, and it

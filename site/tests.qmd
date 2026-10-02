@@ -51,7 +51,7 @@ That job reads the printed index of each PDF:
   ways. The four below-marker cells must read as their manifest states, and
   one of them is a term that must be absent. The second index is built by
   `imakeidx` through TeX's restricted shell escape, so this is where the
-  workflow reads the build of an index after the first.
+  workflow reads a LaTeX index after the first.
 - `figure-marks.qmd` must print its index line by line as its manifest states.
 - `typst-index.qmd` must print both of its indexes as the acceptance suite's
   manifests state them: every entry in order, each locator on the page the

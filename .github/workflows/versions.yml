@@ -151,13 +151,13 @@ jobs:
       # A cross-leg PDF comparison waits on an extraction shown engine-neutral
       # across lualatex and xelatex, and is no part of what M51 restored.
       #
-      # Each render below is followed immediately by its extraction or its
-      # check. The renders write distinct paths and none can overtake another;
-      # the ordering is kept because a second format of the book would render
-      # into a path an earlier one already wrote — the book renders into
-      # `_book` whatever the format — and the interleaving is what made that
-      # safe. The figure-marks EPUB render writes `examples/figure-marks.epub`,
-      # and its HTML is checked before that render runs.
+      # Each render in this step is followed immediately by its extraction or
+      # its check, and the renders here write distinct paths. The book renders
+      # into `_book` whatever the format, so its second format, the EPUB
+      # (M106), renders in a step of its own after the upload, once this step
+      # has read `_book/last.html`. The figure-marks EPUB render writes
+      # `examples/figure-marks.epub`, and its HTML is checked before that
+      # render runs.
       #
       # `indexdump.py` is what makes each of these a check and not just a
       # render: it fails loudly on an artifact carrying no index, so a leg that
@@ -230,8 +230,12 @@ jobs:
       # and entry row, each entry with its locator count. Then `links` holds
       # every link inside those sections that stays in the publication to an
       # element it carries. `qi-index` is the suite's HTML_SECTION_ID, the
-      # prefix each section id opens with.
+      # prefix each section id opens with. Each reading is a step of its own,
+      # and the links step runs whenever the render step succeeded, even
+      # after a red sections step, for the reason the pdf job's cells step
+      # does.
       - name: Render examples/book to EPUB
+        id: book_epub
         shell: bash
         run: |
           set -euo pipefail
@@ -244,6 +248,12 @@ jobs:
           python3 tests/epubcheck.py sections \
             examples/book/_book/Index-Book-Fixture.epub qi-index \
             tests/book-epub-index.txt
+
+      - name: Check the links inside the book EPUB's index sections
+        if: ${{ !cancelled() && steps.book_epub.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 tests/epubcheck.py links \
             examples/book/_book/Index-Book-Fixture.epub qi-index
 
@@ -316,7 +326,7 @@ jobs:
   # they quote block positions, and each Quarto version counts those over the
   # document it hands the filter. The book PDF's indexes after the first
   # (People and Places), since the two-index fixture is where this job reads
-  # an index after the first. And the acceptance suite, which pins a PDF
+  # a LaTeX index after the first, the kind imakeidx builds. And the acceptance suite, which pins a PDF
   # engine and so cannot run green on the floor leg at all.
   #
   # It runs only where `tests/versioncheck.py pdf` said so, which the `plan`
@@ -468,42 +478,6 @@ jobs:
             'Index of Subjects' 'Index of People' \
             > "$RUNNER_TEMP/pdf/book.pdf.txt"
 
-      # Both indexes of the two-index fixture (M106). Quarto's own loop builds
-      # the first; imakeidx builds the second through TeX's restricted shell
-      # escape, which a stock TinyTeX permits (D-031), so a second index that
-      # prints empty here is red on this leg. The readings are
-      # `tests/namedpdf.py entries` and `cells`, against the two tracked
-      # manifests the acceptance suite reads at its M49 checks: every entry
-      # line of each printed index, compared both ways, and the four
-      # below-marker cells, one of them a term that must be absent. Each
-      # reading is a step of its own, so a red one names its manifest. The
-      # cells step runs whenever the render step succeeded, even after a red
-      # entries step: GitHub skips a step once an earlier one has failed, and
-      # a skipped step would say nothing about the cells. No later step
-      # renders examples/named-indexes.qmd, so nothing writes over this PDF
-      # before both read it.
-      - name: Render examples/named-indexes.qmd to PDF
-        id: named_indexes_pdf
-        shell: bash
-        run: |
-          set -euo pipefail
-          quarto render examples/named-indexes.qmd --to pdf
-
-      - name: Read both printed indexes of examples/named-indexes.pdf against their manifest
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 tests/namedpdf.py entries examples/named-indexes.pdf \
-            tests/named-indexes-pdf-entries.txt 'Two-index PDF entries'
-
-      - name: Read the below-marker cells of examples/named-indexes.pdf against their manifest
-        if: ${{ !cancelled() && steps.named_indexes_pdf.outcome == 'success' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 tests/namedpdf.py cells examples/named-indexes.pdf \
-            tests/named-indexes-pdf-cells.txt 'Two-index PDF cells'
-
       # The Typst back-end (M098), in this job because it reads the PDF through
       # `pdftotext`, which the poppler step above installs, and needs no TeX.
       # Each Quarto release bundles its own Typst, so the floor leg is where a
@@ -603,6 +577,44 @@ jobs:
           set -euo pipefail
           python3 tests/typstindex.py pages examples/figure-marks.pdf \
             tests/figure-marks-typst.tsv 'Typst index of figure marks' 'Index'
+
+      # Both indexes of the two-index fixture (M106). Quarto's own loop builds
+      # the first; imakeidx builds the second through TeX's restricted shell
+      # escape, which a stock TinyTeX permits (D-031), so a second index that
+      # prints empty here is red on this leg. The readings are
+      # `tests/namedpdf.py entries` and `cells`, against the two tracked
+      # manifests the acceptance suite reads at its M49 checks: every entry
+      # line of each printed index, compared both ways, and the four
+      # below-marker cells, one of them a term that must be absent. Each
+      # reading is a step of its own, so a red one names its manifest. The
+      # cells step runs whenever the render step succeeded, even after a red
+      # entries step: GitHub skips a step once an earlier one has failed, and
+      # a skipped step would say nothing about the cells. These three steps
+      # come after every other reading in this job, so a red one here skips
+      # none of the readings above. No other step renders
+      # examples/named-indexes.qmd, so nothing writes over this PDF before
+      # both read it.
+      - name: Render examples/named-indexes.qmd to PDF
+        id: named_indexes_pdf
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/named-indexes.qmd --to pdf
+
+      - name: Read both printed indexes of examples/named-indexes.pdf against their manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/namedpdf.py entries examples/named-indexes.pdf \
+            tests/named-indexes-pdf-entries.txt 'Two-index PDF entries'
+
+      - name: Read the below-marker cells of examples/named-indexes.pdf against their manifest
+        if: ${{ !cancelled() && steps.named_indexes_pdf.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/namedpdf.py cells examples/named-indexes.pdf \
+            tests/named-indexes-pdf-cells.txt 'Two-index PDF cells'
 
       - name: Report what this leg extracted
         shell: bash

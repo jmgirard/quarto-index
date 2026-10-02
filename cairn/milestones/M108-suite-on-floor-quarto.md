@@ -24,7 +24,8 @@ compatibility character, such as the `fi` ligature or `‼` for `!!`, which
 `tests/typstcheck.py order` and M098-AC7's page check also read. M098-AC7's
 front-matter check must read which front-matter fields the template prints.
 The gfm checks must read span attributes without the `data-` prefix, and
-M12-AC5 must read the gfm title written as a paragraph without `# `. Checks
+M12-AC5 must read the gfm title heading that Quarto 1.5.52 wraps onto a
+second line. Checks
 whose subject is Quarto's own behavior or the suite's own source run on the
 pinned Quarto only, and elsewhere print a `skip` line (D-065). The Typst page
 gets one sentence. KI110 closes.
@@ -78,7 +79,7 @@ criterion. The plants added here run on the pinned Quarto.
       front-matter check read which fields the template prints.
 - [x] T3: Port the gfm checks (M06-AC3, M20-AC5, M21-AC6) to read a span
       attribute with or without the `data-` prefix, and M12-AC5 to read the
-      gfm title as a paragraph.
+      gfm title heading wrapped onto a second line.
 - [x] T4: Add one skip helper. It prints `skip`, the check's label, the
       running Quarto and the reason. It skips only when the running Quarto is
       not the version that `pages.yml` pins. Gate the checks that AC3 lists
@@ -115,6 +116,7 @@ criterion. The plants added here run on the pinned Quarto.
 - 2026-10-01: T5: plants for a dropped `/GoTo` link, bold and italic faces, an `fl` misspelling, one gfm attribute in each spelling (M06, M20, M21), and a render printing no front-matter field. Each is red on its own defect, and each control is green. The merge base's reader fails all three Typst controls.
 - 2026-10-01: T6: the Books section of `site/typst.qmd` quotes the 1.5.52 warning, observed on a book render (exit 0, empty `_book`). Two claim rows hold the sentence on the page, and KI110 is removed. The candidate row already named KI111 alone.
 - 2026-10-01: verify: the head prints 883 checks and 17 skips on 1.5.52, exit 0. With `--self-test` on 1.10.18 it prints 1755 checks and no skips, exit 0. Both runs predate the two claim rows, which were checked on their own (green, and red on a removed sentence).
+- 2026-10-01: correction to the T1 line and the second gate: Quarto 1.5.52 keeps the gfm title's `# ` and wraps the heading onto a second line, where the marker span sits. The claim audit found this, and the user approved the corrected Scope clause. T3's wording now says so too. The M12-AC5 code reads the text before the first blank line, so it already handled this form.
 
 ## Decisions
 

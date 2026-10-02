@@ -34,7 +34,7 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 
 ## Acceptance criteria
 
-- [ ] AC1: In `tests/run-tests.sh`, the outcome of the Typst book render
+- [x] AC1: In `tests/run-tests.sh`, the outcome of the Typst book render
       that each check reads decides whether the M098-AC5 checks, the M098-AC7
       outline check and the M100-AC3 checks run. The Quarto that
       `.github/workflows/pages.yml` pins does not decide it. The refusal
@@ -170,3 +170,33 @@ Findings. Three fresh-context reviewers ran: Opus diff-bug (D), Sonnet blame-his
 - P4: the M100 self-test plant has no gate call. Proposed: reject. It asserts exit 0, and the read fails loudly.
 
 Gate, 2026-10-02: the user chose to return M109 to implement. Every disposition stands as proposed. D3 is the floor return, fixed with D1 by T6. D2 and D5 are fixed by T7, and P2a by T8. D6 is a follow-up, absorbed into the `site/books.qmd` candidate row. The other 11 findings are rejected or noted for the reasons above, and B6 is refuted. The next review gathers fresh evidence for every criterion.
+
+### Round 2
+
+Runs at d8cecba (2026-10-02), each in its own worktree with the 3.9.6 `python3` link first on `PATH`. Main has not moved. `cairn_validate` exit 0. No DESIGN.md principle changed. The `generic` profile names no toolchain checks.
+
+Two Quarto 1.10.18 runs in this milestone stopped at a "Segmentation fault: 11" from Quarto's own Deno process: the T9 `--self-test` run at the outline document, and this round's first plain run at an M069 book render. Neither render is code M109 changes. Each re-run passed. This round's plain re-run ran alone.
+
+- AC1: met. The gate counts PDFs at any depth under the captured `_book` (`tests/run-tests.sh:206`). The 1.10.18 `--self-test` run prints 10 `ok M109 T1 self-test` lines: two run controls (top and nested PDF), two refusal skips (exit 0 and exit 1), and six failures (non-zero exit, no PDF, two PDFs, refusal with a PDF, refusal with a nested PDF, a near-miss warning). The diff-bug reviewer ran 30 combinations on bash 3.2 (exit 0, 1 or 3, refusal or not, 0, 1 or 2 PDFs, top or nested), and each gave AC1's outcome. The 1.5.52 run skips both books.
+- AC2: met. On 1.5.52 the no-author skip line reads "the check's subject is the error Quarto's Typst book template raises for a book with no author". On 1.10.18 it runs and passes.
+- AC3: met. Quarto 1.10.18 plain re-run: "All checks passed (902 checks)", exit 0, 0 skip lines, 8 `ok` lines for M098-AC5, M100-AC3 and the M098-AC7 outline check. Quarto 1.10.18 `--self-test`: "All checks passed (1768 checks)", exit 0, 0 skip lines.
+- AC4: met. Quarto 1.5.52: "All checks passed (884 checks)", exit 0, 17 skip lines. The 8 for M098-AC5 (5 labels), M100-AC3 (2) and the M098-AC7 outline check (1) each name Quarto 1.5.52 and the refusal warning, and none names the pin.
+- AC5: met. The three comments and the `typst_book_skip` text are as in round 1. `grep -c 'Typst book is rendered on the pinned' tests/run-tests.sh` prints 0.
+
+Findings. The same three lenses ran fresh: Opus diff-bug (R2-D), Sonnet blame-history (R2-B), Sonnet prior-review, which reported no prior-review evidence and zero findings. The diff-bug reviewer killed the D1, D2, D3 and D5 mutants with the new cases. Dispositions are proposed, pending the step-7 gate.
+
+- R2-D1 (= R2-B3): `m100_book_read` finds the PDF with `-maxdepth 1`, while the gate counts at any depth. A nested PDF the gate accepts makes M100-AC3 fail with an empty list (verified by execution). Proposed: fix now. Count at any depth there too.
+- R2-B2: the no-author pass line ends "and compiles with one (M098-AC5)", but M098-AC5 can now skip on the pin. Proposed: fix now. Name M098-AC5 only when it ran.
+- R2-D2: both nested plants sit one folder deep, so a `-maxdepth 2` gate passes all 10 cases (verified by execution). Proposed: fix now. Move the nested refusal two folders deep.
+- R2-D3: the refusal skip is planted at exit 0 and 1 only, and no case has exit 1 with one PDF and no refusal. Two exit-status mutants survive (verified by execution). Proposed: fix now. Add a refusal skip at exit 3 and a failure at exit 1 with one PDF.
+- R2-D4: the slug and the book directory are separate arguments. Proposed: reject. Both call sites are correct, and on the pin the M098 manifest checks read the PDF.
+- R2-D5: the `running_quarto` call in `typst_book_skip` is never exercised. Proposed: reject. `on_pinned_quarto` sets the value before either book render.
+- R2-D6: the no-label guard has no test. Proposed: reject. It copies `on_pinned_quarto`'s guard.
+- R2-D7: the count matches PDFs by name only. Proposed: reject. Quarto writes no directory named `*.pdf` and no upper-case `.PDF`.
+- R2-D8: counting at any depth widens D4 to a stale nested PDF. Proposed: noted. Neither fixture has figures, and the case fails loudly.
+- R2-B1: the pin no longer guarantees the book checks run. Proposed: reject. D-067 chose this, and round 1 rejected P1.
+- R2-B4: `--refusable` turns off the M24 missing-`_book` failure for the two books. Proposed: reject. The gate owns that case, and the `nopdf` and `refusedcrash` cases cover it.
+- R2-B5: the refusal is one fixed string anywhere in the log. Proposed: reject. AC1 defines the refusal by that warning text.
+- R2-B6: `site/typst.qmd` still says 1.5.52 exits without an error. Proposed: follow-up, already absorbed into the `site/books.qmd` candidate row (D6).
+- R2-B7: D-065 has no note that D-067 narrows it. Proposed: reject. DECISIONS.md is append-only, and D-067's heading names the narrowing.
+- R2-B8: housekeeping (the book argument only feeds messages, flag order, call order). Proposed: reject. Each restates D8 or a correct call site.

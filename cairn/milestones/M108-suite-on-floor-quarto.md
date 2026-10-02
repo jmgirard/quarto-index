@@ -1,6 +1,6 @@
 # M108: The acceptance suite passes on Quarto 1.5.52
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** M107
 - **Driving RR:** —
@@ -120,6 +120,7 @@ criterion. The plants added here run on the pinned Quarto.
 - 2026-10-01: T7 at 58f4572: the merge base on 1.10.18 prints 901 checks, the head on 1.10.18 901 checks and no skip, and the head on 1.5.52 883 checks and 17 skips, each with exit 0. No label falls short, with the one Producer line exempt. All 17 skip labels are allowed, and the one bare `M098-AC7` skip names the no-author fixture.
 - claim audit: 92 claims read, 4 corrected — tests/run-tests.sh, tests/m20probes.py, tests/typstindex.py
 - 2026-10-01: claim audit by a fresh Opus reader. It corrected the M12-AC5 title comment (1.5.52 wraps the `# ` heading), the gfm spelling evidence in `bare_spelling`, the scope of `nfkc` (the `pages` mode does not fold) and the Typst-book gate comment (self-test plants are not gated). I re-checked the spelling evidence on all three renders.
+- 2026-10-01: pre-review check at cd4b174: `tests/run-tests.sh --self-test` on 1.10.18 prints 1755 checks, exit 0. Status set to review.
 
 ## Decisions
 

@@ -261,10 +261,10 @@ jobs:
 
       # The marker-shapes fixture in four formats (M107). Among its shapes are
       # containers that hold only a placement marker, which the filter
-      # removes, so the filter empties them. The check is the render's exit status
-      # alone: an emptied container once stopped some of these renders on the
-      # floor leg. The acceptance suite reads this fixture's HTML, LaTeX and
-      # gfm output on one Quarto version. Each render is a step of its own, and
+      # removes, so the filter empties them. The check is the render's exit
+      # status alone: an emptied container once stopped some of these renders
+      # on the floor leg. The acceptance suite reads this fixture's HTML,
+      # LaTeX and gfm output on one Quarto version. Each render is a step of its own, and
       # each runs even after an earlier step is red, so one log shows every
       # format that stops. Each writes a path of its own beside the fixture.
       - name: Render examples/marker-shapes.qmd to gfm

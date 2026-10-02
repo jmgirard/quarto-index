@@ -111,6 +111,8 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: that run passed, 901 checks, both M107-AC4 checks among them (Python 3.9.6 first on `PATH`).
 - 2026-10-01: T6 done. Versions run 36955981583 on a35f7b6 green: the floor and pinned legs each passed the gfm, docx, epub and typst renders of marker-shapes, and the HTML comparison passed.
 - 2026-10-01: checkpoint during the claim audit. The reader's three corrections are applied to `versions.yml`, `site/tests.qmd`, `tests/run-tests.sh` and `marker.lua`, all comment or docs prose; its re-read of them and the suite run after them are still owed.
+- 2026-10-01: claim audit: 24 claims read, 3 corrected — .github/workflows/versions.yml, site/tests.qmd, tests/run-tests.sh, _extensions/index/modules/marker.lua
+- 2026-10-01: the reader's re-read found all three corrections hold; its two wrap-width notes were fixed, with one more over-long workflow line.
 
 ## Decisions
 

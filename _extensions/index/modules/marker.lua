@@ -246,9 +246,9 @@ local function strip_nested_markers(block, position, chapter)
       -- text. Left with no block at all, a captioned figure stopped Quarto
       -- 1.5.52's gfm, docx and typst renders and a callout its gfm and epub
       -- renders, and the LaTeX output of Quarto 1.10.18 and 1.5.52 dropped
-      -- the figure with its caption (M107). The Plain is also what Quarto 1.10.18's HTML
-      -- reads as content: the callout loses its `callout-empty-content`
-      -- class.
+      -- the figure with its caption (M107). The Plain is also what Quarto
+      -- 1.10.18's HTML reads as content: the callout loses its
+      -- `callout-empty-content` class.
       if #out == 0 and #blocks > 0 then
         out:insert(pandoc.Plain({}))
       end

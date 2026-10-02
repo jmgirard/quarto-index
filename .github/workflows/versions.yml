@@ -222,14 +222,15 @@ jobs:
       # The book's EPUB (M106). It runs after the HTML extraction above has
       # read `_book/last.html`, because the book renders into `_book` whatever
       # the format. It runs after the upload too, so a red EPUB step cannot
-      # stop this leg's HTML extraction from reaching the comparison. One Pandoc process renders an EPUB
-      # book, so each of its three declared indexes prints a section of its
-      # own. The reading is `tests/epubcheck.py sections` against
-      # tests/book-epub-index.txt, the manifest the acceptance suite reads at
-      # M52-AC3: every section, letter and entry row, each entry with its
-      # locator count. Then `links` holds every link inside those sections
-      # that stays in the publication to an element it carries. `qi-index` is the suite's
-      # HTML_SECTION_ID, the prefix each section id opens with.
+      # stop this leg's HTML extraction from reaching the comparison. One
+      # Pandoc process renders an EPUB book, so each of its three declared
+      # indexes prints a section of its own. The reading is
+      # `tests/epubcheck.py sections` against tests/book-epub-index.txt, the
+      # manifest the acceptance suite reads at M52-AC3: every section, letter
+      # and entry row, each entry with its locator count. Then `links` holds
+      # every link inside those sections that stays in the publication to an
+      # element it carries. `qi-index` is the suite's HTML_SECTION_ID, the
+      # prefix each section id opens with.
       - name: Render examples/book to EPUB
         shell: bash
         run: |
@@ -313,11 +314,10 @@ jobs:
   # red about the TeX engine. The reports the two-index fixture's LaTeX
   # render draws, which the acceptance suite reads on one Quarto version:
   # they quote block positions, and each Quarto version counts those over the
-  # document it hands the filter. The book PDF's indexes after the first (People
-  # and Places), since the two-index fixture is where this job reads an
-  # index after the first. And the
-  # acceptance suite, which pins a PDF engine and so cannot run green on the
-  # floor leg at all.
+  # document it hands the filter. The book PDF's indexes after the first
+  # (People and Places), since the two-index fixture is where this job reads
+  # an index after the first. And the acceptance suite, which pins a PDF
+  # engine and so cannot run green on the floor leg at all.
   #
   # It runs only where `tests/versioncheck.py pdf` said so, which the `plan`
   # job captured — a scheduled or manually dispatched run, and not a push.

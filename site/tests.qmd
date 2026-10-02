@@ -31,8 +31,8 @@ the book. In the HTML and the EPUB of `figure-marks.qmd`, each alt-text mark
 the acceptance suite checks must link to a place after its image, in the
 image's own block. The book's EPUB is read against the acceptance suite's
 manifest for it. Each of its three index sections must carry exactly the letter
-and entry rows the manifest states, each entry with its locator count. Every link
-inside those sections that stays in the publication must resolve.
+and entry rows the manifest states, each entry with its locator count. Every
+link inside those sections that stays in the publication must resolve.
 
 Weekly and on demand, and not on every push, a second job renders four
 fixtures to PDF through LaTeX on each version: `demo.qmd`, the book,
@@ -67,6 +67,6 @@ Where a Typst locator links to is read only by the acceptance suite.
 No PDF or EPUB is compared across versions. For the LaTeX PDFs, two Quarto
 versions typeset through different TeX engines. An engine difference lands in
 a PDF's text layer, where a comparison would be red about the engine rather
-than about this extension. The byte-for-byte comparison is over the HTML index alone. The
-acceptance suite above renders and reads a printed PDF index on every run, on
-one Quarto version.
+than about this extension. The byte-for-byte comparison is over the HTML index
+alone. The acceptance suite above renders and reads a printed PDF index on
+every run, on one Quarto version.

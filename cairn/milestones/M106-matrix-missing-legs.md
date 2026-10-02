@@ -152,6 +152,8 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: T6 suite run red at one check: M098-AC7 holds `site/tests.qmd` to a sentence of the old matrix section. The claim row now quotes the rewrite's Typst bullet. It passes on the new page and fails on main's page. T7 checkpoint: KI112 and KI113 removed. The `--self-test` run for T6 and T7 is in progress.
 - 2026-10-01: that `--self-test` run stopped at the M101 T5 no-declass Typst plant render: Quarto's Deno segfaulted (`Segmentation fault: 11` from `/usr/local/bin/quarto`). That render reads nothing this branch changed. Re-run after the claim-audit corrections.
 - 2026-10-01: claim audit, fresh Opus reader: four claims corrected. README's EPUB sentence (only the book's EPUB is read against a manifest), README's "each printed index" (the book PDF's first index only), the pdf-job comment on the book's indexes after the first, and the TeX-engine reason narrowed to the LaTeX PDFs on both pages. The render-job comment on why the book EPUB runs after the upload is completed.
+- 2026-10-01: the same reader re-read each corrected claim once, and each holds. `--self-test` at 8ec0f07 passed, 1738 checks, the crashed Typst plant included. The edited prose and comments are rewrapped to the files' width, with no word changed.
+- claim audit: 85 claims read, 4 corrected — README.md, site/tests.qmd, .github/workflows/versions.yml
 
 ## Decisions
 

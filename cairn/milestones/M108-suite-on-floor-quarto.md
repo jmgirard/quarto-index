@@ -70,24 +70,24 @@ criterion. The plants added here run on the pinned Quarto.
       labels. The suite stops at its first failure, so the planning survey
       ran a copy with `fail()` and every `set -e` turned off. Repeat that
       survey, because checks that M107's crash hid are now reachable.
-- [ ] T2: Port `tests/typstindex.py` to Typst 0.11's PDF. Read links that
+- [x] T2: Port `tests/typstindex.py` to Typst 0.11's PDF. Read links that
       carry an `/A /GoTo` action as well as `/Dest`. Find the bold and
       italic faces without relying on "Bold" or "Italic" in the font name.
       Compare text after NFKC normalization, so the `fi` ligature matches,
       in `typstcheck.py order` and M098-AC7's page check too. Make the
       front-matter check read which fields the template prints.
-- [ ] T3: Port the gfm checks (M06-AC3, M20-AC5, M21-AC6) to read a span
+- [x] T3: Port the gfm checks (M06-AC3, M20-AC5, M21-AC6) to read a span
       attribute with or without the `data-` prefix, and M12-AC5 to read the
       gfm title as a paragraph.
-- [ ] T4: Add one skip helper. It prints `skip`, the check's label, the
+- [x] T4: Add one skip helper. It prints `skip`, the check's label, the
       running Quarto and the reason. It skips only when the running Quarto is
       not the version that `pages.yml` pins. Gate the checks that AC3 lists
       with it, and take the Typst-book captures out of the 1.5.52 run.
-- [ ] T5: Add planted-defect self-test cases for each new form the readers
+- [x] T5: Add planted-defect self-test cases for each new form the readers
       accept: a `/GoTo` link removed, a bold face dropped, an `fi` ligature
       term misspelled, and a gfm span attribute dropped in each spelling.
       Each case goes red on its own.
-- [ ] T6: Write the AC4 sentence from a Typst book render under 1.5.52, and
+- [x] T6: Write the AC4 sentence from a Typst book render under 1.5.52, and
       remove KI110 from `cairn/DESIGN.md`. The candidate row for KI110 and
       KI111 keeps KI111 alone.
 - [ ] T7: Run the head's suite on both Quartos and the merge base's suite on
@@ -109,6 +109,12 @@ criterion. The plants added here run on the pinned Quarto.
 - re-audit: AC2 (full) — the Producer line of the no-engine control has no `:` and cannot appear on 1.5.52, and a count inside a label can differ between Quartos. Both went to the user.
 - 2026-10-01: third implement gate: the user adopted the final AC2, which exempts the Producer line, and kept counts inside labels as they are (both Quartos print 367 in the sweep lines).
 - 2026-10-01: checkpoint, unverified: code for T2-T6 is written. It covers the Typst links, faces, NFKC and front-matter rows, the gfm spelling and title, the skip helper and its gates, the plants through the new `tests/typstforms.py`, the AC4 sentence, and the removal of KI110. The 1.5.52 run and the 1.10.18 `--self-test` run are in progress, so no task past T1 is ticked.
+- 2026-10-01: T2: the Typst reader reads `/GoTo` links inside `/Annots`, bold from /StemV and italic from /Flags, and NFKC text. `typstcheck.py order` and the M098-AC7 page check read NFKC too, and the front-matter rows follow the printed fields.
+- 2026-10-01: T3: M06-AC3, M20-AC5 and M21-AC6 hold a render to one spelling, `data-` or bare, and M12-AC5 reads the gfm title as the file's first paragraph.
+- 2026-10-01: T4: `on_pinned_quarto` prints one skip line per label. It gates the no-engine Producer half, the M57-AC7 ledger, the cell guard, the two Typst books, the book outline and the no-author book.
+- 2026-10-01: T5: plants for a dropped `/GoTo` link, bold and italic faces, an `fl` misspelling, one gfm attribute in each spelling (M06, M20, M21), and a render printing no front-matter field. Each is red on its own defect, and each control is green. The merge base's reader fails all three Typst controls.
+- 2026-10-01: T6: the Books section of `site/typst.qmd` quotes the 1.5.52 warning, observed on a book render (exit 0, empty `_book`). Two claim rows hold the sentence on the page, and KI110 is removed. The candidate row already named KI111 alone.
+- 2026-10-01: verify: the head prints 883 checks and 17 skips on 1.5.52, exit 0. With `--self-test` on 1.10.18 it prints 1755 checks and no skips, exit 0. Both runs predate the two claim rows, which were checked on their own (green, and red on a removed sentence).
 
 ## Decisions
 

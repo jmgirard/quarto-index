@@ -30580,6 +30580,8 @@ separator keys	The `separator` and `xref-separator` keys of `index-labels:` do n
 book pairs	a range you open in one chapter and close in another pairs
 books tested	Books were tested on Quarto 1.10.18.
 author	Quarto's Typst book template does not compile a book whose `book:` metadata has no `author:`
+floor book	Quarto 1.5.52 does not render a Typst book.
+floor warning	It prints the warning `The typst format is not supported by book projects`, exits without an error, and writes no PDF.
 unprinted field	Its term is still in the index, with no page number.
 M098PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \

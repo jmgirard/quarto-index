@@ -189,3 +189,11 @@ Independent review: three lenses (Opus diff-bug, Sonnet blame-history, Sonnet pr
 - R13 (blame 5): the three manifests carry no ORACLE RULE header. `namedpdf.py rows` reads every non-empty line, so a `#` header needs a reader change, which Scope Out rules out. Proposed: reject.
 - R14 (blame 3): a Pandoc writer change at a future pin bump can redden the push path. That is the same exposure the HTML legs already have. Proposed: reject.
 - R15 (blame 7): the epubcheck.py docstring edit is consistent with the gate choice. Noted, with nothing requested.
+
+Dispositions at the gate: the user accepted the proposed triage. R1-R9 are fixed in af49212, R10 and R11 are follow-ups, R12-R14 are rejected for the reasons above, and R15 is noted.
+
+Evidence refreshed after the gate fixes, at af49212:
+- AC1, AC2: `workflow_dispatch` run 36947400839, attempt 1, green on floor 1.5.52, pinned 1.10.18 and release. It carries the 12 reader `ok` lines, the book EPUB `links` reading now in a step of its own. The two-index steps run after the Typst figure-marks reading.
+- AC3: probe d3ad115 (af49212 plus the same three row changes, `git diff --stat` three files, one line each), run 36947405509, attempt 1. On all three legs the entries, cells and EPUB `sections` steps are red, with the same FAIL and detail lines as above. The `links` step ran and passed after the red `sections` (R3), and every Typst reading ran before the red two-index steps (R2). Kept at `refs/probes/m106-review-fix-manifest-rows`, branch deleted.
+- AC4: R1 and R6 changed one sentence of each page and no pair. The 15 render lines and the pairs the Tests page names are unchanged. README still gives no fixture count, and `grep -i 'index printed'` still finds nothing.
+- AC5: `--self-test` at af49212 prints "All checks passed (1739 checks)", exit 0. That count includes the new M106 claim check, which fails on main's version of the page.

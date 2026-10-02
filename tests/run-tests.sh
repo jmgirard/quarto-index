@@ -30938,9 +30938,11 @@ if [ "${1:-}" = "--self-test" ]; then
     && fail "M108 T5 self-test (pinned fields): the fixture copy still declares an abstract"
   ( cd "$M108W/noabstract" && quarto render front-matter.qmd --to typst ) > "$WORK/m108-noabstract.log" 2>&1 \
     || { tail -20 "$WORK/m108-noabstract.log" >&2; fail "M108 T5 self-test (pinned fields): the fixture copy with no abstract failed to render to Typst"; }
-  m098_field_rows "$M108W/noabstract/front-matter.pdf" 0 "$M108W/noabstract.tsv" \
+  capture "$M108W/noabstract/front-matter.qmd" typst "m108-noabstract"
+  M108_NOABSTRACT="$CAPTURE_ROOT/m108-noabstract/front-matter.pdf"
+  m098_field_rows "$M108_NOABSTRACT" 0 "$M108W/noabstract.tsv" \
     || fail "M108 T5 self-test (pinned fields): off the pin, the rows refuse a render printing the subtitle and not the description"
-  if M108_OUT=$(m098_field_rows "$M108W/noabstract/front-matter.pdf" 1 "$M108W/noabstract.tsv" 2>&1); then
+  if M108_OUT=$(m098_field_rows "$M108_NOABSTRACT" 1 "$M108W/noabstract.tsv" 2>&1); then
     fail "M108 T5 self-test (pinned fields): on the pin, the rows accepted a render that prints the subtitle alone"
   fi
   case "$M108_OUT" in

@@ -44,6 +44,12 @@ progress (M108). Two runs at once are safe in separate git worktrees, each
 with its own `tests/.work`. That is how M108 ran Quarto 1.5.52 and 1.10.18
 side by side.
 
+Quarto 1.10.18 sometimes crashes during a suite render. The log shows
+`Segmentation fault: 11` from Quarto's own Deno at `/usr/local/bin/quarto`
+line 210, and the check that rendered fails with "failed to render". M109 saw
+it twice, on renders the branch did not change. Each re-run passed. If a
+run fails this way, re-run it before you read the failure as the change's.
+
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal
 cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`).

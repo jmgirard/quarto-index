@@ -501,3 +501,11 @@
 **Decision:** the user approved this at M107's amendment gate. D-004 refused a standing merge-base oracle for output neutrality, which fails on invisible whitespace changes. A one-time comparison at review, run with whitespace ignored, whose criterion names every hunk it accepts, is evidence of how far a change reaches. It is not that oracle. D-012's closing clause no longer applies to a comparison of this kind.
 
 **Consequences:** the acceptance suite stays the only standing oracle for output across commits, and no comparison across commits joins the suite. A criterion that uses such a comparison names its pairs and each hunk it accepts. D-004's other clauses stand. Falsified by such a comparison failing on a change that alters nothing a reader sees.
+
+### D-067 (2026-10-02): the suite's Typst-book output checks run on any Quarto that writes the book, and skip only on Quarto's refusal (narrows D-065)
+
+**Context:** D-065 runs every check about Quarto's own behavior on the pinned Quarto alone. Its Context counts Quarto 1.5.52's refusal of Typst books among those checks. M108 put three Typst-book output checks behind that pin: M098-AC5, the M098-AC7 outline check and M100-AC3. Their subject is the extension's output. So a newer Quarto that renders Typst books skips them until the pin moves to it (M108 review F1).
+
+**Decision:** the user chose this at the M109 plan gate. The outcome of the book render each check reads decides whether it runs. A render that writes the book runs the checks. A render that logs Quarto's refusal warning and writes no PDF prints a `skip` line. Any other render fails the run. The gate chose the render's own outcome over a version threshold, because this repo has not measured the version a threshold needs. It also chose it over a separate probe book, which costs a render and can disagree with the fixtures. The M098-AC7 no-author check asserts Quarto's own template error, so it stays on the pin under D-065.
+
+**Consequences:** the books' hand-written chapter pages stay as written. A newer Quarto whose template moves a chapter turns the run red at that chapter's row. The user accepted that cost over a second gate. D-065's other clauses stand. Falsified by off-pin red runs of these checks that trace to Quarto's template, not the extension, often enough that the red carries no signal.

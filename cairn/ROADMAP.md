@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M109 | The suite checks a Typst book on any Quarto that renders one | planned | — | normal | milestones/M109-typst-book-gate.md |
 | M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |
 | M107 | An emptied container renders on Quarto 1.5.52 | done | — | high | milestones/archive/M107-emptied-container-floor.md |
 | M106 | The version matrix reads the two-index PDF and the book EPUB | done | — | normal | milestones/archive/M106-matrix-missing-legs.md |
@@ -28,7 +29,6 @@ _Released 0.4.0 2026-09-11._
 - Narrow M32's HTML-cost check to the bibliography's own wrapper. Promote on that fixture growing a footnote or a Citation block — added 2026-08-24 — M32 review R2-F14, split 2026-10-01 — KI109
 - Make the version matrix's PDF comparison version-portable. M108 takes the suite half. Promote on an extraction shown engine-neutral across the two engines — added 2026-08-26 — M43, split 2026-10-01, narrowed 2026-10-01 by M108 — KI111
 - A CI job that runs the whole acceptance suite on the floor Quarto, which M108 makes pass locally. Promote on a floor-only regression that reaches the default branch unseen by the version matrix — added 2026-10-01 — M107/M108 plan gate
-- Gate the suite's Typst-book checks on whether the running Quarto renders a Typst book, not on the pin, so a newer Quarto still checks the extension's book output. Promote on a Typst-book regression that a skip line hid — added 2026-10-01 — M108 review F1
 - Say in `site/books.qmd` which Quarto renders a Typst book: its sentence that a Typst book is merged the same way names no version, and Quarto 1.5.52 renders none. Promote with any other edit to that page — added 2026-10-01 — M108 review
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50

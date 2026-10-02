@@ -47,7 +47,7 @@ to M102. KI112 and KI113 close.
 
 ## Acceptance criteria
 
-- [ ] AC1: Take one `workflow_dispatch` run of `.github/workflows/versions.yml`
+- [x] AC1: Take one `workflow_dispatch` run of `.github/workflows/versions.yml`
       at the branch head, its latest attempt. On every leg the `plan` job's
       `legs` output lists, the `pdf` job renders `examples/named-indexes.qmd`
       to PDF. It then passes a step running `tests/namedpdf.py entries`
@@ -56,12 +56,12 @@ to M102. KI112 and KI113 close.
       `tests/named-indexes-pdf-cells.txt`. A leg can be red at a step this
       milestone did not add. That leg counts as met only where a dispatched
       run at the base branch's head is red at that same step.
-- [ ] AC2: On that same run, the `render` job renders `examples/book` to EPUB
+- [x] AC2: On that same run, the `render` job renders `examples/book` to EPUB
       on every leg the `legs` output lists. It then passes
       `tests/epubcheck.py sections` against `tests/book-epub-index.txt`, and
       `tests/epubcheck.py links` over the same EPUB. AC1's rule for a leg red
       at an older step applies.
-- [ ] AC3: Take one `workflow_dispatch` run at a probe commit with three
+- [x] AC3: Take one `workflow_dispatch` run at a probe commit with three
       changes and no others. One entry row of the `Index of Authors` section
       in `tests/named-indexes-pdf-entries.txt` changes. One row of
       `tests/named-indexes-pdf-cells.txt` flips between `present` and
@@ -164,3 +164,6 @@ Review head be7c60d. main had not moved since the branch was cut, so no merge wa
 
 - Consistency gate: `cairn_validate.py` passes every check. The generic profile names no toolchain checks. No principle changed, so `cairn_impact` is skipped.
 - AC4: `grep -nE '^[^#]*quarto render' .github/workflows/versions.yml` lists 15 lines. The 7 in the `render` job are HTML of html-index, named-indexes, demo, the book and figure-marks, and EPUB of figure-marks and the book. The 8 in the `pdf` job are PDF of demo, the book, named-indexes and figure-marks, and Typst of typst-index, typst-numbering, typst-order and figure-marks. The `site/tests.qmd` matrix section names all 15 pairs: the 7 under "On every push, and on the weekly and on-demand runs", the 8 under "Weekly and on demand, and not on every push". It names no other pair as one the workflow renders. README names HTML, EPUB, PDF through LaTeX, and Typst, and gives no fixture count ("two Quarto versions" counts versions). `grep -i 'index printed'` finds nothing on either page. Met.
+- AC1: `workflow_dispatch` run 36945569069 at be7c60d, the branch head as pushed, attempt 1, its only attempt. The `legs` output lists floor 1.5.52, pinned 1.10.18 and release. On each leg the `pdf` job's render of examples/named-indexes.qmd passes. The `namedpdf.py entries` step against tests/named-indexes-pdf-entries.txt passes ("2 printed index section(s) carry exactly the 20 entry line(s)"). The `cells` step against tests/named-indexes-pdf-cells.txt passes ("all 4 below-marker cell(s) read as stated"). No leg is red at any step. The commits after be7c60d touch cairn/ only. Met.
+- AC2: same run. On each of the three legs the `render` job's book EPUB render passes. `epubcheck.py sections` against tests/book-epub-index.txt passes ("3 generated section(s)" qi-index-main, qi-index-people and qi-index-places "match the manifest"). `links` over the same EPUB passes ("all 16 of 16 link(s) ... resolve"). Met.
+- AC3: `workflow_dispatch` run 36945573286, attempt 1, at probe 398552a. The probe is be7c60d plus one commit that changes three rows and nothing else (`git diff --stat`: three files, one line each). It renames the Authors-section entry `Babbage` to `Babbidge`, flips `Vesalius` from present to absent, and changes the book EPUB's `Turing` locator count from 1 to 2. The `legs` output lists the same three legs. On each leg the entries step is red with "FAIL: ... the section headed 'Index of Authors' is not the entry set" and then `<<Babbidge>>`. The cells step is red with "FAIL: ... a below-marker cell does not read as stated" and then `'Index': <<Vesalius>> is printed`. The EPUB `sections` step is red with "FAIL: ... does not match the manifest" and then `got '0\tTuring\t1'` / `want '0\tTuring\t2'`. No leg is red at an older step. The probe is kept at `refs/probes/m106-review-manifest-rows`, and its branch is deleted. Met.

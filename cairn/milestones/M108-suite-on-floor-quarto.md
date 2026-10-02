@@ -37,9 +37,9 @@ criterion. The plants added here run on the pinned Quarto.
 
 ## Acceptance criteria
 
-- [ ] AC1: With Quarto 1.5.52 first on `PATH`, `tests/run-tests.sh` on the
+- [x] AC1: With Quarto 1.5.52 first on `PATH`, `tests/run-tests.sh` on the
       head commit exits 0. With Quarto 1.10.18, it exits 0 too.
-- [ ] AC2: A line of a run's output that begins with `ok` or `skip` has a
+- [x] AC2: A line of a run's output that begins with `ok` or `skip` has a
       label: its text after that word and the spaces after it, up to its
       first `:`, or its whole text when it has no `:`. For each label, the
       head's 1.5.52 run prints at least as many `ok` and `skip` lines with
@@ -47,7 +47,7 @@ criterion. The plants added here run on the pinned Quarto.
       One merge-base line is exempt: the one naming the Producer of
       `m33-noengine/noengine.pdf`, which the `M34-AC4 control (d)` skip line
       stands for. The head's 1.10.18 run prints no `skip` line.
-- [ ] AC3: Every `skip` line in the head's 1.5.52 run carries a label that
+- [x] AC3: Every `skip` line in the head's 1.5.52 run carries a label that
       begins with one of `M098-AC5`, `M100-AC3`, `M34-AC4 control (d)`,
       `M57-AC7`, `M105-AC1` or `cell guard`, or is exactly
       `M098-AC7 (the outline lists the index)` or `M098-AC7`. Exactly one
@@ -129,3 +129,11 @@ criterion. The plants added here run on the pinned Quarto.
 ## Review
 
 - AC4 evidence (2026-10-01, at 1466cbd): the Books section of `site/typst.qmd` says "Quarto 1.5.52 does not render a Typst book." It quotes the warning `The typst format is not supported by book projects`. The suite's Typst-page claim list holds both sentences. On their own, the claims check is green on the page and red, naming `floor book`, on a copy without the first sentence.
+- AC1 evidence (2026-10-01, at 1466cbd): `tests/run-tests.sh` with Quarto 1.5.52 first on `PATH` printed "All checks passed (883 checks)" and exited 0. With Quarto 1.10.18 it printed "All checks passed (901 checks)" and exited 0.
+- AC2 evidence (2026-10-01): the merge base 8c79c42 on 1.10.18 exited 0 with 901 checks, and its output holds 600 labels. With the Producer line exempt, the comparison script (`t7.py` in the session scratchpad) finds no label where the head's 1.5.52 run prints fewer `ok` and `skip` lines. The head's 1.10.18 run prints 0 `skip` lines.
+- AC3 evidence (2026-10-01, at 1466cbd): the head's 1.5.52 run prints 17 `skip` lines: `M34-AC4 control (d)`, `cell guard`, `M105-AC1`, five `M57-AC7` labels, five `M098-AC5` labels, two `M100-AC3` labels, `M098-AC7 (the outline lists the index)` and `M098-AC7`. All are in AC3's set. The one bare `M098-AC7` line states that the book fixture with no author is not rendered.
+- Consistency gate: `cairn_validate.py` passed every check. No principle changed, so no impact report was owed, and the `generic` profile names no toolchain check.
+- Independent review: three fresh lenses (Opus diff-bug F1-F13, Sonnet blame-history H1-H11, Sonnet prior-review P1-P4). None shows a criterion failing. Proposed triage, pending the gate:
+  - Fix now: F3 (a font with no descriptor, such as Typst's colour-emoji font, crashes `_fonts`; verified by the reviewer). F4 (`_balanced` ignores PDF strings, so `]` or `>>` inside one misreads an inline annotation). F5 (the front-matter check's pinned branch has no plant). F7 with H9 and P4 (the M12-AC5 title block has no plant for the wrapped form). F8 (`typstforms.py` ignores unknown options). F9 (`--drop` counts in `/Annots` order, not page order as the docstring says). H10 (`versions.yml` comments say the suite "cannot run green on the floor leg at all" and that faces "need pdftohtml's font names"). F13 with H6 and P1, comment part (the `typst-index-main.tsv` note on ligatures).
+  - Follow-up: F1 (gate the Typst-book checks on whether the running Quarto renders a Typst book, not on the pin) as a candidate row. `site/books.qmd` says a Typst book "is merged the same way" with no Quarto version, as a candidate row.
+  - Reject: F2 and H3 (the sentence names Quarto 1.5.52, a fixed release, so its facts cannot drift; a render check on a non-pinned Quarto is what D-065 refuses). F6 (on the pinned Quarto no skip can print; a version mismatch prints a visible skip line per check). F10, H6 and P1, NFKC part (chosen at the second implement gate; no fixture holds a character NFKC changes; LESSONS line 31 is updated at hygiene). F11 (the `data-` regex has the same unanchored shape, and the captures hold no such prose). F12 (subset tags keep font names unique). H1, H4, H5, P3 and F1's skip half (named in D-065 and AC3, approved at the plan gate). H2 (the gate's decision, recorded in this file's Decisions). H7 and P2 (the archive's "bold read from font names" is history; the code documents the new reading). H8 (the spelling is Pandoc's, and the extension cannot change it). H11 (`--self-test` on 1.5.52 is out of scope).

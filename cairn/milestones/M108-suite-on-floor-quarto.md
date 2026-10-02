@@ -1,13 +1,13 @@
 # M108: The acceptance suite passes on Quarto 1.5.52
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** M107
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it adds a sentence to the Typst docs page, beside the suite work
-- **Branch/PR:** —
+- **Branch/PR:** m108-suite-on-floor-quarto
 
 ## Goal
 

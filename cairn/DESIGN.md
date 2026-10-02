@@ -1603,7 +1603,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   34899204830 (attempt 1, 2026-09-14) it wrote `_book/index.html` and no index
   section in `last.html`, so `indexdump.py` failed the leg. The push run on the
   same commit and the rerun of that job passed. Nothing records how often it
-  happens or why. — M102 T6
+  happens or why. Since M106 the render job also renders the book to EPUB on
+  every push. That is a second place the same flake can turn a push red.
+  — M102 T6, widened M106 review R10
 
 ### The repo and its packaging
 

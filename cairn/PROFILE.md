@@ -38,6 +38,12 @@ whatever check reads next, not as a collision (M46 review round 3). A reviewer
 or subagent that needs one check's behavior extracts it into its own scratch
 directory instead of invoking the suite.
 
+Do not edit `tests/run-tests.sh` while a run reads it from the same checkout.
+Bash reads a script by byte offset as it goes, so an edit can break the run in
+progress (M108). Two runs at once are safe in separate git worktrees, each
+with its own `tests/.work`. That is how M108 ran Quarto 1.5.52 and 1.10.18
+side by side.
+
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal
 cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`).

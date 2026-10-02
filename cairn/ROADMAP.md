@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-02 (M107 done: one candidate row added for the Word caption, M104 row pruned. Validate green.)_
+_Last hygiene check: 2026-10-02 (M108 done: two candidate rows added, M105 row pruned, LESSONS line 31 corrected, a verify note added to PROFILE.md. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M108 | The acceptance suite passes on Quarto 1.5.52 | review | M107 | normal | milestones/M108-suite-on-floor-quarto.md |
+| M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |
 | M107 | An emptied container renders on Quarto 1.5.52 | done | — | high | milestones/archive/M107-emptied-container-floor.md |
 | M106 | The version matrix reads the two-index PDF and the book EPUB | done | — | normal | milestones/archive/M106-matrix-missing-legs.md |
-| M105 | Three M095 checks each fail on the gap its review found | done | — | normal | milestones/archive/M105-m095-check-gaps.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

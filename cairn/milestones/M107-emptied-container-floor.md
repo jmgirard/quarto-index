@@ -84,7 +84,7 @@ suite on the floor Quarto → candidate row.
       reads the extension's output (D-065). Show it red with the fill removed.
 - [x] T5: Write the CHANGELOG entry from the red run of T1 and the green run
       of T6.
-- [ ] T6: Push and record a green `versions.yml` run on the head commit. Both
+- [x] T6: Push and record a green `versions.yml` run on the head commit. Both
       legs pass all four renders.
 
 ## Work log
@@ -108,6 +108,9 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: substantive amendment at a second mini gate, approved by the user. AC4's callout sentence read "now draws an empty body under its title bar", which Quarto 1.10.18's bootstrap CSS refutes: the body div is empty with or without the fill, and `callout-empty-content` only sets the title bar's bottom margin to 0 and rounds its lower-right corner. The sentence now says the callout loses that class, so its title bar is drawn as on a titled callout with content. AC4 had two re-audit lines, so no further reader ran.
 - 2026-10-01: T5 done. CHANGELOG entry added under Unreleased, Output, worded from T1's red run, T3's diffs and the CSS rule above; T6's green run is still owed.
 - 2026-10-01: a second M107-AC4 suite check backs the entry's callout sentence: the marker-only callout carries no `callout-empty-content`. Red on the merge base's 1.10.18 HTML, green on the head's; Quarto 1.5.52 writes the class on neither, so the check discriminates only on a Quarto that writes it. Checkpoint committed with the suite run on it still in flight.
+- 2026-10-01: that run passed, 901 checks, both M107-AC4 checks among them (Python 3.9.6 first on `PATH`).
+- 2026-10-01: T6 done. Versions run 36955981583 on a35f7b6 green: the floor and pinned legs each passed the gfm, docx, epub and typst renders of marker-shapes, and the HTML comparison passed.
+- 2026-10-01: checkpoint during the claim audit. The reader's three corrections are applied to `versions.yml`, `site/tests.qmd`, `tests/run-tests.sh` and `marker.lua`, all comment or docs prose; its re-read of them and the suite run after them are still owed.
 
 ## Decisions
 

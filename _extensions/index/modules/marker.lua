@@ -245,8 +245,8 @@ local function strip_nested_markers(block, position, chapter)
       -- A list this strip empties keeps one empty Plain, which writes no
       -- text. Left with no block at all, a captioned figure stopped Quarto
       -- 1.5.52's gfm, docx and typst renders and a callout its gfm and epub
-      -- renders, and Quarto 1.10.18's LaTeX output dropped the figure with
-      -- its caption (M107). The Plain is also what Quarto 1.10.18's HTML
+      -- renders, and the LaTeX output of Quarto 1.10.18 and 1.5.52 dropped
+      -- the figure with its caption (M107). The Plain is also what Quarto 1.10.18's HTML
       -- reads as content: the callout loses its `callout-empty-content`
       -- class.
       if #out == 0 and #blocks > 0 then

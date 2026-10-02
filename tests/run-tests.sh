@@ -3770,8 +3770,9 @@ PY
 
 # M107-AC4 (IP2) — the captioned figure whose only body is a marker keeps its
 # caption in the LaTeX output. With nothing left in the emptied figure, the
-# LaTeX output dropped the whole figure, caption included, while the HTML and
-# gfm outputs kept it. The caption text is the fixture's own, stated here by
+# LaTeX output dropped the whole figure, caption included, on Quarto 1.10.18
+# and 1.5.52, while the HTML output kept it, as did the gfm output on 1.10.18
+# (on 1.5.52 the gfm render stopped). The caption text is the fixture's own, stated here by
 # hand from examples/marker-shapes.qmd: its apostrophe is the
 # `\textquotesingle` Quarto's LaTeX writes for `'`. Located, not merely found:
 # the label and the caption must sit in one figure environment, so a bare

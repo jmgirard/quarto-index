@@ -203,3 +203,5 @@ Findings. The same three lenses ran fresh: Opus diff-bug (R2-D), Sonnet blame-hi
 - R2-B8: housekeeping (the book argument only feeds messages, flag order, call order). Proposed: reject. Each restates D8 or a correct call site.
 
 Gate, 2026-10-02: the user chose to fix the four, then merge. Every disposition stands as proposed. R2-D1, R2-B2, R2-D2 and R2-D3 are fixed now on the branch: `m100_book_read` counts at any depth, the no-author pass line names M098-AC5 only when it ran, the nested refusal sits two folders deep, and new cases cover a refusal at exit 3 and exit 1 with one PDF. A scratch harness ran the 12 gate cases green on bash 3.2. The `-maxdepth 2` mutant and both exit-status mutants each turned a case red.
+
+Fix re-runs at 3c9d88a, two worktrees at once. Quarto 1.10.18 plain: "All checks passed (902 checks)", 0 skip lines. Quarto 1.10.18 `--self-test`: "All checks passed (1770 checks)", 0 skip lines, 12 `ok M109 T1 self-test` lines. The fixes change no 1.5.52 path: the M100 read and the no-author pass line run only on a render that writes the book.

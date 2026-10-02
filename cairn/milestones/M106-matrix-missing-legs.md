@@ -71,7 +71,7 @@ to M102. KI112 and KI113 close.
       step. Each red step's log carries its reader's FAIL line, then a detail
       line holding the changed row. That line is namedpdf's `<<term>>` line,
       the cells line naming the term, or epubcheck's `got`/`want` pair.
-- [ ] AC4: The domain is the lines that
+- [x] AC4: The domain is the lines that
       `grep -nE '^[^#]*quarto render' .github/workflows/versions.yml` lists,
       a `cd examples/book` line being the book. The version-matrix section of
       `site/tests.qmd` names each fixture-and-format pair those lines render
@@ -159,3 +159,8 @@ to M102. KI112 and KI113 close.
 ## Decisions
 
 ## Review
+
+Review head be7c60d. main had not moved since the branch was cut, so no merge was needed.
+
+- Consistency gate: `cairn_validate.py` passes every check. The generic profile names no toolchain checks. No principle changed, so `cairn_impact` is skipped.
+- AC4: `grep -nE '^[^#]*quarto render' .github/workflows/versions.yml` lists 15 lines. The 7 in the `render` job are HTML of html-index, named-indexes, demo, the book and figure-marks, and EPUB of figure-marks and the book. The 8 in the `pdf` job are PDF of demo, the book, named-indexes and figure-marks, and Typst of typst-index, typst-numbering, typst-order and figure-marks. The `site/tests.qmd` matrix section names all 15 pairs: the 7 under "On every push, and on the weekly and on-demand runs", the 8 under "Weekly and on demand, and not on every push". It names no other pair as one the workflow renders. README names HTML, EPUB, PDF through LaTeX, and Typst, and gives no fixture count ("two Quarto versions" counts versions). `grep -i 'index printed'` finds nothing on either page. Met.

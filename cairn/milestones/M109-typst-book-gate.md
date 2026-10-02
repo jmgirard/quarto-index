@@ -1,6 +1,6 @@
 # M109: The suite checks a Typst book on any Quarto that renders one
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -99,16 +99,16 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
       run `tests/run-tests.sh` on Quarto 1.5.52 in a separate worktree, as
       `cairn/PROFILE.md` `verify` says, and never edit the script while a run
       reads it. Record each run's skip lines in the work log.
-- [ ] T6: In `typst_book_rendered`, count the PDFs at any depth under the
+- [x] T6: In `typst_book_rendered`, count the PDFs at any depth under the
       captured `_book` that the checks read, not the working tree's. Pass the
       capture slug to do this. A refusal that leaves a PDF in a subfolder then
       fails the run (review D3, D1). Add a self-test plant for that case.
-- [ ] T7: Add a self-test plant whose log carries a near-miss warning, with
+- [x] T7: Add a self-test plant whose log carries a near-miss warning, with
       no PDF and a non-zero exit, and expect a FAIL line (review D2). In the
       skip cases, plant a running Quarto version that is not the pin (D5).
-- [ ] T8: Correct the comment at `.github/workflows/versions.yml:361-364`,
+- [x] T8: Correct the comment at `.github/workflows/versions.yml:361-364`,
       so it also names the Typst-book refusal skips (review P2a).
-- [ ] T9: Repeat T5's three runs and record their skip lines.
+- [x] T9: Repeat T5's three runs and record their skip lines.
 
 ## Work log
 
@@ -131,6 +131,10 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - 2026-10-02: T1-T5 checked off. Status set to review.
 - 2026-10-02: review defect return 1: AC1 fails as written, because the gate counts PDFs only at the top of `_book`, so a refusal with a PDF in a subfolder skips (finding D3). The user chose return to implement at the step-7 chip. T6-T9 added. Status set to in-progress.
 - 2026-10-02: implement resumed on m109-typst-book-gate, main unmoved. Question gate skipped, since T6-T9 leave nothing open. Checkpoint: T6-T8 code written, suite runs pending. The gate takes the capture slug, counts PDFs at any depth there and sets `TYPST_BOOK_PDF`, which M098-AC5 reads. The self-test gains a nested-PDF control, a nested-PDF refusal, a near-miss warning and a planted running Quarto. A scratch harness ran the 10 gate cases green on bash 3.2, and five mutants each turned a case red: a top-level-only count, `grep -q WARN`, `grep -qi typst`, a pinned version in the skip line, and a working-tree count.
+- 2026-10-02: T9 runs at 5084975, each in its own worktree with the 3.9.6 `python3` link first on `PATH`. Quarto 1.10.18 plain: "All checks passed (902 checks)", no skip line. Quarto 1.5.52 plain: "All checks passed (884 checks)", 17 skip lines. The 8 Typst-book skip lines name the running Quarto and the refusal, not the pin.
+- 2026-10-02: the first 1.10.18 `--self-test` run stopped at the M098-AC7 outline document render. Quarto's own Deno process logged "Segmentation fault: 11" there, on a single-document render M109 does not touch. A re-run in the same worktree passed: "All checks passed (1768 checks)", no skip line, 10 `ok M109 T1 self-test` lines.
+- claim audit: not owed — internal tier
+- 2026-10-02: T6-T9 checked off. Status set to review.
 
 ## Decisions
 

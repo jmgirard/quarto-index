@@ -204,4 +204,6 @@ fix-now prose (F3 to F7, F10) landed on the branch in `marker.lua`,
 `tests/run-tests.sh`, `versions.yml`, `site/tests.qmd`, `README.md` and
 `cairn/DESIGN.md`. F1 and F2 became one ROADMAP candidate row. The other
 eight findings are rejected for the reasons above. No finding met the
-return floor, so the status stayed `review`.
+return floor, so the status stayed `review`. After the fixes,
+`tests/run-tests.sh` on 45c7452 (Quarto 1.10.18) passed: exit 0, 901
+checks, no FAIL line.

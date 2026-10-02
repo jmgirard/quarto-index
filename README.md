@@ -26,7 +26,8 @@ the version the documentation site is built with. On every push it renders
 fixtures to HTML and compares the HTML index each version emits. It also renders
 the book and the figure fixture to EPUB. It reads the book's EPUB index
 against a manifest, and checks where the figure fixture's alt-text locators
-link. Weekly and on demand, the run also adds Quarto's current release, and it
+link. It renders the marker-shapes fixture to GitHub markdown, Word, EPUB and
+Typst, and each of those renders must exit 0. Weekly and on demand, the run also adds Quarto's current release, and it
 typesets fixtures to PDF through LaTeX and through Typst on each version. It
 reads an index from each printed PDF, and holds most of them to the acceptance
 suite's manifests. No PDF is compared across versions. For LaTeX, two Quarto

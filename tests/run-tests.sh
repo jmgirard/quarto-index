@@ -3647,8 +3647,9 @@ for fmt in html latex gfm; do
   # one the top-level placement marker wraps (M12). 9+2+3+2+2+1+1 = 20.
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_NESTED" 20 "M08-AC3"
   # Still one: #keeps-content's marker is the only one carrying content of its
-  # own, since the nested markers are stripped bottom-up and each outer one is
-  # empty by the time it is spliced.
+  # own, since the nested markers are stripped bottom-up and each outer one
+  # holds only the strip's empty Plain by the time it is spliced, which
+  # marker_content drops.
   check_warning_count "$WORK/shapes-$fmt.log" "$WARN_MARKER_CONTENT" 1 "M08-AC3"
 done
 pass "M08-AC3: a marker class in the document title is reported nowhere, and the nested-marker messages are undisturbed"
@@ -3766,6 +3767,62 @@ if errs:
 print('ok   M12-AC5: marker-shapes renders to all three formats, and the only '
       'qi-index-here in any output is the one Quarto writes from the '
       'fixture\'s own title')
+PY
+
+# M107-AC4 (IP2) — the captioned figure whose only body is a marker keeps its
+# caption in the LaTeX output. With nothing left in the emptied figure, the
+# LaTeX output dropped the whole figure, caption included, on Quarto 1.10.18
+# and 1.5.52, while the HTML output kept it, as did the gfm output on 1.10.18
+# (on 1.5.52 the gfm render stopped). The caption text is the fixture's own,
+# stated here by hand from examples/marker-shapes.qmd: its apostrophe is the
+# `\textquotesingle` Quarto's LaTeX writes for `'`. Located, not merely found:
+# the label and the caption must sit in one figure environment, so a bare
+# label elsewhere does not pass. It reads the extension's output, so it runs
+# on every Quarto (D-065).
+python3 - "$CAPTURE_ROOT/shapes-latex/marker-shapes.tex" <<'PY'
+import re, sys
+
+text = ' '.join(open(sys.argv[1], encoding='utf-8').read().split())
+caption = (r'\caption{\label{fig-marker}A caption, which is not the '
+           r'figure\textquotesingle s body.}')
+figures = re.findall(r'\\begin\{figure\}(.*?)\\end\{figure\}', text)
+holding = [f for f in figures if caption in f]
+if len(holding) != 1:
+    print(f'FAIL: M107-AC4: {len(holding)} of the {len(figures)} figure '
+          f'environment(s) in {sys.argv[1]} hold the caption of fig-marker, '
+          f'the figure whose only body is a marker; exactly one must',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M107-AC4: the LaTeX output keeps the figure whose only body is a '
+      'marker, with its caption, in one figure environment')
+PY
+
+# M107-AC4 — the callout whose only content is a marker is not marked as a
+# callout with empty content. The emptied callout keeps one empty block, and
+# Quarto 1.10.18's HTML gives `callout-empty-content` to a callout with no
+# content block at all; Quarto 1.5.52 writes that class on no callout, so this
+# check can fail only on a Quarto that writes it. The fixture's one callout is
+# the marker-only `.callout-note`, so every callout the page carries is it.
+python3 - "$CAPTURE_ROOT/shapes-html/marker-shapes.html" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+doc = H.parse(sys.argv[1])
+callouts = [n for n in H.walk(doc)
+            if n.tag == 'div' and 'callout' in H.classes(n)]
+if len(callouts) != 1 or 'callout-note' not in H.classes(callouts[0]):
+    print(f'FAIL: M107-AC4: {len(callouts)} callout div(s) in {sys.argv[1]}; '
+          f'the fixture writes one, a .callout-note holding only a marker',
+          file=sys.stderr)
+    sys.exit(1)
+if 'callout-empty-content' in H.classes(callouts[0]):
+    print('FAIL: M107-AC4: the callout holding only a marker carries '
+          'callout-empty-content, so the container the marker left holds no '
+          'block', file=sys.stderr)
+    sys.exit(1)
+print('ok   M107-AC4: the callout holding only a marker carries no '
+      'callout-empty-content class')
 PY
 
 

@@ -100,7 +100,18 @@ end
 -- but deleting what an author wrote inside one would be IP2 corruption, so the
 -- content is spliced in where the marker stood and the author is told.
 local function marker_content(block)
-  if #block.content > 0 then
+  -- A list the strip below emptied holds only its fill, an empty Plain. An
+  -- empty Plain writes no text, so such blocks are dropped here, and a marker
+  -- holding nothing else is an empty marker. Kept, the fill made an outer
+  -- marker whose nested marker was stripped read as non-empty and draw the
+  -- "marker is not empty" report (M107).
+  local content = pandoc.Blocks({})
+  for _, inner in ipairs(block.content) do
+    if not (inner.t == "Plain" and #inner.content == 0) then
+      content:insert(inner)
+    end
+  end
+  if #content > 0 then
     qi_core.warn("index placement marker is not empty; the marker should be an empty "
          .. "div, and its content is kept where the marker was written")
   end
@@ -120,7 +131,7 @@ local function marker_content(block)
          block.identifier ~= "" and ("#" .. block.identifier)
            or ("." .. table.concat(extra, " ."))))
   end
-  return block.content
+  return content
 end
 
 -- Removing a nested marker takes nothing the author wrote with it — but where
@@ -231,6 +242,16 @@ local function strip_nested_markers(block, position, chapter)
         else
           out:insert(inner)
         end
+      end
+      -- A list this strip empties keeps one empty Plain, which writes no
+      -- text. Left with no block at all, a captioned figure stopped Quarto
+      -- 1.5.52's gfm, docx and typst renders and a callout its gfm and epub
+      -- renders, and the LaTeX output of Quarto 1.10.18 and 1.5.52 dropped
+      -- the figure with its caption (M107). The Plain is also what Quarto
+      -- 1.10.18's HTML reads as content: the callout loses its
+      -- `callout-empty-content` class.
+      if #out == 0 and #blocks > 0 then
+        out:insert(pandoc.Plain({}))
       end
       return out
     end,

@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M106 | The version matrix reads the two-index PDF and the book EPUB | in-progress | — | normal | milestones/M106-matrix-missing-legs.md |
+| M106 | The version matrix reads the two-index PDF and the book EPUB | review | — | normal | milestones/M106-matrix-missing-legs.md |
 | M105 | Three M095 checks each fail on the gap its review found | done | — | normal | milestones/archive/M105-m095-check-gaps.md |
 | M104 | A caption mark beside a shortcode files one locator | done | — | normal | milestones/archive/M104-shortcode-caption-marks.md |
 | M103 | The two site-check clauses M46 withdrew hold again | done | — | normal | milestones/archive/M103-site-check-clauses.md |

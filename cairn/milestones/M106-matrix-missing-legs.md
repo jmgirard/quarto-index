@@ -1,6 +1,6 @@
 # M106: The version matrix reads the two-index PDF and the book EPUB
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -123,10 +123,10 @@ to M102. KI112 and KI113 close.
 - [x] T5: On a probe branch, make one commit with the three row changes AC3
       names, and dispatch at it. Read the run against AC3. Keep the commit
       under `refs/probes/m106-manifest-rows` and delete the branch.
-- [ ] T6: Rewrite the matrix section of `site/tests.qmd` and README's matrix
+- [x] T6: Rewrite the matrix section of `site/tests.qmd` and README's matrix
       sentences against the uncommented render lines of `versions.yml`. Run
       the suite's README and site checks.
-- [ ] T7: Remove KI112 and KI113 from `cairn/DESIGN.md` Known issues. Run
+- [x] T7: Remove KI112 and KI113 from `cairn/DESIGN.md` Known issues. Run
       `tests/run-tests.sh --self-test` (AC5).
 
 ## Work log
@@ -154,6 +154,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: claim audit, fresh Opus reader: four claims corrected. README's EPUB sentence (only the book's EPUB is read against a manifest), README's "each printed index" (the book PDF's first index only), the pdf-job comment on the book's indexes after the first, and the TeX-engine reason narrowed to the LaTeX PDFs on both pages. The render-job comment on why the book EPUB runs after the upload is completed.
 - 2026-10-01: the same reader re-read each corrected claim once, and each holds. `--self-test` at 8ec0f07 passed, 1738 checks, the crashed Typst plant included. The edited prose and comments are rewrapped to the files' width, with no word changed.
 - claim audit: 85 claims read, 4 corrected — README.md, site/tests.qmd, .github/workflows/versions.yml
+- 2026-10-01: T6 and T7 done. `--self-test` at 35400ec passed, 1738 checks (AC5). Status set to review. The last dispatched matrix run is at c143cd0. Later commits change comments, prose, the suite and cairn/ only, so review dispatches at the final head for AC1 and AC2.
 
 ## Decisions
 

@@ -53,7 +53,7 @@ suite on the floor Quarto → candidate row.
 
 ## Tasks
 
-- [ ] T1: Add the four renders to the `versions.yml` render job, one step per
+- [x] T1: Add the four renders to the `versions.yml` render job, one step per
       format. Each later step runs past a red one (`!cancelled()`, the M43
       lesson). Describe the steps in the workflow header. Push the branch
       before any fix and record the red run. The floor leg must fail the
@@ -77,6 +77,8 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: criteria audit, full mode, fresh Opus reader, two rounds. It narrowed the goal and the CHANGELOG claim to the fixture's shapes, pinned the fixture to 5a12b2b, and moved the docs sentence to M108. T2's probe decides whether AC3 is reachable, with a gated amendment if not.
 - 2026-10-01: plan gate chose a milestone over /hotfix, because the regression test is a new version-matrix render and the fix needs a choice of what to leave in an emptied container. Falsified by a fix that needs neither.
 - 2026-10-01: plan gate chose the version matrix as the regression test's home over a suite check, because only the matrix runs Quarto 1.5.52. Falsified by the suite gaining a floor run in CI.
+- 2026-10-01: implement started on branch m107-emptied-container-floor. No question gate: T2's probe settles the one open choice under AC3.
+- 2026-10-01: T1 done. Four marker-shapes render steps added to the `versions.yml` render job, its header corrected (the job now writes one PDF, through Typst), and a paragraph added to `site/tests.qmd`. Red-first run 36953456207 on 5d1a0af: the floor leg failed all four steps, each with Quarto's filter failing on missing or empty container content; the pinned leg passed all four.
 
 ## Decisions
 

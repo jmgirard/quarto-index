@@ -400,8 +400,9 @@ def bare_spelling(row):
 
     The Pandoc that Quarto 1.10.18 bundles writes an attribute it does not
     know into gfm as `data-mention="..."`, and the one Quarto 1.5.52 bundles
-    writes it as `mention="..."` (observed 2026-10-01 on both renders of
-    examples/sort-escaping.qmd, which differ in nothing else).
+    writes it as `mention="..."` (observed 2026-10-01: the renders of
+    examples/sort-escaping.qmd, principal.qmd and range.qmd on the two
+    versions differ only in the `data-` prefix).
     """
     return SPAN_OPEN.sub(lambda m: '<span class="index"'
                          + DATA_NAME.sub(r' \1="', m.group(1)) + '>', row)

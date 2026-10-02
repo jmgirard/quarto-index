@@ -68,7 +68,9 @@ BOLD_STEM_V = 132.0
 ITALIC_FLAG = 1 << 6
 
 def nfkc(text):
-    """`text` in Unicode NFKC, as every reading here returns it.
+    """`text` in Unicode NFKC, as the word-by-word reading (`Word`) returns it.
+
+    The `pages` mode, which reads through tests/pdfindex.py, does not fold.
 
     The Typst that Quarto 1.5.52 bundles maps a glyph the font sets for a
     letter sequence to one compatibility character: pdftotext reads `fig` as

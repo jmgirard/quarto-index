@@ -91,7 +91,7 @@ criterion. The plants added here run on the pinned Quarto.
 - [x] T6: Write the AC4 sentence from a Typst book render under 1.5.52, and
       remove KI110 from `cairn/DESIGN.md`. The candidate row for KI110 and
       KI111 keeps KI111 alone.
-- [ ] T7: Run the head's suite on both Quartos and the merge base's suite on
+- [x] T7: Run the head's suite on both Quartos and the merge base's suite on
       1.10.18. Compare the label counts for AC2 and the skip labels for AC3.
 
 ## Work log
@@ -117,6 +117,9 @@ criterion. The plants added here run on the pinned Quarto.
 - 2026-10-01: T6: the Books section of `site/typst.qmd` quotes the 1.5.52 warning, observed on a book render (exit 0, empty `_book`). Two claim rows hold the sentence on the page, and KI110 is removed. The candidate row already named KI111 alone.
 - 2026-10-01: verify: the head prints 883 checks and 17 skips on 1.5.52, exit 0. With `--self-test` on 1.10.18 it prints 1755 checks and no skips, exit 0. Both runs predate the two claim rows, which were checked on their own (green, and red on a removed sentence).
 - 2026-10-01: correction to the T1 line and the second gate: Quarto 1.5.52 keeps the gfm title's `# ` and wraps the heading onto a second line, where the marker span sits. The claim audit found this, and the user approved the corrected Scope clause. T3's wording now says so too. The M12-AC5 code reads the text before the first blank line, so it already handled this form.
+- 2026-10-01: T7 at 58f4572: the merge base on 1.10.18 prints 901 checks, the head on 1.10.18 901 checks and no skip, and the head on 1.5.52 883 checks and 17 skips, each with exit 0. No label falls short, with the one Producer line exempt. All 17 skip labels are allowed, and the one bare `M098-AC7` skip names the no-author fixture.
+- claim audit: 92 claims read, 4 corrected — tests/run-tests.sh, tests/m20probes.py, tests/typstindex.py
+- 2026-10-01: claim audit by a fresh Opus reader. It corrected the M12-AC5 title comment (1.5.52 wraps the `# ` heading), the gfm spelling evidence in `bare_spelling`, the scope of `nfkc` (the `pages` mode does not fold) and the Typst-book gate comment (self-test plants are not gated). I re-checked the spelling evidence on all three renders.
 
 ## Decisions
 

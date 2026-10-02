@@ -3780,10 +3780,11 @@ for path in sys.argv[1:]:
     except OSError:
         errs.append(f'{path} was not produced')
         continue
-    # The gfm title. Quarto 1.10.18 writes it as the file's leading `# ` line,
-    # and Quarto 1.5.52 as the file's first paragraph with no `# `, wrapped
-    # (observed 2026-10-01). Either way it is the text before the first blank
-    # line, when that text opens with the title's own words.
+    # The gfm title. Quarto 1.10.18 writes it as one leading `# ` line, and
+    # Quarto 1.5.52 wraps that heading, so the marker falls on a second line
+    # that does not open with `# ` (observed 2026-10-01). Either way it is the
+    # text before the first blank line, when that text opens with the title's
+    # own words.
     head = text.split('\n\n', 1)[0]
     title_end = (len(head) if re.match(r'(# )?quarto-index marker-shape probe',
                                        head) else 0)
@@ -3792,8 +3793,8 @@ for path in sys.argv[1:]:
         end = text.find('\n', m.end())
         line = text[start:end if end != -1 else len(text)]
         # The title Quarto writes from the fixture's YAML, in the two formats
-        # that carry one: an <h1 class="title"> in HTML, the opening paragraph
-        # in gfm. Anything else carrying the class is a surviving marker.
+        # that carry one: an <h1 class="title"> in HTML, the leading `# `
+        # heading in gfm. Anything else carrying the class is a surviving marker.
         if 'class="title"' in line or (path.endswith('.md')
                                        and m.start() < title_end):
             continue
@@ -30135,8 +30136,9 @@ python3 tests/typstcheck.py order "$M098_NAMED_PDF" "M098-AC4 (placement)" \
 pass "M098-AC4: a Typst render of examples/named-indexes.qmd prints each declared index under its title, at its marker in text order, holding every level of the entries its own marks derive and none filed in the other"
 
 # A Typst book is rendered on the pinned Quarto alone (D-065): the docs' Books
-# section states that Quarto 1.5.52 renders none. Every check reading one, here
-# and in M100-AC3 and M098-AC7 below, skips together with this render.
+# section states that Quarto 1.5.52 renders none. Every check outside the
+# self-test reading one, here and in M100-AC3 and M098-AC7 below, skips together
+# with this render.
 TYPST_BOOK_WHY="a Typst book is rendered on the pinned Quarto alone, and site/typst.qmd states that Quarto 1.5.52 renders none"
 M098_TYPST_BOOK=0
 if on_pinned_quarto "$TYPST_BOOK_WHY" "M098-AC5" "M098-AC5 (main)" \

@@ -121,6 +121,7 @@ criterion. The plants added here run on the pinned Quarto.
 - claim audit: 92 claims read, 4 corrected — tests/run-tests.sh, tests/m20probes.py, tests/typstindex.py
 - 2026-10-01: claim audit by a fresh Opus reader. It corrected the M12-AC5 title comment (1.5.52 wraps the `# ` heading), the gfm spelling evidence in `bare_spelling`, the scope of `nfkc` (the `pages` mode does not fold) and the Typst-book gate comment (self-test plants are not gated). I re-checked the spelling evidence on all three renders.
 - 2026-10-01: pre-review check at cd4b174: `tests/run-tests.sh --self-test` on 1.10.18 prints 1755 checks, exit 0. Status set to review.
+- step-7 approval: m108-suite-on-floor-quarto approved for merge (2026-10-02)
 
 ## Decisions
 

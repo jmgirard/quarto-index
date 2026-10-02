@@ -1,6 +1,6 @@
 # M107: An emptied container renders on Quarto 1.5.52
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -113,6 +113,7 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: checkpoint during the claim audit. The reader's three corrections are applied to `versions.yml`, `site/tests.qmd`, `tests/run-tests.sh` and `marker.lua`, all comment or docs prose; its re-read of them and the suite run after them are still owed.
 - 2026-10-01: claim audit: 24 claims read, 3 corrected — .github/workflows/versions.yml, site/tests.qmd, tests/run-tests.sh, _extensions/index/modules/marker.lua
 - 2026-10-01: the reader's re-read found all three corrections hold; its two wrap-width notes were fixed, with one more over-long workflow line.
+- 2026-10-01: implement complete. Pre-review check `tests/run-tests.sh --self-test` passed on 1e14279, 1741 checks, Python 3.9.6 first on `PATH`. Status set to review.
 
 ## Decisions
 

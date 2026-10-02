@@ -493,3 +493,11 @@
 **Decision:** at the M107 and M108 plan gate, the user chose to port the readers whose subject is the extension's output. The checks above run only on the Quarto that `pages.yml` pins. On any other Quarto, each prints a `skip` line that names the check, the running Quarto and the reason. Porting every check to a per-version expectation was declined, because an expectation about Quarto's own behavior tests Quarto rather than the extension.
 
 **Consequences:** on the pinned Quarto, D-020's loud failure stands. On any other Quarto, it becomes a skip line, and the docs' "no engine set" paragraph keeps naming the engine of Quarto 1.10. Falsified by an extension defect on a non-pinned Quarto that a skipped check catches and the ported output checks miss.
+
+### D-066 (2026-10-01): a review-time diff across two commits, whitespace ignored and every accepted hunk named in a criterion, is not the refactor oracle D-004 refused (supersedes D-012's cross-commit clause; narrows D-004)
+
+**Context:** M107 changes what the filter leaves in a container it empties. On Quarto 1.10.18, that changes the outputs of `examples/marker-shapes.qmd` in named places. Its AC3 compares the head's outputs with the merge base's under `diff -w`, and names each hunk the change may make. D-012 ends by saying that a byte comparison across two commits still takes the superseding entry D-004 demands.
+
+**Decision:** the user approved this at M107's amendment gate. D-004 refused a standing merge-base oracle for output neutrality, which fails on invisible whitespace changes. A one-time comparison at review, run with whitespace ignored, whose criterion names every hunk it accepts, is evidence of how far a change reaches. It is not that oracle. D-012's closing clause no longer applies to a comparison of this kind.
+
+**Consequences:** the acceptance suite stays the only standing oracle for output across commits, and no comparison across commits joins the suite. A criterion that uses such a comparison names its pairs and each hunk it accepts. D-004's other clauses stand. Falsified by such a comparison failing on a change that alters nothing a reader sees.

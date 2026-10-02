@@ -35,21 +35,32 @@ suite on the floor Quarto → candidate row.
       `docx`, `epub` and `typst`. Each render exits 0 in the render job on
       the floor leg (Quarto 1.5.52) and on the pinned leg.
 - [ ] AC2: On Quarto 1.10.18, `tests/run-tests.sh` exits 0.
-- [ ] AC3: On Quarto 1.10.18, the `gfm`, `html` and `latex` outputs of
-      `examples/marker-shapes.qmd` at the head commit differ from the merge
-      base's outputs only in whitespace. `diff -w` over each pair prints
-      nothing.
+- [ ] AC3: On Quarto 1.10.18, the `gfm`, `typst`, `html` and `latex` outputs
+      of `examples/marker-shapes.qmd` at the head commit differ from the
+      merge base's only where the filter empties a container. `diff -w` over
+      the `gfm` pair and over the `typst` source pair (rendered with
+      `keep-typ: true`) prints nothing. Over the `html` pair, its hunks change
+      the callout's opening `<div>` line only by removing the class
+      `callout-empty-content`, and delete the two lines of the empty `<div>`
+      wrapper inside the figure `fig-marker`. Over the `latex` pair, its hunks
+      only add lines. The added lines are one `figure` environment that holds
+      an empty `\centering{}` group and the caption
+      `\caption{\label{fig-marker}A caption, which is not the figure\textquotesingle s body.}`,
+      and nothing else.
 - [ ] AC4: `CHANGELOG.md` gains an entry under its Unreleased heading. The
       entry says that on Quarto 1.5.52, a captioned figure or an untitled
       callout that holds only a placement marker no longer stops a `gfm`,
-      `docx`, `epub` or `typst` render.
+      `docx`, `epub` or `typst` render. It says that on Quarto 1.5.52 and
+      1.10.18, the LaTeX output now keeps such a figure and its caption,
+      which it used to drop. It says that in HTML on Quarto 1.10.18, such a
+      callout now draws an empty body under its title bar.
 
 ## Coverage
 
-- AC1 → T1, T3, T5
-- AC2 → T3, T5
-- AC3 → T2, T3, T5
-- AC4 → T4
+- AC1 → T1, T3, T6
+- AC2 → T3, T4, T6
+- AC3 → T2, T3, T6
+- AC4 → T4, T5
 
 ## Tasks
 
@@ -58,7 +69,7 @@ suite on the floor Quarto → candidate row.
       lesson). Describe the steps in the workflow header. Push the branch
       before any fix and record the red run. The floor leg must fail the
       steps that the planning survey saw crash, and the pinned leg must pass.
-- [ ] T2: Unpack the Quarto 1.5.52 macOS tarball outside the repo. Probe
+- [x] T2: Unpack the Quarto 1.5.52 macOS tarball outside the repo. Probe
       which content an emptied figure and an emptied callout can carry, so
       that 1.5.52 renders all four formats and 1.10.18 writes only
       whitespace. Record each shape tried. If no shape meets AC3, stop and
@@ -66,9 +77,13 @@ suite on the floor Quarto → candidate row.
 - [ ] T3: Make `strip_nested_markers` leave the shape that T2 chose. Keep the
       emptied-place reports and their count. Run the suite on 1.10.18, and
       run the AC3 `diff -w` against the merge base's three outputs.
-- [ ] T4: Write the CHANGELOG entry from the red run of T1 and the green run
-      of T5.
-- [ ] T5: Push and record a green `versions.yml` run on the head commit. Both
+- [ ] T4: Add a suite check to the marker-shapes section. It requires the
+      LaTeX capture to hold `\caption{\label{fig-marker}...}` inside one
+      `\begin{figure}` ... `\end{figure}`. It runs on every Quarto, because it
+      reads the extension's output (D-065). Show it red with the fill removed.
+- [ ] T5: Write the CHANGELOG entry from the red run of T1 and the green run
+      of T6.
+- [ ] T6: Push and record a green `versions.yml` run on the head commit. Both
       legs pass all four renders.
 
 ## Work log
@@ -79,6 +94,13 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: plan gate chose the version matrix as the regression test's home over a suite check, because only the matrix runs Quarto 1.5.52. Falsified by the suite gaining a floor run in CI.
 - 2026-10-01: implement started on branch m107-emptied-container-floor. No question gate: T2's probe settles the one open choice under AC3.
 - 2026-10-01: T1 done. Four marker-shapes render steps added to the `versions.yml` render job, its header corrected (the job now writes one PDF, through Typst), and a paragraph added to `site/tests.qmd`. Red-first run 36953456207 on 5d1a0af: the floor leg failed all four steps, each with Quarto's filter failing on missing or empty container content; the pinned leg passed all four.
+- 2026-10-01: T2 done. One shape tried: an empty `pandoc.Plain({})` left in any block list the strip empties. With it, marker-shapes renders at exit 0 in gfm, docx, epub, typst, html and latex on Quarto 1.5.52 and on 1.10.18. On 1.10.18 it is not whitespace-only: the HTML callout loses `callout-empty-content`, an empty div inside `fig-marker` goes, and the LaTeX output gains the figure with its caption, which the merge base drops on both Quartos. gfm and the Typst source do not change. AC3 as planned is unreachable.
+- 2026-10-01: T2 chose the empty Plain fill over gating it on the Quarto version, because D-060 declines toolchain detection (GP2); and over filling only figures and callouts by their scaffold divs, because KI23 records that structure as private to Quarto. Falsified by a fill that 1.5.52 renders and 1.10.18 writes as whitespace only.
+- 2026-10-01: substantive amendment at the mini gate, approved by the user. AC3 now names each hunk the fix makes on 1.10.18, AC4 also states the LaTeX caption and the HTML callout change, a new T4 adds a caption check to the suite, and D-066 allows AC3's diff across commits. Tasks renumbered T4-T6, Coverage with them.
+- 2026-10-01: re-audit: AC3 (full) — prose "prints only the callout line" unmeetable, extra added lines in the figure unbounded, typst pair missing, a diff across commits needs an entry under D-004 and D-012; all fixed before the gate.
+- 2026-10-01: re-audit: AC4 (full) — callout styling change unstated, PDF claim rested on `.tex` only; fixed before the gate. The new caption check must run on every Quarto under D-065 and must sit in Coverage; fixed.
+- 2026-10-01: re-audit: AC3 (full) — second reader: lead sentence named no formats, callout line could change more than the class, the added figure's body was unpinned; all three fixed in the written text.
+- 2026-10-01: re-audit: AC4 (full) — second reader: the 1.5.52 LaTeX claim needed its own diff (taken: the 1.5.52 pair also gains only the figure, beside a reordering of the callout box's options between runs), and the callout change is now stated as what a reader sees. D-066 retitled to supersede D-012's clause. The caption check asserts the whole caption inside the figure environment.
 
 ## Decisions
 

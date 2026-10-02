@@ -3768,6 +3768,33 @@ print('ok   M12-AC5: marker-shapes renders to all three formats, and the only '
       'fixture\'s own title')
 PY
 
+# M107-AC4 (IP2) — the captioned figure whose only body is a marker keeps its
+# caption in the LaTeX output. With nothing left in the emptied figure, the
+# LaTeX output dropped the whole figure, caption included, while the HTML and
+# gfm outputs kept it. The caption text is the fixture's own, stated here by
+# hand from examples/marker-shapes.qmd: its apostrophe is the
+# `\textquotesingle` Quarto's LaTeX writes for `'`. Located, not merely found:
+# the label and the caption must sit in one figure environment, so a bare
+# label elsewhere does not pass. It reads the extension's output, so it runs
+# on every Quarto (D-065).
+python3 - "$CAPTURE_ROOT/shapes-latex/marker-shapes.tex" <<'PY'
+import re, sys
+
+text = ' '.join(open(sys.argv[1], encoding='utf-8').read().split())
+caption = (r'\caption{\label{fig-marker}A caption, which is not the '
+           r'figure\textquotesingle s body.}')
+figures = re.findall(r'\\begin\{figure\}(.*?)\\end\{figure\}', text)
+holding = [f for f in figures if caption in f]
+if len(holding) != 1:
+    print(f'FAIL: M107-AC4: {len(holding)} of the {len(figures)} figure '
+          f'environment(s) in {sys.argv[1]} hold the caption of fig-marker, '
+          f'the figure whose only body is a marker; exactly one must',
+          file=sys.stderr)
+    sys.exit(1)
+print('ok   M107-AC4: the LaTeX output keeps the figure whose only body is a '
+      'marker, with its caption, in one figure environment')
+PY
+
 
 # What a nested marker carried is spliced in where it stood, so its container
 # keeps that content — pinned structurally, not merely by a warning count.

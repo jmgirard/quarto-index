@@ -74,10 +74,10 @@ suite on the floor Quarto → candidate row.
       that 1.5.52 renders all four formats and 1.10.18 writes only
       whitespace. Record each shape tried. If no shape meets AC3, stop and
       amend AC3 through the gate before T3.
-- [ ] T3: Make `strip_nested_markers` leave the shape that T2 chose. Keep the
+- [x] T3: Make `strip_nested_markers` leave the shape that T2 chose. Keep the
       emptied-place reports and their count. Run the suite on 1.10.18, and
       run the AC3 `diff -w` against the merge base's three outputs.
-- [ ] T4: Add a suite check to the marker-shapes section. It requires the
+- [x] T4: Add a suite check to the marker-shapes section. It requires the
       LaTeX capture to hold `\caption{\label{fig-marker}...}` inside one
       `\begin{figure}` ... `\end{figure}`. It runs on every Quarto, because it
       reads the extension's output (D-065). Show it red with the fill removed.
@@ -101,6 +101,9 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: re-audit: AC4 (full) — callout styling change unstated, PDF claim rested on `.tex` only; fixed before the gate. The new caption check must run on every Quarto under D-065 and must sit in Coverage; fixed.
 - 2026-10-01: re-audit: AC3 (full) — second reader: lead sentence named no formats, callout line could change more than the class, the added figure's body was unpinned; all three fixed in the written text.
 - 2026-10-01: re-audit: AC4 (full) — second reader: the 1.5.52 LaTeX claim needed its own diff (taken: the 1.5.52 pair also gains only the figure, beside a reordering of the callout box's options between runs), and the callout change is now stated as what a reader sees. D-066 retitled to supersede D-012's clause. The caption check asserts the whole caption inside the figure environment.
+- 2026-10-01: T3 done. `strip_nested_markers` leaves one empty Plain in a list it empties. The first suite run then drew the "marker is not empty" report 6 times where M08-AC3 expects 1: a marker nested in a marker had its own list filled first and then read as non-empty. `marker_content` now drops empty Plains before it judges or splices a marker's content, which restored the count. AC3's four `diff -w` pairs on 1.10.18 match the amended criterion, and the four formats render on 1.5.52.
+- 2026-10-01: T4 done. M107-AC4 check added after M12-AC5 in `tests/run-tests.sh`. Red on the merge base's LaTeX (0 figure environments hold the caption) and on a plant moving the caption out of its figure environment; green on the head's LaTeX from Quarto 1.10.18 and 1.5.52. T3 and T4 shared one checkpoint, verified by one suite run.
+- 2026-10-01: verify: `tests/run-tests.sh` passed, 900 checks, with `/usr/bin/python3` (3.9.6) first on `PATH`. A python.org Python 3.14 installed on this machine at 13:22 the same day now comes first on `PATH` and has no PyYAML, so the suite's tool guard stops under it. The machine's Python setup was left unchanged.
 
 ## Decisions
 

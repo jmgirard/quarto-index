@@ -26,7 +26,7 @@ letter	Z
 0	Zeta	1
 section	qi-index-people	h1	Index of People
 letter	T
-0	Turing	1
+0	Turing	2
 section	qi-index-places	h1	Index of Places
 letter	L
 0	Lisbon	1

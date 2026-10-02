@@ -34,7 +34,7 @@ suite on the floor Quarto → candidate row.
       `examples/marker-shapes.qmd`, unchanged from commit 5a12b2b, to `gfm`,
       `docx`, `epub` and `typst`. Each render exits 0 in the render job on
       the floor leg (Quarto 1.5.52) and on the pinned leg.
-- [ ] AC2: On Quarto 1.10.18, `tests/run-tests.sh` exits 0.
+- [x] AC2: On Quarto 1.10.18, `tests/run-tests.sh` exits 0.
 - [x] AC3: On Quarto 1.10.18, the `gfm`, `typst`, `html` and `latex` outputs
       of `examples/marker-shapes.qmd` at the head commit differ from the
       merge base's only where the filter empties a container. `diff -w` over
@@ -128,6 +128,9 @@ after the branch was cut (merge base 0eaaa8e).
   Versions run 36957701710 on 52cbe70 concluded success. The floor leg
   (1.5.52) and the pinned leg (1.10.18) each passed all four
   marker-shapes render steps: `gfm`, `docx`, `epub` and `typst`.
+- AC2: pass. `tests/run-tests.sh` on 52cbe70, Quarto 1.10.18,
+  `/usr/bin/python3` first on `PATH`: exit 0, "All checks passed (901
+  checks)", no FAIL line. Both M107-AC4 checks are among the passes.
 
 - AC3: pass. `git archive` exported the merge base 0eaaa8e and the head
   52cbe70 to a scratch directory. In each, `examples/marker-shapes.qmd`
@@ -153,3 +156,44 @@ after the branch was cut (merge base 0eaaa8e).
   OK, coverage complete among them. No DESIGN.md principle changed, so
   `cairn_impact.py` did not run. The `generic` profile names no toolchain
   checks.
+
+Independent review: three fresh reviewers (Opus diff-bug, Sonnet blame
+history, Sonnet prior reviews). None found a Lua bug or an AC failing.
+The PR comment probe returned no threads. Findings, merged across lenses,
+most severe first, with the disposition proposed at the gate:
+
+- F1 (Opus): on Quarto 1.10.18 the Word output now keeps the `fig-marker`
+  figure and its caption, which the merge base dropped. Review read both
+  in the reviewer's docx renders. The CHANGELOG names only LaTeX, and
+  AC3 compared no `docx` or `epub` pair. Proposed: follow-up.
+- F2 (Opus): no check pins that Word caption. Proposed: follow-up, with F1.
+- F3 (Opus): the `marker_content` comment (`marker.lua:103`) says the drop
+  makes a list fill once, not once per level. The drop's effect is that an
+  outer marker no longer reads as non-empty. Proposed: fix now.
+- F4 (Opus): the `run-tests.sh:3653` comment says each outer marker is
+  empty at its splice. It now holds the fill, which `marker_content` drops.
+  Proposed: fix now.
+- F5 (Opus, prior reviews): `site/tests.qmd:29` and the `versions.yml:138`
+  comment say the job renders two fixtures to EPUB. It renders three.
+  Proposed: fix now.
+- F6 (prior reviews): `README.md:27` lists the book and the figure fixture
+  as the EPUB renders, not marker-shapes. Proposed: fix now.
+- F7 (Opus, blame history): the DESIGN.md strip paragraph (about line 322)
+  does not state that an emptied list keeps one empty Plain. Proposed: fix
+  now.
+- F8 (Opus): the four new steps run after a failed Quarto install, which
+  adds red noise. Proposed: reject, the M43 trade-off as designed.
+- F9 (Opus): a titled marker-only callout can lose the class too, and the
+  entry names only the untitled one. Unrendered. Proposed: reject, the
+  entry is not false and titled callouts are out of scope.
+- F10 (Opus, blame history): `versions.yml:267` runs to about 88 columns.
+  Proposed: fix now, with F5.
+- F11 (blame history): the footnote reach of the strip was probed on the
+  1.10.18 Pandoc only. Proposed: reject, M108 runs the suite on 1.5.52.
+- F12 (blame history): an author-written empty Plain inside a marker is
+  dropped with no warning. Proposed: reject, it holds no text.
+- F13 (blame history): a workflow comment says the suite reads the fixture
+  on one Quarto, and the LaTeX check pins `\textquotesingle`. Proposed:
+  reject, both hold, and the check passed on both Quartos (T4).
+- F14 (blame history): the header says the suite cannot run green on the
+  floor leg. Proposed: reject. Before M108 lands, the sentence is true.

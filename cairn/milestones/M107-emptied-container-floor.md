@@ -30,12 +30,12 @@ suite on the floor Quarto → candidate row.
 
 ## Acceptance criteria
 
-- [ ] AC1: A `versions.yml` run on the head commit renders
+- [x] AC1: A `versions.yml` run on the head commit renders
       `examples/marker-shapes.qmd`, unchanged from commit 5a12b2b, to `gfm`,
       `docx`, `epub` and `typst`. Each render exits 0 in the render job on
       the floor leg (Quarto 1.5.52) and on the pinned leg.
 - [ ] AC2: On Quarto 1.10.18, `tests/run-tests.sh` exits 0.
-- [ ] AC3: On Quarto 1.10.18, the `gfm`, `typst`, `html` and `latex` outputs
+- [x] AC3: On Quarto 1.10.18, the `gfm`, `typst`, `html` and `latex` outputs
       of `examples/marker-shapes.qmd` at the head commit differ from the
       merge base's only where the filter empties a container. `diff -w` over
       the `gfm` pair and over the `typst` source pair (rendered with
@@ -47,7 +47,7 @@ suite on the floor Quarto → candidate row.
       an empty `\centering{}` group and the caption
       `\caption{\label{fig-marker}A caption, which is not the figure\textquotesingle s body.}`,
       and nothing else.
-- [ ] AC4: `CHANGELOG.md` gains an entry under its Unreleased heading. The
+- [x] AC4: `CHANGELOG.md` gains an entry under its Unreleased heading. The
       entry says that on Quarto 1.5.52, a captioned figure or an untitled
       callout that holds only a placement marker no longer stops a `gfm`,
       `docx`, `epub` or `typst` render. It says that on Quarto 1.5.52 and
@@ -114,7 +114,38 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: claim audit: 24 claims read, 3 corrected — .github/workflows/versions.yml, site/tests.qmd, tests/run-tests.sh, _extensions/index/modules/marker.lua
 - 2026-10-01: the reader's re-read found all three corrections hold; its two wrap-width notes were fixed, with one more over-long workflow line.
 - 2026-10-01: implement complete. Pre-review check `tests/run-tests.sh --self-test` passed on 1e14279, 1741 checks, Python 3.9.6 first on `PATH`. Status set to review.
+- 2026-10-01: review checkpoint. AC1, AC3 and AC4 verified and ticked. The branch was pushed (no PR) so the matrix ran on the head. The AC2 suite run and the three reviewers are still in flight.
 
 ## Decisions
 
 ## Review
+
+Review run 2026-10-01 on head 52cbe70. The `main` branch did not move
+after the branch was cut (merge base 0eaaa8e).
+
+- AC1: pass. `git diff 5a12b2b HEAD -- examples/marker-shapes.qmd` is
+  empty. Review pushed the branch (no PR) to run the matrix on the head.
+  Versions run 36957701710 on 52cbe70 concluded success. The floor leg
+  (1.5.52) and the pinned leg (1.10.18) each passed all four
+  marker-shapes render steps: `gfm`, `docx`, `epub` and `typst`.
+
+- AC3: pass. `git archive` exported the merge base 0eaaa8e and the head
+  52cbe70 to a scratch directory. In each, `examples/marker-shapes.qmd`
+  rendered on Quarto 1.10.18 to `gfm`, `html`, `latex` and `typst`
+  (`-M keep-typ:true`). All eight renders exit 0. `diff -w` over the `gfm`
+  pair and over the `.typ` pair printed nothing. The `html` pair changes one
+  line, the callout's opening `<div>`, only by removing the class
+  `callout-empty-content`. It also deletes two lines, the `<div>` and
+  `</div>` of the empty wrapper inside the `fig-marker` figure. The `latex`
+  pair has one hunk of added lines only. They hold one `figure` environment
+  with an empty `\centering{ }` group and the pinned caption, then
+  `\end{figure}%`. Pandoc wraps the caption after "not the", a whitespace
+  break.
+- AC4: pass. The branch adds one entry at `CHANGELOG.md:54`. It sits
+  under `## Unreleased` (line 3) and `### Output`, above `## 0.4.0`
+  (line 68). Its first sentence covers the 1.5.52 figure and callout that
+  hold only a marker. These no longer stop a `gfm`, `docx`, `epub` or
+  `typst` render. Next, it says the LaTeX output on 1.5.52 and 1.10.18 now
+  keeps the figure and its caption. Last, it says the HTML callout on
+  1.10.18 loses `callout-empty-content`. So its title bar is drawn as on a
+  titled callout with content.

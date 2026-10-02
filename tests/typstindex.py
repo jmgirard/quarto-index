@@ -111,10 +111,47 @@ def _objects(data):
     return found
 
 
+def _string_end(data, i):
+    """The index just past the PDF string that opens at `data[i]`.
+
+    A literal string `( ... )` nests its parentheses and escapes with a
+    backslash. A hex string is `< ... >`. Neither can close an array or a
+    dictionary, whatever brackets it holds (PDF 1.7, 7.3.4).
+    """
+    if data[i:i + 1] == b'<':
+        end = data.index(b'>', i + 1)
+        return end + 1
+    depth = 0
+    while i < len(data):
+        c = data[i:i + 1]
+        if c == b'\\':
+            i += 2
+            continue
+        if c == b'(':
+            depth += 1
+        elif c == b')':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    raise ValueError('a literal string runs to the end of the data')
+
+
 def _balanced(data, start, opener, closer):
-    """The text from `start`, which is `opener`, to its matching `closer`."""
+    """The text from `start`, which is `opener`, to its matching `closer`.
+
+    Brackets inside a PDF string are text, and are stepped over.
+    """
     depth, i = 0, start
     while i < len(data):
+        pair = data[i:i + 2]
+        if pair in (b'<<', b'>>') and not (data.startswith(opener, i)
+                                           or data.startswith(closer, i)):
+            i += 2
+            continue
+        if data[i:i + 1] == b'(' or (data[i:i + 1] == b'<' and pair != b'<<'):
+            i = _string_end(data, i)
+            continue
         if data.startswith(opener, i):
             depth += 1
             i += len(opener)
@@ -234,23 +271,31 @@ def _faces(pdf_path):
     """
     objects = _objects(open(pdf_path, 'rb').read())
 
+    # A Type 3 font, such as the one Typst draws a colour emoji in, carries
+    # its name as /Name and no /BaseFont (observed 2026-10-01).
     def name_of(body):
-        found = re.search(rb'/BaseFont\s*/([^\s/\[\]<>()]+)', body)
+        found = re.search(rb'/(?:BaseFont|Name)\s*/([^\s/\[\]<>()]+)', body)
         return found and found.group(1).decode('latin-1')
 
+    # Bold is a stated /FontWeight of 600 or more where the descriptor gives
+    # one, as the Type 3 emoji font's does (400), and a /StemV above
+    # BOLD_STEM_V where it does not, as Typst's text faces do.
     def face_of(body):
         descriptor = re.search(rb'/FontDescriptor\s+(\d+)\s+0\s+R', body)
         if descriptor is None:
             return None
         desc = objects.get(int(descriptor.group(1)), b'')
+        weight = re.search(rb'/FontWeight\s+([\d.]+)', desc)
         stem = re.search(rb'/StemV\s+([\d.]+)', desc)
         flags = re.search(rb'/Flags\s+(\d+)', desc)
-        if stem is None or flags is None:
+        if (weight is None and stem is None) or flags is None:
             raise LookupError(f'{pdf_path}: font descriptor '
                               f'{descriptor.group(1).decode()} carries no '
-                              f'/StemV or no /Flags, so its face is unknown')
-        return (float(stem.group(1)) > BOLD_STEM_V,
-                bool(int(flags.group(1)) & ITALIC_FLAG))
+                              f'/FontWeight or /StemV, or no /Flags, so its '
+                              f'face is unknown')
+        bold = (float(weight.group(1)) >= 600 if weight is not None
+                else float(stem.group(1)) > BOLD_STEM_V)
+        return (bold, bool(int(flags.group(1)) & ITALIC_FLAG))
 
     faces = {}
     for body in objects.values():

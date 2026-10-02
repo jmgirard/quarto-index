@@ -10,7 +10,8 @@ match the manifest, and once with one defect planted, which must not.
       Each page's link annotations written inside its `/Annots` array, each
       destination as the `/D` of a `/GoTo` action, and each rectangle with its
       top corner first, as Typst 0.11 writes them. `--drop N` leaves out the
-      Nth link annotation of the file, counted from 1 in page order.
+      Nth link annotation of the file, counted from 1 in the order the
+      pages' `/Annots` arrays appear in the file.
 
   faces <in.pdf> <out.pdf> [--plant bold|italic]
       Every font name with `Bold` or `Italic` in it renamed, letter for
@@ -134,21 +135,32 @@ def ligature(data, plant):
 
 
 def main(argv):
+    if len(argv) < 4:
+        fail('usage: typstforms.py <links|faces|ligature> <in.pdf> <out.pdf> '
+             '[option]')
     mode, source, target = argv[1:4]
     rest = argv[4:]
-    data = open(source, 'rb').read()
+    # Each mode takes exactly the options the docstring names, so a misspelled
+    # option is refused rather than writing an unplanted copy.
     if mode == 'links':
-        drop = int(rest[1]) if rest[:1] == ['--drop'] else 0
-        data = links(data, drop)
+        ok = rest == [] or (len(rest) == 2 and rest[0] == '--drop'
+                            and rest[1].isdigit() and int(rest[1]) > 0)
     elif mode == 'faces':
-        plant = rest[1] if rest[:1] == ['--plant'] else None
-        if plant not in (None, 'bold', 'italic'):
-            fail(f'--plant takes bold or italic, not {plant!r}')
-        data = faces(data, plant)
+        ok = rest in ([], ['--plant', 'bold'], ['--plant', 'italic'])
     elif mode == 'ligature':
-        data = ligature(data, rest == ['--plant'])
+        ok = rest in ([], ['--plant'])
     else:
         fail(f'no mode {mode!r}; the modes are links, faces and ligature')
+    if not ok:
+        fail(f'{mode} does not take {" ".join(rest)!r}; see the usage in '
+             f'this file\'s docstring')
+    data = open(source, 'rb').read()
+    if mode == 'links':
+        data = links(data, int(rest[1]) if rest else 0)
+    elif mode == 'faces':
+        data = faces(data, rest[1] if rest else None)
+    else:
+        data = ligature(data, rest == ['--plant'])
     open(target, 'wb').write(data)
     return 0
 

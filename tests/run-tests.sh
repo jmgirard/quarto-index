@@ -3770,7 +3770,8 @@ pass "M12-AC1/AC2/AC3: every warning the three renders emit is either one of the
 # be a marker div that survived into a body, which is the residue IP2 forbids.
 # Located, not counted: the check reads what each occurrence sits in, so a body
 # occurrence fails even though the total is unchanged.
-python3 - "$CAPTURE_ROOT/shapes-html/marker-shapes.html" "$CAPTURE_ROOT/shapes-latex/marker-shapes.tex" "$CAPTURE_ROOT/shapes-gfm/marker-shapes.md" <<'PY'
+m12_residue() {   # <html> <tex> <gfm>
+  python3 - "$@" <<'PY'
 import re, sys
 
 errs = []
@@ -3808,6 +3809,36 @@ print('ok   M12-AC5: marker-shapes renders to all three formats, and the only '
       'qi-index-here in any output is the one Quarto writes from the '
       'fixture\'s own title')
 PY
+}
+M12_SHAPES=("$CAPTURE_ROOT/shapes-html/marker-shapes.html"
+  "$CAPTURE_ROOT/shapes-latex/marker-shapes.tex"
+  "$CAPTURE_ROOT/shapes-gfm/marker-shapes.md")
+m12_residue "${M12_SHAPES[@]}" \
+  || fail "M12-AC5: a marker class survives outside the title (its own FAIL line is above)"
+if [ "${1:-}" = "--self-test" ]; then
+  # M108 review F7 — the gfm title as Quarto 1.5.52 writes it, its `# `
+  # heading wrapped so the marker opens the second line, made from this run's
+  # capture. The wrapped copy must read green, and with a marker span added
+  # to a body paragraph it must read red, naming that line.
+  M12W="$WORK/m108-m12"
+  rm -rf "$M12W"
+  mkdir -p "$M12W"
+  perl -pe 's/^(# quarto-index marker-shape probe with) (<span class="qi-index-here">)/$1\n$2/ if $. == 1' \
+    "${M12_SHAPES[2]}" > "$M12W/wrapped.md"
+  [ "$(sed -n 2p "$M12W/wrapped.md")" = '<span class="qi-index-here">x</span> in the title' ] \
+    || fail "M108 review F7 self-test: the wrapped copy's second line is not the title's marker line, so the case below is not the 1.5.52 form"
+  m12_residue "${M12_SHAPES[@]:0:2}" "$M12W/wrapped.md" > /dev/null \
+    || fail "M108 review F7 self-test: M12-AC5 is red on the title heading wrapped as Quarto 1.5.52 wraps it"
+  { cat "$M12W/wrapped.md"; printf '\nA body line with <span class="qi-index-here">y</span> left in it.\n'; } > "$M12W/leaked.md"
+  if M108_OUT=$(m12_residue "${M12_SHAPES[@]:0:2}" "$M12W/leaked.md" 2>&1); then
+    fail "M108 review F7 self-test: M12-AC5 passed a wrapped title with a marker span left in a body line"
+  fi
+  case "$M108_OUT" in
+    *"the marker class survives outside the title: A body line with"*) : ;;
+    *) fail "M108 review F7 self-test: M12-AC5 failed, but not naming the body line (<<$M108_OUT>>)" ;;
+  esac
+  pass "M108 review F7 self-test: M12-AC5 reads the wrapped 1.5.52 title as the title, and is red on a marker span in a body line beside it"
+fi
 
 # M107-AC4 (IP2) — the captioned figure whose only body is a marker keeps its
 # caption in the LaTeX output. With nothing left in the emptied figure, the
@@ -30785,6 +30816,49 @@ python3 tests/typstindex.py "$M098D/alt/alt.pdf" "$WORK/m098-alt.tsv" \
   "M098-AC7 (marks in image alt text)" "Index" \
   || fail "M098-AC7: a mark in image alt text does not print its page in the Typst index (the report is above)"
 
+# M108 review F3 and F4 — two inputs tests/typstindex.py misread at review,
+# written as bytes here because no fixture renders them. F3: a Type 3 font,
+# such as the colour-emoji font Typst draws an emoji in, carries /Name rather
+# than /BaseFont and a descriptor with /FontWeight and no /StemV; the reader
+# raised on it. F4: a PDF string holding `]` or `>>` inside an inline
+# annotation ended the /Annots array or the dictionary early.
+python3 - "$WORK/m108-type3.pdf" <<'M108READPY' \
+  || fail "M108 review F3/F4: tests/typstindex.py misreads a Type 3 font or a bracket inside a PDF string (its own FAIL line is above)"
+import sys
+sys.path.insert(0, 'tests')
+import typstindex as T
+path = sys.argv[1]
+with open(path, 'wb') as out:
+    out.write(b'%PDF-1.7\n'
+              b'1 0 obj\n<< /Type /Font /Subtype /Type3 /Name /Emoji '
+              b'/FontDescriptor 2 0 R >>\nendobj\n'
+              b'2 0 obj\n<< /Type /FontDescriptor /FontName /Emoji '
+              b'/Flags 4 /FontWeight 400 >>\nendobj\n'
+              b'3 0 obj\n<< /Type /Font /Subtype /Type3 /Name /Heavy '
+              b'/FontDescriptor 4 0 R >>\nendobj\n'
+              b'4 0 obj\n<< /Type /FontDescriptor /FontName /Heavy '
+              b'/Flags 68 /FontWeight 700 >>\nendobj\n')
+faces = T._faces(path)
+if faces != {'Emoji': (False, False), 'Heavy': (True, True)}:
+    print(f'FAIL: M108 review F3: the Type 3 faces read as {faces}', file=sys.stderr)
+    sys.exit(1)
+page = (b'<< /Type /Page /Annots [<< /Subtype /Link /Rect [1 2 3 4] '
+        b'/A << /S /URI /URI (http://x/a]b) >> >> << /Subtype /Link '
+        b'/Contents (a >> b \\) [ c) /Rect [5 6 7 8] /A << /S /GoTo '
+        b'/D [9 0 R /XYZ 1 2 0] >> >> 12 0 R] >>')
+got = T._annotations({12: b'<< /Subtype /Link /Dest 5 0 R >>'}, page)
+ends = [a[-20:] for a in got]
+if (len(got) != 3 or b'(http://x/a]b) >> >>' not in got[0]
+        or not got[1].endswith(b'/D [9 0 R /XYZ 1 2 0] >> >>')
+        or got[2] != b'<< /Subtype /Link /Dest 5 0 R >>'):
+    print(f'FAIL: M108 review F4: the annotations read as {len(got)} '
+          f'dictionaries ending {ends}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M108 review F3/F4: a Type 3 font reads its face from /FontWeight '
+      'and /Flags under its /Name, and a bracket inside a PDF string leaves '
+      'the three annotations of a page whole')
+M108READPY
+
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M108 T5 self-test — the forms the Typst of Quarto 1.5.52 writes, which no
@@ -30851,6 +30925,29 @@ if [ "${1:-}" = "--self-test" ]; then
     *) fail "M108 T5 self-test (fields): the rows failed on a render printing no field, but not naming that (<<$M108_OUT>>)" ;;
   esac
   pass "M108 T5 self-test (fields): the front-matter rows refuse a render that prints none of the fields"
+
+  # The pinned branch (M108 review F5): a copy of the fixture with no
+  # abstract prints the subtitle alone. Off the pin that is a usable render;
+  # on the pin it is not the two fields the comment above names.
+  mkdir -p "$M108W/noabstract/_extensions"
+  cp -R "$QI_EXT_DIR" "$M108W/noabstract/_extensions/index"
+  perl -0777 -pe 's/^abstract: \|\n.*\n//m' examples/front-matter.qmd > "$M108W/noabstract/front-matter.qmd"
+  cmp -s examples/front-matter.qmd "$M108W/noabstract/front-matter.qmd" \
+    && fail "M108 T5 self-test (pinned fields): removing the abstract changed nothing in the fixture copy"
+  grep -q '^abstract:' "$M108W/noabstract/front-matter.qmd" \
+    && fail "M108 T5 self-test (pinned fields): the fixture copy still declares an abstract"
+  ( cd "$M108W/noabstract" && quarto render front-matter.qmd --to typst ) > "$WORK/m108-noabstract.log" 2>&1 \
+    || { tail -20 "$WORK/m108-noabstract.log" >&2; fail "M108 T5 self-test (pinned fields): the fixture copy with no abstract failed to render to Typst"; }
+  m098_field_rows "$M108W/noabstract/front-matter.pdf" 0 "$M108W/noabstract.tsv" \
+    || fail "M108 T5 self-test (pinned fields): off the pin, the rows refuse a render printing the subtitle and not the description"
+  if M108_OUT=$(m098_field_rows "$M108W/noabstract/front-matter.pdf" 1 "$M108W/noabstract.tsv" 2>&1); then
+    fail "M108 T5 self-test (pinned fields): on the pin, the rows accepted a render that prints the subtitle alone"
+  fi
+  case "$M108_OUT" in
+    *"the pinned Quarto prints the front-matter field(s) ['subtitle'], not the abstract and the subtitle"*) : ;;
+    *) fail "M108 T5 self-test (pinned fields): the rows failed on the pin, but not naming the subtitle alone (<<$M108_OUT>>)" ;;
+  esac
+  pass "M108 T5 self-test (pinned fields): a render printing the subtitle alone is usable off the pin and refused on it, naming the field it prints"
 fi
 
 # The outline and the page after. The book's outline lists the index before

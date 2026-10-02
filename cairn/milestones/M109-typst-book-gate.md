@@ -135,6 +135,7 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - 2026-10-02: the first 1.10.18 `--self-test` run stopped at the M098-AC7 outline document render. Quarto's own Deno process logged "Segmentation fault: 11" there, on a single-document render M109 does not touch. A re-run in the same worktree passed: "All checks passed (1768 checks)", no skip line, 10 `ok M109 T1 self-test` lines.
 - claim audit: not owed — internal tier
 - 2026-10-02: T6-T9 checked off. Status set to review.
+- step-7 approval: m109-typst-book-gate approved for merge, after the four round-2 fixes (R2-D1, R2-B2, R2-D2, R2-D3).
 
 ## Decisions
 
@@ -200,3 +201,5 @@ Findings. The same three lenses ran fresh: Opus diff-bug (R2-D), Sonnet blame-hi
 - R2-B6: `site/typst.qmd` still says 1.5.52 exits without an error. Proposed: follow-up, already absorbed into the `site/books.qmd` candidate row (D6).
 - R2-B7: D-065 has no note that D-067 narrows it. Proposed: reject. DECISIONS.md is append-only, and D-067's heading names the narrowing.
 - R2-B8: housekeeping (the book argument only feeds messages, flag order, call order). Proposed: reject. Each restates D8 or a correct call site.
+
+Gate, 2026-10-02: the user chose to fix the four, then merge. Every disposition stands as proposed. R2-D1, R2-B2, R2-D2 and R2-D3 are fixed now on the branch: `m100_book_read` counts at any depth, the no-author pass line names M098-AC5 only when it ran, the nested refusal sits two folders deep, and new cases cover a refusal at exit 3 and exit 1 with one PDF. A scratch harness ran the 12 gate cases green on bash 3.2. The `-maxdepth 2` mutant and both exit-status mutants each turned a case red.

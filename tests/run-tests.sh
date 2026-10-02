@@ -30293,6 +30293,9 @@ skip M109 plant $1 (second): Quarto $q refused to render $M109G/$1 to Typst, log
   printf "ERROR: TypeError: Cannot read properties of undefined (reading 'pandoc')\n" \
     >> "$M109G/refusedcrash.log"
   m109_skip refusedcrash 1
+  # Any exit status, not only 0 or 1.
+  m109_case refusedthree 0 1
+  m109_skip refusedthree 3
 
   # <case> <status> <want>: the gate must fail the run, naming the book and
   # <want>, and print no skip line.
@@ -30314,6 +30317,8 @@ skip M109 plant $1 (second): Quarto $q refused to render $M109G/$1 to Typst, log
   # that otherwise runs.
   m109_case nonzero 1 0
   m109_red nonzero 2 "exited 2 and logged no <<The typst format is not supported by book projects>>, so no check can read the book"
+  m109_case nonzeroone 1 0
+  m109_red nonzeroone 1 "exited 1 and logged no <<The typst format is not supported by book projects>>, so no check can read the book"
   # Exit 0, no refusal and no _book at all.
   m109_case nopdf 0 0
   rm -rf "$M109G/cap/nopdf/_book"
@@ -30322,8 +30327,8 @@ skip M109 plant $1 (second): Quarto $q refused to render $M109G/$1 to Typst, log
   m109_red twopdf 0 "exited 0 and logged no <<The typst format is not supported by book projects>>, but wrote 2 PDF(s)"
   m109_case refusedpdf 1 1
   m109_red refusedpdf 0 "exited 0, logged <<The typst format is not supported by book projects>> and also wrote 1 PDF(s)"
-  # The refusal with its one PDF in a subfolder of `_book`.
-  m109_case refusednested 1 1 sub
+  # The refusal with its one PDF two folders down in `_book`.
+  m109_case refusednested 1 1 a/b
   m109_red refusednested 0 "exited 0, logged <<The typst format is not supported by book projects>> and also wrote 1 PDF(s)"
   # A near miss of the refusal: another warning that names Typst, no PDF and a
   # non-zero exit. Only the refusal's own text makes a skip.
@@ -30440,7 +30445,7 @@ m100_book_render() {   # <project dir> <slug>
 }
 m100_book_read() {   # <project dir> <slug> <label>
   local pdfs
-  pdfs=$(find "$CAPTURE_ROOT/$2/_book" -maxdepth 1 -name '*.pdf')
+  pdfs=$(find "$CAPTURE_ROOT/$2/_book" -name '*.pdf')
   [ "$(printf '%s\n' "$pdfs" | grep -c .)" = "1" ] \
     || fail "M100-AC3: the Typst render of $1 left <<$pdfs>> under $CAPTURE_ROOT/$2/_book, not one PDF"
   python3 tests/typstindex.py pages "$pdfs" tests/typst-book-reset.tsv "$3" "Index"
@@ -31212,7 +31217,11 @@ if on_pinned_quarto "the check's subject is the error Quarto's Typst book templa
     || fail "M098-AC7: the book with no author compiled to Typst, so the docs' sentence that Quarto's template needs one is stale"
   grep -q 'expected content, found array' "$WORK/m098-noauthor.log" \
     || { tail -20 "$WORK/m098-noauthor.log" >&2; fail "M098-AC7: the book with no author failed, but not with the template's error, so its failure is not the one the docs state"; }
-  pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
+  if [ "$M098_TYPST_BOOK" = 1 ]; then
+    pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
+  else
+    pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error"
+  fi
 fi
 pass "M098-AC7: README, the home page and the back-end differences page count four back-ends and no page counts three, the Typst page is in the navigation and linked from the output page, and each claim row above is on its page"
 

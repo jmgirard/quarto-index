@@ -1,6 +1,6 @@
 # M109: The suite checks a Typst book on any Quarto that renders one
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -72,7 +72,7 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 
 ## Tasks
 
-- [ ] T1: Write the gate beside `on_pinned_quarto`
+- [x] T1: Write the gate beside `on_pinned_quarto`
       (`tests/run-tests.sh:136-165`). Its inputs are the render's exit
       status, its log, the book's `_book` directory, the book's name and the
       check labels. It runs, skips or fails per AC1's three cases. Add a
@@ -81,7 +81,7 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
       1. Add one plant for each failing
       shape AC1 lists. Assert each case by its line text, never by its exit
       status alone.
-- [ ] T2: Render `examples/book/` to Typst unconditionally
+- [x] T2: Render `examples/book/` to Typst unconditionally
       (`tests/run-tests.sh:30169-30185`), pass its outcome to the gate, and
       gate the M098-AC5 checks (30233-30250) and the M098-AC7 outline check
       (30955-30963) on the result. Call `m098_no_typst_warning` only on the
@@ -89,13 +89,13 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
       `capture` a `--refusable` flag for the two book renders, so a book
       under `examples/` that leaves no `_book` is left to the gate. The M24
       sweep needs `capture` on the line after each render.
-- [ ] T3: Split `m100_book_read` (30264-30275) so the render and the gate come
+- [x] T3: Split `m100_book_read` (30264-30275) so the render and the gate come
       before the read, and gate M100-AC3 (30277-30282) on the result.
-- [ ] T4: Give the no-author check (31012-31031) its own reason naming
+- [x] T4: Give the no-author check (31012-31031) its own reason naming
       Quarto's book template. Rewrite the comment at 30169-30172 and remove or
       rename `TYPST_BOOK_WHY`, then run AC5's search. Re-read every message
       that names the gated set (LESSONS line 40).
-- [ ] T5: Run `tests/run-tests.sh` and `--self-test` on Quarto 1.10.18. Then
+- [x] T5: Run `tests/run-tests.sh` and `--self-test` on Quarto 1.10.18. Then
       run `tests/run-tests.sh` on Quarto 1.5.52 in a separate worktree, as
       `cairn/PROFILE.md` `verify` says, and never edit the script while a run
       reads it. Record each run's skip lines in the work log.
@@ -115,6 +115,10 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - re-audit: AC1 (reduced) — nothing on the bounded-promise, proportionality and instrument questions. The reader counted the 12 combinations of exit status, warning and PDF count, each in one case. Its wording suggestion, "writes one or more PDFs", was applied.
 - 2026-10-02: amendment (user chose it at the mini gate over a fixture edit and a re-plan): AC1 now skips after a render that logs the refusal and writes no PDF, with any exit status. A render with no refusal that exits non-zero still fails.
 - 2026-10-02: minor amendments: T1 gains a refusal plant that exits 1. T2 gives `capture` a `--refusable` flag, so each book render is followed by `capture` and a missing `_book` is left to the gate. The harness ran the seven T1 cases green, and four gate mutants each turned their case red. The M24 sweeps pass on their own.
+- 2026-10-02: T5 runs at 93551ff, each in its own worktree with the 3.9.6 `python3` link first on `PATH`. Quarto 1.10.18 plain: "All checks passed (902 checks)", no skip line. Quarto 1.10.18 `--self-test`: "All checks passed (1765 checks)", no skip line. Quarto 1.5.52 plain: "All checks passed (884 checks)", 17 skip lines.
+- 2026-10-02: on 1.5.52, 8 skip lines are the Typst-book checks: M098-AC5 (5 labels), M100-AC3 (2) and the M098-AC7 outline check (1). Each names the running Quarto and the refusal warning, not the pin. The no-author skip line names Quarto's Typst book template. The other 8 skip lines are the D-065 checks M108 left.
+- claim audit: not owed — internal tier
+- 2026-10-02: T1-T5 checked off. Status set to review.
 
 ## Decisions
 

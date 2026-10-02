@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M109 | The suite checks a Typst book on any Quarto that renders one | in-progress | — | normal | milestones/M109-typst-book-gate.md |
+| M109 | The suite checks a Typst book on any Quarto that renders one | review | — | normal | milestones/M109-typst-book-gate.md |
 | M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |
 | M107 | An emptied container renders on Quarto 1.5.52 | done | — | high | milestones/archive/M107-emptied-container-floor.md |
 | M106 | The version matrix reads the two-index PDF and the book EPUB | done | — | normal | milestones/archive/M106-matrix-missing-legs.md |

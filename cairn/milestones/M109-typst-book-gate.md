@@ -1,6 +1,6 @@
 # M109: The suite checks a Typst book on any Quarto that renders one
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -64,10 +64,10 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 
 ## Coverage
 
-- AC1 → T1, T2, T3
+- AC1 → T1, T2, T3, T6, T7
 - AC2 → T4
-- AC3 → T5
-- AC4 → T2, T3, T5
+- AC3 → T5, T9
+- AC4 → T2, T3, T5, T9
 - AC5 → T4
 
 ## Tasks
@@ -99,6 +99,16 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
       run `tests/run-tests.sh` on Quarto 1.5.52 in a separate worktree, as
       `cairn/PROFILE.md` `verify` says, and never edit the script while a run
       reads it. Record each run's skip lines in the work log.
+- [ ] T6: In `typst_book_rendered`, count the PDFs at any depth under the
+      captured `_book` that the checks read, not the working tree's. Pass the
+      capture slug to do this. A refusal that leaves a PDF in a subfolder then
+      fails the run (review D3, D1). Add a self-test plant for that case.
+- [ ] T7: Add a self-test plant whose log carries a near-miss warning, with
+      no PDF and a non-zero exit, and expect a FAIL line (review D2). In the
+      skip cases, plant a running Quarto version that is not the pin (D5).
+- [ ] T8: Correct the comment at `.github/workflows/versions.yml:361-364`,
+      so it also names the Typst-book refusal skips (review P2a).
+- [ ] T9: Repeat T5's three runs and record their skip lines.
 
 ## Work log
 
@@ -119,6 +129,7 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - 2026-10-02: on 1.5.52, 8 skip lines are the Typst-book checks: M098-AC5 (5 labels), M100-AC3 (2) and the M098-AC7 outline check (1). Each names the running Quarto and the refusal warning, not the pin. The no-author skip line names Quarto's Typst book template. The other 8 skip lines are the D-065 checks M108 left.
 - claim audit: not owed — internal tier
 - 2026-10-02: T1-T5 checked off. Status set to review.
+- 2026-10-02: review defect return 1: AC1 fails as written, because the gate counts PDFs only at the top of `_book`, so a refusal with a PDF in a subfolder skips (finding D3). The user chose return to implement at the step-7 chip. T6-T9 added. Status set to in-progress.
 
 ## Decisions
 
@@ -152,3 +163,5 @@ Findings. Three fresh-context reviewers ran: Opus diff-bug (D), Sonnet blame-his
 - P2a: the `.github/workflows/versions.yml` comment (361-364) says the floor skips are "its checks about Quarto itself". Proposed: fix with the return.
 - P3: `typst_book_rendered` runs with errexit off as an `if` condition. Proposed: reject. Its failure paths call `fail`.
 - P4: the M100 self-test plant has no gate call. Proposed: reject. It asserts exit 0, and the read fails loudly.
+
+Gate, 2026-10-02: the user chose to return M109 to implement. Every disposition stands as proposed. D3 is the floor return, fixed with D1 by T6. D2 and D5 are fixed by T7, and P2a by T8. D6 is a follow-up, absorbed into the `site/books.qmd` candidate row. The other 11 findings are rejected or noted for the reasons above, and B6 is refuted. The next review gathers fresh evidence for every criterion.

@@ -108,7 +108,7 @@ criterion. The plants added here run on the pinned Quarto.
 - re-audit: AC2 (full) — a line with no `:` had no defined label. The wording fixes it.
 - re-audit: AC2 (full) — the Producer line of the no-engine control has no `:` and cannot appear on 1.5.52, and a count inside a label can differ between Quartos. Both went to the user.
 - 2026-10-01: third implement gate: the user adopted the final AC2, which exempts the Producer line, and kept counts inside labels as they are (both Quartos print 367 in the sweep lines).
-- 2026-10-01: checkpoint, unverified: code for T2-T6 is written (Typst links, faces, NFKC, front-matter rows; gfm spelling and title; skip helper and gates; plants via the new `tests/typstforms.py`; the AC4 sentence; KI110 removed). The 1.5.52 run and the 1.10.18 `--self-test` run are in progress, so no task past T1 is ticked.
+- 2026-10-01: checkpoint, unverified: code for T2-T6 is written. It covers the Typst links, faces, NFKC and front-matter rows, the gfm spelling and title, the skip helper and its gates, the plants through the new `tests/typstforms.py`, the AC4 sentence, and the removal of KI110. The 1.5.52 run and the 1.10.18 `--self-test` run are in progress, so no task past T1 is ticked.
 
 ## Decisions
 

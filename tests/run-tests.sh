@@ -30286,23 +30286,22 @@ skip M109 plant refused (second): Quarto $RUNNING_QUARTO refused to render $M109
   m109_red refusedpdf 0 "logged <<The typst format is not supported by book projects>> and also wrote 1 PDF(s)"
 fi
 
-# A Typst book is rendered on the pinned Quarto alone (D-065): the docs' Books
-# section states that Quarto 1.5.52 renders none. Every check outside the
-# self-test reading one, here and in M100-AC3 and M098-AC7 below, skips together
-# with this render.
-TYPST_BOOK_WHY="a Typst book is rendered on the pinned Quarto alone, and site/typst.qmd states that Quarto 1.5.52 renders none"
+# The book's Typst render runs on every Quarto. Its outcome, read by
+# typst_book_rendered (D-067), decides whether the M098-AC5 checks here and the
+# M098-AC7 outline check below run, since both read the PDF it writes. They run
+# when the render writes the book, and print skip lines when Quarto refuses it,
+# as Quarto 1.5.52 does. M100-AC3 below gates on its own book's render the same
+# way.
 M098_TYPST_BOOK=0
-if on_pinned_quarto "$TYPST_BOOK_WHY" "M098-AC5" "M098-AC5 (main)" \
-     "M098-AC5 (people)" "M098-AC5 (places)" "M098-AC5 (placement)"; then
+M098_BOOK_RC=0
+( cd "$BOOK_DIR" && quarto render --to typst ) > "$WORK/book-typst.log" 2>&1 \
+  || M098_BOOK_RC=$?
+if typst_book_rendered "$M098_BOOK_RC" "$WORK/book-typst.log" "$BOOK_DIR" "M098-AC5" \
+     "M098-AC5 (main)" "M098-AC5 (people)" "M098-AC5 (places)" "M098-AC5 (placement)"; then
   M098_TYPST_BOOK=1
-  ( cd "$BOOK_DIR" && quarto render --to typst ) > "$WORK/book-typst.log" 2>&1 \
-    || { tail -30 "$WORK/book-typst.log" >&2; fail "M098-AC5: the book fixture failed to render to Typst"; }
   capture --project "$BOOK_DIR" typst "book-typst"
   m098_no_typst_warning "$WORK/book-typst.log" "M098-AC5"
-  M098_BOOK_PDFS=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf')
-  [ "$(printf '%s\n' "$M098_BOOK_PDFS" | grep -c .)" = "1" ] \
-    || fail "M098-AC5: the Typst book render left <<$M098_BOOK_PDFS>> under $CAPTURE_ROOT/book-typst/_book, not one PDF"
-  M098_BOOK_PDF="$M098_BOOK_PDFS"
+  M098_BOOK_PDF=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf')
 fi
 
 read -r -d '' M098_BOOK_CHAPTERS <<'MANIFEST' || true
@@ -30384,9 +30383,14 @@ grep -qF -- '#counter(page).update(2)' "$M100_BOOK_DIR/three.qmd" \
   || fail "M100-AC3: $M100_BOOK_DIR/three.qmd no longer updates the counter after the range closes, so no page outside the range prints a value inside it"
 grep -qxF -- "$(printf 'entry\t0\tyam\ti, 1, 2–3')" tests/typst-book-reset.tsv \
   || fail "M100-AC3: tests/typst-book-reset.tsv no longer carries the yam row, so the case it states is no longer read"
+# The render and the read are apart, so the gate reads the render's outcome
+# before anything reads the book. M100_BOOK_RC is the render's exit status.
+# The plant in the self-test below renders and reads a copy the same way.
+m100_book_render() {   # <project dir> <slug>
+  M100_BOOK_RC=0
+  ( cd "$1" && quarto render --to typst ) > "$WORK/$2.log" 2>&1 || M100_BOOK_RC=$?
+}
 m100_book_read() {   # <project dir> <slug> <label>
-  ( cd "$1" && quarto render --to typst ) > "$WORK/$2.log" 2>&1 \
-    || { tail -30 "$WORK/$2.log" >&2; fail "M100-AC3: $1 failed to render to Typst"; }
   capture --project "$1" typst "$2"
   local pdfs
   pdfs=$(find "$CAPTURE_ROOT/$2/_book" -maxdepth 1 -name '*.pdf')
@@ -30394,7 +30398,12 @@ m100_book_read() {   # <project dir> <slug> <label>
     || fail "M100-AC3: the Typst render of $1 left <<$pdfs>> under $CAPTURE_ROOT/$2/_book, not one PDF"
   python3 tests/typstindex.py pages "$pdfs" tests/typst-book-reset.tsv "$3" "Index"
 }
-if on_pinned_quarto "$TYPST_BOOK_WHY" "M100-AC3 (reset book)" "M100-AC3"; then
+# The reset book renders on every Quarto. M100-AC3 runs when the render writes
+# the book, and prints skip lines when Quarto refuses it (typst_book_rendered,
+# D-067).
+m100_book_render "$M100_BOOK_DIR" "book-typst-reset"
+if typst_book_rendered "$M100_BOOK_RC" "$WORK/book-typst-reset.log" "$M100_BOOK_DIR" \
+     "M100-AC3 (reset book)" "M100-AC3"; then
   m100_book_read "$M100_BOOK_DIR" "book-typst-reset" "M100-AC3 (reset book)" \
     || fail "M100-AC3: the index of the reset book does not match tests/typst-book-reset.tsv (the report is above)"
   m098_no_typst_warning "$WORK/book-typst-reset.log" "M100-AC3"
@@ -30414,6 +30423,9 @@ if [ "${1:-}" = "--self-test" ]; then
   perl -0777 -pi -e 'BEGIN { $n = 0 } $n += s{f\.class != r\.class or f\.value < r\.value or f\.value > r\.high}{f.start.page() < r.start.page() or f.start.page() > r.stop.page()}; END { die "the substitution matched nothing\n" unless $n }' \
     "$M100B/book/_extensions/index/modules/typst.lua" \
     || fail "M100-AC3 self-test: the substitution aimed at typst.lua matched nothing"
+  m100_book_render "$M100B/book" "m100-book-physical"
+  [ "$M100_BOOK_RC" = 0 ] \
+    || { tail -30 "$WORK/m100-book-physical.log" >&2; fail "M100-AC3 self-test: $M100B/book failed to render to Typst"; }
   m098_red m100-book-physical "(0, 'yam, i, 1, 2–3, 2')" \
     m100_book_read "$M100B/book" "m100-book-physical" "M100-AC3 plant physical-span"
 fi
@@ -31075,11 +31087,15 @@ fi
 # The outline and the page after. The book's outline lists the index before
 # the first chapter's own heading; in the named-index fixture the heading of
 # the first index is on a page of its own, apart from the text before and
-# after it.
-if on_pinned_quarto "$TYPST_BOOK_WHY" "M098-AC7 (the outline lists the index)"; then
+# after it. The book's outline check reads the PDF of the M098-AC5 render, so
+# it runs when that render wrote the book and prints a skip line when Quarto
+# refused it (typst_book_rendered, D-067).
+if [ "$M098_TYPST_BOOK" = 1 ]; then
   python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC7 (the outline lists the index)" \
     "=Contents" "^Index of Subjects" "=1. Opening" \
     || fail "M098-AC7: the Typst book's outline does not list the index of subjects (the report is above)"
+else
+  typst_book_skip "$BOOK_DIR" "M098-AC7 (the outline lists the index)"
 fi
 
 # The outline of a single document whose headings start at `##`, which Quarto
@@ -31131,7 +31147,9 @@ M098PAGEPY
 
 # The author. A copy of the book fixture with its `author:` line taken out
 # fails to compile to Typst, with the error Quarto's book template raises.
-if on_pinned_quarto "the book fixture with no author is not rendered: $TYPST_BOOK_WHY" "M098-AC7"; then
+# The check's subject is that template, not the extension's output, so it runs
+# on the pinned Quarto alone (D-065).
+if on_pinned_quarto "the check's subject is the error Quarto's Typst book template raises for a book with no author, which site/typst.qmd states for the pinned Quarto" "M098-AC7"; then
   cp -R "$BOOK_DIR" "$M098D/noauthor"
   rm -rf "$M098D/noauthor/_extensions" "$M098D/noauthor/_book" "$M098D/noauthor/.quarto"
   mkdir -p "$M098D/noauthor/_extensions"

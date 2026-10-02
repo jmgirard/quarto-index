@@ -104,6 +104,8 @@ Quarto 1.5.52 is outside every criterion, and no row asks for it.
 - 2026-10-02: plan gate chose to keep the hand-written chapter pages off the pin over pinning the page-number checks behind a second gate. A template that moves a chapter turns the run red. Falsified by template moves on newer Quartos turning the run red often enough that the red carries no signal.
 - 2026-10-02: implement started on branch m109-typst-book-gate. Question gate skipped, since nothing in the plan was open. A probe in the scratchpad showed that Quarto 1.5.52 and 1.10.18 both empty a book's `_book` before a Typst render, so a PDF from the earlier LaTeX render cannot reach the gate. 1.5.52 logs the refusal in color, exits 0 and leaves `_book` empty.
 - 2026-10-02: checkpoint, T1 code written and not yet run in the suite: `running_quarto`, `typst_book_skip` and `typst_book_rendered` beside `on_pinned_quarto`, and six `--self-test` cases. A scratch harness ran the six cases green on bash 3.2, and four planted gate defects each turned their case red.
+- 2026-10-02: the T1 worktree run stopped at an unrelated check: `/usr/local/bin/python3` is now Python 3.14.6, with no PyYAML. Earlier runs used `/usr/bin/python3` 3.9.6, whose user site has PyYAML. Later runs put a scratch `python3` link to 3.9.6 first on `PATH`.
+- 2026-10-02: checkpoint, T2-T4 code written in one commit, since their edits interleave. Both books now render on every Quarto and pass through `typst_book_rendered`. The outline check reads the M098-AC5 outcome. The no-author check has its own reason, and `TYPST_BOOK_WHY` is gone. AC5's search finds no line, and no other text names the old gate. Suite runs pending.
 
 ## Decisions
 

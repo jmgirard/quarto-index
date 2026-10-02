@@ -3795,6 +3795,34 @@ print('ok   M107-AC4: the LaTeX output keeps the figure whose only body is a '
       'marker, with its caption, in one figure environment')
 PY
 
+# M107-AC4 — the callout whose only content is a marker is not marked as a
+# callout with empty content. The emptied callout keeps one empty block, and
+# Quarto 1.10.18's HTML gives `callout-empty-content` to a callout with no
+# content block at all; Quarto 1.5.52 writes that class on no callout, so this
+# check can fail only on a Quarto that writes it. The fixture's one callout is
+# the marker-only `.callout-note`, so every callout the page carries is it.
+python3 - "$CAPTURE_ROOT/shapes-html/marker-shapes.html" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+
+doc = H.parse(sys.argv[1])
+callouts = [n for n in H.walk(doc)
+            if n.tag == 'div' and 'callout' in H.classes(n)]
+if len(callouts) != 1 or 'callout-note' not in H.classes(callouts[0]):
+    print(f'FAIL: M107-AC4: {len(callouts)} callout div(s) in {sys.argv[1]}; '
+          f'the fixture writes one, a .callout-note holding only a marker',
+          file=sys.stderr)
+    sys.exit(1)
+if 'callout-empty-content' in H.classes(callouts[0]):
+    print('FAIL: M107-AC4: the callout holding only a marker carries '
+          'callout-empty-content, so the container the marker left holds no '
+          'block', file=sys.stderr)
+    sys.exit(1)
+print('ok   M107-AC4: the callout holding only a marker carries no '
+      'callout-empty-content class')
+PY
+
 
 # What a nested marker carried is spliced in where it stood, so its container
 # keeps that content — pinned structurally, not merely by a warning count.

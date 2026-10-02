@@ -51,6 +51,14 @@
   the index prints the image's page. Before this change, the HTML and EPUB
   locator linked to an id no element carried, and the PDF index left the term
   out.
+- On Quarto 1.5.52, a captioned figure or an untitled callout that holds only
+  a placement marker no longer stops a `gfm`, `docx`, `epub` or `typst`
+  render. The extension removes such a marker, and the container it leaves
+  now keeps an empty block. On Quarto 1.5.52 and 1.10.18, the LaTeX output
+  now keeps such a figure and its caption, which it used to drop. In HTML on
+  Quarto 1.10.18, such a callout no longer carries Quarto's
+  `callout-empty-content` class, so its title bar is drawn as on a titled
+  callout with content.
 
 ### Project
 

@@ -53,7 +53,8 @@ suite on the floor Quarto → candidate row.
       `docx`, `epub` or `typst` render. It says that on Quarto 1.5.52 and
       1.10.18, the LaTeX output now keeps such a figure and its caption,
       which it used to drop. It says that in HTML on Quarto 1.10.18, such a
-      callout now draws an empty body under its title bar.
+      callout no longer carries Quarto's `callout-empty-content` class, so its
+      title bar is drawn as on a titled callout with content.
 
 ## Coverage
 
@@ -81,7 +82,7 @@ suite on the floor Quarto → candidate row.
       LaTeX capture to hold `\caption{\label{fig-marker}...}` inside one
       `\begin{figure}` ... `\end{figure}`. It runs on every Quarto, because it
       reads the extension's output (D-065). Show it red with the fill removed.
-- [ ] T5: Write the CHANGELOG entry from the red run of T1 and the green run
+- [x] T5: Write the CHANGELOG entry from the red run of T1 and the green run
       of T6.
 - [ ] T6: Push and record a green `versions.yml` run on the head commit. Both
       legs pass all four renders.
@@ -104,6 +105,9 @@ suite on the floor Quarto → candidate row.
 - 2026-10-01: T3 done. `strip_nested_markers` leaves one empty Plain in a list it empties. The first suite run then drew the "marker is not empty" report 6 times where M08-AC3 expects 1: a marker nested in a marker had its own list filled first and then read as non-empty. `marker_content` now drops empty Plains before it judges or splices a marker's content, which restored the count. AC3's four `diff -w` pairs on 1.10.18 match the amended criterion, and the four formats render on 1.5.52.
 - 2026-10-01: T4 done. M107-AC4 check added after M12-AC5 in `tests/run-tests.sh`. Red on the merge base's LaTeX (0 figure environments hold the caption) and on a plant moving the caption out of its figure environment; green on the head's LaTeX from Quarto 1.10.18 and 1.5.52. T3 and T4 shared one checkpoint, verified by one suite run.
 - 2026-10-01: verify: `tests/run-tests.sh` passed, 900 checks, with `/usr/bin/python3` (3.9.6) first on `PATH`. A python.org Python 3.14 installed on this machine at 13:22 the same day now comes first on `PATH` and has no PyYAML, so the suite's tool guard stops under it. The machine's Python setup was left unchanged.
+- 2026-10-01: substantive amendment at a second mini gate, approved by the user. AC4's callout sentence read "now draws an empty body under its title bar", which Quarto 1.10.18's bootstrap CSS refutes: the body div is empty with or without the fill, and `callout-empty-content` only sets the title bar's bottom margin to 0 and rounds its lower-right corner. The sentence now says the callout loses that class, so its title bar is drawn as on a titled callout with content. AC4 had two re-audit lines, so no further reader ran.
+- 2026-10-01: T5 done. CHANGELOG entry added under Unreleased, Output, worded from T1's red run, T3's diffs and the CSS rule above; T6's green run is still owed.
+- 2026-10-01: a second M107-AC4 suite check backs the entry's callout sentence: the marker-only callout carries no `callout-empty-content`. Red on the merge base's 1.10.18 HTML, green on the head's; Quarto 1.5.52 writes the class on neither, so the check discriminates only on a Quarto that writes it. Checkpoint committed with the suite run on it still in flight.
 
 ## Decisions
 

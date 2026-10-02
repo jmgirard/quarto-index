@@ -81,7 +81,7 @@ to M102. KI112 and KI113 close.
       workflow renders. README's matrix sentences name each output format
       those lines render, and state no count of fixtures. Neither page says a
       PDF leg checks only that an index printed.
-- [ ] AC5: `tests/run-tests.sh --self-test` passes at the branch head.
+- [x] AC5: `tests/run-tests.sh --self-test` passes at the branch head.
 
 ## Coverage
 
@@ -155,6 +155,7 @@ to M102. KI112 and KI113 close.
 - 2026-10-01: the same reader re-read each corrected claim once, and each holds. `--self-test` at 8ec0f07 passed, 1738 checks, the crashed Typst plant included. The edited prose and comments are rewrapped to the files' width, with no word changed.
 - claim audit: 85 claims read, 4 corrected — README.md, site/tests.qmd, .github/workflows/versions.yml
 - 2026-10-01: T6 and T7 done. `--self-test` at 35400ec passed, 1738 checks (AC5). Status set to review. The last dispatched matrix run is at c143cd0. Later commits change comments, prose, the suite and cairn/ only, so review dispatches at the final head for AC1 and AC2.
+- 2026-10-01: review pushed the branch before the approval gate, which step 2 defers to step 8. AC1 to AC3 need dispatched runs at the branch head, and no workflow here has a `pull_request` trigger, so D-138's concern does not arise. The push started the push-triggered `versions.yml` and `pages.yml` runs, and Pages deploys from main only.
 
 ## Decisions
 
@@ -167,6 +168,7 @@ Review head be7c60d. main had not moved since the branch was cut, so no merge wa
 - AC1: `workflow_dispatch` run 36945569069 at be7c60d, the branch head as pushed, attempt 1, its only attempt. The `legs` output lists floor 1.5.52, pinned 1.10.18 and release. On each leg the `pdf` job's render of examples/named-indexes.qmd passes. The `namedpdf.py entries` step against tests/named-indexes-pdf-entries.txt passes ("2 printed index section(s) carry exactly the 20 entry line(s)"). The `cells` step against tests/named-indexes-pdf-cells.txt passes ("all 4 below-marker cell(s) read as stated"). No leg is red at any step. The commits after be7c60d touch cairn/ only. Met.
 - AC2: same run. On each of the three legs the `render` job's book EPUB render passes. `epubcheck.py sections` against tests/book-epub-index.txt passes ("3 generated section(s)" qi-index-main, qi-index-people and qi-index-places "match the manifest"). `links` over the same EPUB passes ("all 16 of 16 link(s) ... resolve"). Met.
 - AC3: `workflow_dispatch` run 36945573286, attempt 1, at probe 398552a. The probe is be7c60d plus one commit that changes three rows and nothing else (`git diff --stat`: three files, one line each). It renames the Authors-section entry `Babbage` to `Babbidge`, flips `Vesalius` from present to absent, and changes the book EPUB's `Turing` locator count from 1 to 2. The `legs` output lists the same three legs. On each leg the entries step is red with "FAIL: ... the section headed 'Index of Authors' is not the entry set" and then `<<Babbidge>>`. The cells step is red with "FAIL: ... a below-marker cell does not read as stated" and then `'Index': <<Vesalius>> is printed`. The EPUB `sections` step is red with "FAIL: ... does not match the manifest" and then `got '0\tTuring\t1'` / `want '0\tTuring\t2'`. No leg is red at an older step. The probe is kept at `refs/probes/m106-review-manifest-rows`, and its branch is deleted. Met.
+- AC5: `tests/run-tests.sh --self-test` at be7c60d prints "All checks passed (1738 checks)" with exit 0 and no FAIL line. It ran with a scratch `python3` link to `/usr/bin/python3` first on PATH, for PyYAML (work log). The commits after be7c60d touch cairn/ only. Met.
 
 Independent review: three lenses (Opus diff-bug, Sonnet blame-history, Sonnet prior-review). The PR-comment probe returned `[]`. Findings are merged where two lenses reported the same thing, ranked, and proposed for triage:
 

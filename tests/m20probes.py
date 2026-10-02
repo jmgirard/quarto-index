@@ -390,6 +390,37 @@ def _html(argv):
           f'a strong node, its other two carry neither, and the role-free control '
           f'entry carries neither on either of its locators')
 
+# The opening tag of an index span, and one attribute name inside it.
+SPAN_OPEN = re.compile(r'<span class="index"((?: [\w-]+="[^"]*")*)>')
+DATA_NAME = re.compile(r' data-([\w-]+)="')
+
+
+def bare_spelling(row):
+    """A manifest row with its span attributes written without `data-`.
+
+    The Pandoc that Quarto 1.10.18 bundles writes an attribute it does not
+    know into gfm as `data-mention="..."`, and the one Quarto 1.5.52 bundles
+    writes it as `mention="..."` (observed 2026-10-01 on both renders of
+    examples/sort-escaping.qmd, which differ in nothing else).
+    """
+    return SPAN_OPEN.sub(lambda m: '<span class="index"'
+                         + DATA_NAME.sub(r' \1="', m.group(1)) + '>', row)
+
+
+def gfm_manifest(got, want):
+    """`(rows, spelling)`: the manifest in the spelling the render writes.
+
+    A render any of whose spans carries a `data-` attribute is held to the
+    manifest as written; any other render is held to it with every attribute
+    bare. Either way the whole render is held to one spelling, so a span that
+    lost its prefix among spans that kept it is a mismatch.
+    """
+    if any(DATA_NAME.search(m.group(1))
+           for g in got for m in SPAN_OPEN.finditer(g)):
+        return want, 'data-'
+    return [bare_spelling(w) for w in want], 'bare'
+
+
 def _gfm(argv):
     """AC5: every index span the render carries, against a hand-derived manifest.
 
@@ -429,10 +460,11 @@ def _gfm(argv):
               f'{EXPECTED_SPANS}; the manifest and the fixture have drifted apart',
               file=sys.stderr)
         sys.exit(1)
+    want, spelling = gfm_manifest(got, want)
     if got != want:
-        print('FAIL: M20-AC5: the index spans in the gfm render are not, in '
-              'document order, the ones the manifest derives from the fixture:',
-              file=sys.stderr)
+        print(f'FAIL: M20-AC5: the index spans in the gfm render are not, in '
+              f'document order, the ones the manifest derives from the fixture '
+              f'(attributes spelled {spelling}):', file=sys.stderr)
         for i, (g, w) in enumerate(zip(got, want)):
             if g != w:
                 print(f'  row {i + 1} got  <<{g}>>', file=sys.stderr)

@@ -134,6 +134,37 @@ section_close() {
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'ok   %s\n' "$*"; }
 
+# A check whose subject is Quarto's own behavior or this suite's own source,
+# rather than the extension's output, runs only on the Quarto that
+# .github/workflows/pages.yml pins (M108, D-065). On any other Quarto it prints
+# one `skip` line in place of each `ok` line it would print: the check's label,
+# the running Quarto, the pinned one and the reason. The caller writes
+# `if on_pinned_quarto <reason> <label> [<label> ...]; then <check>; fi`,
+# naming the label of every `ok` line the check prints.
+PINNED_QUARTO=""
+RUNNING_QUARTO=""
+# Exit 0 when the running Quarto is the pinned one, printing nothing.
+is_pinned_quarto() {
+  if [ -z "$PINNED_QUARTO" ]; then
+    PINNED_QUARTO=$(python3 tests/pagescheck.py version .github/workflows/pages.yml) \
+      || fail "M108: tests/pagescheck.py could not read the Quarto that .github/workflows/pages.yml pins, so no check can tell whether it runs on it"
+    RUNNING_QUARTO=$(quarto --version) \
+      || fail "M108: 'quarto --version' failed, so no check can tell which Quarto it runs on"
+  fi
+  [ "$RUNNING_QUARTO" = "$PINNED_QUARTO" ]
+}
+on_pinned_quarto() {   # <reason> <label> [<label> ...]
+  local reason="$1" label
+  shift
+  [ "$#" -gt 0 ] || fail "M108: on_pinned_quarto was given no label, so a skip would name no check"
+  is_pinned_quarto && return 0
+  for label in "$@"; do
+    printf 'skip %s: Quarto %s is running, not the pinned %s; %s\n' \
+      "$label" "$RUNNING_QUARTO" "$PINNED_QUARTO" "$reason"
+  done
+  return 1
+}
+
 # The ledger of commands this run actually executed, and what each exited with.
 # A command the README shows is run through `ran_clean` below, which records the
 # argv it ran and that command's own status here; M38-AC6 then reads "runs
@@ -3749,14 +3780,22 @@ for path in sys.argv[1:]:
     except OSError:
         errs.append(f'{path} was not produced')
         continue
+    # The gfm title. Quarto 1.10.18 writes it as the file's leading `# ` line,
+    # and Quarto 1.5.52 as the file's first paragraph with no `# `, wrapped
+    # (observed 2026-10-01). Either way it is the text before the first blank
+    # line, when that text opens with the title's own words.
+    head = text.split('\n\n', 1)[0]
+    title_end = (len(head) if re.match(r'(# )?quarto-index marker-shape probe',
+                                       head) else 0)
     for m in re.finditer(r'qi-index-here', text):
         start = text.rfind('\n', 0, m.start()) + 1
         end = text.find('\n', m.end())
         line = text[start:end if end != -1 else len(text)]
         # The title Quarto writes from the fixture's YAML, in the two formats
-        # that carry one: an <h1 class="title"> in HTML, the leading `# ` line
+        # that carry one: an <h1 class="title"> in HTML, the opening paragraph
         # in gfm. Anything else carrying the class is a surviving marker.
-        if 'class="title"' in line or line.startswith('# quarto-index marker-shape probe'):
+        if 'class="title"' in line or (path.endswith('.md')
+                                       and m.start() < title_end):
             continue
         errs.append(f'{path}: the marker class survives outside the title: '
                     f'{line.strip()[:120]}')
@@ -6228,9 +6267,14 @@ python3 tests/unicodeprint.py entries "$CAPTURE_ROOT/m33-noengine/noengine.pdf" 
 # work here. A Quarto that quietly defaulted to xelatex would leave every
 # reading above green while that sentence went false, and nothing but the
 # capture's own Producer line can tell the two apart.
-pdf_producer_names "$CAPTURE_ROOT/m33-noengine/noengine.pdf" "$M33_NOENGINE_PRODUCER" \
-  || fail "M34-AC4 control (d): the no-engine capture was not produced by $M33_NOENGINE_PRODUCER, so the docs' 'no engine set' paragraph names an engine that is not the one Quarto defaulted to here (its own FAIL line is above)"
-pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 under $M33_NOENGINE_PRODUCER — read from the capture's own Producer line — and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
+# Which engine Quarto defaults to is Quarto's own behavior, so that half runs
+# on the pinned Quarto alone (D-065); the docs name the pinned Quarto's engine.
+if on_pinned_quarto "the default PDF engine is Quarto's own, and the docs name the pinned Quarto's; the render above exited 0 and all ${#M33_TERMS[@]} of the fixture's terms printed as their own entry" \
+     "M34-AC4 control (d)"; then
+  pdf_producer_names "$CAPTURE_ROOT/m33-noengine/noengine.pdf" "$M33_NOENGINE_PRODUCER" \
+    || fail "M34-AC4 control (d): the no-engine capture was not produced by $M33_NOENGINE_PRODUCER, so the docs' 'no engine set' paragraph names an engine that is not the one Quarto defaulted to here (its own FAIL line is above)"
+  pass "M34-AC4 control (d): with the font set and no pdf-engine the render exits 0 under $M33_NOENGINE_PRODUCER — read from the capture's own Producer line — and all ${#M33_TERMS[@]} of the fixture's terms print as their own entry at the level the suite states in the typeset index"
+fi
 
 # ---------------------------------------------------------------------------
 # M33-AC4 — the YAML block a reader COPIES out of the Terms outside Latin-1
@@ -13060,8 +13104,8 @@ for f in sort-escaping sort-escaping-twin; do
     || { tail -20 "$WORK/$f-gfm.log" >&2; fail "M06-AC3: $f.qmd failed to render to gfm"; }
   capture "examples/$f.qmd" gfm "$f-gfm"
 done
-python3 - examples/sort-escaping.qmd examples/sort-escaping-twin.qmd \
-  "$CAPTURE_ROOT/sort-escaping-gfm/sort-escaping.md" "$CAPTURE_ROOT/sort-escaping-twin-gfm/sort-escaping-twin.md" <<'SORTESCGFMPY'
+m06_gfm() {   # <fixture> <twin fixture> <gfm render> <twin's gfm render>
+  python3 - "$@" <<'SORTESCGFMPY'
 import re, sys
 source, twin_src, rendered, twin_rendered = sys.argv[1:5]
 # Two layers, two grammars, and they are NOT the same. In a Pandoc markdown
@@ -13072,7 +13116,11 @@ source, twin_src, rendered, twin_rendered = sys.argv[1:5]
 # sort key IS a backslash) swallow everything up to the next quote, two spans
 # later.
 SORT_ATTR = r' sort="(?:[^"\\]|\\.)*"'
+# The Pandoc of Quarto 1.10.18 writes the attribute as `data-sort`, and the
+# one Quarto 1.5.52 bundles as `sort` (tests/m20probes.py's bare_spelling).
+# The render is held to whichever spelling it writes, and to that one alone.
 DATA_SORT_ATTR = r' data-sort="[^"]*"'
+BARE_SORT_ATTR = r' sort="[^"]*"'
 src = open(source, encoding='utf-8').read()
 if re.sub(SORT_ATTR, '', src) != open(twin_src, encoding='utf-8').read():
     print('FAIL: M06-AC3: the gfm twin fixture is not the probe with its '
@@ -13080,10 +13128,13 @@ if re.sub(SORT_ATTR, '', src) != open(twin_src, encoding='utf-8').read():
     sys.exit(1)
 marks = len(re.findall(SORT_ATTR, src))
 out = open(rendered, encoding='utf-8').read()
+if re.search(DATA_SORT_ATTR, out) is None:
+    DATA_SORT_ATTR = BARE_SORT_ATTR
 residue = re.findall(DATA_SORT_ATTR, out)
 if len(residue) != marks:
     print(f'FAIL: M06-AC3: {marks} marks carry a sort key but gfm output '
-          f'carries {len(residue)} data-sort attributes', file=sys.stderr)
+          f'carries {len(residue)} attributes spelled '
+          f'{DATA_SORT_ATTR.split("=")[0].strip()}', file=sys.stderr)
     sys.exit(1)
 stripped = re.sub(DATA_SORT_ATTR, '', out)
 if stripped != open(twin_rendered, encoding='utf-8').read():
@@ -13093,6 +13144,44 @@ if stripped != open(twin_rendered, encoding='utf-8').read():
 print(f'ok   M06-AC3: in gfm all {marks} sort keys change nothing but the one '
       f'attribute carrying each, so none reaches visible text')
 SORTESCGFMPY
+}
+M06_GFM_ARGS=(examples/sort-escaping.qmd examples/sort-escaping-twin.qmd
+  "$CAPTURE_ROOT/sort-escaping-gfm/sort-escaping.md"
+  "$CAPTURE_ROOT/sort-escaping-twin-gfm/sort-escaping-twin.md")
+m06_gfm "${M06_GFM_ARGS[@]}" \
+  || fail "M06-AC3: a sort key changed the gfm render beyond its own attribute (its own FAIL line is above)"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # M108 T5 — one sort attribute dropped, in each spelling Pandoc writes into
+  # gfm: `data-sort` (Quarto 1.10.18) and `sort` (Quarto 1.5.52). The bare
+  # copy of the render, with nothing dropped, is the passing control.
+  M108G="$WORK/m108gfm"
+  rm -rf "$M108G"
+  mkdir -p "$M108G"
+  M06_RENDER="$CAPTURE_ROOT/sort-escaping-gfm/sort-escaping.md"
+  sed 's/ data-sort="/ sort="/g' "$M06_RENDER" > "$M108G/m06-bare.md"
+  perl -pe '$done ||= s/ data-sort="[^"]*"//' "$M06_RENDER" > "$M108G/m06-data-drop.md"
+  perl -pe '$done ||= s/ sort="[^"]*"//' "$M108G/m06-bare.md" > "$M108G/m06-bare-drop.md"
+  for f in m06-bare m06-data-drop; do
+    cmp -s "$M06_RENDER" "$M108G/$f.md" \
+      && fail "M108 T5 self-test ($f): the plant changed nothing in the M06 gfm render"
+  done
+  cmp -s "$M108G/m06-bare.md" "$M108G/m06-bare-drop.md" \
+    && fail "M108 T5 self-test (m06-bare-drop): the plant changed nothing in the bare copy"
+  m06_gfm "${M06_GFM_ARGS[@]:0:2}" "$M108G/m06-bare.md" "${M06_GFM_ARGS[3]}" > /dev/null \
+    || fail "M108 T5 self-test (m06-bare): the M06-AC3 check is red on the render with every sort attribute written bare and none dropped"
+  for spelling in data-sort sort; do
+    case "$spelling" in data-sort) f=m06-data-drop ;; *) f=m06-bare-drop ;; esac
+    if M108_OUT=$(m06_gfm "${M06_GFM_ARGS[@]:0:2}" "$M108G/$f.md" "${M06_GFM_ARGS[3]}" 2>&1); then
+      fail "M108 T5 self-test ($f): the M06-AC3 check passed a gfm render missing one $spelling attribute"
+    fi
+    case "$M108_OUT" in
+      *"94 marks carry a sort key but gfm output carries 93 attributes spelled $spelling"*) : ;;
+      *) fail "M108 T5 self-test ($f): the M06-AC3 check failed, but not by counting 93 $spelling attributes (<<$M108_OUT>>)" ;;
+    esac
+    pass "M108 T5 self-test ($f): the M06-AC3 check is red on one $spelling attribute dropped, counting 93 of 94"
+  done
+fi
 
 
 # ---------------------------------------------------------------------------
@@ -15545,7 +15634,9 @@ pass "M20-AC3/AC4: a mark whose role is reported and ignored emits what the same
 #      it as: its class, then its attributes in SOURCE order, each name
 #      data-prefixed because Pandoc data-prefixes an attribute it does not know
 #      (which is why the role attribute is `mention` and not `role` — the
-#      milestone's Decisions entry).
+#      milestone's Decisions entry). The Pandoc of Quarto 1.5.52 writes each
+#      name bare, and tests/m20probes.py holds such a render to these rows
+#      with every name bare (M108).
 #   5. Visible text passes through as written, nested inline markup included.
 #   6. A mark that indexes nothing is removed with its content, so the
 #      entry-less mark writes no row here; every other mark writes exactly one.
@@ -15575,7 +15666,7 @@ printf '%s\n' "$PRINCIPAL_GFM_SPANS" > "$WORK/principal-gfm-spans.txt"
 # for byte, and the permitted residue is stated as an exact set of tokens
 # rather than as an exemption, so a stray one cannot be argued into it.
 python3 tests/m20probes.py gfm "$CAPTURE_ROOT/principal-gfm/principal.md" "$WORK/principal-gfm-spans.txt"
-pass "M20-AC5: in the format with no index back-end every index mark the fixture writes passes through as its visible text plus exactly its own attributes, data-prefixed, in document order and byte for byte against a hand-derived manifest, with no residue of either back-end"
+pass "M20-AC5: in the format with no index back-end every index mark the fixture writes passes through as its visible text plus exactly its own attributes, all data-prefixed or all bare as the running Pandoc writes them, in document order and byte for byte against a hand-derived manifest, with no residue of either back-end"
 
 # M20-AC6 — the subsystem is injected where it is used and nowhere else. Both
 # directions, or a filter that injected it into every document would pass. The
@@ -15804,7 +15895,34 @@ read -r -d '' RANGE_GFM_SPANS <<'MANIFEST' || true
 MANIFEST
 printf '%s\n' "$RANGE_GFM_SPANS" > "$WORK/range-gfm-spans.txt"
 python3 tests/m21probes.py gfm "$CAPTURE_ROOT/range-gfm/range.md" "$WORK/range-gfm-spans.txt"
-pass "M21-AC6: in the format with no index back-end an opening and a closing mark pass their visible text through with exactly their own attributes data-prefixed, range= included, and no range delimiter or registration command reaches the format"
+pass "M21-AC6: in the format with no index back-end an opening and a closing mark pass their visible text through with exactly their own attributes, all data-prefixed or all bare as the running Pandoc writes them, range= included, and no range delimiter or registration command reaches the format"
+if [ "${1:-}" = "--self-test" ]; then
+  # M108 T5 — the dybbuk cross-reference mark's attribute dropped, in each
+  # spelling: `data-see` (Quarto 1.10.18) and `see` (Quarto 1.5.52). The bare
+  # copy with nothing dropped is the passing control.
+  M108R="$WORK/m108range"
+  rm -rf "$M108R"
+  mkdir -p "$M108R"
+  M21_RENDER="$CAPTURE_ROOT/range-gfm/range.md"
+  sed 's/ data-\([a-z-]*\)="/ \1="/g' "$M21_RENDER" > "$M108R/bare.md"
+  sed 's/ data-see="centaur"//' "$M21_RENDER" > "$M108R/data-drop.md"
+  sed 's/ see="centaur"//' "$M108R/bare.md" > "$M108R/bare-drop.md"
+  cmp -s "$M21_RENDER" "$M108R/bare.md" && fail "M108 T5 self-test (m21-bare): the plant changed nothing"
+  cmp -s "$M21_RENDER" "$M108R/data-drop.md" && fail "M108 T5 self-test (m21-data-drop): the plant changed nothing"
+  cmp -s "$M108R/bare.md" "$M108R/bare-drop.md" && fail "M108 T5 self-test (m21-bare-drop): the plant changed nothing"
+  python3 tests/m21probes.py gfm "$M108R/bare.md" "$WORK/range-gfm-spans.txt" > /dev/null \
+    || fail "M108 T5 self-test (m21-bare): the M21-AC6 reader is red on the render with every span attribute written bare and none dropped"
+  for f in data-drop bare-drop; do
+    case "$f" in data-drop) want='row 9 got  <<<span class="index">dybbuk</span>>>' ;; *) want='(attributes spelled bare)' ;; esac
+    if M108_OUT=$(python3 tests/m21probes.py gfm "$M108R/$f.md" "$WORK/range-gfm-spans.txt" 2>&1); then
+      fail "M108 T5 self-test (m21-$f): the M21-AC6 reader passed a render with the dybbuk see attribute dropped"
+    fi
+    printf '%s' "$M108_OUT" | grep -qF -- "$want" \
+      && printf '%s' "$M108_OUT" | grep -qF -- 'row 9 got  <<<span class="index">dybbuk</span>>>' \
+      || { printf '%s\n' "$M108_OUT" >&2; fail "M108 T5 self-test (m21-$f): the M21-AC6 reader failed, but not on the dybbuk row in the $f spelling"; }
+    pass "M108 T5 self-test (m21-$f): the M21-AC6 reader is red on the dybbuk row with its see attribute dropped"
+  done
+fi
 
 # M21-AC4 — the five misuse shapes, in all three formats. The needles are per
 # SHAPE and the identity checks are per MARK: a filter that reported the right
@@ -16859,6 +16977,34 @@ filtersrc.sources()" >/dev/null 2>&1; then
   probe_defect "the nested inline markup stripped from a mark's visible text" \
     python3 tests/m20probes.py gfm "$M20W/nested.md" "$WORK/principal-gfm-spans.txt"
 
+  # M108 T5 — one span attribute dropped, in each spelling Pandoc writes into
+  # gfm: `data-see-also` (Quarto 1.10.18) and `see-also` (Quarto 1.5.52). The
+  # bare copy with nothing dropped is the passing control. Each red names the
+  # harpy row, which is the only span carrying see-also.
+  m108_gfm_red() {   # <slug> <want> <command...>
+    local slug="$1" want="$2" out
+    shift 2
+    if out=$("$@" 2>&1); then
+      fail "M108 T5 self-test ($slug): the gfm reader passed a render with one span attribute dropped"
+    fi
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M108 T5 self-test ($slug): the gfm reader failed, but not with <<$want>>"; }
+    pass "M108 T5 self-test ($slug): the gfm reader is red on <<$want>>"
+  }
+  probe_plant "$CAPTURE_ROOT/principal-gfm/principal.md" "$M20W/m108-bare.md" \
+    -e 's/ data-\([a-z-]*\)="/ \1="/g'
+  python3 tests/m20probes.py gfm "$M20W/m108-bare.md" "$WORK/principal-gfm-spans.txt" > /dev/null \
+    || fail "M108 T5 self-test (m20-bare): the M20-AC5 reader is red on the render with every span attribute written bare and none dropped"
+  probe_plant "$CAPTURE_ROOT/principal-gfm/principal.md" "$M20W/m108-data-drop.md" \
+    -e 's/ data-see-also="faun"//'
+  m108_gfm_red m20-data-drop \
+    'got  <<<span class="index" data-mention="principal" data-see="basilisk">harpy</span>>>' \
+    python3 tests/m20probes.py gfm "$M20W/m108-data-drop.md" "$WORK/principal-gfm-spans.txt"
+  probe_plant "$M20W/m108-bare.md" "$M20W/m108-bare-drop.md" -e 's/ see-also="faun"//'
+  m108_gfm_red m20-bare-drop \
+    'got  <<<span class="index" mention="principal" see="basilisk">harpy</span>>>' \
+    python3 tests/m20probes.py gfm "$M20W/m108-bare-drop.md" "$WORK/principal-gfm-spans.txt"
+
   # --- the counterfactual. Both directions: a role that stopped taking effect,
   #     and one that reached a mark it must not.
   probe_plant "$WORK/principal.tex" "$M20W/inert.tex" \
@@ -17892,9 +18038,14 @@ section 'M26: a document'\''s accumulators start empty, whoever ran before it.'
 # statement when the probe runs, and on no copy of a kept line. The
 # probe itself renders and runs by hand; this guard renders nothing and runs
 # here on every run.
-python3 tests/stateprobe.py --check-cells \
-  || fail "M105-AC1: the cell guard failed (tests/stateprobe.py's own FAIL line above names the module and the cause)"
-pass "M105-AC1: every module's reset holds only CELLS statements and indexes.lua's kept lines"
+# The guard checks this suite's own probe table, and reads each reset's bounds
+# through the pinned Quarto's Lua, so it runs on that Quarto alone (D-065).
+M105_WHY="the guard checks this suite's own probe table against the extension's source, through Quarto's Lua"
+if on_pinned_quarto "$M105_WHY" "cell guard" "M105-AC1"; then
+  python3 tests/stateprobe.py --check-cells \
+    || fail "M105-AC1: the cell guard failed (tests/stateprobe.py's own FAIL line above names the module and the cause)"
+  pass "M105-AC1: every module's reset holds only CELLS statements and indexes.lua's kept lines"
+fi
 if [ "${1:-}" = "--self-test" ]; then
   # The guard against copies of the extension, read through QI_EXT_DIR. Each
   # plant is one substitution in indexes.lua's reset, asserted to change the
@@ -26093,12 +26244,19 @@ print(f'ok   {label}: all {len(differing)} differing line(s) are Quarto\'s own '
 M57TEXPY
 }
 
-for f in $M57_RESOLVER_FIXTURES; do
-  m57_tex_ledger "$CAPTURE_ROOT/$f-latex/$f.tex" \
-    "$CAPTURE_ROOT/$f-twin-latex/$f-twin.tex" "M57-AC7 ($f)" \
-    || fail "M57-AC7: a differing line of $f.tex against its twin is not Quarto's own (its own FAIL line is above)"
-done
-pass "M57-AC7: across the exact hit, the subtag hit, the miss and the malformed value, every line the language adds to the .tex is Quarto's and none is this filter's"
+# The ledger lists the lines Quarto's own LaTeX template writes for a language,
+# which is Quarto's behavior, so it is read on the pinned Quarto alone (D-065).
+M57_LEDGER_WHY="the ledger lists the language lines the pinned Quarto's LaTeX template writes"
+M57_LEDGER_LABELS=()
+for f in $M57_RESOLVER_FIXTURES; do M57_LEDGER_LABELS+=("M57-AC7 ($f)"); done
+if on_pinned_quarto "$M57_LEDGER_WHY" "${M57_LEDGER_LABELS[@]}" "M57-AC7"; then
+  for f in $M57_RESOLVER_FIXTURES; do
+    m57_tex_ledger "$CAPTURE_ROOT/$f-latex/$f.tex" \
+      "$CAPTURE_ROOT/$f-twin-latex/$f-twin.tex" "M57-AC7 ($f)" \
+      || fail "M57-AC7: a differing line of $f.tex against its twin is not Quarto's own (its own FAIL line is above)"
+  done
+  pass "M57-AC7: across the exact hit, the subtag hit, the miss and the malformed value, every line the language adds to the .tex is Quarto's and none is this filter's"
+fi
 
 # M093 — the same words in a BOOK. Every fixture above is one document, so the
 # index a book aggregates took no language path: in HTML each chapter is its
@@ -29976,14 +30134,23 @@ python3 tests/typstcheck.py order "$M098_NAMED_PDF" "M098-AC4 (placement)" \
   || fail "M098-AC4: an index heading of the named-index fixture is not where its marker is (the report is above)"
 pass "M098-AC4: a Typst render of examples/named-indexes.qmd prints each declared index under its title, at its marker in text order, holding every level of the entries its own marks derive and none filed in the other"
 
-( cd "$BOOK_DIR" && quarto render --to typst ) > "$WORK/book-typst.log" 2>&1 \
-  || { tail -30 "$WORK/book-typst.log" >&2; fail "M098-AC5: the book fixture failed to render to Typst"; }
-capture --project "$BOOK_DIR" typst "book-typst"
-m098_no_typst_warning "$WORK/book-typst.log" "M098-AC5"
-M098_BOOK_PDFS=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf')
-[ "$(printf '%s\n' "$M098_BOOK_PDFS" | grep -c .)" = "1" ] \
-  || fail "M098-AC5: the Typst book render left <<$M098_BOOK_PDFS>> under $CAPTURE_ROOT/book-typst/_book, not one PDF"
-M098_BOOK_PDF="$M098_BOOK_PDFS"
+# A Typst book is rendered on the pinned Quarto alone (D-065): the docs' Books
+# section states that Quarto 1.5.52 renders none. Every check reading one, here
+# and in M100-AC3 and M098-AC7 below, skips together with this render.
+TYPST_BOOK_WHY="a Typst book is rendered on the pinned Quarto alone, and site/typst.qmd states that Quarto 1.5.52 renders none"
+M098_TYPST_BOOK=0
+if on_pinned_quarto "$TYPST_BOOK_WHY" "M098-AC5" "M098-AC5 (main)" \
+     "M098-AC5 (people)" "M098-AC5 (places)" "M098-AC5 (placement)"; then
+  M098_TYPST_BOOK=1
+  ( cd "$BOOK_DIR" && quarto render --to typst ) > "$WORK/book-typst.log" 2>&1 \
+    || { tail -30 "$WORK/book-typst.log" >&2; fail "M098-AC5: the book fixture failed to render to Typst"; }
+  capture --project "$BOOK_DIR" typst "book-typst"
+  m098_no_typst_warning "$WORK/book-typst.log" "M098-AC5"
+  M098_BOOK_PDFS=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf')
+  [ "$(printf '%s\n' "$M098_BOOK_PDFS" | grep -c .)" = "1" ] \
+    || fail "M098-AC5: the Typst book render left <<$M098_BOOK_PDFS>> under $CAPTURE_ROOT/book-typst/_book, not one PDF"
+  M098_BOOK_PDF="$M098_BOOK_PDFS"
+fi
 
 read -r -d '' M098_BOOK_CHAPTERS <<'MANIFEST' || true
 chapter	5	index.qmd	1. Opening
@@ -30030,22 +30197,24 @@ for part in MAIN PEOPLE PLACES; do
   var="M098_BOOK_$part"
   printf '%s\n%s\n' "$M098_BOOK_CHAPTERS" "${!var}" > "$WORK/m098-book-$part.tsv"
 done
-python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-MAIN.tsv" \
-  "M098-AC5 (main)" "Index of Subjects" "Chapter 4." \
-  || fail "M098-AC5: the book's index of subjects is not the manifest's (the report is above)"
-python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PEOPLE.tsv" \
-  "M098-AC5 (people)" "Index of People" "Chapter 4." \
-  || fail "M098-AC5: the book's index of people is not the manifest's (the report is above)"
-python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PLACES.tsv" \
-  "M098-AC5 (places)" "Index of Places" \
-  || fail "M098-AC5: the book's index of places is not the manifest's (the report is above)"
-python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC5 (placement)" \
-  "^A range whose two marks are both in this chapter" "=Index of Subjects" \
-  "^A second placement marker in this chapter" \
-  "^A third placement marker, this one naming the second declared index" \
-  "=Index of People" "=Index of Places" \
-  || fail "M098-AC5: an index of the Typst book is not where last.qmd places it (the report is above)"
-pass "M098-AC5: a Typst render of examples/book/ is one PDF printing its three indexes under their declared titles, main and people at the markers in last.qmd and places after them, each entry with the page locators the hand-derived manifest states, and Shared Term on a page of each of its three chapters"
+if [ "$M098_TYPST_BOOK" = 1 ]; then
+  python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-MAIN.tsv" \
+    "M098-AC5 (main)" "Index of Subjects" "Chapter 4." \
+    || fail "M098-AC5: the book's index of subjects is not the manifest's (the report is above)"
+  python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PEOPLE.tsv" \
+    "M098-AC5 (people)" "Index of People" "Chapter 4." \
+    || fail "M098-AC5: the book's index of people is not the manifest's (the report is above)"
+  python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PLACES.tsv" \
+    "M098-AC5 (places)" "Index of Places" \
+    || fail "M098-AC5: the book's index of places is not the manifest's (the report is above)"
+  python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC5 (placement)" \
+    "^A range whose two marks are both in this chapter" "=Index of Subjects" \
+    "^A second placement marker in this chapter" \
+    "^A third placement marker, this one naming the second declared index" \
+    "=Index of People" "=Index of Places" \
+    || fail "M098-AC5: an index of the Typst book is not where last.qmd places it (the report is above)"
+  pass "M098-AC5: a Typst render of examples/book/ is one PDF printing its three indexes under their declared titles, main and people at the markers in last.qmd and places after them, each entry with the page locators the hand-derived manifest states, and Shared Term on a page of each of its three chapters"
+fi
 
 # M100-AC3 — a Typst book whose chapters reset the page counter. The manifest,
 # tests/typst-book-reset.tsv, is derived by hand from the chapter sources and
@@ -30072,10 +30241,12 @@ m100_book_read() {   # <project dir> <slug> <label>
     || fail "M100-AC3: the Typst render of $1 left <<$pdfs>> under $CAPTURE_ROOT/$2/_book, not one PDF"
   python3 tests/typstindex.py pages "$pdfs" tests/typst-book-reset.tsv "$3" "Index"
 }
-m100_book_read "$M100_BOOK_DIR" "book-typst-reset" "M100-AC3 (reset book)" \
-  || fail "M100-AC3: the index of the reset book does not match tests/typst-book-reset.tsv (the report is above)"
-m098_no_typst_warning "$WORK/book-typst-reset.log" "M100-AC3"
-pass "M100-AC3: a Typst render of examples/book-typst-reset/ prints yam's locators in class and value order, its range across the second and third chapters spanning values 2 and 3, and no locator for a mark on value 2 after that range closes"
+if on_pinned_quarto "$TYPST_BOOK_WHY" "M100-AC3 (reset book)" "M100-AC3"; then
+  m100_book_read "$M100_BOOK_DIR" "book-typst-reset" "M100-AC3 (reset book)" \
+    || fail "M100-AC3: the index of the reset book does not match tests/typst-book-reset.tsv (the report is above)"
+  m098_no_typst_warning "$WORK/book-typst-reset.log" "M100-AC3"
+  pass "M100-AC3: a Typst render of examples/book-typst-reset/ prints yam's locators in class and value order, its range across the second and third chapters spanning values 2 and 3, and no locator for a mark on value 2 after that range closes"
+fi
 
 if [ "${1:-}" = "--self-test" ]; then
   # M100-AC3 self-test: the M099 rule, a span by physical page, planted in a
@@ -30538,8 +30709,51 @@ python3 tests/typstindex.py pages "$CAPTURE_ROOT/index-separators-typst/index-se
 quarto render examples/front-matter.qmd --to typst > "$WORK/front-matter-typst.log" 2>&1 \
   || { tail -40 "$WORK/front-matter-typst.log" >&2; fail "M098-AC7: examples/front-matter.qmd failed to render to Typst"; }
 capture examples/front-matter.qmd typst "front-matter-typst"
-printf '%s\n' $'group\tB' $'entry\t0\tBollard\t1@1' $'group\tC' $'entry\t0\tCapstan\t1@1' \
-  $'group\tG' $'entry\t0\tGimbal\t1@1' $'group\tH' $'entry\t0\tHalyard' > "$WORK/m098-front-matter.tsv"
+# Which fields print is the template's, and so the Quarto's: Quarto 1.5.52's
+# Typst template prints the abstract alone (observed 2026-10-01). So each
+# field mark's row is read off whether its field's sentence prints before the
+# index, and the run requires a printed field and an unprinted one, so both
+# kinds of row are compared. On the pinned Quarto the printed fields are also
+# held to the two this comment names above.
+m098_field_rows() {   # <pdf> <1 when pinned, else 0> <manifest to write>
+  python3 - "$@" <<'M098FIELDSPY'
+import subprocess, sys
+sys.path.insert(0, 'tests')
+from typstindex import nfkc
+pdf, pinned, out = sys.argv[1], sys.argv[2] == '1', sys.argv[3]
+text = nfkc(subprocess.run(['pdftotext', pdf, '-'], check=True,
+                           capture_output=True, text=True).stdout)
+lines = [l.strip() for l in text.split('\n')]
+if 'Index' not in lines:
+    print(f'FAIL: M098-AC7: no line "Index" in {pdf}', file=sys.stderr)
+    sys.exit(1)
+before = ' '.join(' '.join(lines[:lines.index('Index')]).split())
+# field: (term, the sentence the fixture writes into that field)
+fields = {'abstract': ('Bollard', 'The abstract marks a term: Bollard.'),
+          'subtitle': ('Gimbal', 'The subtitle marks a term: Gimbal.'),
+          'description': ('Halyard', 'The description marks a term: Halyard.')}
+printed = {f for f, (_t, sentence) in fields.items() if sentence in before}
+if not printed or printed == set(fields):
+    print(f'FAIL: M098-AC7: the render prints the front-matter field(s) '
+          f'{sorted(printed)}, so it compares only one kind of row', file=sys.stderr)
+    sys.exit(1)
+if pinned and printed != {'abstract', 'subtitle'}:
+    print(f'FAIL: M098-AC7: the pinned Quarto prints the front-matter field(s) '
+          f'{sorted(printed)}, not the abstract and the subtitle', file=sys.stderr)
+    sys.exit(1)
+rows = {'Capstan': 'entry\t0\tCapstan\t1@1'}
+for f, (term, _s) in fields.items():
+    rows[term] = f'entry\t0\t{term}' + ('\t1@1' if f in printed else '')
+with open(out, 'w', encoding='utf-8') as handle:
+    for term in sorted(rows):
+        handle.write(f'group\t{term[0]}\n{rows[term]}\n')
+M098FIELDSPY
+}
+M098_FM_PINNED=0
+is_pinned_quarto && M098_FM_PINNED=1
+m098_field_rows "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" "$M098_FM_PINNED" \
+  "$WORK/m098-front-matter.tsv" \
+  || fail "M098-AC7: the front-matter fields the Typst render prints do not let the check compare both kinds of row (its own FAIL line is above)"
 python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" \
   "$WORK/m098-front-matter.tsv" "M098-AC7 (a field Typst never prints)" "Index" \
   || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
@@ -30567,13 +30781,83 @@ python3 tests/typstindex.py "$M098D/alt/alt.pdf" "$WORK/m098-alt.tsv" \
   "M098-AC7 (marks in image alt text)" "Index" \
   || fail "M098-AC7: a mark in image alt text does not print its page in the Typst index (the report is above)"
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M108 T5 self-test — the forms the Typst of Quarto 1.5.52 writes, which no
+  # render on the pinned Quarto carries. tests/typstforms.py writes each form
+  # into a copy of a pinned render. The copy as written must read green, and
+  # with one defect planted it must read red, naming the row the defect moves.
+  # The front-matter rows are read from a PDF that prints no field at all.
+  # -------------------------------------------------------------------------
+  M108W="$WORK/m108forms"
+  rm -rf "$M108W"
+  mkdir -p "$M108W"
+  m108_form() {   # <slug> <typstforms.py mode> <source pdf> [option ...]
+    local slug="$1" mode="$2" source="$3"
+    shift 3
+    python3 tests/typstforms.py "$mode" "$source" "$M108W/$slug.pdf" "$@" \
+      || fail "M108 T5 self-test ($slug): tests/typstforms.py could not write the copy (its own FAIL line is above)"
+  }
+  m108_green() {   # <slug> <manifest> <heading> [stop ...]
+    local slug="$1" manifest="$2"
+    shift 2
+    python3 tests/typstindex.py "$M108W/$slug.pdf" "$manifest" \
+      "M108 T5 control ($slug)" "$@" \
+      || fail "M108 T5 self-test ($slug): the reader is red on the copy in Quarto 1.5.52's form with nothing planted, so a red below would be the form and not the plant"
+  }
+  m108_red() {   # <slug> <want> <manifest> <heading> [stop ...]
+    local slug="$1" want="$2" manifest="$3" out rc
+    shift 3
+    out=$(python3 tests/typstindex.py "$M108W/$slug.pdf" "$manifest" \
+            "M108 T5 plant ($slug)" "$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M108 T5 self-test ($slug): the reader passed the planted copy, so its green on the unplanted one says nothing"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M108 T5 self-test ($slug): the reader failed, but not with <<$want>>, so the failure is not this plant's"; }
+    pass "M108 T5 self-test ($slug): the reader is red on <<$want>>"
+  }
+  M108_MAIN=(tests/typst-index-main.tsv "Index of Terms" "Index of People")
+
+  # Links inside the page's /Annots array, each a /GoTo action.
+  m108_form links links "$M098_PDF"
+  m108_green links "${M108_MAIN[@]}"
+  m108_form links-drop links "$M098_PDF" --drop 3
+  m108_red links-drop "got 'entry\t0\tapple, 1\t3@3" "${M108_MAIN[@]}"
+
+  # Faces named without Bold or Italic, read from their descriptors.
+  m108_form faces faces "$M098_PDF"
+  m108_green faces "${M108_MAIN[@]}"
+  m108_form faces-bold faces "$M098_PDF" --plant bold
+  m108_red faces-bold "got 'entry\t0\tdahlia\t1@1" "${M108_MAIN[@]}"
+  m108_form faces-italic faces "$M098_PDF" --plant italic
+  m108_red faces-italic "an unlinked word 'see' among the locators of 'jam, 3, see also apple'" "${M108_MAIN[@]}"
+
+  # The fi ligature as one character, on the alt-text render's figterm.
+  m108_form ligature ligature "$M098D/alt/alt.pdf"
+  m108_green ligature "$WORK/m098-alt.tsv" "Index"
+  m108_form ligature-fl ligature "$M098D/alt/alt.pdf" --plant
+  m108_red ligature-fl "got 'entry\t0\tflgterm\t2@2" "$WORK/m098-alt.tsv" "Index"
+
+  # The front-matter rows, from a render that prints none of the fields.
+  if M108_OUT=$(m098_field_rows "$M098D/alt/alt.pdf" 0 "$M108W/fields.tsv" 2>&1); then
+    fail "M108 T5 self-test (fields): the front-matter rows were written from a render printing none of the three fields, so the check would compare one kind of row"
+  fi
+  case "$M108_OUT" in
+    *"prints the front-matter field(s) [], so it compares only one kind of row"*) : ;;
+    *) fail "M108 T5 self-test (fields): the rows failed on a render printing no field, but not naming that (<<$M108_OUT>>)" ;;
+  esac
+  pass "M108 T5 self-test (fields): the front-matter rows refuse a render that prints none of the fields"
+fi
+
 # The outline and the page after. The book's outline lists the index before
 # the first chapter's own heading; in the named-index fixture the heading of
 # the first index is on a page of its own, apart from the text before and
 # after it.
-python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC7 (the outline lists the index)" \
-  "=Contents" "^Index of Subjects" "=1. Opening" \
-  || fail "M098-AC7: the Typst book's outline does not list the index of subjects (the report is above)"
+if on_pinned_quarto "$TYPST_BOOK_WHY" "M098-AC7 (the outline lists the index)"; then
+  python3 tests/typstcheck.py order "$M098_BOOK_PDF" "M098-AC7 (the outline lists the index)" \
+    "=Contents" "^Index of Subjects" "=1. Opening" \
+    || fail "M098-AC7: the Typst book's outline does not list the index of subjects (the report is above)"
+fi
 
 # The outline of a single document whose headings start at `##`, which Quarto
 # moves up a level for Typst, and the heading an index gets. The document
@@ -30597,9 +30881,12 @@ fi
 pass "M098-AC7: a declared index with no title prints under its name and is listed in the outline of a document whose headings start at two hashes, and a declared index no mark files in prints nothing"
 python3 - "$M098_NAMED_PDF" <<'M098PAGEPY'
 import subprocess, sys
+sys.path.insert(0, 'tests')
+from typstindex import nfkc
 text = subprocess.run(['pdftotext', sys.argv[1], '-'], check=True,
                       capture_output=True, text=True).stdout
-pages = [[l.strip() for l in page.split('\n')] for page in text.split('\f')]
+pages = [[nfkc(l.strip()) for l in page.split('\n')]
+         for page in text.split('\f')]
 def page_of(line):
     found = [n for n, lines in enumerate(pages, start=1) if line in lines]
     if len(found) != 1:
@@ -30621,22 +30908,24 @@ M098PAGEPY
 
 # The author. A copy of the book fixture with its `author:` line taken out
 # fails to compile to Typst, with the error Quarto's book template raises.
-cp -R "$BOOK_DIR" "$M098D/noauthor"
-rm -rf "$M098D/noauthor/_extensions" "$M098D/noauthor/_book" "$M098D/noauthor/.quarto"
-mkdir -p "$M098D/noauthor/_extensions"
-cp -R "$QI_EXT_DIR" "$M098D/noauthor/_extensions/index"
-grep -v '^  author: ' "$BOOK_DIR/_quarto.yml" > "$M098D/noauthor/_quarto.yml"
-grep -q '^  author: ' "$BOOK_DIR/_quarto.yml" \
-  || fail "M098-AC7: examples/book/_quarto.yml carries no author line, so the copy without one is the fixture itself"
-M098_NOAUTHOR_RC=0
-( cd "$M098D/noauthor" && quarto render --to typst ) > "$WORK/m098-noauthor.log" 2>&1 \
-  || M098_NOAUTHOR_RC=$?
-capture --project "$M098D/noauthor" typst "m098-noauthor"
-[ "$M098_NOAUTHOR_RC" -ne 0 ] \
-  || fail "M098-AC7: the book with no author compiled to Typst, so the docs' sentence that Quarto's template needs one is stale"
-grep -q 'expected content, found array' "$WORK/m098-noauthor.log" \
-  || { tail -20 "$WORK/m098-noauthor.log" >&2; fail "M098-AC7: the book with no author failed, but not with the template's error, so its failure is not the one the docs state"; }
-pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
+if on_pinned_quarto "the book fixture with no author is not rendered: $TYPST_BOOK_WHY" "M098-AC7"; then
+  cp -R "$BOOK_DIR" "$M098D/noauthor"
+  rm -rf "$M098D/noauthor/_extensions" "$M098D/noauthor/_book" "$M098D/noauthor/.quarto"
+  mkdir -p "$M098D/noauthor/_extensions"
+  cp -R "$QI_EXT_DIR" "$M098D/noauthor/_extensions/index"
+  grep -v '^  author: ' "$BOOK_DIR/_quarto.yml" > "$M098D/noauthor/_quarto.yml"
+  grep -q '^  author: ' "$BOOK_DIR/_quarto.yml" \
+    || fail "M098-AC7: examples/book/_quarto.yml carries no author line, so the copy without one is the fixture itself"
+  M098_NOAUTHOR_RC=0
+  ( cd "$M098D/noauthor" && quarto render --to typst ) > "$WORK/m098-noauthor.log" 2>&1 \
+    || M098_NOAUTHOR_RC=$?
+  capture --project "$M098D/noauthor" typst "m098-noauthor"
+  [ "$M098_NOAUTHOR_RC" -ne 0 ] \
+    || fail "M098-AC7: the book with no author compiled to Typst, so the docs' sentence that Quarto's template needs one is stale"
+  grep -q 'expected content, found array' "$WORK/m098-noauthor.log" \
+    || { tail -20 "$WORK/m098-noauthor.log" >&2; fail "M098-AC7: the book with no author failed, but not with the template's error, so its failure is not the one the docs state"; }
+  pass "M098-AC7: the Typst book fails to compile without an author, with the template's own error, and compiles with one (M098-AC5)"
+fi
 pass "M098-AC7: README, the home page and the back-end differences page count four back-ends and no page counts three, the Typst page is in the navigation and linked from the output page, and each claim row above is on its page"
 
 if [ "${1:-}" = "--self-test" ]; then

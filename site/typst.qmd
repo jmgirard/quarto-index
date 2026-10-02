@@ -96,7 +96,9 @@ Quarto renders a Typst book as one merged document, so the extension sees every
 chapter's marks at once, and a range you open in one chapter and close in
 another pairs. Books were tested on Quarto 1.10.18. On that version Quarto's
 Typst book template does not compile a book whose `book:` metadata has no
-`author:`.
+`author:`. Quarto 1.5.52 does not render a Typst book. It prints the warning
+`The typst format is not supported by book projects`, exits without an error,
+and writes no PDF.
 
 ## A mark Typst never prints
 

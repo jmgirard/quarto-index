@@ -471,10 +471,11 @@ def _gfm(argv):
     src = open(argv[0], encoding='utf-8').read()
     want = [l.rstrip('\n') for l in open(argv[1], encoding='utf-8') if l.strip()]
     got = re.findall(r'<span class="index"[^>]*>.*?</span>', src)
+    want, spelling = M20.gfm_manifest(got, want)
     if got != want:
-        print('FAIL: M21-AC6: the index spans in the gfm render are not, in '
-              'document order and byte for byte, the manifest derived from the '
-              'fixture:', file=sys.stderr)
+        print(f'FAIL: M21-AC6: the index spans in the gfm render are not, in '
+              f'document order and byte for byte, the manifest derived from the '
+              f'fixture (attributes spelled {spelling}):', file=sys.stderr)
         for i in range(max(len(got), len(want))):
             g = got[i] if i < len(got) else '<missing>'
             w = want[i] if i < len(want) else '<not in the manifest>'

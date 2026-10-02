@@ -108,7 +108,10 @@ criterion. The plants added here run on the pinned Quarto.
 - re-audit: AC2 (full) — a line with no `:` had no defined label. The wording fixes it.
 - re-audit: AC2 (full) — the Producer line of the no-engine control has no `:` and cannot appear on 1.5.52, and a count inside a label can differ between Quartos. Both went to the user.
 - 2026-10-01: third implement gate: the user adopted the final AC2, which exempts the Producer line, and kept counts inside labels as they are (both Quartos print 367 in the sweep lines).
+- 2026-10-01: checkpoint, unverified: code for T2-T6 is written (Typst links, faces, NFKC, front-matter rows; gfm spelling and title; skip helper and gates; plants via the new `tests/typstforms.py`; the AC4 sentence; KI110 removed). The 1.5.52 run and the 1.10.18 `--self-test` run are in progress, so no task past T1 is ticked.
 
 ## Decisions
+
+- 2026-10-01: M098-AC7's front-matter check reads from the PDF which front-matter fields the template prints. When a field prints, the check expects page 1 for its mark. Which fields print is the template's choice, and so the Quarto's: 1.5.52 prints the abstract alone. The rule the check tests stays fixed: a printed field's mark has a page, and an unprinted field's mark has none. The check requires one printed and one unprinted field, and on the pinned Quarto it still requires the subtitle and the abstract. Chosen at the second implement gate over a skip, because the check is about the extension's output.
 
 ## Review

@@ -1195,13 +1195,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI108.** The marker-less plants read the render's working copy rather than
   the captured artifact, so M24's capture rule is met in letter and not in
   intent. — M32 review R2-F9
-- **KI110.** `tests/run-tests.sh` pins `M33_NOENGINE_PRODUCER=LuaTeX`, and
-  Quarto 1.5.52 renders PDF through xelatex (the `pdf (floor, 1.5.52)` job of
-  versions.yml run 34779339060 logs `pdf-engine: xelatex`, observed
-  2026-09-13), so the suite cannot run green on M43's floor leg until its
-  engine-dependent checks say which Quarto they are about (corrected M097: the
-  floor was 1.4.549, which also rendered through xelatex). — M43 plan gate
-  probes, M097
 - **KI117.** The `stopped` reading depends on TeX's fatal-error line ending the
   engine log; no capture whose rejection is the log's last `! ` line exists to
   exercise it. — M36

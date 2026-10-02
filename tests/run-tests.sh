@@ -171,15 +171,18 @@ on_pinned_quarto() {   # <reason> <label> [<label> ...]
 
 # A Typst book check whose subject is the extension's output runs on any Quarto
 # that renders the book it reads, not on the pinned one alone (M109, D-067).
-# Quarto 1.5.52 refuses a Typst book: it logs TYPST_BOOK_REFUSAL, exits 0 and
-# writes no PDF. The caller renders the book without stopping on its exit
-# status, then writes
+# Quarto 1.5.52 refuses a Typst book: it logs TYPST_BOOK_REFUSAL and writes no
+# PDF. On examples/book/ it then exits 0 and leaves `_book` empty. On
+# examples/book-typst-reset/, whose only format is Typst, it then logs a
+# TypeError, exits 1 and leaves no `_book`. The caller renders the book without
+# stopping on its exit status, captures it with `capture --project --refusable`,
+# then writes
 # `if typst_book_rendered <status> <log> <book dir> <label> [<label> ...]; then <check>; fi`.
 # The gate returns 0, printing nothing, after a render that exited 0, wrote
 # exactly one PDF under <book dir>/_book and logged no refusal. After a render
-# that exited 0, logged the refusal and wrote no PDF there, it prints one `skip`
-# line a label, naming the running Quarto and the refusal, and returns 1. Any
-# other render fails the run, naming the book.
+# that logged the refusal and wrote no PDF there, with any exit status, it
+# prints one `skip` line a label, naming the running Quarto and the refusal,
+# and returns 1. Any other render fails the run, naming the book.
 TYPST_BOOK_REFUSAL="The typst format is not supported by book projects"
 typst_book_skip() {   # <book dir> <label> [<label> ...]
   local book="$1" label
@@ -194,23 +197,22 @@ typst_book_rendered() {   # <status> <log> <book dir> <label> [<label> ...]
   local rc="$1" log="$2" book="$3" pdfs="" count refused=0
   shift 3
   [ "$#" -gt 0 ] || fail "M109: typst_book_rendered was given no label, so a skip would name no check"
-  if [ "$rc" -ne 0 ]; then
-    tail -30 "$log" >&2
-    fail "$1: the Typst render of $book exited $rc, so no check can read the book"
-  fi
   if [ -d "$book/_book" ]; then
     pdfs=$(find "$book/_book" -maxdepth 1 -name '*.pdf')
   fi
   count=$(printf '%s\n' "$pdfs" | grep -c . || true)
   if grep -qF -- "$TYPST_BOOK_REFUSAL" "$log"; then refused=1; fi
-  if [ "$refused" = 0 ] && [ "$count" = 1 ]; then return 0; fi
   if [ "$refused" = 1 ] && [ "$count" = 0 ]; then
     typst_book_skip "$book" "$@"
     return 1
   fi
+  if [ "$rc" -eq 0 ] && [ "$refused" = 0 ] && [ "$count" = 1 ]; then return 0; fi
   tail -30 "$log" >&2
   if [ "$refused" = 1 ]; then
-    fail "$1: the Typst render of $book logged <<$TYPST_BOOK_REFUSAL>> and also wrote $count PDF(s) under $book/_book (<<$pdfs>>), so it neither refused the book nor rendered it cleanly"
+    fail "$1: the Typst render of $book exited $rc, logged <<$TYPST_BOOK_REFUSAL>> and also wrote $count PDF(s) under $book/_book (<<$pdfs>>), so it neither refused the book nor rendered it cleanly"
+  fi
+  if [ "$rc" -ne 0 ]; then
+    fail "$1: the Typst render of $book exited $rc and logged no <<$TYPST_BOOK_REFUSAL>>, so no check can read the book"
   fi
   fail "$1: the Typst render of $book exited 0 and logged no <<$TYPST_BOOK_REFUSAL>>, but wrote $count PDF(s) under $book/_book, not one (<<$pdfs>>)"
 }
@@ -329,8 +331,13 @@ CAPTURE_ROOT="$WORK/cap"
 CAPTURE_EXTS="html tex md pdf epub aux idx ilg ind log"
 
 capture() {
-  local project=0 site=0
+  local project=0 site=0 refusable=0
   if [ "${1:-}" = "--project" ]; then project=1; shift; fi
+  # A Typst book render that Quarto may refuse (M109). Quarto 1.5.52 leaves no
+  # `_book` when it refuses examples/book-typst-reset/, and typst_book_rendered,
+  # which reads the render before any check does, decides whether that is a
+  # refusal or a failure. So a missing `_book` is not an error here.
+  if [ "${1:-}" = "--refusable" ]; then refusable=1; shift; fi
   # A website project writes a whole output directory rather than a document
   # beside its source, so it is captured whole, exactly as a book's `_book` is.
   if [ "${1:-}" = "--site" ]; then site=1; shift; fi
@@ -361,7 +368,7 @@ capture() {
   if [ "$project" = "1" ]; then
     if [ -d "$src/_book" ]; then
       cp -R "$src/_book" "$dir/_book"
-    elif [ "$under_examples" = "1" ]; then
+    elif [ "$under_examples" = "1" ] && [ "$refusable" = "0" ]; then
       fail "M24: the project render of $src to $fmt produced no _book directory, so every check naming the slug <<$slug>> would read a capture holding nothing"
     fi
     return 0
@@ -30246,16 +30253,28 @@ if [ "${1:-}" = "--self-test" ]; then
     || fail "M109 T1 self-test (control): the gate let the render through but printed <<$M109_OUT>>"
   pass "M109 T1 self-test (control): the gate lets through a render that exited 0, wrote one PDF and logged no refusal, printing nothing"
 
-  # The refusal: exit 0, the warning, no PDF. One skip line a label.
+  # <case> <status>: a refusal with no PDF. One skip line a label, at any
+  # exit status.
+  m109_skip() {
+    local out st=0 want
+    out=$(typst_book_rendered "$2" "$M109G/$1.log" "$M109G/$1" \
+      "M109 plant $1" "M109 plant $1 (second)" 2>&1) || st=$?
+    want="skip M109 plant $1: Quarto $RUNNING_QUARTO refused to render $M109G/$1 to Typst, logging <<The typst format is not supported by book projects>>
+skip M109 plant $1 (second): Quarto $RUNNING_QUARTO refused to render $M109G/$1 to Typst, logging <<The typst format is not supported by book projects>>"
+    [ "$st" = 1 ] && [ "$out" = "$want" ] \
+      || { printf '%s\n' "$out" >&2; fail "M109 T1 self-test ($1): the gate on a refused render exited $st and did not print exactly one skip line a label naming the running Quarto and the refusal (its output is above)"; }
+    pass "M109 T1 self-test ($1): on a render that exited $2, logged the refusal and wrote no PDF, the gate prints one skip line a label naming Quarto $RUNNING_QUARTO and the refusal"
+  }
+  # As Quarto 1.5.52 refuses examples/book/: exit 0 and an empty _book.
   m109_case refused 0 1
-  M109_ST=0
-  M109_OUT=$(typst_book_rendered 0 "$M109G/refused.log" "$M109G/refused" \
-    "M109 plant refused" "M109 plant refused (second)" 2>&1) || M109_ST=$?
-  M109_WANT="skip M109 plant refused: Quarto $RUNNING_QUARTO refused to render $M109G/refused to Typst, logging <<The typst format is not supported by book projects>>
-skip M109 plant refused (second): Quarto $RUNNING_QUARTO refused to render $M109G/refused to Typst, logging <<The typst format is not supported by book projects>>"
-  [ "$M109_ST" = 1 ] && [ "$M109_OUT" = "$M109_WANT" ] \
-    || { printf '%s\n' "$M109_OUT" >&2; fail "M109 T1 self-test (refused): the gate on a refused render exited $M109_ST and did not print exactly one skip line a label naming the running Quarto and the refusal (its output is above)"; }
-  pass "M109 T1 self-test (refused): on a render that exited 0, logged the refusal and wrote no PDF, the gate prints one skip line a label naming Quarto $RUNNING_QUARTO and the refusal"
+  m109_skip refused 0
+  # As it refuses examples/book-typst-reset/: a TypeError after the refusal,
+  # exit 1 and no _book at all.
+  m109_case refusedcrash 0 1
+  rm -rf "$M109G/refusedcrash/_book"
+  printf "ERROR: TypeError: Cannot read properties of undefined (reading 'pandoc')\n" \
+    >> "$M109G/refusedcrash.log"
+  m109_skip refusedcrash 1
 
   # <case> <status> <want>: the gate must fail the run, naming the book and
   # <want>, and print no skip line.
@@ -30272,10 +30291,10 @@ skip M109 plant refused (second): Quarto $RUNNING_QUARTO refused to render $M109
     fi
     pass "M109 T1 self-test ($1): the gate fails the run, naming the book and <<$3>>"
   }
-  # A non-zero exit fails even with the refusal logged and no PDF written,
-  # the shape that otherwise skips.
-  m109_case nonzero 0 1
-  m109_red nonzero 2 "exited 2, so no check can read the book"
+  # A non-zero exit with no refusal fails even with one PDF written, the shape
+  # that otherwise runs.
+  m109_case nonzero 1 0
+  m109_red nonzero 2 "exited 2 and logged no <<The typst format is not supported by book projects>>, so no check can read the book"
   # Exit 0, no refusal and no _book at all.
   m109_case nopdf 0 0
   rm -rf "$M109G/nopdf/_book"
@@ -30283,7 +30302,7 @@ skip M109 plant refused (second): Quarto $RUNNING_QUARTO refused to render $M109
   m109_case twopdf 2 0
   m109_red twopdf 0 "exited 0 and logged no <<The typst format is not supported by book projects>>, but wrote 2 PDF(s)"
   m109_case refusedpdf 1 1
-  m109_red refusedpdf 0 "logged <<The typst format is not supported by book projects>> and also wrote 1 PDF(s)"
+  m109_red refusedpdf 0 "exited 0, logged <<The typst format is not supported by book projects>> and also wrote 1 PDF(s)"
 fi
 
 # The book's Typst render runs on every Quarto. Its outcome, read by
@@ -30296,10 +30315,10 @@ M098_TYPST_BOOK=0
 M098_BOOK_RC=0
 ( cd "$BOOK_DIR" && quarto render --to typst ) > "$WORK/book-typst.log" 2>&1 \
   || M098_BOOK_RC=$?
+capture --project --refusable "$BOOK_DIR" typst "book-typst"
 if typst_book_rendered "$M098_BOOK_RC" "$WORK/book-typst.log" "$BOOK_DIR" "M098-AC5" \
      "M098-AC5 (main)" "M098-AC5 (people)" "M098-AC5 (places)" "M098-AC5 (placement)"; then
   M098_TYPST_BOOK=1
-  capture --project "$BOOK_DIR" typst "book-typst"
   m098_no_typst_warning "$WORK/book-typst.log" "M098-AC5"
   M098_BOOK_PDF=$(find "$CAPTURE_ROOT/book-typst/_book" -maxdepth 1 -name '*.pdf')
 fi
@@ -30389,9 +30408,9 @@ grep -qxF -- "$(printf 'entry\t0\tyam\ti, 1, 2–3')" tests/typst-book-reset.tsv
 m100_book_render() {   # <project dir> <slug>
   M100_BOOK_RC=0
   ( cd "$1" && quarto render --to typst ) > "$WORK/$2.log" 2>&1 || M100_BOOK_RC=$?
+  capture --project --refusable "$1" typst "$2"
 }
 m100_book_read() {   # <project dir> <slug> <label>
-  capture --project "$1" typst "$2"
   local pdfs
   pdfs=$(find "$CAPTURE_ROOT/$2/_book" -maxdepth 1 -name '*.pdf')
   [ "$(printf '%s\n' "$pdfs" | grep -c .)" = "1" ] \

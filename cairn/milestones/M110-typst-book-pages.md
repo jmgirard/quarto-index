@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M110: The site says which Quarto renders a Typst book
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** high   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP1   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** user-facing — the published site pages that authors read   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m110-typst-book-pages   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -73,14 +73,14 @@ changes.
      cites; an insertion, removal, or reorder renumbers the labels and the
      Coverage lines together. -->
 
-- [ ] T1: In `site/typst.qmd:99-101`, delete the clause `exits without an
+- [x] T1: In `site/typst.qmd:99-101`, delete the clause `exits without an
       error`, keeping the quoted warning and that no PDF is written. Re-read
       the whole Books section for any other claim about Quarto 1.5.52.
-- [ ] T2: In `site/books.qmd:250-254`, keep the sentence "A Typst book is
+- [x] T2: In `site/books.qmd:250-254`, keep the sentence "A Typst book is
       merged the same way." and add that Typst books were tested on Quarto
       1.10.18 and that Quarto 1.5.52 does not render one, pointing to the
       Typst page. Re-read the paragraph whole.
-- [ ] T3: In `tests/run-tests.sh`, replace the `floor warning` row of
+- [x] T3: In `tests/run-tests.sh`, replace the `floor warning` row of
       `m098-typst-claims.txt` with T1's sentence, add rows to
       `m098-other-claims.txt` for T2's sentences, and add `exits without an
       error` to a `phrase-absent` ledger. Show each new or changed row red on
@@ -109,6 +109,9 @@ changes.
 - 2026-10-10: collision sweep: the candidate row is absorbed. M109 (done) gated the suite's Typst-book checks, not the pages. D-065 and D-067 govern suite checks, not page text. No D-entry rejects this work. Inbox: 0 open issues, 0 open PRs.
 - 2026-10-10: lessons: M080 (replacing one false claim leaves a page's others standing) shapes the re-reads in T1 and T2. PROFILE verify notes (sequential runs, the Deno segfault re-run) shape T4.
 - 2026-10-10: the local Quarto is 1.10.19, not the 1.10.18 that `pages.yml` pins, so the D-065 pinned-only checks will print skip lines in T4. No changelog entry, since the pages change and no behavior does.
+- 2026-10-10: implement started on branch m110-typst-book-pages, main synced and unmoved. No question owed: nothing the plan left open needs a permission.
+- 2026-10-10: T1-T2: `site/typst.qmd` drops the clause `exits without an error`. `site/books.qmd` adds "Typst books were tested on Quarto 1.10.18." and "Quarto 1.5.52 does not render a Typst book." Neither page carries another Quarto 1.5.52 claim (grep `1\.5`).
+- 2026-10-10: T3: `floor warning` row rewritten, rows `typst tested` and `typst floor` added to `m098-other-claims.txt`, and `m110-retired.txt` holds `exits without an error` for `phrase-absent`. Three `--self-test` plants (each new Books sentence dropped, the clause restored on an overlay Typst page) each turned red on its own row in a scratch run. The main-branch pages fail the new rows, and the finished pages pass them.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

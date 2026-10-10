@@ -249,6 +249,7 @@ and a page range opened in one chapter and closed in another pairs — see the
 
 A Typst book is merged the same way. It prints every declared index that holds
 at least one mark, each under its own title, with page numbers gathered from every chapter, and a page
-range opened in one chapter and closed in another pairs. See the
+range opened in one chapter and closed in another pairs. Typst books were
+tested on Quarto 1.10.18. Quarto 1.5.52 does not render a Typst book. See the
 [Typst](typst.qmd) page, which also notes the `author:` key Quarto's Typst book
 template needs.

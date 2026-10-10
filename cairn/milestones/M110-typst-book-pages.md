@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M110: The site says which Quarto renders a Typst book
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** high   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -86,7 +86,7 @@ changes.
       error` to a `phrase-absent` ledger. Show each new or changed row red on
       a scratch copy of its page that lacks the sentence, or that carries the
       phrase again, before trusting it green.
-- [ ] T4: Run `tests/run-tests.sh`, then `tests/run-tests.sh --self-test`,
+- [x] T4: Run `tests/run-tests.sh`, then `tests/run-tests.sh --self-test`,
       one at a time, and record the Quarto version and the check counts. Re-run
       a render that fails with Quarto's Deno segfault before reading it as the
       change's (`cairn/PROFILE.md` verify).
@@ -112,6 +112,9 @@ changes.
 - 2026-10-10: implement started on branch m110-typst-book-pages, main synced and unmoved. No question owed: nothing the plan left open needs a permission.
 - 2026-10-10: T1-T2: `site/typst.qmd` drops the clause `exits without an error`. `site/books.qmd` adds "Typst books were tested on Quarto 1.10.18." and "Quarto 1.5.52 does not render a Typst book." Neither page carries another Quarto 1.5.52 claim (grep `1\.5`).
 - 2026-10-10: T3: `floor warning` row rewritten, rows `typst tested` and `typst floor` added to `m098-other-claims.txt`, and `m110-retired.txt` holds `exits without an error` for `phrase-absent`. Three `--self-test` plants (each new Books sentence dropped, the clause restored on an overlay Typst page) each turned red on its own row in a scratch run. The main-branch pages fail the new rows, and the finished pages pass them.
+- 2026-10-10: T4: the first run stopped at the PyYAML check, because `/usr/local/bin/python3` (3.14.6) has no PyYAML. With a link to `/usr/bin/python3` (3.9.6) first on `PATH`, Quarto 1.10.19: "All checks passed (893 checks)", 9 skip lines, each a pinned-only check naming 1.10.19. `--self-test`: "All checks passed (1764 checks)", the three M110 plants red on their own rows. PROFILE.md's `verify` now names the interpreter.
+- 2026-10-10: claim audit: 13 claims read, 0 corrected — site/books.qmd, site/typst.qmd, tests/run-tests.sh. Its one wording note led to the M110-AC3 failure message naming the phrase it matches, before the `--self-test` run.
+- 2026-10-10: implement done, status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

@@ -30858,7 +30858,7 @@ cat > "$WORK/m110-retired.txt" <<'M110RETIRED'
 floor exit	exits without an error
 M110RETIRED
 python3 tests/sitecheck.py phrase-absent "$WORK/m110-retired.txt" \
-  || fail "M110-AC3: a page a reader meets still says Quarto exits without an error (its own FAIL line is above)"
+  || fail "M110-AC3: a page a reader meets still carries the phrase <<exits without an error>> (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
 matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS

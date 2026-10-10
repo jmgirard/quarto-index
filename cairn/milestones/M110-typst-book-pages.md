@@ -44,13 +44,13 @@ changes.
      coverage-complete counts AC checkboxes positionally (M107); departures:
      a "Deviations from RR<NN>" table ends this section. -->
 
-- [ ] AC1: In `site/books.qmd`, the paragraph that opens "A Typst book is
+- [x] AC1: In `site/books.qmd`, the paragraph that opens "A Typst book is
       merged the same way" says that Typst books were tested on Quarto 1.10.18
       and that Quarto 1.5.52 does not render one.
-- [ ] AC2: In `site/typst.qmd`'s Books section, the sentences about Quarto
+- [x] AC2: In `site/typst.qmd`'s Books section, the sentences about Quarto
       1.5.52 say that it logs `The typst format is not supported by book
       projects` and writes no PDF, and state no exit status for Quarto 1.5.52.
-- [ ] AC3: No `site/*.qmd` page and not `README.md` contains the phrase
+- [x] AC3: No `site/*.qmd` page and not `README.md` contains the phrase
       `exits without an error`, as `tests/sitecheck.py phrase-absent` sweeps
       them.
 - [ ] AC4: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` pass on
@@ -128,3 +128,10 @@ changes.
      results, review findings + triage. EXEMPT from the 150-line cap (M55),
      as are the work log (D-046) and the decisions section (D-074); evidence
      never scrambles plan-owned content. -->
+
+Evidence at 859f922, Quarto 1.10.19, `/usr/bin/python3` 3.9.6 first on `PATH`.
+
+- AC1: `site/books.qmd:250-255` reads "Typst books were tested on Quarto 1.10.18. Quarto 1.5.52 does not render a Typst book." in the paragraph opening "A Typst book is merged the same way". `sitecheck.py claims site/books.qmd` with the suite's `m098-other-claims.txt` rows: all 3 stated.
+- AC2: the Books section (`site/typst.qmd:93-101`) says Quarto 1.5.52 "prints the warning `The typst format is not supported by book projects` and writes no PDF". Printing a warning is logging it, so the sentence says what AC2 names. A grep of the section for `exit`, `status` and `error` finds nothing. `sitecheck.py claims site/typst.qmd` with `m098-typst-claims.txt`: all 36 stated.
+- AC3: `sitecheck.py phrase-absent` with `m110-retired.txt`: the phrase is on none of the 23 files swept (every tracked `site/*.qmd` page and `README.md`). `git grep -i 'exits without an error' -- 'site/*.qmd' README.md` finds nothing.
+- consistency gate: `cairn_validate.py` all checks passed. No DESIGN.md principle changed, so `cairn_impact` is skipped. The generic profile names no toolchain checks.

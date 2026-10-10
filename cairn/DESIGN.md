@@ -900,43 +900,20 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 ### The HTML back-end and books
 
 - **KI10.** The filter's per-document accumulators are module-level state,
-  latent if Lua state is ever reused across documents. A `reset` each module
-  owns returns them between documents; a cell added that joins no `reset` is
-  unguarded, and D-011 refuses to pin that with a source scan. The cell guard
-  checks the other direction, each reset line against `CELLS`, which D-062
-  allows (corrected M105). Four of the accumulators carry
-  more than a skewed count. A leaked `pending_xrefs` emits reports naming marks in a
-  different file, so it reads as a filter bug rather than a stale number.
-  `principal_ordinals` is the first whose value reaches an on-disk artifact, the
-  `.aux` registry keys, so a reused state would offset the next document's
-  ordinals. `range_at` is the first whose correctness depends on being reset
-  mid-document, and `finish_ranges` returns it to the origin while leaving
-  `range_items`, `range_found`, `range_pair_found` and `range_verdicts` as the
-  first document filled them, so a reused state would pair the second document's
-  marks against the first's and report the first's findings again.
-  `indexes.lua`'s cells must be settled BEFORE any mark is recorded — every
-  other accumulator is keyed by the index a mark files in — which is why
-  `indexes.reset` is a `Pandoc` hook taking the document rather than an element
-  one, and why it reinstalls the single unnamed index rather than leaving the
-  tables empty: a module that acquired an index only once a declaration was read
-  would hand a nil key to every accumulator keyed by one. M26's probe resets and
-  proves the cells `tests/stateprobe.py`'s `CELLS` enumerates, the six
-  `indexes.lua` resets among them since M095 (corrected M095):
-  `tests/state-pollute.lua` reads a declaration of two labelled indexes through
-  `qi_indexes.reset` after its drive, and no state-reuse fixture declares one,
-  which is what leaves those cells readable at all. Four of the six move a
-  comparison: `order`, `doc_labels` and `declared` on `state-reuse`, and
-  `titles` on `examples/state-reuse-indexes.qmd`, whose mark naming an index
-  nothing declares is the one read of `titles` a fixture reaches. Two cannot.
-  `read` assigns `language_words` on every document, and it assigns an
-  `index_labels` map only to a declared name, never to the unnamed index a
-  mark with no declared name files in, which is the only index these fixtures
-  have. `EXEMPT` records both reasons and their passing is the
-  evidence for them. — M01 review R16, widened through M03
-  P1, M04, M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory corrected
-  M38; the arrival history and the cell count "19", stale since M56, retired
-  2026-09-04 with git holding both; absorbs KI179 (a reused state would print
-  the first document's declared words), M56 review F7, merged 2026-09-10
+  latent if Lua state is ever reused across documents. Each module's `reset`
+  returns them between documents; a cell that joins no `reset` is unguarded,
+  and D-011 refuses to pin that with a source scan. The cell guard checks the
+  other direction, each reset line against `CELLS`, which D-062 allows
+  (corrected M105). Some cells carry more than a skewed count: a leaked
+  `pending_xrefs` reports marks in another file, and `principal_ordinals`
+  reaches the `.aux` registry keys. `indexes.reset` is a `Pandoc` hook that
+  reinstalls the unnamed index, because every other accumulator is keyed by
+  the index a mark files in. M26's probe resets and proves the cells
+  `tests/stateprobe.py`'s `CELLS` enumerates, the six `indexes.lua` resets
+  among them since M095 (corrected M095); `EXEMPT` gives the reason for each
+  cell no comparison can move. — M01 review R16, widened through M03 P1, M04,
+  M06 F-a, M09 F6, M14, M17, M20 R2-F14, M23 F8; inventory corrected M38;
+  absorbs KI179, M56 review F7, merged 2026-09-10
 - **KI11.** A placement marker written in YAML `abstract:` survives verbatim
   into the HTML header — filter residue of the IP2 class, since
   `resolve_markers` reads `doc.blocks` alone; the misplaced-class report is

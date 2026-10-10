@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-02 (M109 done: books-page candidate row extended, M106 row pruned, a Quarto crash note added to PROFILE.md. Validate green.)_
+_Last hygiene check: 2026-10-10 (triage: books/typst-page row re-rated normal → high. KI10 compressed, dropping its range_pair_found clause that marks.lua contradicts. Nothing dropped, merged, split or routed. No decision entry. Validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -20,6 +20,7 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
+- [high] Say in `site/books.qmd` which Quarto renders a Typst book: its sentence that a Typst book is merged the same way names no version, and Quarto 1.5.52 renders none. Correct `site/typst.qmd`, which says 1.5.52 exits without an error, though a Typst-only book exits 1. Promote with any other edit to either page — added 2026-10-01, extended 2026-10-02 — M108 review, M109 review D6
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - Run the suite in parts: independent sections in parallel, or a named subset once the three whole-run accumulator sweeps declare their own domains. Promote on a section growing past a couple of minutes — added 2026-09-03 — M075 plan gate, split 2026-10-01 — KI238, KI241, KI242, KI243, KI244, KI245
 - Time the suite per render rather than per section. Promote on M075's section profile proving too coarse — added 2026-09-03 — M075 plan gate, split 2026-10-01
@@ -28,7 +29,6 @@ _Released 0.4.0 2026-09-11._
 - Narrow M32's HTML-cost check to the bibliography's own wrapper. Promote on that fixture growing a footnote or a Citation block — added 2026-08-24 — M32 review R2-F14, split 2026-10-01 — KI109
 - Make the version matrix's PDF comparison version-portable. M108 takes the suite half. Promote on an extraction shown engine-neutral across the two engines — added 2026-08-26 — M43, split 2026-10-01, narrowed 2026-10-01 by M108 — KI111
 - A CI job that runs the whole acceptance suite on the floor Quarto, which M108 makes pass locally. Promote on a floor-only regression that reaches the default branch unseen by the version matrix — added 2026-10-01 — M107/M108 plan gate
-- Say in `site/books.qmd` which Quarto renders a Typst book: its sentence that a Typst book is merged the same way names no version, and Quarto 1.5.52 renders none. Correct `site/typst.qmd`, which says 1.5.52 exits without an error, though a Typst-only book exits 1. Promote with any other edit to either page — added 2026-10-01, extended 2026-10-02 — M108 review, M109 review D6
 - A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249

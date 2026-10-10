@@ -53,7 +53,7 @@ changes.
 - [x] AC3: No `site/*.qmd` page and not `README.md` contains the phrase
       `exits without an error`, as `tests/sitecheck.py phrase-absent` sweeps
       them.
-- [ ] AC4: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` pass on
+- [x] AC4: `tests/run-tests.sh` and `tests/run-tests.sh --self-test` pass on
       the local Quarto with the finished pages.
 
 ## Coverage
@@ -158,3 +158,4 @@ Evidence at 859f922, Quarto 1.10.19, `/usr/bin/python3` 3.9.6 first on `PATH`.
 - prior-review #5: the M080/M081 lesson is met — reject, false as a defect: it requests nothing.
 - fix-now commit: diff-bug #1, #2, #4, blame-history #4 and prior-review #2, fixed 372d0e9. Each of the four plants was red on its own row in a scratch run, the restored phrase broken across a line, and a rewrapped Books copy still built its plant.
 - AC4 second pass at 372d0e9: plain run "All checks passed (893 checks)", 9 skip lines. `--self-test` failed at M11-AC1 on a second Deno `Segmentation fault: 11`, rendering `empty-levels.qmd` to PDF, again a render the branch does not touch. Re-run pending.
+- AC4: at 372d0e9 on Quarto 1.10.19, plain run "All checks passed (893 checks)" with 9 skip lines, each a pinned-only check naming 1.10.19. `--self-test` re-run "All checks passed (1765 checks)", 9 skip lines, no segfault, and the four M110 plants red on their own rows (`m110-books-tested`, `m110-books-floor`, `m110-exit-restored`, `m110-warning-lost`).

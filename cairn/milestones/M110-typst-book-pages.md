@@ -156,3 +156,5 @@ Evidence at 859f922, Quarto 1.10.19, `/usr/bin/python3` 3.9.6 first on `PATH`.
 - prior-review #3: the ban catches one wording only — reject, planned change (as diff-bug #3).
 - prior-review #4: the tested version 1.10.18 sits in several places with nothing tying it to the pin — follow-up, the same new candidate row as diff-bug #6.
 - prior-review #5: the M080/M081 lesson is met — reject, false as a defect: it requests nothing.
+- fix-now commit: diff-bug #1, #2, #4, blame-history #4 and prior-review #2, fixed 372d0e9. Each of the four plants was red on its own row in a scratch run, the restored phrase broken across a line, and a rewrapped Books copy still built its plant.
+- AC4 second pass at 372d0e9: plain run "All checks passed (893 checks)", 9 skip lines. `--self-test` failed at M11-AC1 on a second Deno `Segmentation fault: 11`, rendering `empty-levels.qmd` to PDF, again a render the branch does not touch. Re-run pending.

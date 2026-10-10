@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M110 | The site says which Quarto renders a Typst book | planned | — | high | milestones/M110-typst-book-pages.md |
 | M109 | The suite checks a Typst book on any Quarto that renders one | done | — | normal | milestones/archive/M109-typst-book-gate.md |
 | M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |
 | M107 | An emptied container renders on Quarto 1.5.52 | done | — | high | milestones/archive/M107-emptied-container-floor.md |
@@ -20,7 +21,6 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- [high] Say in `site/books.qmd` which Quarto renders a Typst book: its sentence that a Typst book is merged the same way names no version, and Quarto 1.5.52 renders none. Correct `site/typst.qmd`, which says 1.5.52 exits without an error, though a Typst-only book exits 1. Promote with any other edit to either page — added 2026-10-01, extended 2026-10-02 — M108 review, M109 review D6
 - Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - Run the suite in parts: independent sections in parallel, or a named subset once the three whole-run accumulator sweeps declare their own domains. Promote on a section growing past a couple of minutes — added 2026-09-03 — M075 plan gate, split 2026-10-01 — KI238, KI241, KI242, KI243, KI244, KI245
 - Time the suite per render rather than per section. Promote on M075's section profile proving too coarse — added 2026-09-03 — M075 plan gate, split 2026-10-01

@@ -115,6 +115,7 @@ changes.
 - 2026-10-10: T4: the first run stopped at the PyYAML check, because `/usr/local/bin/python3` (3.14.6) has no PyYAML. With a link to `/usr/bin/python3` (3.9.6) first on `PATH`, Quarto 1.10.19: "All checks passed (893 checks)", 9 skip lines, each a pinned-only check naming 1.10.19. `--self-test`: "All checks passed (1764 checks)", the three M110 plants red on their own rows. PROFILE.md's `verify` now names the interpreter.
 - 2026-10-10: claim audit: 13 claims read, 0 corrected — site/books.qmd, site/typst.qmd, tests/run-tests.sh. Its one wording note led to the M110-AC3 failure message naming the phrase it matches, before the `--self-test` run.
 - 2026-10-10: implement done, status review.
+- 2026-10-10: step-7 approval: m110-typst-book-pages approved for merge
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

@@ -50,6 +50,11 @@ line 210, and the check that rendered fails with "failed to render". M109 saw
 it twice, on renders the branch did not change. Each re-run passed. If a
 run fails this way, re-run it before you read the failure as the change's.
 
+The suite needs a `python3` with PyYAML (D-030). On this machine the first
+`python3` on `PATH`, `/usr/local/bin/python3`, has none (observed 2026-10-10,
+M110), and the run stops at its PyYAML check. Put a `python3` link to
+`/usr/bin/python3` first on `PATH` for the run.
+
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal
 cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`).

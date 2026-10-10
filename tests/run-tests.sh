@@ -30798,7 +30798,7 @@ book pairs	a range you open in one chapter and close in another pairs
 books tested	Books were tested on Quarto 1.10.18.
 author	Quarto's Typst book template does not compile a book whose `book:` metadata has no `author:`
 floor book	Quarto 1.5.52 does not render a Typst book.
-floor warning	It prints the warning `The typst format is not supported by book projects`, exits without an error, and writes no PDF.
+floor warning	It prints the warning `The typst format is not supported by book projects` and writes no PDF.
 unprinted field	Its term is still in the index, with no page number.
 M098PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \
@@ -30847,9 +30847,18 @@ pass "M098-AC7: the PDF index folds the page just after kelp's range into it (ke
 
 cat > "$WORK/m098-other-claims.txt" <<'M098OTHER'
 typst book	A Typst book is merged the same way.
+typst tested	Typst books were tested on Quarto 1.10.18.
+typst floor	Quarto 1.5.52 does not render a Typst book.
 M098OTHER
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
-  || fail "M098-AC7: site/books.qmd no longer states that a Typst book is merged (its own FAIL line is above)"
+  || fail "M098-AC7 and M110-AC1: site/books.qmd no longer states that a Typst book is merged, the Quarto it was tested on, or that Quarto 1.5.52 renders none (its own FAIL line is above)"
+# The Typst page states no exit status for Quarto 1.5.52, because M109 saw the
+# two test books exit differently. Its retired clause is held off every page.
+cat > "$WORK/m110-retired.txt" <<'M110RETIRED'
+floor exit	exits without an error
+M110RETIRED
+python3 tests/sitecheck.py phrase-absent "$WORK/m110-retired.txt" \
+  || fail "M110-AC3: a page a reader meets still carries the phrase <<exits without an error>> (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
 matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS
@@ -31255,6 +31264,40 @@ M098PLANTPY
   # above does not leave this plant asking for the old total (M099).
   m098_red typst-lost "does not state 1 of the $(grep -c . "$WORK/m098-typst-claims.txt") claim(s)" \
     python3 tests/sitecheck.py claims "$M098D/typst-lost.qmd" "$WORK/m098-typst-claims.txt"
+  # M110: the Books page without each sentence it added, and the Typst page
+  # with its retired clause restored. The restored clause breaks its line
+  # inside the phrase, where the sweep's whitespace flattening acts.
+  mkdir -p "$M098D/m110-overlay/site"
+  python3 - site/books.qmd site/typst.qmd "$M098D" <<'M110PLANTPY' \
+    || fail "M110 self-test: the page variants could not be written (their own FAIL line is above)"
+import re, sys
+books, typst, out = sys.argv[1:4]
+body = open(books, encoding='utf-8').read()
+for slug, gone in (('tested', r'Typst\s+books\s+were\s+tested\s+on\s+Quarto\s+1\.10\.18\.\s+'),
+                   ('floor', r'Quarto\s+1\.5\.52\s+does\s+not\s+render\s+a\s+Typst\s+book\.\s+')):
+    copy, n = re.subn(gone, '', body)
+    if n != 1:
+        print(f'FAIL: M110 self-test: {books} carries {gone!r} {n} time(s), '
+              f'not once, so the copy is not one dropped sentence', file=sys.stderr)
+        sys.exit(1)
+    open(f'{out}/m110-books-{slug}.qmd', 'w', encoding='utf-8').write(copy)
+page = open(typst, encoding='utf-8').read()
+copy, n = re.subn(r'book projects`\s+and\s+writes\s+no\s+PDF\.',
+                  'book projects`, exits without\nan error, and writes no PDF.', page)
+if n != 1:
+    print(f'FAIL: M110 self-test: {typst} carries the floor warning sentence '
+          f'{n} time(s), not once', file=sys.stderr)
+    sys.exit(1)
+open(f'{out}/m110-overlay/site/typst.qmd', 'w', encoding='utf-8').write(copy)
+M110PLANTPY
+  m098_red m110-books-tested "typst tested: <<Typst books were tested on Quarto 1.10.18.>>" \
+    python3 tests/sitecheck.py claims "$M098D/m110-books-tested.qmd" "$WORK/m098-other-claims.txt"
+  m098_red m110-books-floor "typst floor: <<Quarto 1.5.52 does not render a Typst book.>>" \
+    python3 tests/sitecheck.py claims "$M098D/m110-books-floor.qmd" "$WORK/m098-other-claims.txt"
+  m098_red m110-exit-restored 'site/typst.qmd (floor exit)' \
+    python3 tests/sitecheck.py phrase-absent "$WORK/m110-retired.txt" "$M098D/m110-overlay"
+  m098_red m110-warning-lost 'floor warning: <<It prints the warning' \
+    python3 tests/sitecheck.py claims "$M098D/m110-overlay/site/typst.qmd" "$WORK/m098-typst-claims.txt"
   # The index heading written as a paragraph, which is what a Pandoc header
   # became in a document whose headings start at two hashes.
   mkdir -p "$M098D/outline-plant"

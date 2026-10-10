@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M110 | The site says which Quarto renders a Typst book | planned | — | high | milestones/M110-typst-book-pages.md |
+| M110 | The site says which Quarto renders a Typst book | review | — | high | milestones/M110-typst-book-pages.md |
 | M109 | The suite checks a Typst book on any Quarto that renders one | done | — | normal | milestones/archive/M109-typst-book-gate.md |
 | M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |
 | M107 | An emptied container renders on Quarto 1.5.52 | done | — | high | milestones/archive/M107-emptied-container-floor.md |
@@ -33,6 +33,7 @@ _Released 0.4.0 2026-09-11._
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249
 - Name in the changelog that Word output on Quarto 1.10.18 now keeps a marker-only captioned figure and its caption, which M107's empty-Plain fill restored, with a suite check that reads the docx. Promote on any milestone that renders Word in the suite — added 2026-10-01 — M107 review F1, F2
+- [low] Hold the Typst pages' Quarto facts to their sources: no check ties their "tested on Quarto 1.10.18" to the `pages.yml` pin, and the warning `site/typst.qmd` quotes is a second copy of the suite's `TYPST_BOOK_REFUSAL`. Promote on the pin moving or either string changing — added 2026-10-10 — M110 review
 - [low] Tidy the M105 cell-guard self-test: derive the module list its red runs assert instead of pinning four names, put the commented-out-opener comment over its own plant, and rewrap the `tests/stateprobe.py` docstring. Promote on a new module gaining a reset, which turns that self-test red — added 2026-10-01 — M105 review W4, W8, W12
 - [low] Test that the first counting symbol of a Typst page numbering pattern sets a locator's kind: a pattern with two symbols of different kinds, where taking the last symbol changes an entry's order. Promote on any change to `qi-index-rank` or `qi-index-symbols` — added 2026-09-14 — M100 review round 2 F1
 - [low] Close the last id-census shape M081 and M082 leave in `note_raw`: a `style` or `script` inside `svg` or `math`, where a breakout tag is reported to make a real element the walk steps over. Promote on evidence checked against a browser, which this repo does not run, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261

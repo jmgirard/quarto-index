@@ -116,6 +116,7 @@ changes.
 - 2026-10-10: claim audit: 13 claims read, 0 corrected — site/books.qmd, site/typst.qmd, tests/run-tests.sh. Its one wording note led to the M110-AC3 failure message naming the phrase it matches, before the `--self-test` run.
 - 2026-10-10: implement done, status review.
 - 2026-10-10: step-7 approval: m110-typst-book-pages approved for merge
+- 2026-10-10: PR #110 opened at 647165f. Its checks were pending (1 passing, 3 pending, 1 skipped), and the session stopped before the merge instead of watching CI. The merge marker for PR #110 is written.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

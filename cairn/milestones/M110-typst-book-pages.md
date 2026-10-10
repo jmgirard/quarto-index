@@ -135,3 +135,24 @@ Evidence at 859f922, Quarto 1.10.19, `/usr/bin/python3` 3.9.6 first on `PATH`.
 - AC2: the Books section (`site/typst.qmd:93-101`) says Quarto 1.5.52 "prints the warning `The typst format is not supported by book projects` and writes no PDF". Printing a warning is logging it, so the sentence says what AC2 names. A grep of the section for `exit`, `status` and `error` finds nothing. `sitecheck.py claims site/typst.qmd` with `m098-typst-claims.txt`: all 36 stated.
 - AC3: `sitecheck.py phrase-absent` with `m110-retired.txt`: the phrase is on none of the 23 files swept (every tracked `site/*.qmd` page and `README.md`). `git grep -i 'exits without an error' -- 'site/*.qmd' README.md` finds nothing.
 - consistency gate: `cairn_validate.py` all checks passed. No DESIGN.md principle changed, so `cairn_impact` is skipped. The generic profile names no toolchain checks.
+- AC4 first pass at 859f922: plain run "All checks passed (893 checks)", 9 skip lines. `--self-test` failed at M21-AC4 on a Quarto Deno `Segmentation fault: 11` rendering `examples/range-misuse.qmd`, which the branch does not touch (PROFILE.md `verify`). Re-run after the fix-now commit below.
+- spawned: diff-bug, blame-history, prior-review
+- diff-bug #1: the rewritten `floor warning` row had no lasting `--self-test` plant — fix now (plant `m110-warning-lost`).
+- diff-bug #2: the new Books rows fail under the label M098-AC7 alone, though they serve M110-AC1 — fix now (the message names both). The `M098 self-test (m110-…)` plant label stays, since `m098_red` names the helper and the slug names M110.
+- diff-bug #3: the banned phrase is generic and case-folded, so a true sentence about another command would fail — reject, planned change: AC3 names this literal phrase over this sweep, and the FAIL line names the phrase.
+- diff-bug #4: the Books plants hardcode the line break in "Typst books were\ntested" — fix now (the plants match across any whitespace, and a rewrapped copy was shown to work).
+- diff-bug #5: PROFILE.md's "observed 2026-10-10, M110" is the wrong date, since M109 ran the same workaround on 2026-10-02 — reject, false: a dated observation records when this observation was made. The note sits beside the slot's other notes about this machine.
+- diff-bug #6: the warning quoted on the Typst page and `TYPST_BOOK_REFUSAL` are two strings no check holds equal — follow-up, new candidate row "Hold the Typst pages' Quarto facts to their sources" (pre-existing, not widened by this diff).
+- diff-bug #7: "tested on Quarto 1.10.18" rests on the M098 and M109 runs, not on this milestone's 1.10.19 run — reject, false as a defect: the sentence names the version CI pins, and it holds.
+- diff-bug #8: the T4 counts 893 and 1764 were not checked by the reviewer — reject, false: the review runs above and below give fresh counts.
+- blame-history #1: the change deletes M108's clause "exits without an error" — reject, planned change.
+- blame-history #2: both pages now state the tested version and the refusal, and can drift apart — reject, planned change: AC1 asks for it, and claim rows pin each copy.
+- blame-history #3: "tested on Quarto 1.10.18" while T4 ran on 1.10.19 — reject, false as a defect (as diff-bug #7).
+- blame-history #4: the Books plant hardcodes a line break — fix now (as diff-bug #4).
+- blame-history #5: the ban matches one literal phrase — reject, planned change (as diff-bug #3).
+- blame-history #6: PROFILE.md's note is specific to this machine — reject, false as a defect: the `verify` slot already carries this machine's Quarto path note.
+- prior-review #1: M109 D6 is resolved, not contradicted — reject, false as a defect: it confirms the fix and requests nothing.
+- prior-review #2: the restored-phrase plant does not break its line inside the phrase (LESSONS M41/M52) — fix now (the plant breaks it between "without" and "an error", and is red).
+- prior-review #3: the ban catches one wording only — reject, planned change (as diff-bug #3).
+- prior-review #4: the tested version 1.10.18 sits in several places with nothing tying it to the pin — follow-up, the same new candidate row as diff-bug #6.
+- prior-review #5: the M080/M081 lesson is met — reject, false as a defect: it requests nothing.

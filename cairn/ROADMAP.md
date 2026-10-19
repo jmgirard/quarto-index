@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (triage pass over 230 items. Retitled 19 rows: Time the suite per render → Per-render suite timing; Automated dependency updates → Automated action updates; Make M32's marker-less plants read → M32 marker-less plants read the capture; Narrow M32's HTML-cost check to the bibliography's wrapper → Narrow M32's HTML-cost check; Make the version matrix's PDF comparison version-portable → Version-portable matrix PDF comparison; A CI job that runs the whole suite on the floor Quarto → Floor-Quarto CI suite job; A site/gallery/ page for the two-index PDF fixture → Gallery page for the two-index PDF; Name in the changelog that Word output keeps → Word caption fill in the changelog; Test that the first counting symbol → Typst numbering pattern's first symbol; See an id Quarto's writer generates → Writer-generated ids outside the census; Settle where a recovered locator points → Locator for a chapter with its own output-file; Declass Quarto's navigation-envelope copies → Declass navigation-envelope title copies; A way for an author to ask for no word → No word before a cross-reference target; Settle whether the emptied-place reports → Emptied-place reports and Quarto's scaffold; Chapter-based locator labels in the book HTML index → Chapter-based locator labels; Pair a range spanning two chapters → Range spanning two HTML book chapters; Move the index relative to content Quarto adds → Index placement after Quarto's late content; Print an RTL index term correctly → RTL index terms; Follow lang: for the index punctuation → Localized index punctuation. Compressed and retitled: Close the last id-census shape M081 and M082 leave → Id census inside svg or math. Re-rated to parked, no promotion condition having held: every candidate row but the older acceptance-suite backlog, 11 from normal and 16 from low. Split KI291 into KI291 and KI310. No drop, no merge, no decision entry. Validate green.)_
+_Last hygiene check: 2026-10-18 (M111 done and archived; KI275-KI277 closed, KI311 added; backlog row's started token removed; M108 row pruned; no lesson captured; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,17 +11,16 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M111 | Three suite checks tell apart what they now read alike | review | — | normal | milestones/M111-suite-checks-tell-apart.md |
+| M111 | Three suite checks tell apart what they now read alike | done | — | normal | milestones/archive/M111-suite-checks-tell-apart.md |
 | M110 | The site says which Quarto renders a Typst book | done | — | high | milestones/archive/M110-typst-book-pages.md |
 | M109 | The suite checks a Typst book on any Quarto that renders one | done | — | normal | milestones/archive/M109-typst-book-gate.md |
-| M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50 — started M111
+- The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - [parked] Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
 - [parked] Run the suite in parts: independent sections in parallel, or a named subset once the three whole-run accumulator sweeps declare their own domains. Promote on a section growing past a couple of minutes — added 2026-09-03 — M075 plan gate, split 2026-10-01 — KI238, KI241, KI242, KI243, KI244, KI245
 - [parked] Per-render suite timing: Time the suite per render rather than per section. Promote on M075's section profile proving too coarse — added 2026-09-03 — M075 plan gate, split 2026-10-01

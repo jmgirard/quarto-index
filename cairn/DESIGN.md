@@ -1046,9 +1046,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI291.** `tests/typstindex.py` reads links from PDF link annotations written
   as plain dictionaries, which Typst 0.15.1 writes. A PDF whose annotations sit
   in a compressed object stream reads as having no page tree and fails the
-  check. `tests/typstcheck.py` folds a combining cluster read twice running,
+  check. — M098 T4, T5; split 2026-10-18
+- **KI310.** `tests/typstcheck.py` folds a combining cluster read twice running,
   because pdftotext reads each glyph of such a cluster as the whole cluster. A
-  back-end that doubled such a cluster reads as correct there. — M098 T4, T5
+  back-end that doubled such a cluster reads as correct there. — M098 T4, T5;
+  split from KI291 2026-10-18
 - **KI296.** The report on a `range="open"` whose term already has a range
   open says the mark indexes as an ordinary page number. Where a range spans
   that page, the LaTeX and Typst indexes print no locator for it. — M098

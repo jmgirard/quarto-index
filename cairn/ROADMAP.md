@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M114 | A principal mention in a LaTeX heading or caption builds | planned | — | high | milestones/M114-principal-in-headings.md |
 | M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |
 | M112 | Three PDF index checks see a wrong index | done | — | normal | milestones/archive/M112-pdf-checks-see-wrong-index.md |
 | M111 | Three suite checks tell apart what they now read alike | done | — | normal | milestones/archive/M111-suite-checks-tell-apart.md |
@@ -21,6 +22,7 @@ _Released 0.4.0 2026-09-11._
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
+- Typst caption marks and a list of figures: make a mark in a figure caption file the figure's page, not the page of the caption's copy in a list of figures. Promote at any time — added 2026-10-19 — M114 plan gate — KI290
 - [parked] EPUB check dead code: delete the comparison in `epubcheck.cmd_same` that cannot fail, the unused `epubindex.section_rows`, and `cmd_absent`'s allowance parameter, which every caller leaves empty. Promote with any change to `tests/epubcheck.py` or `tests/epubindex.py` — added 2026-10-18 — M112 plan gate — KI92, KI94, KI95
 - [parked] Missing-log counts: make the inline log counts in `tests/run-tests.sh`, and `check_warning_names` and `check_warning_names_nth`, refuse a log that is not a file, as `check_warning_count` does. Promote on a render's log being renamed or removed — added 2026-10-18 — M112 plan gate — KI311
 - [parked] Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248

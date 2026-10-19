@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M113: PDF index checks count whole printed lines
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP6   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** internal — acceptance-suite checks and a suite reader, which no user of the extension runs   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m113-pdf-checks-count-lines   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -82,7 +82,7 @@ three entries are removed from `cairn/DESIGN.md`.
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1: Move the line count into a function that takes `pdfindex.read`'s
+- [x] T1: Move the line count into a function that takes `pdfindex.read`'s
       entries and the manifest rows, so a self-test can feed it planted
       entries. Rewrite `xref_typeset_check` (`tests/run-tests.sh` ~7290) to
       read the PDF through it rather than the `pdftotext -layout` text, for
@@ -124,3 +124,5 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-19: reduced criteria audit (Opus, fresh context): AC4 (now AC5) reworded from "every typstindex call that passes a stop string" to the whole run's checks, since no list of those calls was named; no other finding on AC1-AC4.
 - 2026-10-19: question set: which work — the PDF line counts (this milestone); the M05-AC5 term rows' first-match page count — fix it here (user's choice over recording a Known issue), so AC2 split into AC2 and AC3.
 - 2026-10-19: reduced criteria re-audit of the new AC2 and AC3 (two Opus readers, fresh context): one found AC3's "printed index lines" false for the book, whose bounded read also returns the body prose between the two indexes; AC3 narrowed to the lines the read returns, prose included. The other found nothing.
+- 2026-10-19: status in-progress; branch m113-pdf-checks-count-lines cut from main at fea09c9.
+- 2026-10-19: T1 done: `pdfindex.line_counts` counts a row as the entries whose `text` (or `term`) equals it, whitespace collapsed; `xref_typeset_check` reads the PDF through it and takes an optional planted-lines file in place of the region-dump size; the row-inside-another-row refusal is dropped, since whole-line counting makes it unneeded; the M02-AC3 `pdftotext -layout` call is removed. Checked against the 2026-10-18 captures (both green, a twice row red naming it, a longer line holding the row green); the full `--self-test` run is at T4, since a run takes about 15 minutes.

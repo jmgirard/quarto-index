@@ -283,3 +283,18 @@ def columns_carry_top_level(entries):
 def outline(entries):
     """`[(level, term), ...]` — what a manifest row is compared against."""
     return [(entry.level, entry.term) for entry in entries]
+
+
+def line_counts(entries, rows, field='text'):
+    """`{row: n}`, n the entries whose `field` (`text` or `term`) equals the
+    row, both with whitespace collapsed.
+
+    A whole-line comparison: a row whose text also occurs inside a longer
+    printed line is not that line, so the longer line adds nothing to its
+    count, where a substring count over flattened text read it twice (M113).
+    """
+    seen = {}
+    for entry in entries:
+        key = ' '.join(getattr(entry, field).split())
+        seen[key] = seen.get(key, 0) + 1
+    return {row: seen.get(' '.join(row.split()), 0) for row in rows}

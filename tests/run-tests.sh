@@ -7283,32 +7283,31 @@ grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escapin
 # One reader for the two typeset cross-reference checks, M02-AC3 over the
 # escaping probe here and M02-AC2 over the demo below, called at both sites
 # and again by the self-test's planted-defect cases, so a plant runs the code
-# the run uses. Each manifest row must occur EXACTLY once in the index region:
-# a presence test passes a cross-reference printed twice. A row inside another
-# row would count twice on a correct index, so the reader refuses a manifest
-# with one before it counts.
-xref_typeset_check() {   # <label> <pdftotext output> <manifest> <missing sentence> <ok sentence> [<region dump size>]
+# the run uses. The index is read line by line through tests/pdfindex.py, and
+# each manifest row must be EXACTLY one printed line: a presence test passes a
+# cross-reference printed twice. Counting whole lines rather than substrings of
+# the flattened text (M113) means a row whose text sits inside a longer line,
+# another row's included, adds nothing to its count, so the manifest needs no
+# refusal of a row inside another row. The optional last argument names a file
+# of lines appended to the read as extra printed lines, which is how the
+# self-test plants a defect into what the check reads.
+xref_typeset_check() {   # <label> <pdf> <manifest> <missing sentence> <ok sentence> [<planted lines file>]
   python3 - "$@" <<'PY'
-import re, sys
-label, txt_path, rows_path, missing_said, ok_said = sys.argv[1:6]
-dump = int(sys.argv[6]) if len(sys.argv) > 6 else 0
-txt = open(txt_path, encoding='utf-8').read()
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+label, pdf_path, rows_path, missing_said, ok_said = sys.argv[1:6]
+plant = sys.argv[6] if len(sys.argv) > 6 else ''
 rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
-norm = [' '.join(r.split()) for r in rows]
-inside = [(a, b) for a in norm for b in norm if a != b and a in b]
-if inside:
-    print(f'FAIL: {label}: the manifest has a row inside another row, which '
-          f'would count twice on a correct index: {inside}', file=sys.stderr)
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: {label}: {error}', file=sys.stderr)
     sys.exit(1)
-m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
-if not m:
-    print(f'FAIL: {label}: no "Index" heading in pdftotext output',
-          file=sys.stderr)
-    sys.exit(1)
-# The printed index is set in two columns, so runs of layout spacing collapse
-# to one space.
-region = ' '.join(txt[m.end():].split())
-counts = {r: region.count(' '.join(r.split())) for r in rows}
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(entries, rows)
 missing = [r for r in rows if counts[r] == 0]
 repeated = [r for r in rows if counts[r] > 1]
 if missing:
@@ -7322,8 +7321,10 @@ if repeated:
     for r in repeated:
         print(f'  <<{r}>> x{counts[r]}', file=sys.stderr)
 if missing or repeated:
-    if dump:
-        print(f'--- index region ---\n{region[:dump]}', file=sys.stderr)
+    print(f'--- first index lines read ({len(entries)} in all) ---',
+          file=sys.stderr)
+    for entry in entries[:60]:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
 print(f'ok   {label}: all {len(rows)} {ok_said}')
 PY
@@ -7331,11 +7332,11 @@ PY
 
 # Typeset evidence from Quarto's own PDF: compiling proves the encap argument
 # READS, typesetting proves the character PRINTS in a cross-reference.
-pdftotext -layout "$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf" "$WORK/xref/xref-escaping.txt"
 printf '%s\n' "$XREF_PROBE_TEXT" > "$WORK/xrefprobe.txt"
 M02_AC3_MISSING='special-handling character(s) did not typeset in their cross-reference'
 M02_AC3_OK='exact cross-reference strings typeset once each in the probe index'
-xref_typeset_check M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" \
+M02_AC3_PDF="$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf"
+xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$WORK/xrefprobe.txt" \
   "$M02_AC3_MISSING" "$M02_AC3_OK" || exit 1
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
@@ -7374,34 +7375,38 @@ section 'M02-AC2 — every cross-reference reaches the compiled index as typeset
 printf '%s\n' "$XREF_PDF_TEXT" > "$WORK/xrefpdf.txt"
 M02_AC2_MISSING='cross-reference(s) missing from the PDF index section'
 M02_AC2_OK='cross-references typeset once each in the PDF index, source entry and text together'
-xref_typeset_check M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" \
-  "$M02_AC2_MISSING" "$M02_AC2_OK" 1500 || exit 1
+xref_typeset_check M02-AC2 "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/xrefpdf.txt" \
+  "$M02_AC2_MISSING" "$M02_AC2_OK" || exit 1
 
-# M112 T1: the two typeset checks above count each row rather than test for
-# it, so a cross-reference printed twice is red. Each case writes one row's
-# text a second time into a copy of the check's own captured text, and runs
-# the same reader on it.
+# M112 T1, M113 T1: the two typeset checks above count each row as whole
+# printed lines. Each case plants extra lines into the check's own read of
+# its captured PDF, through the reader's planted-lines argument: the row's
+# line once more is red naming the row, and the row inside a longer line is
+# green, which a substring count over flattened text read as a second copy.
 if [ "${1:-}" = "--self-test" ]; then
   M112W="$WORK/m112-xref"
   rm -rf "$M112W"; mkdir -p "$M112W"
-  m112_twice() {   # <label> <captured text> <manifest> <missing> <ok>
-    local label="$1" txt="$2" rows="$3" row out
+  m112_twice() {   # <label> <pdf> <manifest> <missing> <ok>
+    local label="$1" pdf="$2" rows="$3" row out
     row=$(awk 'NF { print; exit }' "$rows")
     [ -n "$row" ] || fail "M112 T1 self-test: the $label manifest has no row to plant"
-    xref_typeset_check "$label" "$txt" "$rows" "$4" "$5" > /dev/null \
-      || fail "M112 T1 self-test: $label is red on its own captured text, so a red below would not be the planted row"
-    { cat "$txt"; printf '%s\n' "$row"; } > "$M112W/$label.txt"
-    if out=$(xref_typeset_check "$label" "$M112W/$label.txt" "$rows" "$4" "$5" 2>&1); then
-      fail "M112 T1 self-test: $label passed its captured text with <<$row>> printed a second time"
+    xref_typeset_check "$label" "$pdf" "$rows" "$4" "$5" > /dev/null \
+      || fail "M112 T1 self-test: $label is red on its own captured PDF, so a red below would not be the planted row"
+    printf '%s\n' "$row" > "$M112W/$label-twice.txt"
+    if out=$(xref_typeset_check "$label" "$pdf" "$rows" "$4" "$5" "$M112W/$label-twice.txt" 2>&1); then
+      fail "M112 T1 self-test: $label passed its captured PDF with <<$row>> printed a second time"
     fi
     case "$out" in
       *"printed more than once"*"<<$row>> x2"*) ;;
       *) printf '%s\n' "$out" >&2; fail "M112 T1 self-test: $label failed on a row printed twice, but not by naming that row" ;;
     esac
+    printf 'Planted %s, longer\n' "$row" > "$M112W/$label-inside.txt"
+    xref_typeset_check "$label" "$pdf" "$rows" "$4" "$5" "$M112W/$label-inside.txt" > /dev/null \
+      || fail "M113 T1 self-test: $label is red where a longer printed line holds <<$row>>, so it counts substrings rather than lines"
   }
-  m112_twice M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" "$M02_AC3_MISSING" "$M02_AC3_OK"
-  m112_twice M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" "$M02_AC2_MISSING" "$M02_AC2_OK"
-  pass "M112 T1 self-test: M02-AC3 and M02-AC2 each pass their captured text and are red, naming the row, on a copy with one cross-reference printed a second time"
+  m112_twice M02-AC3 "$M02_AC3_PDF" "$WORK/xrefprobe.txt" "$M02_AC3_MISSING" "$M02_AC3_OK"
+  m112_twice M02-AC2 "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/xrefpdf.txt" "$M02_AC2_MISSING" "$M02_AC2_OK"
+  pass "M112 T1, M113 T1 self-test: M02-AC3 and M02-AC2 each pass their captured PDF, are red naming the row on one cross-reference printed a second time, and stay green on a longer line holding it"
 fi
 
 # ---------------------------------------------------------------------------

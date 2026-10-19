@@ -51,6 +51,15 @@
   the index prints the image's page. Before this change, the HTML and EPUB
   locator linked to an id no element carried, and the PDF index left the term
   out.
+- A principal mention in a heading, a figure caption or a table caption no
+  longer stops a PDF build through LaTeX. A principal range can also open or
+  close in a heading and open in a figure caption. LaTeX copies a heading
+  into the table of contents and the running head, and a caption into the list
+  of figures or tables. Before this change, the build stopped. A
+  contents-list, list-of-figures, list-of-tables or running-head copy now
+  leaves the page it prints on unemphasized. The suite tests this under
+  Quarto's default document class with a table of contents, lists of figures
+  and tables, and running heads.
 - On Quarto 1.5.52, a captioned figure or an untitled callout that holds only
   a placement marker no longer stops a `gfm`, `docx`, `epub` or `typst`
   render. The extension removes such a marker, and the container it leaves

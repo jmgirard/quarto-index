@@ -123,8 +123,9 @@ local RANGE_ENDS = {
 -- unreachable by construction rather than merely unexercised, and the role
 -- travels on a second channel instead.
 --
--- That channel is the `.aux`. The principal mark emits REGISTER_COMMAND, which
--- writes its ordinal and `\thepage` through `\protected@write\@auxout` — the
+-- That channel is the `.aux`. The principal mark emits REGISTER_COMMAND, which,
+-- where it is typeset (its guard is below), writes its ordinal and `\thepage`
+-- through `\protected@write\@auxout` — the
 -- same deferred-to-shipout mechanism `\@wrindex` uses for the `.idx`, so the
 -- page the registration names and the page the locator names are decided by
 -- one shipout and cannot disagree. The next pass reads those lines back as
@@ -210,9 +211,31 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\providecommand*\\" .. PRINCIPALPAGE_COMMAND ..
     "[2]{\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
     "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}}",
-  "\\providecommand*\\" .. REGISTER_COMMAND ..
-    "[1]{\\protected@write\\@auxout{}{\\string\\" .. PRINCIPALPAGE_COMMAND ..
-    "{#1}{\\thepage}}}",
+  -- The three commands a mark emits beside its `\index` sit in whatever the
+  -- mark sits in, a heading or a caption included, and LaTeX copies those:
+  -- into the contents lists and the running head, through `\protected@edef`
+  -- and `\protected@write`. Written as plain `\protected@write` calls, the
+  -- commands were expanded there and the build stopped (M114). So each one is
+  -- `\qi@guard`, which asks `\protect` whether this is typesetting. If it is,
+  -- the `\protected` worker runs and writes the `.aux` line. If it is a copy,
+  -- the command keeps itself, unexpanded, exactly while `\index` keeps the
+  -- meaning the document began with, and drops out where a copy has changed
+  -- `\index`: a contents line gobbles it, and a running head's mark is built
+  -- with `\index` set to `\relax` and gobbled at shipout. So a copy registers
+  -- only where its `\index` would also index, and the two still ship on one
+  -- page (D-007). `\index` is compared with what it means at
+  -- `\begin{document}`, not with one gobbler: under TeX Live 2026 a contents
+  -- line removes it with `\@gobble@som`, not `\@gobble`, and a test against
+  -- `\@gobble` let every copy through.
+  "\\def\\qi@guard#1#2{\\ifx\\protect\\@typeset@protect" ..
+    "\\expandafter\\@secondoftwo\\else\\expandafter\\@firstoftwo\\fi" ..
+    "{\\qi@copy#1}{#2}}",
+  "\\def\\qi@copy#1#2{\\ifx\\index\\qi@index\\noexpand#1{#2}\\fi}",
+  "\\AtBeginDocument{\\let\\qi@index\\index}",
+  "\\protected\\def\\qi@register#1{\\protected@write\\@auxout{}{\\string\\" ..
+    PRINCIPALPAGE_COMMAND .. "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. REGISTER_COMMAND .. "[1]{\\qi@guard\\" ..
+    REGISTER_COMMAND .. "\\qi@register{#1}}",
   -- The empty-list guard is not decoration: `\qi@sniff` reads its first token
   -- as an undelimited argument, so a page list with no token in it would let
   -- it swallow the `\qi@stop` delimiter and run away — a hard render failure
@@ -294,12 +317,15 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
     "\\qi@key}" ..
     "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}" ..
     "\\expandafter\\global\\expandafter\\let\\csname qi@f@#1\\endcsname\\relax\\fi}",
-  "\\providecommand*\\" .. RANGEFROM_COMMAND ..
-    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGEAT_COMMAND ..
-    "{#1}{\\thepage}}}",
-  "\\providecommand*\\" .. RANGEEND_COMMAND ..
-    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGETO_COMMAND ..
-    "{#1}{\\thepage}}}",
+  -- The range ends' own commands take the same guard as REGISTER_COMMAND.
+  "\\protected\\def\\qi@rangefrom#1{\\protected@write\\@auxout{}{\\string\\" ..
+    RANGEAT_COMMAND .. "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. RANGEFROM_COMMAND .. "[1]{\\qi@guard\\" ..
+    RANGEFROM_COMMAND .. "\\qi@rangefrom{#1}}",
+  "\\protected\\def\\qi@rangeend#1{\\protected@write\\@auxout{}{\\string\\" ..
+    RANGETO_COMMAND .. "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. RANGEEND_COMMAND .. "[1]{\\qi@guard\\" ..
+    RANGEEND_COMMAND .. "\\qi@rangeend{#1}}",
   "\\makeatother",
 }, "\n")
 

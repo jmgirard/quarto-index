@@ -1,0 +1,112 @@
+---
+title: "Principal mentions in headings and captions"
+toc: true
+lof: true
+lot: true
+pagestyle: headings
+fig-pos: H
+format:
+  pdf:
+    include-in-header:
+      # The author redefinition the extension documents, and the only way a
+      # principal locator is visible to `pdftotext`: bold and plain text
+      # extract the same. `\newcommand*` lands above the extension's own
+      # `\providecommand`, which then steps aside.
+      text: |
+        \newcommand*\quartoindexprincipal[1]{[P:#1]}
+filters:
+  - index
+---
+
+The fixture for a principal mention in a heading and in a figure or table
+caption (M114). LaTeX copies a heading into the contents list and the running
+head, and a caption into the list of figures or tables. This page prints all
+three lists, so it carries a copy of every heading the contents list shows
+and of every caption below. Each term below is marked here too: [aster]{.index},
+[basil]{.index}, [clover]{.index}, [dahlia]{.index}, [elm]{.index},
+[fern]{.index}, [ginkgo]{.index} and [holly]{.index}.
+
+{{< pagebreak >}}
+
+# The [aster]{.index mention="principal"} section
+
+A principal mention in a level-one heading.
+
+## The [basil]{.index mention="principal"} subsection
+
+A principal mention in a level-two heading.
+
+{{< pagebreak >}}
+
+#### The [clover]{.index mention="principal"} paragraph
+
+A principal mention in a level-four heading, `\paragraph`, which Quarto's
+template sets on a line of its own.
+
+{{< pagebreak >}}
+
+This page's running head is a copy of the aster section's heading, and
+aster is marked here: [aster]{.index}.
+
+{{< pagebreak >}}
+
+# The [dahlia]{.index mention="principal" range="open"} section
+
+A principal range opens in this heading.
+
+{{< pagebreak >}}
+
+This page's running head is a copy of the dahlia section's heading.
+
+{{< pagebreak >}}
+
+# The [dahlia]{.index range="close"} closing section
+
+The range closes in this heading.
+
+{{< pagebreak >}}
+
+This page's running head is a copy of the closing section's heading.
+
+{{< pagebreak >}}
+
+So is this page's, and a second principal range of dahlia opens here:
+[dahlia]{.index mention="principal" range="open"}.
+
+{{< pagebreak >}}
+
+This page's running head is still a copy of the closing section's heading,
+inside the second range.
+
+{{< pagebreak >}}
+
+The second range closes here: [dahlia]{.index range="close"}.
+
+{{< pagebreak >}}
+
+# The [holly]{.index} section
+
+An ordinary mark in a heading.
+
+![A caption that marks [elm]{.index mention="principal"}.](dot.png){#fig-elm}
+
+{{< pagebreak >}}
+
+![A caption that opens [fern]{.index mention="principal" range="open"}.](dot.png){#fig-fern}
+
+{{< pagebreak >}}
+
+The range of fern closes here: [fern]{.index range="close"}.
+
+{{< pagebreak >}}
+
+| Plant  | Leaf   |
+|--------|--------|
+| ginkgo | fan    |
+
+: A caption that marks [ginkgo]{.index mention="principal"}. {#tbl-ginkgo}
+
+{{< pagebreak >}}
+
+::: {.index-here}
+:::

@@ -75,6 +75,7 @@ not-shown:
   - examples/named-indexes-rival.qmd
   - examples/named-indexes-twin.qmd
   - examples/principal-cases.qmd
+  - examples/principal-headings.qmd
   - examples/principal-twin.qmd
   - examples/principal.qmd
   - examples/range-misuse.qmd

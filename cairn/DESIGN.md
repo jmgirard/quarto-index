@@ -544,6 +544,12 @@ consecutive pages into a range of its own, and a registry lookup on that string
 misses, so a principal page anywhere inside a FOLDED range prints plain. A
 range the author wrote is not that case — M21 registers its two ends and
 composes the very string the index prints, so it is emphasized whole (D-008).
+The three commands emitted beside an `\index` run only when typeset. In a
+copy LaTeX makes of a heading or caption (a contents line, a list line, a
+running head), each keeps itself only while `\index` keeps its document
+meaning, so it drops out wherever the copy removes `\index`. A contents
+line, list line or running head then neither breaks the build nor registers
+its own page (M114); a `\nameref` copy still registers (KI317).
 
 **Book projects** split the HTML back-end in two, and leave the LaTeX one
 alone. A PDF book is rendered as one merged document, so its marks are already
@@ -832,11 +838,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The LaTeX back-end
 
-- **KI2.** `\index` inside a moving argument (a section heading) is unprobed,
-  and the typeset-time channel puts a second unprotected macro on that path,
-  `\quartoindexregister`, whose `\protected@write` would expand inside a
-  `.toc`/`.lof` write. — M01 review R17, M20 review round 2 R2-F7; routed
-  from candidates 2026-10-01, the row added 2026-08-16
 - **KI3.** The filter cannot place the index relative to content Quarto adds
   after filters run: the reference block is appended once the marker has already
   placed the index, so the default order is index first, references after, in
@@ -876,6 +877,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   into the body where the pre-M49 uniform `\index{...}` was harmless — the
   extension documents no plain-pandoc support anywhere. — M49 review F4;
   routed from candidates 2026-10-01, the row added 2026-08-16
+- **KI317.** A `\nameref` to a heading or caption that holds a principal mark
+  typesets the title hyperref stored in the `.aux`, and that title keeps both
+  the `\index` and the registration. So the reference's page gets a locator,
+  and that locator is emphasized: a raw `\nameref{fig-elm}` on page 12 of
+  `examples/principal-headings.qmd` printed `elm, 1, [P:10], [P:12]`
+  (2026-10-19). Whether any Quarto cross-reference form writes `\nameref` is
+  unchecked; only a raw one was tried. — M114 claim audit
 
 ### Entries, levels and sort keys
 
@@ -1430,11 +1438,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   print as the right and left single quotation marks, which is what those ASCII
   positions hold in a T1 text font. — M30 T1; routed from candidates
   2026-10-01, the row added 2026-08-16
-- **KI74.** That a registered page actually prints emphasized is exercised only
-  by M20's T9 checks and by no acceptance criterion, the criteria set having
-  been held rather than widened, so the last leg of that chain has no criterion
-  binding it. — M20 amendment gate
-
 - **KI90.** Nothing holds `_extensions/index/_schema.yml` against the attribute
   set the FILTER accepts. `tests/editormeta.py schema` compares it with the
   set the tracked pages under `site/` document, which is the domain D-011

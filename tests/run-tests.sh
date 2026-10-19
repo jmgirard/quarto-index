@@ -32429,6 +32429,254 @@ M102IDPY
 fi
 
 # ---------------------------------------------------------------------------
+# M114-AC1/AC2 — a principal mention in a LaTeX heading or caption builds and files its own page.
+#
+# LaTeX copies a heading into the contents list and the running head, and a
+# figure or table caption into the list of figures or tables. The commands a
+# principal mark and a principal range's two ends emit beside their `\index`
+# were expanded in those copies, and the PDF build stopped: a heading, a
+# running head, a figure caption and a table caption each failed with a
+# LaTeX error of its own.
+#
+# examples/principal-headings.qmd uses Quarto's default document class with
+# a contents list, lists of figures and tables, and `pagestyle: headings`.
+# Every page ends in an explicit page break, so each mark's page is a fact of
+# its source. Page 1 prints the title and the three lists, all short enough
+# for one page, and then a paragraph marking each term below once, plainly:
+# that page carries every contents-list copy, so a copy that registered its
+# own page would emphasize the term's page-1 locator. The manifest
+# tests/principal-headings-pdf.tsv is derived by hand from that source under
+# the ORACLE RULE above, one `level<TAB>line` row an entry. The terms, their
+# pages and why each prints as it does:
+#   aster    principal in a level-one heading on page 2; page 1 plain, and
+#            page 4 plain, a page under that heading's running head. Pages 3
+#            and 4 both carry it; page 3 is left without a mark, because
+#            three consecutive pages fold into a range makeindex prints whole
+#   basil    principal in a level-two heading on page 2; page 1 plain. In a
+#            one-sided document only a level-one heading sets the running head
+#   clover   principal in a level-four heading on page 3, `\paragraph`, which
+#            Quarto's template sets on a line of its own and the default
+#            contents depth leaves out of the printed list; page 1 plain
+#   dahlia   a principal range opened in a level-one heading on page 5 and
+#            closed in another on page 7, printed 5–7, and a second principal
+#            range opened in the text on page 9 and closed on page 11, printed
+#            9–11; page 1 plain. Page 6 prints the opening heading's running
+#            head inside the first range, and pages 8 to 11 the closing
+#            heading's, page 10 inside the second range. Page 8 carries no
+#            mark, so the two ranges are not folded into one
+#   elm      principal in a figure caption on page 12; page 1 plain
+#   fern     a principal range opened in a figure caption on page 13 and
+#            closed in the text on page 14, printed 13–14; page 1 plain
+#   ginkgo   principal in a table caption on page 15; page 1 plain
+#   holly    an ordinary mark in a level-one heading on page 12, the shape
+#            this milestone leaves alone; page 1 plain
+# A running head also prints on its own heading's page, and a page between
+# two marked pages folds them into one range, so not every copy's page can
+# carry an ordinary mark. Each kind of copy a term gets has one that does,
+# except dahlia's running heads, which sit in or between its ranges; the
+# self-test below shows a copy run there red on the ranges instead.
+# The index is on page 16. Page 1 prints the index's contents line `Index` as
+# a line of its own, so the read starts at page 2. In PDF the fixture
+# redefines the principal command to print `[P:<page>]`, so an emphasized
+# locator is visible to pdftotext.
+# ---------------------------------------------------------------------------
+section 'M114-AC1/AC2 — a principal mention in a LaTeX heading or caption builds and files its own page.'
+M114_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/principal-headings.qmd || true; } | tr -d ' ')
+[ "$M114_BREAKS" = "15" ] \
+  || fail "M114-AC1: examples/principal-headings.qmd carries $M114_BREAKS page breaks, not the fifteen its manifest numbers pages by"
+quarto render examples/principal-headings.qmd --to pdf \
+    > "$WORK/principal-headings-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/principal-headings-pdf.log" >&2; fail "M114-AC1: examples/principal-headings.qmd failed to render to PDF"; }
+capture examples/principal-headings.qmd pdf "principal-headings-pdf"
+M114_PDF="$CAPTURE_ROOT/principal-headings-pdf/principal-headings.pdf"
+[ -s "$M114_PDF" ] || fail "M114-AC1: the render produced no $M114_PDF"
+check_extension_warning_count "$WORK/principal-headings-pdf.log" 0 \
+  "M114-AC1 (examples/principal-headings.qmd: every mark in it is well formed)"
+pass "M114-AC1: examples/principal-headings.qmd, with principal mentions in headings at levels 1, 2 and 4, a principal range across two headings, principal mentions in figure and table captions and a principal range opened in a figure caption, under a contents list, lists of figures and tables and running heads, renders to PDF"
+
+# A function, so the self-test plants below run this same comparison.
+m114_pdf_check() {   # <pdf> <manifest>
+  python3 - "$1" "$2" <<'M114PY'
+import sys
+import unicodedata
+sys.path.insert(0, 'tests')
+import pdfindex
+
+pdf, manifest = sys.argv[1:3]
+label = f'M114-AC2: {pdf}'
+nfc = lambda s: unicodedata.normalize('NFC', s)  # noqa: E731
+want = []
+with open(manifest, encoding='utf-8') as fh:
+    for line in fh:
+        line = line.rstrip('\n')
+        if line:
+            level, text = line.split('\t', 1)
+            want.append((int(level), nfc(text)))
+if not want:
+    print(f'FAIL: {label}: the manifest {manifest} is empty', file=sys.stderr)
+    sys.exit(1)
+try:
+    entries = pdfindex.read(pdf, from_page=2)
+except LookupError as err:
+    print(f'FAIL: {label}: the PDF prints no index to compare: {err}',
+          file=sys.stderr)
+    sys.exit(1)
+got = [(entry.level, nfc(entry.text)) for entry in entries]
+if got != want:
+    for i in range(max(len(got), len(want))):
+        g = got[i] if i < len(got) else None
+        w = want[i] if i < len(want) else None
+        if g != w:
+            print(f'FAIL: {label}: index line {i + 1} is {g!r}, not the '
+                  f'{w!r} {manifest} states', file=sys.stderr)
+            break
+    print(f'  got  {got!r}\n  want {want!r}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the printed index is the {len(want)} lines {manifest} '
+      f'states, each at its level and with its emphasis')
+M114PY
+}
+m114_pdf_check "$M114_PDF" tests/principal-headings-pdf.tsv \
+  || fail "M114-AC2: the PDF index of examples/principal-headings.qmd does not match tests/principal-headings-pdf.tsv (the report is above)"
+pass "M114-AC2: in the PDF index each principal mention in a heading or caption emphasizes its own page or range alone, and no contents-list or running-head copy emphasizes the page it prints on"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M114 T3 self-test — the AC2 check shown red on a copy that registers, on
+  # each of the two axes such a defect varies on.
+  # The command, each planted in a copy of the extension by taking its guard
+  # away and leaving the `\protected` worker, so every copy of it keeps it
+  # and runs where the copy is typeset:
+  #   leak-register   aster red: the contents page and the running head on
+  #                   page 4 both register, [P:1] and [P:4]
+  #   leak-rangefrom  dahlia red: the contents page registers [P:1], and the
+  #                   opening heading's running head on page 6 restarts the
+  #                   range there, so the printed 5–7 is no longer the span
+  #                   registered and prints plain
+  #   leak-rangeend   dahlia red: the closing heading's running head on page
+  #                   10 closes the second range early, so 9–11 prints plain.
+  #                   Its other copies run where no range of dahlia is open
+  #                   (the contents page, pages 7 to 9, the head above page
+  #                   9's opening) and compose nothing
+  # The copy site, each planted in a copy of the fixture as raw LaTeX that puts
+  # a registration where that site's copy would run, through the unplanted
+  # extension. The ordinals are the filter's, numbered in the order the
+  # principal keys first appear: aster qi1, dahlia qi4, elm qi5, ginkgo qi7.
+  #   site-toc   a contents line carrying aster's registration: aster [P:1]
+  #   site-lof   a list-of-figures line carrying elm's: elm [P:1]
+  #   site-lot   a list-of-tables line carrying ginkgo's: ginkgo [P:1]
+  #   site-head  aster's registration on page 4, a page under its running
+  #              head: aster [P:4]
+  #   site-span  dahlia's range opening on page 6, under the opening heading's
+  #              running head: dahlia's span prints plain
+  # And the manifest, held against this run's own render with one row
+  # removed, one altered, and one added.
+  # -------------------------------------------------------------------------
+  M114P="$WORK/m114plant"
+  mkdir -p "$M114P"
+
+  # <path> <old> <new>: replace the one occurrence of <old>, literally.
+  m114_splice() {
+    python3 - "$1" "$2" "$3" <<'M114SPLICEPY'
+import sys
+path, old, new = sys.argv[1:4]
+text = open(path, encoding='utf-8').read()
+n = text.count(old)
+if n != 1:
+    sys.exit(f'M114 T3 self-test: {old!r} occurs {n} time(s) in {path}, not once')
+open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+M114SPLICEPY
+  }
+
+  m114_tree() {   # <slug>: a fresh copy of the fixture and the extension
+    local dir="$M114P/$1"
+    [ ! -e "$dir" ] || fail "M114 T3 self-test ($1): $dir already exists"
+    mkdir -p "$dir/_extensions"
+    cp examples/principal-headings.qmd examples/dot.png "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+  }
+
+  m114_render() {   # <slug>
+    ( cd "$M114P/$1" && quarto render principal-headings.qmd --to pdf ) \
+      > "$WORK/m114-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m114-$1.log" >&2; fail "M114 T3 self-test ($1): the planted fixture failed to render to PDF"; }
+    capture "$M114P/$1/principal-headings.qmd" pdf "m114-$1"
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m114_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M114 T3 self-test ($slug): the check passed the planted render, so its green says nothing about this defect"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M114 T3 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this check catching this plant"; }
+    pass "M114 T3 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  for pair in REGISTER_COMMAND:register RANGEFROM_COMMAND:rangefrom \
+      RANGEEND_COMMAND:rangeend; do
+    m114_name="${pair%%:*}"
+    m114_worker="${pair##*:}"
+    m114_tree "leak-$m114_worker"
+    m114_splice "$M114P/leak-$m114_worker/_extensions/index/modules/core.lua" \
+      "[1]{\\\\qi@guard\\\\\" ..
+    $m114_name .. \"\\\\qi@$m114_worker{#1}}\"" "[1]{\\\\qi@$m114_worker{#1}}\"" \
+      || fail "M114 T3 self-test (leak-$m114_worker): the guard of $m114_name could not be taken away (its own message is above)"
+    m114_render "leak-$m114_worker"
+  done
+  m114_red leak-register "index line 1 is (0, 'aster, [P:1], [P:2], [P:4]')" \
+    m114_pdf_check "$CAPTURE_ROOT/m114-leak-register/principal-headings.pdf" \
+    tests/principal-headings-pdf.tsv
+  m114_red leak-rangefrom "index line 4 is (0, 'dahlia, [P:1], 5–7, [P:9–11]')" \
+    m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangefrom/principal-headings.pdf" \
+    tests/principal-headings-pdf.tsv
+  m114_red leak-rangeend "index line 4 is (0, 'dahlia, 1, [P:5–7], 9–11')" \
+    m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangeend/principal-headings.pdf" \
+    tests/principal-headings-pdf.tsv
+
+  M114_PAGE1='[fern]{.index}, [ginkgo]{.index} and [holly]{.index}.'
+  M114_PAGE4='aster is marked here: [aster]{.index}.'
+  M114_PAGE6="This page's running head is a copy of the dahlia section's heading."
+  for plant in \
+      "site-toc|$M114_PAGE1|\\addtocontents{toc}{\\protect\\quartoindexregister{qi1}}|index line 1 is (0, 'aster, [P:1], [P:2], 4')" \
+      "site-lof|$M114_PAGE1|\\addtocontents{lof}{\\protect\\quartoindexregister{qi5}}|index line 5 is (0, 'elm, [P:1], [P:12]')" \
+      "site-lot|$M114_PAGE1|\\addtocontents{lot}{\\protect\\quartoindexregister{qi7}}|index line 7 is (0, 'ginkgo, [P:1], [P:15]')" \
+      "site-head|$M114_PAGE4|\\quartoindexregister{qi1}|index line 1 is (0, 'aster, 1, [P:2], [P:4]')" \
+      "site-span|$M114_PAGE6|\\quartoindexrangefrom{qi4}|index line 4 is (0, 'dahlia, 1, 5–7, [P:9–11]')"; do
+    IFS='|' read -r m114_slug m114_anchor m114_raw m114_want <<EOF
+$plant
+EOF
+    m114_tree "$m114_slug"
+    m114_splice "$M114P/$m114_slug/principal-headings.qmd" "$m114_anchor" \
+      "$m114_anchor \`$m114_raw\`{=latex}" \
+      || fail "M114 T3 self-test ($m114_slug): the plant could not be written into the fixture (its own message is above)"
+    m114_render "$m114_slug"
+    m114_red "$m114_slug" "$m114_want" \
+      m114_pdf_check "$CAPTURE_ROOT/m114-$m114_slug/principal-headings.pdf" \
+      tests/principal-headings-pdf.tsv
+  done
+
+  # The manifest plants: the run's own render against a manifest one row short,
+  # one row altered, and one row long.
+  awk 'NR != 3' tests/principal-headings-pdf.tsv > "$M114P/removed.tsv"
+  sed 's/^0	elm, 1, \[P:12\]$/0	elm, 1, 12/' tests/principal-headings-pdf.tsv \
+    > "$M114P/altered.tsv"
+  cmp -s tests/principal-headings-pdf.tsv "$M114P/altered.tsv" \
+    && fail "M114 T3 self-test (manifest-altered): the plant left the manifest unchanged"
+  { cat tests/principal-headings-pdf.tsv; printf '0\tivy, 1\n'; } > "$M114P/added.tsv"
+  m114_red manifest-removed "index line 3 is (0, 'clover, 1, [P:3]'), not the (0, 'dahlia, 1, [P:5–7], [P:9–11]')" \
+    m114_pdf_check "$M114_PDF" "$M114P/removed.tsv"
+  m114_red manifest-altered "index line 5 is (0, 'elm, 1, [P:12]'), not the (0, 'elm, 1, 12')" \
+    m114_pdf_check "$M114_PDF" "$M114P/altered.tsv"
+  m114_red manifest-added "index line 9 is None, not the (0, 'ivy, 1')" \
+    m114_pdf_check "$M114_PDF" "$M114P/added.tsv"
+
+  pass "M114 T3 self-test: taking the guard off the registration, a range opening or a range closing is red on the AC2 check, naming aster or dahlia, the closing on a second range its running head ends early; a registration put where a contents line, a list of figures, a list of tables or a running head would run it is red naming the term, and a range opening on a running-head page inside its range is red on the span; the manifest one row short, altered or long is red naming that row"
+fi
+
+# ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.
 #
 # One thing is held here: every section the source declares has exactly one

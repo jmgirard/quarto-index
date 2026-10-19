@@ -166,6 +166,8 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 - 2026-10-19: second full run red at M20-AC3/AC4 (`tests/m20probes.py`'s registration regex read the new zero-argument definition `\providecommand*\quartoindexregister{\qi@guard…}` as a registration, after 614 checks); the three commands keep their `[1]` argument form and pass it to the guard, the shape the M20/M21/M31 definition checks read, and the T3 splice follows it; no probe changed.
 - 2026-10-19: third full run red at M41-AC1 after 962 checks: every fixture must be declared in `site/gallery.yml`; `examples/principal-headings.qmd` added under `not-shown:`, since a shown fixture needs an HTML index manifest and this one has a PDF one.
 - 2026-10-19: fourth full run `tests/run-tests.sh --self-test` green at 5d30241: 1789 checks, the M114 section 53s, all eleven M114 plants red or green as stated (Python 3.9 at /usr/bin/python3 for PyYAML). T3 and T4 ticked; status review.
+- 2026-10-19: review: four-lens pass, 23 findings (9 fixed in 4dabfa0, 3 to candidate rows, 11 rejected); final `--self-test` run green at 4dabfa0, 1788 checks.
+- 2026-10-19: step-7 approval: m114-principal-in-headings approved for merge
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

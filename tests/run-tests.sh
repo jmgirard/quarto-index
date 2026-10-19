@@ -19819,6 +19819,61 @@ for case in ('control', 'above', 'left-column'):
                  f'{[e.text for e in entries]}, not its two entries')
 PY
   pass "M112 T3 self-test: a bounded PDF index read is red, naming the page and the line, when the page it leaves out prints an index line above its section-ending line or in the left column below one set in the right, and reads the same pages without that line in full"
+
+  # M113 T3: tests/typstindex.py's own bounded read takes the same refusal.
+  # The cases mirror M112 T3's, fed as the (page, width, [[Word, ...]]) that
+  # its `_pages` yields, plus a page whose first line is a running header
+  # starting with the stop string and whose body follows it, which must read
+  # green: the header is the section-ending line, and nothing is ahead of it.
+  python3 - <<'PY' || fail "M113 T3 self-test: the Typst bounded read's stranded-line refusal is not shown (the report is above)"
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+
+STOP = 'Below the first index'
+
+def line(x, y, text):
+    return [typstindex.Word(w, x + 30.0 * i, y, x + 30.0 * i + 25.0, y + 10.0)
+            for i, w in enumerate(text.split())]
+
+def pages(case):
+    second = {
+        'control': [line(72.0, 120.0, STOP)],
+        'header': [line(72.0, 40.0, STOP + ' 2.1'),
+                   line(72.0, 120.0, 'Body text of the next chapter')],
+        'above': [line(72.0, 80.0, 'zebra, 3'), line(72.0, 120.0, STOP)],
+        'left-column': [line(320.0, 80.0, STOP), line(72.0, 120.0, 'zebra, 3')],
+    }[case]
+    return [
+        (1, 612.0, [line(72.0, 60.0, 'Index'), line(72.0, 100.0, 'aardvark, 1'),
+                    line(320.0, 100.0, 'yak, 2')]),
+        (2, 612.0, second),
+    ]
+
+for case in ('control', 'header', 'above', 'left-column'):
+    typstindex._pages = lambda _path, _footer=None, c=case: iter(pages(c))
+    try:
+        got = typstindex.read('planted.pdf', 'Index', (STOP,))
+    except LookupError as error:
+        if case in ('control', 'header'):
+            sys.exit(f'FAIL: M113 T3 self-test ({case}): nothing is printed '
+                     f'ahead of the section-ending line, but the read was '
+                     f'refused: {error}')
+        said = str(error)
+        if 'page 2 of planted.pdf' not in said or "['zebra, 3']" not in said:
+            sys.exit(f'FAIL: M113 T3 self-test ({case}): the stranded line was '
+                     f'refused, but not by naming page 2 and the line: {said}')
+        continue
+    texts = [typstindex._text(l.words) for l in got]
+    if case not in ('control', 'header'):
+        sys.exit(f'FAIL: M113 T3 self-test ({case}): the bounded read returned '
+                 f'{texts} and dropped the line printed ahead of the '
+                 f'section-ending line on the page it left out')
+    if texts != ['aardvark, 1', 'yak, 2']:
+        sys.exit(f'FAIL: M113 T3 self-test ({case}): the read returned '
+                 f'{texts}, not its two entries')
+PY
+  pass "M113 T3 self-test: the Typst bounded read is red, naming the page and the line, when the page it leaves out prints an index line above its first stop line or in the left column below one set in the right, and reads in full a control and a page whose running header starts with the stop string"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares three indexes

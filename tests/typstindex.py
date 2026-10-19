@@ -516,12 +516,17 @@ def read(pdf_path, heading, stop=(), footer_pattern=None):
 
     With `stop`, the read ends at the first later page carrying a line that
     starts with any of those strings, and drops that page, as
-    tests/pdfindex.py's bounded read does, but without that read's refusal of
-    a page printing a line ahead of its section-ending line; a stop no later
-    page carries raises LookupError. A start rather than a whole line, because the page after an
+    tests/pdfindex.py's bounded read does; a stop no later page carries raises
+    LookupError. A start rather than a whole line, because the page after an
     index in a Typst book opens with a running header that names the chapter
-    and then the section. Without `stop` the read runs to the end of the
-    document. `footer_pattern` names the pages' footer, as `_pages` reads it.
+    and then the section. Like that read, this one raises LookupError, naming
+    the page and the lines, when the page left out prints a line ahead of its
+    first line that starts with a stop string: one above it, or, where that
+    line sits in the right column, one in the left column (M113). Such a line
+    would be a line of this index the read drops. A running header that
+    starts with a stop string is that first line, so nothing is ahead of it.
+    Without `stop` the read runs to the end of the document. `footer_pattern`
+    names the pages' footer, as `_pages` reads it.
     """
     pages = list(_pages(pdf_path, footer_pattern))
     start = None
@@ -545,6 +550,19 @@ def read(pdf_path, heading, stop=(), footer_pattern=None):
         else:
             raise LookupError(f'no page after {heading!r} in {pdf_path} '
                               f'carries any of {sorted(wanted)!r}')
+        number, width, lines = pages[end]
+        column = lambda words: 0 if words[0].x0 < width / 2.0 else 1  # noqa: E731
+        first_col, first_y = min(
+            (column(words), words[0].y0) for words in lines
+            if any(_text(words).startswith(want) for want in wanted))
+        ahead = [_text(words) for words in lines
+                 if words[0].y0 < first_y or column(words) < first_col]
+        if ahead:
+            raise LookupError(
+                f'page {number} of {pdf_path} ends the {heading!r} read and '
+                f'is left out of it, but it prints {ahead!r} ahead of its '
+                f'section-ending line, so those lines would be dropped from '
+                f'the index; the index must end on an earlier page')
     collected = []
     for i in range(start[0], end):
         number, width, lines = pages[i]

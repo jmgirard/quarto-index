@@ -123,8 +123,9 @@ local RANGE_ENDS = {
 -- unreachable by construction rather than merely unexercised, and the role
 -- travels on a second channel instead.
 --
--- That channel is the `.aux`. The principal mark emits REGISTER_COMMAND, which
--- writes its ordinal and `\thepage` through `\protected@write\@auxout` — the
+-- That channel is the `.aux`. The principal mark emits REGISTER_COMMAND, which,
+-- where it is typeset (its guard is below), writes its ordinal and `\thepage`
+-- through `\protected@write\@auxout` — the
 -- same deferred-to-shipout mechanism `\@wrindex` uses for the `.idx`, so the
 -- page the registration names and the page the locator names are decided by
 -- one shipout and cannot disagree. The next pass reads those lines back as

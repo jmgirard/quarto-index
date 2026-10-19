@@ -55,7 +55,7 @@
   longer stops a PDF build through LaTeX. A principal range can also open or
   close in a heading and open in a figure caption. LaTeX copies a heading
   into the table of contents and the running head, and a caption into the list
-  of figures or tables. Before this change, each copy broke the build. A
+  of figures or tables. Before this change, the build stopped. A
   contents-list, list-of-figures, list-of-tables or running-head copy now
   leaves the page it prints on unemphasized. The suite tests this under
   Quarto's default document class with a table of contents, lists of figures

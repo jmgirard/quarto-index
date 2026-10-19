@@ -32458,28 +32458,32 @@ fi
 #            Quarto's template sets on a line of its own and the default
 #            contents depth leaves out of the printed list; page 1 plain
 #   dahlia   a principal range opened in a level-one heading on page 5 and
-#            closed in another on page 7, printed 5–7; page 1 plain, and page
-#            9 plain under the closing heading's running head. Page 6 prints
-#            the opening heading's running head inside the range, and page 8
-#            the closing one's with no mark, so 9 is not folded into the range
-#   elm      principal in a figure caption on page 10; page 1 plain
-#   fern     a principal range opened in a figure caption on page 11 and
-#            closed in the text on page 12, printed 11–12; page 1 plain
-#   ginkgo   principal in a table caption on page 13; page 1 plain
-#   holly    an ordinary mark in a level-one heading on page 10, the shape
+#            closed in another on page 7, printed 5–7, and a second principal
+#            range opened in the text on page 9 and closed on page 11, printed
+#            9–11; page 1 plain. Page 6 prints the opening heading's running
+#            head inside the first range, and pages 8 to 11 the closing
+#            heading's, page 10 inside the second range. Page 8 carries no
+#            mark, so the two ranges are not folded into one
+#   elm      principal in a figure caption on page 12; page 1 plain
+#   fern     a principal range opened in a figure caption on page 13 and
+#            closed in the text on page 14, printed 13–14; page 1 plain
+#   ginkgo   principal in a table caption on page 15; page 1 plain
+#   holly    an ordinary mark in a level-one heading on page 12, the shape
 #            this milestone leaves alone; page 1 plain
 # A running head also prints on its own heading's page, and a page between
 # two marked pages folds them into one range, so not every copy's page can
-# carry an ordinary mark. Each kind of copy a term gets has one that does.
-# The index is on page 14. Page 1 prints the index's contents line `Index` as
+# carry an ordinary mark. Each kind of copy a term gets has one that does,
+# except dahlia's running heads, which sit in or between its ranges; the
+# self-test below shows a copy run there red on the ranges instead.
+# The index is on page 16. Page 1 prints the index's contents line `Index` as
 # a line of its own, so the read starts at page 2. In PDF the fixture
 # redefines the principal command to print `[P:<page>]`, so an emphasized
 # locator is visible to pdftotext.
 # ---------------------------------------------------------------------------
 section 'M114-AC1/AC2 — a principal mention in a LaTeX heading or caption builds and files its own page.'
 M114_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/principal-headings.qmd || true; } | tr -d ' ')
-[ "$M114_BREAKS" = "13" ] \
-  || fail "M114-AC1: examples/principal-headings.qmd carries $M114_BREAKS page breaks, not the thirteen its manifest numbers pages by"
+[ "$M114_BREAKS" = "15" ] \
+  || fail "M114-AC1: examples/principal-headings.qmd carries $M114_BREAKS page breaks, not the fifteen its manifest numbers pages by"
 quarto render examples/principal-headings.qmd --to pdf \
     > "$WORK/principal-headings-pdf.log" 2>&1 \
   || { tail -40 "$WORK/principal-headings-pdf.log" >&2; fail "M114-AC1: examples/principal-headings.qmd failed to render to PDF"; }
@@ -32549,11 +32553,11 @@ if [ "${1:-}" = "--self-test" ]; then
   #                   opening heading's running head on page 6 restarts the
   #                   range there, so the printed 5–7 is no longer the span
   #                   registered and prints plain
-  #   leak-rangeend   stays green, and must: a closing mark's copy prints only
-  #                   where its range is not open, before the opening (the
-  #                   contents page) or after the closing (the running heads
-  #                   from page 7 on), and the range's closing command composes
-  #                   nothing while the range's slot is empty
+  #   leak-rangeend   dahlia red: the closing heading's running head on page
+  #                   10 closes the second range early, so 9–11 prints plain.
+  #                   Its other copies run where no range of dahlia is open
+  #                   (the contents page, pages 7 to 9, the head above page
+  #                   9's opening) and compose nothing
   # The copy site, each planted in a copy of the fixture as raw LaTeX that puts
   # a registration where that site's copy would run, through the unplanted
   # extension. The ordinals are the filter's, numbered in the order the
@@ -32625,23 +32629,22 @@ M114SPLICEPY
   m114_red leak-register "index line 1 is (0, 'aster, [P:1], [P:2], [P:4]')" \
     m114_pdf_check "$CAPTURE_ROOT/m114-leak-register/principal-headings.pdf" \
     tests/principal-headings-pdf.tsv
-  m114_red leak-rangefrom "index line 4 is (0, 'dahlia, [P:1], 5–7, 9')" \
+  m114_red leak-rangefrom "index line 4 is (0, 'dahlia, [P:1], 5–7, [P:9–11]')" \
     m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangefrom/principal-headings.pdf" \
     tests/principal-headings-pdf.tsv
-  m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangeend/principal-headings.pdf" \
-      tests/principal-headings-pdf.tsv \
-    || fail "M114 T3 self-test (leak-rangeend): a closing mark's copies changed the index, though each prints where its range is not open (the report is above)"
-  pass "M114 T3 self-test (leak-rangeend): a closing mark's copies, kept and run, leave the index as the manifest states"
+  m114_red leak-rangeend "index line 4 is (0, 'dahlia, 1, [P:5–7], 9–11')" \
+    m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangeend/principal-headings.pdf" \
+    tests/principal-headings-pdf.tsv
 
   M114_PAGE1='[fern]{.index}, [ginkgo]{.index} and [holly]{.index}.'
   M114_PAGE4='aster is marked here: [aster]{.index}.'
   M114_PAGE6="This page's running head is a copy of the dahlia section's heading."
   for plant in \
       "site-toc|$M114_PAGE1|\\addtocontents{toc}{\\protect\\quartoindexregister{qi1}}|index line 1 is (0, 'aster, [P:1], [P:2], 4')" \
-      "site-lof|$M114_PAGE1|\\addtocontents{lof}{\\protect\\quartoindexregister{qi5}}|index line 5 is (0, 'elm, [P:1], [P:10]')" \
-      "site-lot|$M114_PAGE1|\\addtocontents{lot}{\\protect\\quartoindexregister{qi7}}|index line 7 is (0, 'ginkgo, [P:1], [P:13]')" \
+      "site-lof|$M114_PAGE1|\\addtocontents{lof}{\\protect\\quartoindexregister{qi5}}|index line 5 is (0, 'elm, [P:1], [P:12]')" \
+      "site-lot|$M114_PAGE1|\\addtocontents{lot}{\\protect\\quartoindexregister{qi7}}|index line 7 is (0, 'ginkgo, [P:1], [P:15]')" \
       "site-head|$M114_PAGE4|\\quartoindexregister{qi1}|index line 1 is (0, 'aster, 1, [P:2], [P:4]')" \
-      "site-span|$M114_PAGE6|\\quartoindexrangefrom{qi4}|index line 4 is (0, 'dahlia, 1, 5–7, 9')"; do
+      "site-span|$M114_PAGE6|\\quartoindexrangefrom{qi4}|index line 4 is (0, 'dahlia, 1, 5–7, [P:9–11]')"; do
     IFS='|' read -r m114_slug m114_anchor m114_raw m114_want <<EOF
 $plant
 EOF
@@ -32658,19 +32661,19 @@ EOF
   # The manifest plants: the run's own render against a manifest one row short,
   # one row altered, and one row long.
   awk 'NR != 3' tests/principal-headings-pdf.tsv > "$M114P/removed.tsv"
-  sed 's/^0	elm, 1, \[P:10\]$/0	elm, 1, 10/' tests/principal-headings-pdf.tsv \
+  sed 's/^0	elm, 1, \[P:12\]$/0	elm, 1, 12/' tests/principal-headings-pdf.tsv \
     > "$M114P/altered.tsv"
   cmp -s tests/principal-headings-pdf.tsv "$M114P/altered.tsv" \
     && fail "M114 T3 self-test (manifest-altered): the plant left the manifest unchanged"
   { cat tests/principal-headings-pdf.tsv; printf '0\tivy, 1\n'; } > "$M114P/added.tsv"
-  m114_red manifest-removed "index line 3 is (0, 'clover, 1, [P:3]'), not the (0, 'dahlia, 1, [P:5–7], 9')" \
+  m114_red manifest-removed "index line 3 is (0, 'clover, 1, [P:3]'), not the (0, 'dahlia, 1, [P:5–7], [P:9–11]')" \
     m114_pdf_check "$M114_PDF" "$M114P/removed.tsv"
-  m114_red manifest-altered "index line 5 is (0, 'elm, 1, [P:10]'), not the (0, 'elm, 1, 10')" \
+  m114_red manifest-altered "index line 5 is (0, 'elm, 1, [P:12]'), not the (0, 'elm, 1, 12')" \
     m114_pdf_check "$M114_PDF" "$M114P/altered.tsv"
   m114_red manifest-added "index line 9 is None, not the (0, 'ivy, 1')" \
     m114_pdf_check "$M114_PDF" "$M114P/added.tsv"
 
-  pass "M114 T3 self-test: taking the guard off the registration or a range opening is red on the AC2 check, naming aster and dahlia, while a range closing's copies are harmless; a registration put where a contents line, a list of figures, a list of tables or a running head would run it is red naming the term, and a range opening on a running-head page inside its range is red on the span; the manifest one row short, altered or long is red naming that row"
+  pass "M114 T3 self-test: taking the guard off the registration, a range opening or a range closing is red on the AC2 check, naming aster or dahlia, the closing on a second range its running head ends early; a registration put where a contents line, a list of figures, a list of tables or a running head would run it is red naming the term, and a range opening on a running-head page inside its range is red on the span; the manifest one row short, altered or long is red naming that row"
 fi
 
 # ---------------------------------------------------------------------------

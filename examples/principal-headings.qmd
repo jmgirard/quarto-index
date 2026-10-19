@@ -70,7 +70,17 @@ This page's running head is a copy of the closing section's heading.
 
 {{< pagebreak >}}
 
-So is this page's, and dahlia is marked here: [dahlia]{.index}.
+So is this page's, and a second principal range of dahlia opens here:
+[dahlia]{.index mention="principal" range="open"}.
+
+{{< pagebreak >}}
+
+This page's running head is still a copy of the closing section's heading,
+inside the second range.
+
+{{< pagebreak >}}
+
+The second range closes here: [dahlia]{.index range="close"}.
 
 {{< pagebreak >}}
 

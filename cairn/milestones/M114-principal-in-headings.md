@@ -71,11 +71,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
       mention in a table caption; and one ordinary mark in a heading.
 - [ ] AC2: In the fixture's printed index, each principal mention's page and
       each principal range's span is emphasized, and no other locator of the
-      fixture's terms is. Each term whose heading or caption LaTeX copies has
-      an ordinary locator on every page that prints a copy (a contents line, a
-      list-of-figures or list-of-tables line, a running head), each such page
-      differs from the principal mention's own page, and none of those
-      locators is emphasized. The suite checks this by reading the index with
+      fixture's terms is. The suite checks this by reading the index with
       `tests/pdfindex.py` through the fixture's `\quartoindexprincipal`
       redefinition and matching every entry's term, level, locators and the
       emphasis on each locator against a manifest derived by hand from the
@@ -107,7 +103,11 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 
 - [x] T1: Write `examples/principal-headings.qmd` (AC1's marks) and its
       hand-derived manifest, with a derivation comment that names the page of
-      each mark. Place AC2's ordinary locators on the copy pages. Add the
+      each mark. Give each term an ordinary mark on a page that prints a copy
+      of its heading or caption, one for each kind of copy (contents line,
+      list line, running head) where the layout allows, off its principal
+      page and range, so a copy that registered its page would show as an
+      emphasized locator. Add the
       render, its capture and the AC2 index check to `tests/run-tests.sh`.
       Show at the base commit that a heading-only, a figure-caption-only and a
       table-caption-only variant each fail with the error the Scope quotes for
@@ -158,6 +158,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 - 2026-10-19: T3 found AC2's copy clause unsatisfiable as written: a running head also prints on its own heading's page, and a mark on every running-head page folds consecutive pages into one range; the fixture moved dahlia's closing heading to page 7 so page 6 prints the opening heading's running head inside the range (a page a span-corrupting plant can reach); manifest and derivation comment updated, 13 page breaks, index on page 14; render matches.
 - 2026-10-19: re-audit: AC2 (full) — 4 findings: "the mention's own page" reads two ways for holly, which has no principal mark; the three copy kinds read as examples; "a principal range" could be any term's; T3 should plant a span corruption at page 6.
 - 2026-10-19: re-audit: AC2 (full) — 4 findings on the fixed wording: read per heading, dahlia's opening heading can never be met; "each of three kinds" reads as all three required; "The suite checks this" overclaims, since the manifest match does not check that the copy pages print their copies; T3 should show plants at pages 6 and 8 red. Second re-audit on AC2: stopped for the user (repeated review-failure stop).
+- 2026-10-19: substantive amendment: AC2 narrowed at the user's choice at the stop to its index promise and its check ("each principal mention's page and each principal range's span is emphasized, and no other locator of the fixture's terms is"); the copy-page clause moved to T1 as test design (minor task edit). The kept-copy-clause option with a new copy-page check was declined. No further reader for AC2: two re-audit lines are on record.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

@@ -32535,6 +32535,143 @@ m114_pdf_check "$M114_PDF" tests/principal-headings-pdf.tsv \
   || fail "M114-AC2: the PDF index of examples/principal-headings.qmd does not match tests/principal-headings-pdf.tsv (the report is above)"
 pass "M114-AC2: in the PDF index each principal mention in a heading or caption emphasizes its own page or range alone, and no contents-list or running-head copy emphasizes the page it prints on"
 
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M114 T3 self-test — the AC2 check shown red on a copy that registers, on
+  # each of the two axes such a defect varies on.
+  # The command, each planted in a copy of the extension by taking its guard
+  # away and leaving the `\protected` worker, so every copy of it keeps it
+  # and runs where the copy is typeset:
+  #   leak-register   aster red: the contents page and the running head on
+  #                   page 4 both register, [P:1] and [P:4]
+  #   leak-rangefrom  dahlia red: the contents page registers [P:1], and the
+  #                   opening heading's running head on page 6 restarts the
+  #                   range there, so the printed 5–7 is no longer the span
+  #                   registered and prints plain
+  #   leak-rangeend   stays green, and must: a closing mark's copy prints only
+  #                   where its range is not open, before the opening (the
+  #                   contents page) or after the closing (the running heads
+  #                   from page 7 on), and the range's closing command composes
+  #                   nothing while the range's slot is empty
+  # The copy site, each planted in a copy of the fixture as raw LaTeX that puts
+  # a registration where that site's copy would run, through the unplanted
+  # extension. The ordinals are the filter's, numbered in the order the
+  # principal keys first appear: aster qi1, dahlia qi4, elm qi5, ginkgo qi7.
+  #   site-toc   a contents line carrying aster's registration: aster [P:1]
+  #   site-lof   a list-of-figures line carrying elm's: elm [P:1]
+  #   site-lot   a list-of-tables line carrying ginkgo's: ginkgo [P:1]
+  #   site-head  aster's registration on page 4, a page under its running
+  #              head: aster [P:4]
+  #   site-span  dahlia's range opening on page 6, under the opening heading's
+  #              running head: dahlia's span prints plain
+  # And the manifest, held against this run's own render with one row
+  # removed, one altered, and one added.
+  # -------------------------------------------------------------------------
+  M114P="$WORK/m114plant"
+  mkdir -p "$M114P"
+
+  # <path> <old> <new>: replace the one occurrence of <old>, literally.
+  m114_splice() {
+    python3 - "$1" "$2" "$3" <<'M114SPLICEPY'
+import sys
+path, old, new = sys.argv[1:4]
+text = open(path, encoding='utf-8').read()
+n = text.count(old)
+if n != 1:
+    sys.exit(f'M114 T3 self-test: {old!r} occurs {n} time(s) in {path}, not once')
+open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+M114SPLICEPY
+  }
+
+  m114_tree() {   # <slug>: a fresh copy of the fixture and the extension
+    local dir="$M114P/$1"
+    [ ! -e "$dir" ] || fail "M114 T3 self-test ($1): $dir already exists"
+    mkdir -p "$dir/_extensions"
+    cp examples/principal-headings.qmd examples/dot.png "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+  }
+
+  m114_render() {   # <slug>
+    ( cd "$M114P/$1" && quarto render principal-headings.qmd --to pdf ) \
+      > "$WORK/m114-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m114-$1.log" >&2; fail "M114 T3 self-test ($1): the planted fixture failed to render to PDF"; }
+    capture "$M114P/$1/principal-headings.qmd" pdf "m114-$1"
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m114_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M114 T3 self-test ($slug): the check passed the planted render, so its green says nothing about this defect"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M114 T3 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this check catching this plant"; }
+    pass "M114 T3 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  for pair in REGISTER_COMMAND:register RANGEFROM_COMMAND:rangefrom \
+      RANGEEND_COMMAND:rangeend; do
+    m114_name="${pair%%:*}"
+    m114_worker="${pair##*:}"
+    m114_tree "leak-$m114_worker"
+    m114_splice "$M114P/leak-$m114_worker/_extensions/index/modules/core.lua" \
+      "{\\\\qi@guard\\\\\" ..
+    $m114_name .. \"\\\\qi@$m114_worker}\"" "{\\\\qi@$m114_worker}\"" \
+      || fail "M114 T3 self-test (leak-$m114_worker): the guard of $m114_name could not be taken away (its own message is above)"
+    m114_render "leak-$m114_worker"
+  done
+  m114_red leak-register "'aster, [P:1], [P:2], [P:4]'" \
+    m114_pdf_check "$CAPTURE_ROOT/m114-leak-register/principal-headings.pdf" \
+    tests/principal-headings-pdf.tsv
+  m114_red leak-rangefrom "'dahlia, [P:1], 5–7, 9'" \
+    m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangefrom/principal-headings.pdf" \
+    tests/principal-headings-pdf.tsv
+  m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangeend/principal-headings.pdf" \
+      tests/principal-headings-pdf.tsv \
+    || fail "M114 T3 self-test (leak-rangeend): a closing mark's copies changed the index, though each prints where its range is not open (the report is above)"
+  pass "M114 T3 self-test (leak-rangeend): a closing mark's copies, kept and run, leave the index as the manifest states"
+
+  M114_PAGE1='[fern]{.index}, [ginkgo]{.index} and [holly]{.index}.'
+  M114_PAGE4='aster is marked here: [aster]{.index}.'
+  M114_PAGE6="This page's running head is a copy of the dahlia section's heading."
+  for plant in \
+      "site-toc|$M114_PAGE1|\\addtocontents{toc}{\\protect\\quartoindexregister{qi1}}|'aster, [P:1], [P:2], 4'" \
+      "site-lof|$M114_PAGE1|\\addtocontents{lof}{\\protect\\quartoindexregister{qi5}}|'elm, [P:1], [P:10]'" \
+      "site-lot|$M114_PAGE1|\\addtocontents{lot}{\\protect\\quartoindexregister{qi7}}|'ginkgo, [P:1], [P:13]'" \
+      "site-head|$M114_PAGE4|\\quartoindexregister{qi1}|'aster, 1, [P:2], [P:4]'" \
+      "site-span|$M114_PAGE6|\\quartoindexrangefrom{qi4}|'dahlia, 1, 5–7, 9'"; do
+    IFS='|' read -r m114_slug m114_anchor m114_raw m114_want <<EOF
+$plant
+EOF
+    m114_tree "$m114_slug"
+    m114_splice "$M114P/$m114_slug/principal-headings.qmd" "$m114_anchor" \
+      "$m114_anchor \`$m114_raw\`{=latex}" \
+      || fail "M114 T3 self-test ($m114_slug): the plant could not be written into the fixture (its own message is above)"
+    m114_render "$m114_slug"
+    m114_red "$m114_slug" "$m114_want" \
+      m114_pdf_check "$CAPTURE_ROOT/m114-$m114_slug/principal-headings.pdf" \
+      tests/principal-headings-pdf.tsv
+  done
+
+  # The manifest plants: the run's own render against a manifest one row short,
+  # one row altered, and one row long.
+  awk 'NR != 3' tests/principal-headings-pdf.tsv > "$M114P/removed.tsv"
+  sed 's/^0	elm, 1, \[P:10\]$/0	elm, 1, 10/' tests/principal-headings-pdf.tsv \
+    > "$M114P/altered.tsv"
+  cmp -s tests/principal-headings-pdf.tsv "$M114P/altered.tsv" \
+    && fail "M114 T3 self-test (manifest-altered): the plant left the manifest unchanged"
+  { cat tests/principal-headings-pdf.tsv; printf '0\tivy, 1\n'; } > "$M114P/added.tsv"
+  m114_red manifest-removed "'clover, 1, [P:3]'" \
+    m114_pdf_check "$M114_PDF" "$M114P/removed.tsv"
+  m114_red manifest-altered "'elm, 1, 10'" \
+    m114_pdf_check "$M114_PDF" "$M114P/altered.tsv"
+  m114_red manifest-added "'ivy, 1'" \
+    m114_pdf_check "$M114_PDF" "$M114P/added.tsv"
+
+  pass "M114 T3 self-test: taking the guard off the registration or a range opening is red on the AC2 check, naming aster and dahlia, while a range closing's copies are harmless; a registration put where a contents line, a list of figures, a list of tables or a running head would run it is red naming the term, and a range opening on a running-head page inside its range is red on the span; the manifest one row short, altered or long is red naming that row"
+fi
+
 # ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.
 #

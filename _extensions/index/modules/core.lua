@@ -210,9 +210,30 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\providecommand*\\" .. PRINCIPALPAGE_COMMAND ..
     "[2]{\\def\\qi@key{#2}\\@onelevel@sanitize\\qi@key" ..
     "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}}",
-  "\\providecommand*\\" .. REGISTER_COMMAND ..
-    "[1]{\\protected@write\\@auxout{}{\\string\\" .. PRINCIPALPAGE_COMMAND ..
-    "{#1}{\\thepage}}}",
+  -- The three commands a mark emits beside its `\index` sit in whatever the
+  -- mark sits in, a heading or a caption included, and LaTeX copies those:
+  -- into the contents lists and the running head, through `\protected@edef`
+  -- and `\protected@write`. Written as plain `\protected@write` calls, the
+  -- commands were expanded there and the build stopped (M114). So each one is
+  -- `\qi@guard`, which asks `\protect` whether this is typesetting. If it is,
+  -- the `\protected` worker runs and writes the `.aux` line. If it is a copy,
+  -- the command keeps itself, unexpanded, exactly while `\index` keeps the
+  -- meaning the document began with, and drops out where a copy has removed
+  -- `\index` (the kernel removes it from contents lines and running heads).
+  -- So the registration travels wherever its `\index` does, and the two still
+  -- ship on one page (D-007). `\index` is compared with what it means at
+  -- `\begin{document}`, not with one gobbler: under TeX Live 2026 a contents
+  -- line removes it with `\@gobble@som`, not `\@gobble`, and a test against
+  -- `\@gobble` let every copy through.
+  "\\def\\qi@guard#1#2{\\ifx\\protect\\@typeset@protect" ..
+    "\\expandafter\\@secondoftwo\\else\\expandafter\\@firstoftwo\\fi" ..
+    "{\\qi@copy#1}{#2}}",
+  "\\def\\qi@copy#1#2{\\ifx\\index\\qi@index\\noexpand#1{#2}\\fi}",
+  "\\AtBeginDocument{\\let\\qi@index\\index}",
+  "\\protected\\def\\qi@register#1{\\protected@write\\@auxout{}{\\string\\" ..
+    PRINCIPALPAGE_COMMAND .. "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. REGISTER_COMMAND .. "{\\qi@guard\\" ..
+    REGISTER_COMMAND .. "\\qi@register}",
   -- The empty-list guard is not decoration: `\qi@sniff` reads its first token
   -- as an undelimited argument, so a page list with no token in it would let
   -- it swallow the `\qi@stop` delimiter and run away — a hard render failure
@@ -294,12 +315,15 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
     "\\qi@key}" ..
     "\\expandafter\\gdef\\csname qi@p@#1@\\qi@key\\endcsname{}" ..
     "\\expandafter\\global\\expandafter\\let\\csname qi@f@#1\\endcsname\\relax\\fi}",
-  "\\providecommand*\\" .. RANGEFROM_COMMAND ..
-    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGEAT_COMMAND ..
-    "{#1}{\\thepage}}}",
-  "\\providecommand*\\" .. RANGEEND_COMMAND ..
-    "[1]{\\protected@write\\@auxout{}{\\string\\" .. RANGETO_COMMAND ..
-    "{#1}{\\thepage}}}",
+  -- The range ends' own commands take the same guard as REGISTER_COMMAND.
+  "\\protected\\def\\qi@rangefrom#1{\\protected@write\\@auxout{}{\\string\\" ..
+    RANGEAT_COMMAND .. "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. RANGEFROM_COMMAND .. "{\\qi@guard\\" ..
+    RANGEFROM_COMMAND .. "\\qi@rangefrom}",
+  "\\protected\\def\\qi@rangeend#1{\\protected@write\\@auxout{}{\\string\\" ..
+    RANGETO_COMMAND .. "{#1}{\\thepage}}}",
+  "\\providecommand*\\" .. RANGEEND_COMMAND .. "{\\qi@guard\\" ..
+    RANGEEND_COMMAND .. "\\qi@rangeend}",
   "\\makeatother",
 }, "\n")
 

@@ -112,7 +112,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
       Show at the base commit that a heading-only, a figure-caption-only and a
       table-caption-only variant each fail with the error the Scope quotes for
       it, and commit the red check.
-- [ ] T2: Change the three command definitions in `core.lua` so LaTeX's copies
+- [x] T2: Change the three command definitions in `core.lua` so LaTeX's copies
       of a heading or caption neither expand nor run them, keeping each one
       beside its `\index` so both still ship on one page (D-007). Probe each
       copy site alone (contents line, list-of-figures and list-of-tables
@@ -153,6 +153,8 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 - 2026-10-19: implement started; branch m114-principal-in-headings cut from main at 55edcd9; tree clean.
 - 2026-10-19: T1 red at base (Quarto 1.10.18, lualatex, base extension): a heading-only variant fails with `Illegal parameter number in definition of \^^@`, a figure-caption-only one with `Argument of \caption@ydblarg has an extra }`, a table-caption-only one with `Argument of \caption@listentry@ has an extra }`; the fixture itself, under `pagestyle: headings`, fails first at the running head with `Illegal parameter number in definition of \g__mark_tmp_tl` (a fourth copy site the Scope did not name).
 - 2026-10-19: T1 added `examples/principal-headings.qmd`, `tests/principal-headings-pdf.tsv`, the M114-AC1/AC2 section of `tests/run-tests.sh`, and `pdfindex.read`'s `from_page` (default 1, unchanged behavior), because page 1's contents line `Index` is a line exactly equal to the heading and the read would start there.
+- 2026-10-19: T2 design: each command became `\qi@guard`, which runs a `\protected` worker when `\protect` is `\@typeset@protect` and, in a copy, keeps the command unexpanded only while `\index` means what it meant at `\begin{document}`; two tries failed first in scratch: a guard testing `\index` against `\@gobble`/`\relax` built but let every contents-list copy register page 1 (the TeX Live 2026 contents line removes `\index` with `\@gobble@som`, and an earlier `\protected@edef` with `\index` live had already expanded the command).
+- 2026-10-19: T2 probes, each copy site alone (scratchpad, Quarto 1.10.18): a heading with no list, with `toc: true`, and with `pagestyle: headings`; a figure caption with and without `lof: true`; a table caption with and without `lot: true`; and scrbook with a contents list and running heads all build, print the principal page emphasized, and print the copy pages plain; no `Token not allowed in a PDF string` warning, so the PDF bookmarks take the heading's plain text; the fixture also matches the manifest under pdflatex and xelatex.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

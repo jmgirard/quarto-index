@@ -345,7 +345,10 @@ jobs:
   # print its index as a manifest states it, one locator a mark in a figure
   # caption or an image's alt text (M101): the LaTeX index is the eight lines of
   # tests/figure-marks-pdf.txt (M102), and the Typst index is
-  # tests/figure-marks-typst.tsv. The render alone is not the check: a PDF
+  # tests/figure-marks-typst.tsv. And that `quarto render --to typst`
+  # succeeds on examples/typst-caption-lists.qmd and prints its index as
+  # tests/typst-caption-lists.tsv states it, each caption mark on its
+  # caption's page under lists that copy the caption (M115). The render alone is not the check: a PDF
   # that typesets at exit 0 while the index prints empty is exactly the break
   # this job exists to catch, and the reading step after each render
   # (`indexdump.py`, `namedpdf.py`, `typstindex.py` or `figuremarks.py`) is
@@ -613,6 +616,22 @@ jobs:
           set -euo pipefail
           python3 tests/typstindex.py pages examples/figure-marks.pdf \
             tests/figure-marks-typst.tsv 'Typst index of figure marks' 'Index'
+
+      # A mark in a caption that a Typst list of pictures, tables or listings
+      # copies files its caption's page, with the lists both before and after
+      # the floats (M115). The footer is the page number alone, as above.
+      - name: Render examples/typst-caption-lists.qmd to Typst
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto render examples/typst-caption-lists.qmd --to typst
+
+      - name: Read the Typst caption-lists index against its manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/typstindex.py pages examples/typst-caption-lists.pdf \
+            tests/typst-caption-lists.tsv 'Typst index of caption marks under lists' 'Index'
 
       # Both indexes of the two-index fixture (M106). Quarto's own loop builds
       # the first; imakeidx builds the second through TeX's restricted shell

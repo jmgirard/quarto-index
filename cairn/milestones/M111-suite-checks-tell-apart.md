@@ -152,6 +152,7 @@ the line the T2 plant expects (KI276). The three entries are removed from
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: review pass 1 in progress: four reviewers reported, fresh full run in flight; KI311 (three inline greps outside the helper that read a missing log as 0) added to `cairn/DESIGN.md` per Scope Out. Fix-now edits to `tests/run-tests.sh` wait for the run to end (M073 lesson).
 - 2026-10-18: review pass 1: AC1-AC3 verified and ticked; 15 findings: 3 fixed (7f8d094), 1 follow-up (KI311), 7 rejected, 4 noted; no return. Full run at 7f8d094 green (1767 checks).
+- 2026-10-18: step-7 approval: m111-suite-checks-tell-apart approved for merge
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

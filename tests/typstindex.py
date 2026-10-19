@@ -528,11 +528,13 @@ def read(pdf_path, heading, stop=(), footer_pattern=None):
     the page and the lines, when the page left out prints a line ahead of its
     first line, in reading order, that starts with a stop string: one above
     it, or, where that line sits in the right column, one in the left column
-    (M113). Such a line would be a line of this index the read drops. A line
-    that starts with a stop string, or that shares a row with one (a running
-    header's page number), is not ahead, so a page whose running header names
-    the stop reads clean; body text below a right-column header is ahead, and
-    a caller names its first line as a stop too.
+    (M113). Such a line would be a line of this index the read drops. Unlike
+    that read, which has no running header to allow for, this one treats a
+    line that starts with a stop string, or that shares a row with one (a
+    running header's page number), as not ahead, so a page whose running
+    header names the stop reads clean. Any line sharing that row is exempt,
+    whatever it prints. Body text in the left column under a right-column
+    header is ahead, so a caller names its first words as a stop too.
     Without `stop` the read runs to the end of the document. `footer_pattern`
     names the pages' footer, as `_pages` reads it.
     """

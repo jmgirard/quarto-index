@@ -6898,8 +6898,9 @@ if after < 0:
           'index in the compiled PDF, so the index was not printed at the '
           'marker', file=sys.stderr)
     sys.exit(1)
-# Two-column index setting collapses to single spaces, as the other PDF
-# checks do.
+# Two-column index setting collapses to single spaces. A presence test over
+# that flattened text, where M113 made AC6, M02-AC2, M02-AC3 and M05-AC5
+# count whole printed lines: a term printed twice passes here.
 region = ' '.join(text[m.end():after].split())
 missing = [t for t in terms if ' '.join(t.split()) not in region]
 if missing:
@@ -7299,6 +7300,10 @@ import pdfindex
 label, pdf_path, rows_path, missing_said, ok_said = sys.argv[1:6]
 plant = sys.argv[6] if len(sys.argv) > 6 else ''
 rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
+if not rows:
+    print(f'FAIL: {label}: the manifest {rows_path} has no rows, so there is '
+          f'nothing to count', file=sys.stderr)
+    sys.exit(1)
 try:
     entries = pdfindex.read(pdf_path)
 except LookupError as error:
@@ -7356,6 +7361,10 @@ import pdfindex
 pdf_path, terms_path = sys.argv[1:3]
 plant = sys.argv[3] if len(sys.argv) > 3 else ''
 terms = [l.rstrip('\n') for l in open(terms_path, encoding='utf-8') if l.strip()]
+if not terms:
+    print(f'FAIL: AC6: the manifest {terms_path} has no terms, so there is '
+          f'nothing to count', file=sys.stderr)
+    sys.exit(1)
 try:
     entries = pdfindex.read(pdf_path)
 except LookupError as error:
@@ -7391,6 +7400,7 @@ if [ "${1:-}" = "--self-test" ]; then
   M113W="$WORK/m113-ac6"
   rm -rf "$M113W"; mkdir -p "$M113W"
   m113_term=$(awk 'NF { print; exit }' "$WORK/pdfterms.txt")
+  [ -n "$m113_term" ] || fail "M113 T2 self-test: the AC6 term manifest has no row to plant"
   printf '%s, 9\n' "$m113_term" > "$M113W/twice.txt"
   if out=$(pdf_term_check "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/pdfterms.txt" "$M113W/twice.txt" 2>&1); then
     fail "M113 T2 self-test: AC6 passed the demo PDF with <<$m113_term>> printed on a second line"
@@ -7957,6 +7967,10 @@ rows = [l.rstrip('\n').split('\t') for l in open(terms_path, encoding='utf-8')
         if l.strip()]
 xrefs = [l.rstrip('\n') for l in open(xrefs_path, encoding='utf-8')
          if l.strip()]
+if not rows or not xrefs:
+    print('FAIL: M05-AC5: a manifest has no rows, so there is nothing to '
+          'count', file=sys.stderr)
+    sys.exit(1)
 
 # The book declares two indexes, and since M49 a PDF book prints both, each
 # under its declared title -- so this reads the FIRST one, bounded by the
@@ -8063,7 +8077,7 @@ if [ "${1:-}" = "--self-test" ]; then
   printf '%s\n' "$m113_xref" > "$M113B/xref-twice.txt"
   m113_book_red xref-twice "<<$m113_xref>> is printed on 2 line(s)" \
     "$WORK/book-pdf-terms.txt" "$M113B/xref-twice.txt"
-  awk -F '\t' -v OFS='\t' -v t="$m113_bterm" '$2 == t { $1 = $1 - 1 } { print }' \
+  M113_T="$m113_bterm" awk -F '\t' -v OFS='\t' '$2 == ENVIRON["M113_T"] { $1 = $1 - 1 } { print }' \
     "$WORK/book-pdf-terms.txt" > "$M113B/terms-short.txt"
   m113_book_red page-short "'$m113_bterm' is followed by $m113_pages page(s) in the printed index, expected $((m113_pages - 1))" \
     "$M113B/terms-short.txt" "$M113B/none.txt"
@@ -30519,9 +30533,11 @@ fi
 #        heading to its page; Shared Term has a locator on 5, 7 and 9. `main` and `people` are placed by
 #        the markers in last.qmd and `places`, which no marker names, follows
 #        them. The page after each index opens with the template's running
-#        header, `Chapter 4.`, which is where each read stops; after the
-#        index of subjects that page also prints last.qmd's prose, whose
-#        first words `main` names as a second stop (M113).
+#        header, `Chapter 4.`, which is where the `main` and `people` reads
+#        stop; `places` ends the document and passes no stop. After the
+#        index of subjects that page also prints last.qmd's prose in the
+#        left column under a right-column header, so `main` names its first
+#        words as a second stop (M113).
 #   AC8  The four escaping and Unicode fixtures are compared with the entries
 #        their sources derive (`typstcheck.py source`), and that derivation is
 #        held to a hand statement for each: every printable ASCII
@@ -30779,10 +30795,11 @@ for part in MAIN PEOPLE PLACES; do
   printf '%s\n%s\n' "$M098_BOOK_CHAPTERS" "${!var}" > "$WORK/m098-book-$part.tsv"
 done
 if [ "$M098_TYPST_BOOK" = 1 ]; then
-  # The page after the index of subjects carries the running header and then
-  # last.qmd's prose below it, so that prose's first words end the read too
-  # (M113): with the header alone, the prose would be lines ahead of it, which
-  # the bounded read refuses rather than drops.
+  # The page after the index of subjects carries the running header, set in
+  # the right column, and then last.qmd's prose in the left column, so that
+  # prose's first words end the read too (M113): with the header alone, the
+  # left-column prose would be lines ahead of it in reading order, which the
+  # bounded read refuses rather than drops.
   python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-MAIN.tsv" \
     "M098-AC5 (main)" "Index of Subjects" "Chapter 4." "A second placement marker" \
     || fail "M098-AC5: the book's index of subjects is not the manifest's (the report is above)"

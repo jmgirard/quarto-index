@@ -1307,6 +1307,22 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `nomarker_named` calls expect 2, the M068 count fails on 0, and the M062-AC1
   count follows a `check_warning_count` over the same log, which refuses a
   missing one. Latent. — M111 review
+- **KI314.** `tests/typstindex.py`'s bounded `read` exempts from its
+  stranded-line refusal every line within `SAME_ROW_PT` of a stop line's
+  row, whatever it prints, not only a running header's page number. An
+  index line that shares a row with a stop line on the page left out is
+  dropped with no message. No capture has such a line (2026-10-19 run).
+  — M113 review
+- **KI315.** The PDF checks that count whole printed lines (M02-AC2, M02-AC3,
+  AC6, M05-AC5) read a row as missing when its printed line carries more
+  than the row: a wrapped continuation, or a locator-only line
+  `tests/pdfindex.py` folds into it. The failure is red, but its message
+  says the row did not typeset or is missing from the index. No row is
+  affected today (2026-10-19 run). — M113 review
+- **KI316.** Two PDF index checks still test presence over flattened text,
+  so a term printed twice passes: M04-AC2's term check in
+  `tests/run-tests.sh` and `tests/gallerycheck.py`'s pdf mode (M41-AC4).
+  — M113 review
 
 ### The acceptance suite: coverage gaps
 

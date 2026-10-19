@@ -723,8 +723,8 @@ letter	W
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1c — cross-reference text expected in the compiled PDF's index
-# region (M02-AC2). Each row is the source entry as makeindex prints it —
+# Manifest 1c — cross-reference lines expected in the compiled PDF's index,
+# each printed once (M02-AC2). Each row is the source entry as makeindex prints it —
 # for a multi-level source, its deepest level, which is the sub-item the
 # cross-reference hangs off — then makeindex's own `, ` delimiter, then the
 # typeset cross-reference text.
@@ -876,7 +876,7 @@ read -r -d '' VISIBLE_TERMS <<'MANIFEST' || true
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 4 — terms that must appear in the compiled PDF's index (AC6): the
+# Manifest 4 — terms that must each print on one line of the compiled PDF's index (AC6): the
 # derived-from-visible-text, single-level, non-`entry=` terms only.
 # ---------------------------------------------------------------------------
 read -r -d '' PDF_TERMS <<'MANIFEST' || true
@@ -1010,8 +1010,8 @@ Delta	Alpha
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 6 — terms that must appear in the compiled book PDF's index
-# (M05-AC5), each with the number of PAGES its locators must cover (makeindex
+# Manifest 6 — terms that must each print on one line of the compiled book
+# PDF's index (M05-AC5), each with the number of PAGES its locators must cover (makeindex
 # prints three or more consecutive pages as a range, so printed tokens are not
 # the same thing as pages).
 # The page NUMBERS are never derived here: what a chapter's content lands on

@@ -175,3 +175,13 @@ Pass 2, after review return 1. Evidence base: HEAD 3553374, tree outside `cairn/
 - ripple #4 (pass 2): `site/typst.qmd` omits the caption exceptions — fix now, same as blame-history #3
 - ripple #5 (pass 2): the candidate row is still open — reject, planned, as ripple #5 of pass 1
 - ripple #6 (pass 2): KI318 sits before KI290 — reject, false as a defect: the Typst subsection is not in number order (KI310 precedes KI296)
+
+Pass 3, after review return 2. Evidence base: HEAD 256ba4f, tree outside `cairn/` equal to db2cdca's; main unmoved (f2e5794).
+- AC1 (pass 3): fresh render exited 0 with no warning; `tests/typstindex.py` "the 16 lines of 'Index' match the manifest, each locator's face and link included", juniper's id now `juniper-märk` (written as `label("…")`). Suite run 6 at db2cdca: `ok M115-AC1 (Typst)`; self-test plants `figure` (red at alder `1@1`) and `float` (red at birch `1*@1`).
+- AC2 (pass 3): dispatched `versions.yml` run 39340658487 at db2cdca, `pdf (pinned, 1.10.18)` step "Read the Typst caption-lists lists against their manifest": success; skipped on floor and release. Review render on 1.10.19: "each of the 12 captions the manifest names is in its list".
+- AC3 (pass 3): fresh render exited 0; page 9 carries one link, to page 2. Suite run 6 self-test plant `link`: red on "page 9 carries links to pages [7], not the one link to page 2".
+- AC4 (pass 3): suite run 6, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at db2cdca, Quarto 1.10.19: "All checks passed (1801 checks)", 10 skip lines, all pinned-only checks as before; includes the laid-out float check (`examples/typst-caption-layout.qmd`: kestrel page 1, cells on one line) and its `cells` plant red.
+- AC5 (pass 3): run 39340658487 at db2cdca: caption-lists render and `typstindex.py pages` reading success on `pdf (floor, 1.5.52)` and `pdf (pinned, 1.10.18)` (and release); every job success.
+- AC6 (pass 3): `site/typst.qmd` keeps the caption sentences and the `List of Figures` call and adds the two exceptions; suite run 6 `ok M115-AC6` and its `lof` plant red; `CHANGELOG.md` sentence adds "A grid of subfigures or tables laid out in cells keeps the list's page."
+- Consistency gate (pass 3): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
+- spawned: diff-bug, blame-history, prior-review, ripple

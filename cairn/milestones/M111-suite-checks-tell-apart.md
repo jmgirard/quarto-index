@@ -56,7 +56,7 @@ the line the T2 plant expects (KI276). The three entries are removed from
       naming the log path when the log it is given does not exist, both for an
       expected count of 0 and for a positive one; on a log that exists it
       counts occurrences as it does now.
-- [ ] AC2: The M079-AC1 leg in `tests/run-tests.sh` fails with a message
+- [x] AC2: The M079-AC1 leg in `tests/run-tests.sh` fails with a message
       naming the term when a refusal report naming a term of its
       `CONTESTED_XREF` set lacks the cross-reference wording's clause (`this
       mark files a cross-reference rather than a locator`) or carries the
@@ -151,6 +151,7 @@ the line the T2 plant expects (KI276). The three entries are removed from
 - 2026-10-18: T2/T7: `bash -n` clean; `PATH="/usr/bin:$PATH" tests/run-tests.sh --self-test` green, "All checks passed (1767 checks)", 0 FAIL, 9 skips (D-065: local Quarto 1.10.19, pinned 1.10.18; none in the M079-AC1 leg or its plants). No call over a never-written log, so T2 repaired no call site. T1-T7 ticked.
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: review pass 1 in progress: four reviewers reported, fresh full run in flight; KI311 (three inline greps outside the helper that read a missing log as 0) added to `cairn/DESIGN.md` per Scope Out. Fix-now edits to `tests/run-tests.sh` wait for the run to end (M073 lesson).
+- 2026-10-18: review pass 1: AC1-AC3 verified and ticked; 15 findings: 3 fixed (7f8d094), 1 follow-up (KI311), 7 rejected, 4 noted; no return. Full run at 7f8d094 green (1767 checks).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote
@@ -187,4 +188,7 @@ Pass 1, 2026-10-18. Sync: `main` had not moved since the branch was cut; no PR y
 - prior-review #1: the T4 plant types the leg's message sentence where M076's review asked for one shared expectation — reject, false as a hazard: a reword turns the plant red loudly (substring presence); only a silent green was M076's case, and the clause itself is shared.
 - prior-review #2: "no call over a never-written log" rests on a run with 9 skips — reject, false: none of the `on_pinned_quarto` or `typst_book_rendered` blocks (lines 6446, 18218, 26426, 30430, 30535) holds a `check_warning_count` call, as the diff-bug lens also found.
 - prior-review #3: the comment "differ in one clause each" understates how the two wordings differ — fix now.
+- Fix-now commit 7f8d094 (diff-bug #1, #2, prior-review #3) landed before the step-6 checkpoint ac7823d, not after it; the order changes no evidence below.
+- Full run at 7f8d094, after the fixes: green, "All checks passed (1767 checks)", 0 FAIL, the same 9 D-065 skips.
+- AC2 evidence: the leg as at 7f8d094, extracted and run over a clean scratch render of `id-collision.qmd`, passes; over copies of that render's log edited one shape at a time it fails, naming the term: `sigma` lacking the cross-reference clause, `tau` carrying the locator clause, `beta` lacking the locator clause, `gamma` carrying the cross-reference clause, and `rho` with a wrong id and the locator wording (both wording lines plus the `missing` line). The full run's "M111 T4 self-test ... red on <<the refusal report naming 'rho' lacks <<this mark files a cross-reference rather than a locator>>>>" shows the same with the extension itself writing the wrong wording; the HEAD-of-main leg passed that render (implement work log).
 - ripple #1: `cairn/DESIGN.md`'s Known issues intro says a closing milestone "strikes" its entry, while M111 removes KI275-KI277 — reject, false: D-013's "strikes" is removal in this repo's practice (KI1, KI284-KI287 are absent, none struck through).

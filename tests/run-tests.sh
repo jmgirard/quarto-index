@@ -4282,10 +4282,11 @@ section 'M079-AC1 — an author-written id never leaves two elements of one page
 # that reddened a smaller stand-in would say nothing about the check that
 # guards this behavior on every run.
 #
-# The two refusal wordings `html.lua` writes (`assign_anchors`) differ in one
-# clause each, held here once and read by the check below through the
-# environment, so the M111 T4 plant's expectation and the check's own needle
-# are the same string (M111 T3).
+# Of the two refusal wordings `html.lua` writes (`assign_anchors`), each
+# carries a clause the other does not. The two clauses are held here once and
+# read by the check below through the environment, so the M111 T4 plant's
+# expectation and the check's own needle are the same string (M111 T3). Run
+# by hand, the check needs both exported first.
 export M111_XREF_CLAUSE='this mark files a cross-reference rather than a locator'
 export M111_LOCATOR_CLAUSE='its index locator links there'
 cat > "$WORK/id-collision-ids.py" <<'PY'
@@ -4609,24 +4610,33 @@ for term, wrote in sorted(KEPT_XREF.items()):
 # the two wordings share cannot tell them apart (M111 T3). A mark of
 # CONTESTED_XREF takes the cross-reference clause and not the locator one;
 # every other yielding mark the reverse.
-XREF_CLAUSE = os.environ['M111_XREF_CLAUSE']
-LOCATOR_CLAUSE = os.environ['M111_LOCATOR_CLAUSE']
+XREF_CLAUSE = os.environ.get('M111_XREF_CLAUSE', '')
+LOCATOR_CLAUSE = os.environ.get('M111_LOCATOR_CLAUSE', '')
+if not XREF_CLAUSE or not LOCATOR_CLAUSE:
+    print('FAIL: M079-AC1: M111_XREF_CLAUSE and M111_LOCATOR_CLAUSE must both '
+          'be set; tests/run-tests.sh exports them above this check',
+          file=sys.stderr)
+    sys.exit(2)
 lines = [line for line in open(log, encoding='utf-8').read().splitlines()
          if 'carries the id' in line and 'which another element of this page' in line]
 reported = set()
 for line in lines:
     for term, wrote in REFUSED.items():
-        if ('term "%s"' % term) in line and ('"%s"' % wrote) in line:
+        if ('term "%s"' % term) not in line:
+            continue
+        # The wording is read on every report naming the term, whatever id it
+        # names; the id is held by the `missing` clause below.
+        want, other = ((XREF_CLAUSE, LOCATOR_CLAUSE)
+                       if term in CONTESTED_XREF
+                       else (LOCATOR_CLAUSE, XREF_CLAUSE))
+        if want not in line:
+            errs.append('the refusal report naming %r lacks <<%s>>'
+                        % (term, want))
+        if other in line:
+            errs.append('the refusal report naming %r carries <<%s>>'
+                        % (term, other))
+        if ('"%s"' % wrote) in line:
             reported.add(term)
-            want, other = ((XREF_CLAUSE, LOCATOR_CLAUSE)
-                           if term in CONTESTED_XREF
-                           else (LOCATOR_CLAUSE, XREF_CLAUSE))
-            if want not in line:
-                errs.append('the refusal report naming %r lacks <<%s>>'
-                            % (term, want))
-            if other in line:
-                errs.append('the refusal report naming %r carries <<%s>>'
-                            % (term, other))
     for term, wrote in KEPT_ALL.items():
         if ('term "%s"' % term) in line:
             errs.append('a refusal report names %r, whose author id nothing '

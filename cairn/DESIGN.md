@@ -1303,6 +1303,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `a/later chapter.html` beside `a/later x.html` — although neither can be read
   inside the other in the sweep's output. The 2026-09-10 capture root holds no
   such pair. — M086 review O4
+- **KI311.** Three counts in `tests/run-tests.sh` grep a log inline rather
+  than through `check_warning_count`, with `|| true` swallowing grep's exit 2
+  on a missing file, so each reads a log that is not there as 0 occurrences:
+  `nomarker_named`, the M068 T5 inverted-test count over `m068-inverted.log`,
+  and the M062-AC1 count naming `five.qmd`. None passes on that today: both
+  `nomarker_named` calls expect 2, the M068 count fails on 0, and the M062-AC1
+  count follows a `check_warning_count` over the same log, which refuses a
+  missing one. Latent. — M111 review
 
 ### The acceptance suite: coverage gaps
 
@@ -1557,23 +1565,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   to first-wins or weakening exactly-one to at-least-one leaves the leg green,
   and no plant holds it. M090 removed the M084 self-test that exercised a copy
   of the read rather than the leg's own. — M084 review F1, M090 plan gate
-- **KI275.** Nothing in the suite tells a cross-reference mark's refusal
-  report from a locator mark's. `html.lua`'s `assign_anchors` writes two
-  wordings, and the M079-AC1 leg reads only the text both share, so a change
-  giving a cross-reference mark the locator wording — telling its author an
-  index link moved when none did — ships green. — M090 plan gate
-- **KI276.** The M090 T3 plant in `tests/run-tests.sh` (a locator mark no
-  longer outranking a cross-reference mark) pins "the locator for 'chi'
-  names", which the M079-AC1 leg also prints under the T2 plant (a
-  cross-reference mark left untagged); every line the leg prints under T3 it
-  prints under T2 too (observed 2026-09-10), so T3's red does not tell its
-  defect from T2's. — M090 review F1
-- **KI277.** `check_warning_count` in `tests/run-tests.sh` counts a log that
-  does not exist as 0 occurrences, so a zero count over a log another loop
-  writes passes when that log was never written: the per-index zero over
-  `corpus-xref-escaping.log`, and the zero counts beside it over the book
-  logs, would stay green if their manifest row or render were removed. —
-  M091 review F1
 - **KI302.** On the floor leg of the version matrix, the book render in the
   render job can finish at exit 0 without the index. On dispatched run
   34899204830 (attempt 1, 2026-09-14) it wrote `_book/index.html` and no index

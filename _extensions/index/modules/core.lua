@@ -218,10 +218,11 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- `\qi@guard`, which asks `\protect` whether this is typesetting. If it is,
   -- the `\protected` worker runs and writes the `.aux` line. If it is a copy,
   -- the command keeps itself, unexpanded, exactly while `\index` keeps the
-  -- meaning the document began with, and drops out where a copy has removed
-  -- `\index` (the kernel removes it from contents lines and running heads).
-  -- So the registration travels wherever its `\index` does, and the two still
-  -- ship on one page (D-007). `\index` is compared with what it means at
+  -- meaning the document began with, and drops out where a copy has changed
+  -- `\index`: a contents line gobbles it, and a running head's mark is built
+  -- with `\index` set to `\relax` and gobbled at shipout. So a copy registers
+  -- only where its `\index` would also index, and the two still ship on one
+  -- page (D-007). `\index` is compared with what it means at
   -- `\begin{document}`, not with one gobbler: under TeX Live 2026 a contents
   -- line removes it with `\@gobble@som`, not `\@gobble`, and a test against
   -- `\@gobble` let every copy through.

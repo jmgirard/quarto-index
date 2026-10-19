@@ -25,7 +25,8 @@ through LaTeX, a principal mention can sit in a heading, a figure caption or
 a table caption. A principal range can open or close in a heading and open in
 a figure caption. LaTeX copies a heading into the table of contents and the
 running head, and a caption into the list of figures or tables. Only the
-mention's own page is emphasized, and the page a copy prints on is not. The
+mention's own page is emphasized, and the page one of those copies prints on
+is not. The
 suite tests this under Quarto's default document class with a table of
 contents, lists of figures and tables, and running heads.
 

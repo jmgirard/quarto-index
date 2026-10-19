@@ -876,6 +876,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   into the body where the pre-M49 uniform `\index{...}` was harmless — the
   extension documents no plain-pandoc support anywhere. — M49 review F4;
   routed from candidates 2026-10-01, the row added 2026-08-16
+- **KI317.** A `\nameref` to a heading or caption that holds a principal mark
+  typesets the title hyperref stored in the `.aux`, and that title keeps both
+  the `\index` and the registration. So the reference's page gets a locator,
+  and that locator is emphasized: a raw `\nameref{fig-elm}` on page 12 of
+  `examples/principal-headings.qmd` printed `elm, 1, [P:10], [P:12]`
+  (2026-10-19). Whether any Quarto cross-reference form writes `\nameref` is
+  unchecked; only a raw one was tried. — M114 claim audit
 
 ### Entries, levels and sort keys
 

@@ -32454,8 +32454,9 @@ fi
 #            three consecutive pages fold into a range makeindex prints whole
 #   basil    principal in a level-two heading on page 2; page 1 plain. In a
 #            one-sided document only a level-one heading sets the running head
-#   clover   principal in a level-four heading on page 3, which LaTeX runs in
-#            and the default contents depth leaves out; page 1 plain
+#   clover   principal in a level-four heading on page 3, `\paragraph`, which
+#            Quarto's template sets on a line of its own and the default
+#            contents depth leaves out of the printed list; page 1 plain
 #   dahlia   a principal range opened in a level-one heading on page 5 and
 #            closed in another on page 7, printed 5–7; page 1 plain, and page
 #            9 plain under the closing heading's running head. Page 6 prints
@@ -32487,7 +32488,7 @@ M114_PDF="$CAPTURE_ROOT/principal-headings-pdf/principal-headings.pdf"
 [ -s "$M114_PDF" ] || fail "M114-AC1: the render produced no $M114_PDF"
 check_extension_warning_count "$WORK/principal-headings-pdf.log" 0 \
   "M114-AC1 (examples/principal-headings.qmd: every mark in it is well formed)"
-pass "M114-AC1: examples/principal-headings.qmd, with principal mentions in headings at levels 1, 2 and 4, a principal range across two headings, principal mentions and a principal range in figure and table captions, under a contents list, lists of figures and tables and running heads, renders to PDF"
+pass "M114-AC1: examples/principal-headings.qmd, with principal mentions in headings at levels 1, 2 and 4, a principal range across two headings, principal mentions in figure and table captions and a principal range opened in a figure caption, under a contents list, lists of figures and tables and running heads, renders to PDF"
 
 # A function, so the self-test plants below run this same comparison.
 m114_pdf_check() {   # <pdf> <manifest>
@@ -32621,10 +32622,10 @@ M114SPLICEPY
       || fail "M114 T3 self-test (leak-$m114_worker): the guard of $m114_name could not be taken away (its own message is above)"
     m114_render "leak-$m114_worker"
   done
-  m114_red leak-register "'aster, [P:1], [P:2], [P:4]'" \
+  m114_red leak-register "index line 1 is (0, 'aster, [P:1], [P:2], [P:4]')" \
     m114_pdf_check "$CAPTURE_ROOT/m114-leak-register/principal-headings.pdf" \
     tests/principal-headings-pdf.tsv
-  m114_red leak-rangefrom "'dahlia, [P:1], 5–7, 9'" \
+  m114_red leak-rangefrom "index line 4 is (0, 'dahlia, [P:1], 5–7, 9')" \
     m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangefrom/principal-headings.pdf" \
     tests/principal-headings-pdf.tsv
   m114_pdf_check "$CAPTURE_ROOT/m114-leak-rangeend/principal-headings.pdf" \
@@ -32636,11 +32637,11 @@ M114SPLICEPY
   M114_PAGE4='aster is marked here: [aster]{.index}.'
   M114_PAGE6="This page's running head is a copy of the dahlia section's heading."
   for plant in \
-      "site-toc|$M114_PAGE1|\\addtocontents{toc}{\\protect\\quartoindexregister{qi1}}|'aster, [P:1], [P:2], 4'" \
-      "site-lof|$M114_PAGE1|\\addtocontents{lof}{\\protect\\quartoindexregister{qi5}}|'elm, [P:1], [P:10]'" \
-      "site-lot|$M114_PAGE1|\\addtocontents{lot}{\\protect\\quartoindexregister{qi7}}|'ginkgo, [P:1], [P:13]'" \
-      "site-head|$M114_PAGE4|\\quartoindexregister{qi1}|'aster, 1, [P:2], [P:4]'" \
-      "site-span|$M114_PAGE6|\\quartoindexrangefrom{qi4}|'dahlia, 1, 5–7, 9'"; do
+      "site-toc|$M114_PAGE1|\\addtocontents{toc}{\\protect\\quartoindexregister{qi1}}|index line 1 is (0, 'aster, [P:1], [P:2], 4')" \
+      "site-lof|$M114_PAGE1|\\addtocontents{lof}{\\protect\\quartoindexregister{qi5}}|index line 5 is (0, 'elm, [P:1], [P:10]')" \
+      "site-lot|$M114_PAGE1|\\addtocontents{lot}{\\protect\\quartoindexregister{qi7}}|index line 7 is (0, 'ginkgo, [P:1], [P:13]')" \
+      "site-head|$M114_PAGE4|\\quartoindexregister{qi1}|index line 1 is (0, 'aster, 1, [P:2], [P:4]')" \
+      "site-span|$M114_PAGE6|\\quartoindexrangefrom{qi4}|index line 4 is (0, 'dahlia, 1, 5–7, 9')"; do
     IFS='|' read -r m114_slug m114_anchor m114_raw m114_want <<EOF
 $plant
 EOF
@@ -32662,11 +32663,11 @@ EOF
   cmp -s tests/principal-headings-pdf.tsv "$M114P/altered.tsv" \
     && fail "M114 T3 self-test (manifest-altered): the plant left the manifest unchanged"
   { cat tests/principal-headings-pdf.tsv; printf '0\tivy, 1\n'; } > "$M114P/added.tsv"
-  m114_red manifest-removed "'clover, 1, [P:3]'" \
+  m114_red manifest-removed "index line 3 is (0, 'clover, 1, [P:3]'), not the (0, 'dahlia, 1, [P:5–7], 9')" \
     m114_pdf_check "$M114_PDF" "$M114P/removed.tsv"
-  m114_red manifest-altered "'elm, 1, 10'" \
+  m114_red manifest-altered "index line 5 is (0, 'elm, 1, [P:10]'), not the (0, 'elm, 1, 10')" \
     m114_pdf_check "$M114_PDF" "$M114P/altered.tsv"
-  m114_red manifest-added "'ivy, 1'" \
+  m114_red manifest-added "index line 9 is None, not the (0, 'ivy, 1')" \
     m114_pdf_check "$M114_PDF" "$M114P/added.tsv"
 
   pass "M114 T3 self-test: taking the guard off the registration or a range opening is red on the AC2 check, naming aster and dahlia, while a range closing's copies are harmless; a registration put where a contents line, a list of figures, a list of tables or a running head would run it is red naming the term, and a range opening on a running-head page inside its range is red on the span; the manifest one row short, altered or long is red naming that row"

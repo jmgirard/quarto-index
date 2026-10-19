@@ -21,8 +21,8 @@ filters:
 The fixture for a principal mention in a heading and in a figure or table
 caption (M114). LaTeX copies a heading into the contents list and the running
 head, and a caption into the list of figures or tables. This page prints all
-three lists, so it carries a copy of every heading and caption below. Each
-term those copies hold is marked here too: [aster]{.index},
+three lists, so it carries a copy of every heading the contents list shows
+and of every caption below. Each term below is marked here too: [aster]{.index},
 [basil]{.index}, [clover]{.index}, [dahlia]{.index}, [elm]{.index},
 [fern]{.index}, [ginkgo]{.index} and [holly]{.index}.
 
@@ -40,7 +40,8 @@ A principal mention in a level-two heading.
 
 #### The [clover]{.index mention="principal"} paragraph
 
-A principal mention in a level-four heading, which LaTeX runs in.
+A principal mention in a level-four heading, `\paragraph`, which Quarto's
+template sets on a line of its own.
 
 {{< pagebreak >}}
 

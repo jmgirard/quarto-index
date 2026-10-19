@@ -32698,8 +32698,11 @@ fi
 #   cedar    page 4, the caption of a picture div
 #   dogwood  a range opened in the caption of a table with an id on page 5,
 #            closed in the text on page 6
-#   elder    page 7, the caption of a table div
+#   elder    page 7, the caption of a table div, before juniper
 #   hazel    page 8, the caption of a code listing
+#   juniper  page 7, the same caption, on a mark with the id `juniper-mark`.
+#            Moved as an empty span, that id took elder's label, and elder
+#            printed no locator at exit 0 (M115 review)
 #   larch    page 9, a mark in the text, which no list copies
 # ---------------------------------------------------------------------------
 section 'M115-AC1/AC2/AC3 — a Typst caption mark files its caption'\''s page under a list of floats.'
@@ -32720,7 +32723,7 @@ for needle in "$M115_LOF" \
     '::: {#fig-cedar}' 'A picture div, whose caption marks [cedar]{.index}.' \
     ': A table with an id, whose caption opens [dogwood]{.index range="open"}. {#tbl-dogwood}' \
     'The range of dogwood closes here: [dogwood]{.index range="close"}.' \
-    '::: {#tbl-elder}' 'A table div, whose caption marks [elder]{.index}.' \
+    '::: {#tbl-elder}' 'A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-mark .index}.' \
     '::: {#lst-hazel}' 'A code listing, whose caption marks [hazel]{.index}.' \
     'A mark in the text, which no list copies: [larch]{.index}. The link below goes' \
     '#link(<alder-mark>)[the caption with an id]'; do

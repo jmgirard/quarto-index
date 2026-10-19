@@ -172,7 +172,8 @@ ordinary plan-gate choice.
 ## Architecture
 
 One Pandoc-Lua filter, run as five passes over each document (corrected M06,
-M21; the tagging pass added M071).
+M21; the tagging pass added M071), and in Typst one more after them, which
+moves labels out of float captions (M115).
 Its entry point is `_extensions/index/index.lua`, which defines the Pandoc pass
 and nothing else; every other definition lives in a module beside it under
 `_extensions/index/modules/`, loaded with a relative `require("./modules/<name>")`
@@ -1063,7 +1064,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI290.** A mark in a subfigure's caption, in a callout's title, or in the
   caption of a custom float kind is unprobed where a Typst list copies it. M115
   moves the labels out of the caption of any float Quarto hands a filter, and
-  tests figures, tables and code listings. — M098 T3, narrowed M115
+  tests figures, tables and code listings. A figure with no id whose first
+  block holds no inlines keeps its labels in the caption, because Quarto writes
+  no later block of it, so a list before it files its marks on the list's
+  page; no fixture holds one. — M098 T3, narrowed M115
 - **KI291.** `tests/typstindex.py` reads links from PDF link annotations written
   as plain dictionaries, which Typst 0.15.1 writes. A PDF whose annotations sit
   in a compressed object stream reads as having no page tree and fails the

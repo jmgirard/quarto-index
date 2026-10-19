@@ -44,12 +44,12 @@ page.
 
 ## Coverage
 
-- AC1 → T1, T2, T6
+- AC1 → T1, T2, T6, T7
 - AC2 → T1, T2, T4
-- AC3 → T1, T2
-- AC4 → T6
-- AC5 → T4
-- AC6 → T5
+- AC3 → T1, T2, T7
+- AC4 → T6, T7
+- AC5 → T4, T7
+- AC6 → T5, T7
 
 ## Tasks
 
@@ -59,6 +59,7 @@ page.
 - [x] T4: Add the fixture to `versions.yml`'s PDF job and to its WHAT IT CHECKS comment, with a pinned-leg step running `tests/typstlists.py` for AC2, dispatch a run on the branch, and log each leg's result.
 - [x] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
 - [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
+- [ ] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -92,6 +93,10 @@ page.
 - 2026-10-19: dispatched `versions.yml` run 39334750678 at 1e28f44: every job green; the caption-lists render and index reading green on the floor, pinned and release legs, and the lists reading green on the pinned leg (1.10.18) and skipped on the other two, as its guard says.
 - 2026-10-19: T6 done: suite run 4 at 1e28f44 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1793, 10 skip lines, M115-AC2 among them. Status review.
 - 2026-10-19: review return 1: diff-bug #1 — a moved author id on a caption mark is written as a bare `<id>` that takes the label of the mark before it, so in a caption with two marks the earlier one prints no locator at exit 0 (IP2). The return also carries the fix-now items of the Review section: fixture cases with two marks in one caption and an author id on a float with an id (diff-bug #2), no blank line from a moved id (#3), KI290 naming the no-id figure fallback (#5, blame-history #2), the lists reading named in `versions.yml`'s comments and `site/tests.qmd` (#6, ripple #2/#3), the `lof:` sentence as a dated observation (blame-history #4), plants for AC3's link destination and AC6's grep (prior-review #1), per-handler revert probes (prior-review #4), DESIGN.md's pass count (ripple #1), and the candidate row "Breakable float caption marks" (blame-history #1). Status in-progress.
+- 2026-10-19: T7: added task T7 for review return 1; Coverage gives T7 to AC1, AC3, AC4, AC5 and AC6 (minor amendment).
+- 2026-10-19: T7: elder's table-div caption now also marks juniper with the id `juniper-mark` (manifest gains `juniper 7@7`, the lists manifest the longer caption). On the committed `typst.lua` the render warned "content labelled multiple times" and the index read elder with no locator (row 9). `caption_moves` now writes a moved id as `#[#metadata(none)<id>]`, or `label("…")` for an id Pandoc would not write bare (`label()` attaching checked on Typst 1.10.19's bundle); index, `pages` reading, lists and the page-9 link green, and page 7 renders pixel-identical with and without the id (diff-bug #3).
+- 2026-10-19: T7 plants, by hand in scratch copies: AC3's check red on a link to `juniper-mark` ("links to pages [7], not the one link to page 2"); AC6's grep red on a `site/typst.qmd` without the line; with only the `Figure` handler removed the render stopped on the duplicate `alder-mark` label and, without the link, only alder read red; with only the `FloatRefTarget` handler removed alder read right and birch, cedar, dogwood, elder, hazel and juniper read page 1.
+- 2026-10-19: T7 docs and records: KI290 names the no-id figure fallback; DESIGN.md's pass count names the Typst stage; `versions.yml`'s WHAT IT CHECKS and reader list name the pinned-leg lists reading; `site/tests.qmd` names it; `site/typst.qmd`'s `lof:` sentence is a dated observation; candidate row "Breakable float caption marks" added, parked. The claim audit ran once at implement and is not re-run (one pass); the return's added prose is derived from this session's probes.
 
 ## Decisions
 

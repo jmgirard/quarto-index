@@ -60,14 +60,15 @@ The range of dogwood closes here: [dogwood]{.index range="close"}.
 
 {{< pagebreak >}}
 
-A table div, whose caption marks one term:
+A table div, whose caption marks two terms, the second with an id of its
+author's, which must not take the label of the first:
 
 ::: {#tbl-elder}
 | a | b |
 |---|---|
 | 3 | 4 |
 
-A table div, whose caption marks [elder]{.index}.
+A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-mark .index}.
 :::
 
 {{< pagebreak >}}

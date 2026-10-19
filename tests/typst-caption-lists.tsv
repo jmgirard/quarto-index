@@ -15,8 +15,10 @@
 #   cedar    the caption of a picture div, page 4
 #   dogwood  a range opened in the caption of a table with an id on page 5,
 #            closed in the text on page 6: one range, linked to page 5
-#   elder    the caption of a table div, page 7
+#   elder    the caption of a table div, page 7, before juniper
 #   hazel    the caption of a code listing, page 8
+#   juniper  the same caption as elder, page 7, on a mark carrying the id
+#            `juniper-mark`: that id must not take elder's label
 #   larch    a mark in the text, page 9, which no list copies
 group	A
 entry	0	alder	2@2
@@ -30,5 +32,7 @@ group	E
 entry	0	elder	7@7
 group	H
 entry	0	hazel	8@8
+group	J
+entry	0	juniper	7@7
 group	L
 entry	0	larch	9@9

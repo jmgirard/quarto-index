@@ -325,6 +325,23 @@ end
 -- move runs as a filter of its own after the Pandoc pass, because Quarto
 -- hands a float with an id to a filter's `FloatRefTarget` function and not
 -- to `doc:walk`. A float with no id is a Pandoc `Figure`.
+--
+-- An author's id moves as an invisible element of its own carrying the id as
+-- a label. An empty span would not do: Pandoc writes its id as a bare label,
+-- which attaches to the element before it, the label element of another mark
+-- among them, and Typst then keeps only one of the two labels (M115 review).
+-- The label is written as Pandoc writes an id: `<id>` where every character
+-- is a letter, a digit, `_`, `-`, `.` or `:`, and `label("…")` otherwise.
+local function id_inline(id)
+  local label
+  if id:match("^[%w_%-%.:]+$") then
+    label = "<" .. id .. ">"
+  else
+    label = "#label(" .. typst_string(id) .. ")"
+  end
+  return pandoc.RawInline("typst", "#[#metadata(none)" .. label .. "]")
+end
+
 local function caption_moves(caption)
   local moved = pandoc.Inlines({})
   local rest = caption:walk({
@@ -332,9 +349,7 @@ local function caption_moves(caption)
       if not span.classes:includes(qi_core.INDEX_CLASS) or span.identifier == "" then
         return nil
       end
-      local anchor = pandoc.Span({})
-      anchor.identifier = span.identifier
-      moved:insert(anchor)
+      moved:insert(id_inline(span.identifier))
       span.identifier = ""
       return span
     end,

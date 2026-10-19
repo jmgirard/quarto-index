@@ -103,8 +103,9 @@ Typst book template does not compile a book whose `book:` metadata has no
 
 ## Lists of figures, tables and listings
 
-On Quarto 1.10.19, `lof: true` prints no list of figures in a Typst document.
-To print one, write Typst's own `outline` in a raw Typst block:
+When this page was written, `lof: true` printed no list of figures in a Typst
+document (observed on Quarto 1.10.19, 2026-10-19). To print one, write Typst's
+own `outline` in a raw Typst block:
 
 ````markdown
 ```{=typst}

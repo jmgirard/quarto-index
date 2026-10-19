@@ -68,7 +68,8 @@ That job reads the printed index of each PDF:
   states.
 - `typst-caption-lists.qmd`, whose captions Typst lists of figures, tables and
   listings copy, must print its index as its manifest states, each caption
-  mark on its caption's page.
+  mark on its caption's page. On the pinned Quarto alone, each of its lists
+  must also hold the captions its manifest names for that list.
 
 Where a Typst locator links to is read only by the acceptance suite.
 

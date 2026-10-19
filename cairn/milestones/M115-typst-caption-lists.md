@@ -136,3 +136,13 @@ Evidence base: HEAD 55f1100, whose tree outside `cairn/` equals 1e28f44's (`git 
 - ripple #3: `versions.yml`'s WHAT IT CHECKS and reader list omit the lists step — fix now, same as diff-bug #6
 - ripple #4: version strings off the pin — fix now, same as blame-history #4; KI318's "Observed on Quarto 1.10.19" is a dated observation and stays
 - ripple #5: the ROADMAP candidate row still states the caption problem — reject, planned: it carries ` — started M115` and graduates at post-merge hygiene
+
+Pass 2, after review return 1. Evidence base: HEAD 3553374, tree outside `cairn/` equal to 6f0f4c5's; main unmoved (f2e5794).
+- AC1 (pass 2): fresh render exited 0 with no warning; `tests/typstindex.py` "the 16 lines of 'Index' match the manifest, each locator's face and link included", juniper 7 and elder 7 from one caption, juniper's mark carrying an author id; red on the pre-return code at row 9 (elder with no locator). Suite run 5 at 6f0f4c5: `ok M115-AC1 (Typst)`.
+- AC2 (pass 2): dispatched `versions.yml` run 39337730177 at 6f0f4c5, `pdf (pinned, 1.10.18)` step "Read the Typst caption-lists lists against their manifest": success; skipped on floor and release. The review render on 1.10.19: "each of the 12 captions the manifest names is in its list".
+- AC3 (pass 2): fresh render exited 0; page 9 carries one link, to page 2. Plant: the link pointed at `juniper-mark` read red ("links to pages [7], not the one link to page 2").
+- AC4 (pass 2): suite run 5, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at 6f0f4c5, Quarto 1.10.19: "All checks passed (1793 checks)", 10 skip lines, all pinned-only checks as in pass 1.
+- AC5 (pass 2): run 39337730177 at 6f0f4c5: caption-lists render and `typstindex.py pages` reading success on `pdf (floor, 1.5.52)` and `pdf (pinned, 1.10.18)` (and release); every job success.
+- AC6 (pass 2): `site/typst.qmd` keeps the caption sentences and the `List of Figures` call, its `lof:` sentence now a dated observation; suite run 5 `ok M115-AC6`; plant: a copy without the call line fails the grep. CHANGELOG sentence unchanged.
+- Consistency gate (pass 2): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
+- spawned: diff-bug, blame-history, prior-review, ripple

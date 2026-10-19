@@ -96,6 +96,7 @@ not-shown:
   - examples/state-reuse-indexes.qmd
   - examples/state-reuse-plain.qmd
   - examples/state-reuse.qmd
+  - examples/typst-caption-lists.qmd
   - examples/typst-index.qmd
   - examples/typst-numbering.qmd
   - examples/typst-order.qmd

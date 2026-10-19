@@ -5,7 +5,7 @@
 # tests/typst-index-main.tsv states.
 #
 # The pages come from the source's explicit page breaks: page 1 holds only
-# the three lists, each break starts the next page, and the same three lists
+# the title and the three lists, each break starts the next page, and the same three lists
 # follow on page 10. Each term is one case. A caption mark's locator is its
 # caption's page, never page 1 or page 10, where a list copies the caption:
 #   alder    the caption of a picture with no id, page 2, on a mark carrying

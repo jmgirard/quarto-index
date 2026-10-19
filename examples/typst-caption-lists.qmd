@@ -15,8 +15,8 @@ filters:
 
 The fixture for marks in a caption that a Typst list copies (M115). Typst's
 `outline` copies the caption of each float it lists, so a label written in a
-caption names a second element on the list's page. Page 1 holds only the three
-lists, and the same three lists follow the last caption, so a locator that
+caption names a second element on the list's page. Page 1 holds only the title
+and the three lists, and the same three lists follow the last caption, so a locator that
 names the list's page is wrong whether the list comes first or last.
 
 Every case ends in an explicit page break, so the page each mark sits on is a

@@ -32687,7 +32687,7 @@ fi
 # the label occurs multiple times.
 #
 # examples/typst-caption-lists.qmd prints a list of pictures, of tables and of
-# listings on page 1, alone, and the same three on page 10, after the last
+# listings on page 1, after only the title, and the same three on page 10, after the last
 # case, so a locator naming either list's page is red. Each case is one page,
 # each ending in an explicit page break, so each caption's page is a fact of
 # the source. The manifest is the tracked file tests/typst-caption-lists.tsv,

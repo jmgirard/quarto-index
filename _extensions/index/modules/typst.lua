@@ -353,19 +353,20 @@ local function figure_labels(figure)
   if not qi_core.is_typst() then
     return nil
   end
+  -- Quarto writes only the first block of a figure with no id, so the moved
+  -- inlines join that block. A figure made from an image holds one block of
+  -- inlines. Where the first block holds no inlines, the labels stay in the
+  -- caption, which a list copies, rather than in a block Quarto drops.
+  local first = figure.content[1]
+  if first == nil or (first.t ~= "Plain" and first.t ~= "Para") then
+    return nil
+  end
   local rest, moved = caption_moves(figure.caption.long)
   if #moved == 0 then
     return nil
   end
   figure.caption.long = rest
-  -- Quarto writes only the first block of a figure with no id, so the moved
-  -- inlines join that block where it holds inlines.
-  local last = figure.content[#figure.content]
-  if last ~= nil and (last.t == "Plain" or last.t == "Para") then
-    last.content:extend(moved)
-  else
-    figure.content:insert(pandoc.Plain(moved))
-  end
+  first.content:extend(moved)
   return figure
 end
 

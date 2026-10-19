@@ -49,6 +49,13 @@ RANGES = {NESTED: 4, PLAIN: 2}
 # text differ between the two passes, and it indexes two ordinary locators.
 INNER = 'ogopogo'
 INNER_LOCATORS = 2
+# The `\index` calls both fixtures write, counted from their source: each end
+# of the nested range is one outer mark carrying one inner mark (2 x 2), and
+# the plain range is two marks (2). `range-position.qmd`'s class-less `range=`
+# span and its range mark that indexes nothing write none, so a render that
+# gave either an entry shows here, in makeindex's accepted count, even where
+# it files under a term already printed.
+MARKS = 2 * 2 + 2
 
 
 # The criterion these readers are speaking for. Both fixtures assert the same
@@ -92,6 +99,11 @@ def _ind(argv):
     if missing:
         _afail('the compiled index has no entry for %s; it has %s'
               % (missing, sorted(items)))
+    extra = sorted(t for t in items if t not in RANGES and t != INNER)
+    if extra:
+        _afail('the compiled index has an entry for %s, which the fixture '
+              'never indexes; it writes only %s'
+              % (extra, sorted(list(RANGES) + [INNER])))
 
     for term, span in RANGES.items():
         line = items[term]
@@ -121,6 +133,13 @@ def _ind(argv):
               % (INNER, inner, INNER_LOCATORS, items[INNER]))
 
     ilg = open(ilg_path, encoding='utf-8').read()
+    accepted = re.search(r'\((\d+) entries accepted, (\d+) rejected\)', ilg)
+    if not accepted:
+        _afail('could not read an accepted-entry count out of the makeindex '
+              'transcript:\n' + ilg)
+    if int(accepted.group(1)) != MARKS:
+        _afail('makeindex accepted %s entries; the fixture writes %d index '
+              'marks:\n%s' % (accepted.group(1), MARKS, ilg))
     for phrase in ('Unmatched range', 'Extra range', 'inconsistent encapsulator',
                    'Inconsistent page encapsulator'):
         if phrase in ilg:
@@ -137,8 +156,9 @@ def _ind(argv):
     _aok('a range mark whose own content carries another mark '
           'prints one page range covering the pages the fixture separates its '
           'ends by, the plain range beside it keeps its own narrower span, the '
-          'nested inner mark keeps its two separate pages, and makeindex logs '
-          'no warning at all')
+          'nested inner mark keeps its two separate pages, the index holds '
+          'those three entries alone, makeindex accepted the %d marks the '
+          'fixture writes, and it logs no warning at all' % MARKS)
 
 
 def _html(argv):

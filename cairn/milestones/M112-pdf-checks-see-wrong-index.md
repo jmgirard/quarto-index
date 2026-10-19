@@ -125,6 +125,7 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-18: plan gate chose pinning the entry set and the accepted count over pinning the `.ilg`'s lines-written count, because that count includes makeindex's layout lines and no fixture fact states it; falsified by a defect that changes the written lines while both pinned figures hold.
 - 2026-10-18: implement started on branch m112-pdf-checks-see-wrong-index; status in-progress.
 - 2026-10-18: T1 code: the two heredocs became one `xref_typeset_check` reader called at both sites and by the new `--self-test` case, so the plant runs the run's own code; it also refuses a manifest with one row inside another, since such a row would count twice on a correct index. Scratch run on the 2026-10-18 captures: both checks green (7 and 66 rows), the doubled-row plant red naming the row. Full-suite verify batched after T3, because editing `tests/run-tests.sh` during a run corrupts that run (M073 lesson); T1 is ticked only after it.
+- 2026-10-18: T2 code: `tests/m23probes.py` states `MARKS = 2 * 2 + 2`, counted from both fixtures' `.index` spans, and `_ind` fails on an entry outside `RANGES` and `INNER` and on an accepted count other than `MARKS`; two plants in the M23 self-test block assert each clause's message. Scratch run: `ind` and `posind` green on the 2026-10-18 captures (6 accepted in both `.ilg`), each plant red with its own message. Full-suite verify still batched after T3.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

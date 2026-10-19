@@ -17659,6 +17659,31 @@ filtersrc.sources()" >/dev/null 2>&1; then
     m23_html "$M23W/twoloc.html"
   pass "M23 self-test: the nested-mark readers each fail on a planted defect of their own kind — a lost pairing, the two ranges swapping extents, a narrowed range, the range-free inner mark folded into one, a transcript warning, an HTML locator at neither mark, and a doubled one"
 
+  # M112 T2: the .ind reader holds the compiled index to the three entries the
+  # fixture writes and makeindex's accepted count to the marks it writes, so
+  # an entry the fixture never indexes, or a mark filed under a term already
+  # printed, is red. Each plant asserts its own clause's message, not merely a
+  # failure, since the clauses above fail on other plants too.
+  m112_ind_red() {   # <label> <.ind> <.ilg> <message the failure must carry>
+    local out
+    if out=$(m23_ind "$2" "$3" 2>&1); then
+      fail "M112 T2 self-test: the .ind reader passed $1"
+    fi
+    case "$out" in
+      *"$4"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M112 T2 self-test: the .ind reader failed on $1, but not by its own clause (<<$4>>)" ;;
+    esac
+  }
+  probe_plantpl "$M23W/clean.ind" "$M23W/extra.ind" \
+    's/(\\item pooka,)/\\item quokka, \\hyperpage{2}\n\n  $1/'
+  m112_ind_red "an entry the fixture never indexes" "$M23W/extra.ind" "$M23W/clean.ilg" \
+    "has an entry for ['quokka'], which the fixture never indexes"
+  probe_plant "$M23W/clean.ilg" "$M23W/accepted.ilg" \
+    -e 's/(6 entries accepted, 0 rejected)/(7 entries accepted, 0 rejected)/'
+  m112_ind_red "a seventh accepted entry" "$M23W/clean.ind" "$M23W/accepted.ilg" \
+    "makeindex accepted 7 entries; the fixture writes 6 index marks"
+  pass "M112 T2 self-test: the .ind reader is red on an entry the fixture never indexes and on a seventh accepted entry, each naming its own clause"
+
   # --- M23: the defect-injection battery. Task work, not AC2's promise.
   #
   #     AC2 says a range verdict is bound to its mark by document position.

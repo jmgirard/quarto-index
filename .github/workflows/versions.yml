@@ -621,6 +621,7 @@ jobs:
       # copies files its caption's page, with the lists both before and after
       # the floats (M115). The footer is the page number alone, as above.
       - name: Render examples/typst-caption-lists.qmd to Typst
+        id: caption_lists_render
         shell: bash
         run: |
           set -euo pipefail
@@ -632,6 +633,19 @@ jobs:
           set -euo pipefail
           python3 tests/typstindex.py pages examples/typst-caption-lists.pdf \
             tests/typst-caption-lists.tsv 'Typst index of caption marks under lists' 'Index'
+
+      # Which list holds each caption follows the Typst kind Quarto gives each
+      # float, which is Quarto's own behavior, so it is read on the pinned leg
+      # alone (D-065). The acceptance suite skips this reading on any other
+      # Quarto, so this step is where the pinned Quarto's lists are read. It
+      # runs whenever the render succeeded, even after a red index reading.
+      - name: Read the Typst caption-lists lists against their manifest
+        if: ${{ !cancelled() && steps.caption_lists_render.outcome == 'success' && matrix.leg.name == 'pinned' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/typstlists.py examples/typst-caption-lists.pdf \
+            tests/typst-caption-lists-lists.tsv 'Typst lists of caption-lists floats'
 
       # Both indexes of the two-index fixture (M106). Quarto's own loop builds
       # the first; imakeidx builds the second through TeX's restricted shell

@@ -32687,7 +32687,7 @@ fi
 # the label occurs multiple times.
 #
 # examples/typst-caption-lists.qmd prints a list of pictures, of tables and of
-# listings on page 1, after only the title, and the same three on page 10, after the last
+# listings on page 1, alone (the source gives no title), and the same three on page 10, after the last
 # case, so a locator naming either list's page is red. Each case is one page,
 # each ending in an explicit page break, so each caption's page is a fact of
 # the source. The manifest is the tracked file tests/typst-caption-lists.tsv,
@@ -32772,43 +32772,11 @@ pass "M115-AC1/AC3: in Typst, with lists of pictures, tables and listings before
 # Quarto (D-065).
 M115_WHY="which Typst kind Quarto gives each float, and so which list holds it, is Quarto's own behavior"
 if on_pinned_quarto "$M115_WHY" "M115-AC2"; then
-  python3 - "$M115_TYPST" <<'M115PY' \
-    || fail "M115-AC2: a list in examples/typst-caption-lists.qmd does not hold the captions of its kind (the report is above)"
-import subprocess
-import sys
-
-pdf = sys.argv[1]
-captions = {
-    'Figures': ['A picture with no id, whose caption marks alder.',
-                'A picture with an id, whose caption marks birch.',
-                'A picture div, whose caption marks cedar.'],
-    'Tables': ['A table with an id, whose caption opens dogwood.',
-               'A table div, whose caption marks elder.'],
-    'Listings': ['A code listing, whose caption marks hazel.'],
-}
-bad = []
-for page, side in ((1, ''), (10, ' (end)')):
-    text = subprocess.run(['pdftotext', '-f', str(page), '-l', str(page),
-                           '-layout', pdf, '-'], check=True,
-                          capture_output=True, text=True).stdout
-    lines = [line.strip() for line in text.splitlines()]
-    titles = [f'List of {kind}{side}' for kind in captions]
-    at = {title: lines.index(title) for title in titles if title in lines}
-    for kind, title in zip(captions, titles):
-        if title not in at:
-            bad.append(f'page {page} prints no list title {title!r}')
-            continue
-        ends = [i for i in at.values() if i > at[title]] + [len(lines)]
-        body = ' '.join(' '.join(lines[at[title] + 1:min(ends)]).split())
-        for caption in captions[kind]:
-            if caption not in body:
-                bad.append(f'the list {title!r} on page {page} does not '
-                           f'hold {caption!r}')
-for line in bad:
-    print(f'FAIL: M115-AC2: {line}', file=sys.stderr)
-sys.exit(1 if bad else 0)
-M115PY
-  pass "M115-AC2: in Typst, each of the six lists, front and back, holds the caption of each picture, table or listing of its kind"
+  # The reader is a module of its own, so the version matrix's pinned leg,
+  # which the run on any other Quarto leaves this check to, reads the same.
+  python3 tests/typstlists.py "$M115_TYPST" tests/typst-caption-lists-lists.tsv \
+      "M115-AC2" \
+    || fail "M115-AC2: a list in examples/typst-caption-lists.qmd does not hold the captions tests/typst-caption-lists-lists.tsv names for it (the report is above)"
 fi
 
 # ---------------------------------------------------------------------------

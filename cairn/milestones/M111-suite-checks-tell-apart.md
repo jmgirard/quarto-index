@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M111: Three suite checks tell apart what they now read alike
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -86,37 +86,37 @@ the line the T2 plant expects (KI276). The three entries are removed from
      cites; an insertion, removal, or reorder renumbers the labels and the
      Coverage lines together. -->
 
-- [ ] T1: In `check_warning_count` (`tests/run-tests.sh:2076`), fail naming
+- [x] T1: In `check_warning_count` (`tests/run-tests.sh:2076`), fail naming
       the path when the log is not a file, before the grep; update its
       comment. Add a self-test case that calls it in a subshell over a path
       under `$WORK` that does not exist, with want 0 and with want 1, and
       asserts each exits non-zero with a `FAIL:` line naming that path, plus a
       control over an existing log with its right count that passes.
-- [ ] T2: Run the full suite. Each call the change turns red because its log
+- [x] T2: Run the full suite. Each call the change turns red because its log
       is never written is repaired at its call site (the log the render
       writes), or removed where no render writes it, with one work-log line
       per site naming it. Every literal path existed after the 2026-10-10 run;
       the variable-built paths (`$fmt`, `$slug` and others) are unchecked.
-- [ ] T3: In the leg's refusal-report block (`tests/run-tests.sh` near
+- [x] T3: In the leg's refusal-report block (`tests/run-tests.sh` near
       `:4566`), hold each wording's clause in one variable, read by the leg
       and by T4's plant (the M076 lesson). Per report: a `CONTESTED_XREF` term
       needs the cross-reference clause and not the locator one; any other
       `REFUSED` term the reverse; a failure names the term.
-- [ ] T4: Plant through `m081_census_plant`, one substitution in
+- [x] T4: Plant through `m081_census_plant`, one substitution in
       `modules/html.lua:658` (`if record and record.anchorless then` made
       false), which gives every cross-reference mark the locator wording.
       Expect a message naming a `CONTESTED_XREF` term. Show the plant green
       against the leg before T3 and red after it.
-- [ ] T5: Give `m081_census_plant` an optional substring the leg's output
+- [x] T5: Give `m081_census_plant` an optional substring the leg's output
       must not hold; pass the T2 plant's expected line as the T3 plant's. Keep
       that line in one variable read by both plants. Rewrite the comment at
       `:4738-4750` that says T3's red does not tell its defect from T2's. Show
       the new branch fire once by a scratch run of the T3 assertion over the
       T2 substitution, recorded in the work log and not committed.
-- [ ] T6: Remove KI275, KI276 and KI277 from `cairn/DESIGN.md` (D-013); no
+- [x] T6: Remove KI275, KI276 and KI277 from `cairn/DESIGN.md` (D-013); no
       ROADMAP row names them. Re-read the leg's and plants' comments for a
       count or a list the change made false (the M080 and M081 lessons).
-- [ ] T7: `bash -n tests/run-tests.sh`, then a full
+- [x] T7: `bash -n tests/run-tests.sh`, then a full
       `tests/run-tests.sh --self-test` green. Make no edit to the script while
       a run is in flight (the M073 lesson).
 
@@ -147,6 +147,9 @@ the line the T2 plant expects (KI276). The three entries are removed from
 - 2026-10-18: T3-T5 code: the leg's two clauses are exported once (`M111_XREF_CLAUSE`, `M111_LOCATOR_CLAUSE`) and read via `os.environ`; per-report wording check; `m081_census_plant` takes an optional sixth argument, a line it must not print; T3 plant passes `$M090_T2_LINE`, also T2's expectation; new plant `xref-locator-wording`. Self-test header now counts eleven plants. KI tags kept out of code comments, as for KI284-KI287 closed by M105.
 - 2026-10-18: scratch probes (not committed), each a render of `id-collision.qmd` with one substitution: under T4's the HEAD leg exits 0 and the new leg fails with "the refusal report naming 'rho' lacks <<this mark files a cross-reference rather than a locator>>" (four such lines, rho/sigma/tau/phi); under T3's the leg prints the `chi` line and not `xref-dup` on `rho`; under T2's it prints both. The helper, stubbed to read T2's output, failed T3's plant with "the check also printed <<the contested id 'xref-dup' ...>>" (the AC3 demonstration). A scratch log with the wordings swapped or doubled turned the leg red on each of the four shapes.
 - 2026-10-18: T6: KI275, KI276, KI277 removed from `cairn/DESIGN.md`; `grep -rn 'KI27[567]'` outside milestone files finds nothing. Full run next.
+- 2026-10-18: first full `--self-test` run stopped at check 142 on PyYAML missing: `python3` now resolves to Python 3.14.6 in `/usr/local/bin`, without PyYAML; `/usr/bin/python3` (3.9.6) has it. The M111 T1, M090 T3 and M111 T4 self-test lines had already passed. Not an M111 defect; the user's environment was left unchanged.
+- 2026-10-18: T2/T7: `bash -n` clean; `PATH="/usr/bin:$PATH" tests/run-tests.sh --self-test` green, "All checks passed (1767 checks)", 0 FAIL, 9 skips (D-065: local Quarto 1.10.19, pinned 1.10.18; none in the M079-AC1 leg or its plants). No call over a never-written log, so T2 repaired no call site. T1-T7 ticked.
+- 2026-10-18: claim audit: not owed — internal tier.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

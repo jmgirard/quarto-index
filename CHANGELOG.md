@@ -19,8 +19,9 @@
   under a list of those floats that Typst's `outline` prints, which copies
   each caption. This needs a float that does not break across pages, which is
   Quarto's default. In a document that makes floats breakable, such a mark
-  files the page where the float's content ends. A grid of subfigures or
-  tables laid out in cells keeps the list's page.
+  files the page where the float's content ends. A mark in the caption of a
+  float laid out in cells, such as a grid of subfigures, still files the
+  list's page.
 - A Typst index orders an entry's page numbers as the PDF index does: lower
   roman numbers first, then upper roman numbers, arabic numbers, lowercase
   letters, uppercase letters, and any other numbering, and inside each kind by

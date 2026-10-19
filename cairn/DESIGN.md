@@ -478,11 +478,11 @@ Three back-ends ship:
   float's caption into its content (M115), each id as an invisible element of
   its own. `doc:walk` does not reach a Quarto float by name. Content that is
   one Plain or Para takes them at its end; one other block, a table or a code
-  block, is wrapped in a Div with a Plain holding them; several blocks are
-  Quarto's layout cells, which a wrapper would merge, so they join the first
-  cell that is a Plain or Para, and stay in the caption where none is. Quarto
-  writes only the first block of a figure with no id, so there they join that
-  block where it is a Plain or Para. A label written in an image's alt text
+  block, is wrapped in a Div with a Plain holding them; content of several
+  blocks keeps them in the caption (KI290), because a wrapper merged Quarto's
+  layout cells and a label joined to an image cell kept a width Quarto drops
+  there (M115 review). Quarto writes only the first block of a figure with no
+  id, so there they join that block where it is a Plain or Para. A label written in an image's alt text
   moves to just after the image, because Pandoc's Typst writer prints alt
   text as a string and drops raw Typst there (M098 review). The HTML, EPUB and
   LaTeX back-ends move an alt-text mark's target the same way, and the version
@@ -1068,14 +1068,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   M115 T3
 - **KI290.** Where a Typst list copies a caption, two kinds of float keep a
   caption mark's label in the caption, and a list before them files the mark
-  on the list's page: a float laid out in cells none of which is a Plain or
-  Para, such as a grid of subfigures or of tables (observed on Quarto 1.10.19
-  as the stage's shapes `Blocks[Div,Div]` and `Blocks[Table,Table]`), and a
-  figure with no id whose first block is not a Plain or Para, which no fixture
-  holds. A subfigure's own caption, a callout's title and a custom float
-  kind's caption are unprobed under a list; the stage moves the labels of any
-  float Quarto hands a filter, and M115's fixtures test figures, tables, code
-  listings and a laid-out figure with paragraph cells. — M098 T3, narrowed M115
+  on the list's page: a float with an id whose content is several blocks,
+  Quarto's layout cells among them (a grid of subfigures, images or tables,
+  or a callout beside a code block), and a figure with no id whose first block
+  is not a Plain or Para, which no fixture holds. The candidate row "Laid-out
+  float caption marks" holds the first. A subfigure's own caption, a callout's
+  title and a custom float kind's caption are unprobed under a list. M115's
+  fixtures test figures, tables and code listings whose content is one block,
+  and that two laid-out figures keep their layout. — M098 T3, narrowed M115
 - **KI291.** `tests/typstindex.py` reads links from PDF link annotations written
   as plain dictionaries, which Typst 0.15.1 writes. A PDF whose annotations sit
   in a compressed object stream reads as having no page tree and fails the

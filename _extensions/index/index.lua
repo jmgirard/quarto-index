@@ -533,6 +533,7 @@ return {
   { Span = qi_passes.CollectRanges, Pandoc = qi_passes.FinishRanges },
   { Span = qi_passes.Span },
   { Pandoc = Pandoc },
-  -- Typst only: a caption's labels move out of reach of a list of figures.
+  -- Typst only: a caption's labels move out of reach of a list of figures,
+  -- tables or listings.
   { Figure = qi_typst.figure_labels, FloatRefTarget = qi_typst.float_labels },
 }

@@ -314,14 +314,16 @@ local function assign_labels(doc, taken)
   })
 end
 
--- Typst's `outline` copies the caption of each figure it lists, so a label
--- left in a caption names a second element on the list's page, and a list
--- that comes before the figure files the mark there. An id of the author's on
--- a mark in the caption is copied the same way, and Typst refuses a link to a
--- label that names two elements. So each label `assign_labels` wrote into a
--- float's caption, and each such id, moves into the float's content, which no
--- list copies (`figure_labels` and `float_labels` say where). A Typst figure does not break across pages unless the
--- document makes it, so its content and its caption print on one page. The
+-- Typst's `outline` copies the caption of each figure it lists, a table or a
+-- code listing among them, so a label left in a caption names a second
+-- element on the list's page, and a list that comes before the figure files
+-- the mark there. An id of the author's on a mark in the caption is copied the
+-- same way, and Typst refuses a link to a label that names two elements. So
+-- each label `assign_labels` wrote into a float's caption, and each such id,
+-- moves into the float's content, which no list copies, where that content
+-- allows it (`figure_labels` and `float_labels` say where). A Typst figure
+-- does not break across pages unless the document makes it, so its content
+-- and its caption print on one page. The
 -- move runs as a filter of its own after the Pandoc pass, because Quarto
 -- hands a float with an id to a filter's `FloatRefTarget` function and not
 -- to `doc:walk`. A float with no id is a Pandoc `Figure`.
@@ -389,32 +391,26 @@ end
 -- Where the moved inlines go in a float with an id. A float whose content is
 -- one Plain or Para takes them at its end. A float whose content is one other
 -- block, a table or a code block, is wrapped with a Plain holding them, which
--- leaves the page as it was. A float whose content is several blocks is laid
--- out by Quarto, each block a cell (`layout-ncol` and its kin), and a wrapper
--- would make them one cell, so the inlines join the first of those blocks that
--- is a Plain or a Para. Where none is, the labels stay in the caption, which a
--- list copies (M115 review).
+-- leaves the page as it was. A float whose content is several blocks keeps
+-- them in its caption, which a list copies (KI290): Quarto lays such content
+-- out in cells where the float asks for it, and each change to it changed that
+-- layout. A wrapper made the cells one cell, and inlines joined to an image's
+-- cell kept the image's width, which Quarto drops in a cell holding an image
+-- alone (M115 review).
 local function float_labels(float)
   if not qi_core.is_typst() or float.caption_long == nil
       or float.content == nil then
     return nil
   end
   local content = float.content
-  if pandoc.utils.type(content) == "Blocks" and #content == 1 then
+  if pandoc.utils.type(content) == "Blocks" then
+    if #content ~= 1 then
+      return nil
+    end
     content = content[1]
   end
   local target
-  if pandoc.utils.type(content) == "Blocks" then
-    for _, block in ipairs(content) do
-      if block.t == "Plain" or block.t == "Para" then
-        target = block
-        break
-      end
-    end
-    if target == nil then
-      return nil
-    end
-  elseif content.t == "Plain" or content.t == "Para" then
+  if content.t == "Plain" or content.t == "Para" then
     target = content
   end
   local rest, moved = caption_moves(float.caption_long)

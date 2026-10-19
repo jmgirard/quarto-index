@@ -32792,11 +32792,15 @@ if on_pinned_quarto "$M115_WHY" "M115-AC2"; then
     || fail "M115-AC2: a list in examples/typst-caption-lists.qmd does not hold the captions tests/typst-caption-lists-lists.tsv names for it (the report is above)"
 fi
 
-# A float Quarto lays out in cells keeps its cells (M115 review). The move
-# once wrapped all of a float's content in one block, which made the two cells
-# of examples/typst-caption-layout.qmd one cell, so they printed one above the
-# other and the index still read right. The cells are text, so the PDF's
-# layout text shows whether they share a line.
+# A float Quarto lays out in cells keeps its layout (M115 review). The move
+# once wrapped all of a float's content in one block, which made the two text
+# cells of examples/typst-caption-layout.qmd one cell, so they printed one
+# above the other; then it joined the labels to the first image cell, which
+# kept that image's width where Quarto drops it, so one image printed far
+# larger. The index read right both times. A float whose content is several
+# blocks now keeps its labels in its caption (KI290). The text cells must share
+# a line of the PDF's layout text, and the two images on page 2 must print at
+# one size, which `pdfimages -list` reads as their resolution.
 quarto render examples/typst-caption-layout.qmd --to typst \
     > "$WORK/typst-caption-layout.log" 2>&1 \
   || { tail -40 "$WORK/typst-caption-layout.log" >&2; fail "M115 review: examples/typst-caption-layout.qmd failed to render to Typst"; }
@@ -32812,7 +32816,21 @@ m115_cells_check() {   # <pdf>
 }
 m115_cells_check "$M115_LAYOUT" \
   || fail "M115 review: the cells of examples/typst-caption-layout.qmd's laid-out float do not print side by side (the report is above)"
-pass "M115 review: a mark in the caption of a float laid out in two cells files its page, and the cells still print side by side"
+m115_images_check() {   # <pdf>
+  pdfimages -list "$1" | awk '
+    NR > 2 && $1 == 2 && $3 == "image" { n++; ppi[n] = $13 }
+    END {
+      if (n != 2 || ppi[1] != ppi[2]) {
+        printf "FAIL: M115 review: page 2 prints %d image(s) at resolutions", n
+        for (i = 1; i <= n; i++) printf " %s", ppi[i]
+        print ", not two at one size"
+        exit 1
+      }
+    }' >&2
+}
+m115_images_check "$M115_LAYOUT" \
+  || fail "M115 review: the two images of examples/typst-caption-layout.qmd's laid-out float do not print at one size (the report is above)"
+pass "M115 review: a mark in the caption of a float laid out in two text cells or two image cells files its page, the text cells still print side by side, and the images at one size"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -32825,8 +32843,13 @@ if [ "${1:-}" = "--self-test" ]; then
   #             copied caption, and the index reads page 1 for alder
   #   float     the extension without its `FloatRefTarget` handler: birch's
   #             label stays in a copied caption, and the index reads page 1
-  #   cells     the moved inlines put in a block of their own after the cells,
-  #             as a wrapper did: the cells check
+  #   cells     several blocks wrapped in one Div with the moved inlines after
+  #             them, as the first fix did: the cells check
+  #   images    the moved inlines joined to the first paragraph cell of
+  #             several blocks, as the second fix did: the images check
+  #   lists-*   the AC2 reader against this run's own render with its
+  #             manifest planted: a caption no list holds, a title no page
+  #             prints, a caption put under the wrong list, and no rows
   # -------------------------------------------------------------------------
   M115P="$WORK/m115plant"
   mkdir -p "$M115P"
@@ -32910,14 +32933,41 @@ M115SPLICEPY
 
   m115_tree cells typst-caption-layout.qmd
   m115_splice "$M115P/cells/_extensions/index/modules/typst.lua" \
-    $'    target.content:extend(moved)\n    float.content = content\n' \
-    $'    content:insert(pandoc.Plain(moved))\n    float.content = pandoc.Div(content)\n' \
+    $'    if #content ~= 1 then\n      return nil\n    end\n    content = content[1]\n' \
+    $'    content = pandoc.Div(content)\n' \
     || fail "M115 self-test (cells): the plant could not be written (its own message is above)"
   m115_render cells typst-caption-layout.qmd
   m115_red cells "does not print its two cells on one line" \
     m115_cells_check "$CAPTURE_ROOT/m115-cells/typst-caption-layout.pdf"
 
-  pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, and the cells check on the moved inlines wrapped with the cells"
+  m115_tree images typst-caption-layout.qmd
+  m115_splice "$M115P/images/_extensions/index/modules/typst.lua" \
+    $'    if #content ~= 1 then\n      return nil\n    end\n' \
+    $'    if #content ~= 1 then\n      for _, block in ipairs(content) do\n        if block.t == "Plain" or block.t == "Para" then\n          local rest, moved = caption_moves(float.caption_long)\n          float.caption_long = rest\n          block.content:extend(moved)\n          return float\n        end\n      end\n      return nil\n    end\n' \
+    || fail "M115 self-test (images): the plant could not be written (its own message is above)"
+  m115_render images typst-caption-layout.qmd
+  m115_red images "not two at one size" \
+    m115_images_check "$CAPTURE_ROOT/m115-images/typst-caption-layout.pdf"
+
+  M115L=tests/typst-caption-lists-lists.tsv
+  sed 's/whose caption marks hazel\.$/whose caption marks yew./' "$M115L" > "$M115P/lists-caption.tsv"
+  sed 's/^10	List of Tables (end)	/10	List of Charts (end)	/' "$M115L" > "$M115P/lists-title.tsv"
+  sed 's/^1	List of Tables	A table div/1	List of Listings	A table div/' "$M115L" > "$M115P/lists-wrong.tsv"
+  grep '^#' "$M115L" > "$M115P/lists-empty.tsv"
+  for planted in caption title wrong empty; do
+    cmp -s "$M115L" "$M115P/lists-$planted.tsv" \
+      && fail "M115 self-test (lists-$planted): the plant left the manifest unchanged"
+  done
+  m115_red lists-caption "the list 'List of Listings' on page 1 does not hold 'A code listing, whose caption marks yew.'" \
+    python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-caption.tsv" "M115 self-test (lists-caption)"
+  m115_red lists-title "page 10 prints no line 'List of Charts (end)'" \
+    python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-title.tsv" "M115 self-test (lists-title)"
+  m115_red lists-wrong "the list 'List of Listings' on page 1 does not hold 'A table div, whose caption marks elder and juniper.'" \
+    python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-wrong.tsv" "M115 self-test (lists-wrong)"
+  m115_red lists-empty "names no caption" \
+    python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-empty.tsv" "M115 self-test (lists-empty)"
+
+  pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, the cells check on laid-out content wrapped in one Div, the images check on the labels joined to an image cell, and the AC2 reader on a caption no list holds, a title no page prints, a caption under the wrong list and an empty manifest"
 fi
 
 # ---------------------------------------------------------------------------

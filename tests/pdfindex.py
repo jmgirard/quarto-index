@@ -179,6 +179,10 @@ def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
     Stopping at the line rather than at its page would therefore lose the right
     column, which is silent evidence loss of exactly the kind a bounded read
     exists to prevent. A fixture accordingly gives each index a page of its own.
+    That is checked rather than trusted: a line printed above the first
+    section-ending line on the page left out is a line of this index that the
+    read would drop, so the read raises LookupError naming the page and the
+    line rather than returning an index short of it.
 
     Raises LookupError when `stop` is given and no page carries any of its
     lines: the caller asked for a bounded section and got an unbounded one, and
@@ -213,6 +217,15 @@ def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
                 f'no page after the {heading!r} heading in {pdf_path} carries '
                 f'any of the section-ending lines {sorted(wanted)!r}, so this '
                 f'read is unbounded and would run to the end of the document')
+        number, _w, lines = pages[end]
+        top = min(y for _x, y, text in lines if text in wanted)
+        above = [text for _x, y, text in lines if y < top]
+        if above:
+            raise LookupError(
+                f'page {number} of {pdf_path} ends the {heading!r} read and '
+                f'is left out of it, but it prints {above!r} above its '
+                f'section-ending line, so those lines would be dropped from '
+                f'the index; the index must end on an earlier page')
 
     collected = []
     for i, (number, width, lines) in enumerate(pages[start[0]:end], start[0]):

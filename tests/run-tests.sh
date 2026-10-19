@@ -19668,6 +19668,51 @@ if [ "${1:-}" = "--self-test" ]; then
       "$M49W/nopatterns.txt" "$WORK/m49-reports.txt" M49-probe
 
   pass "M49 T9 self-test: each clause of tests/namedpdf.py is planted on its own and shown red, while the same readers pass unplanted on this run's own capture and log — an entry stated and not printed, one printed and not stated, an index heading the PDF has no section for, a section-ending line it never prints (which would read the second index as part of the first), a manifest whose entry rows belong to no section, a manifest naming no section at all, a cell stating the wrong side of present/absent, a cell manifest of one kind only, a report drawn and not stated, one stated and not drawn, and a pattern file that would read no report at all"
+
+  # M112 T3: a bounded `pdfindex.read` leaves out the page carrying the
+  # section-ending line, so a line of the index printed above that line on
+  # the same page would be dropped. No fixture can print that page: removing
+  # the named-indexes fixture's page break puts its next heading on the
+  # index's own page, which the read refuses as unbounded. So the case feeds
+  # `read` the pages `_pages` yields, as (page, width, [(x, y, text)]), with
+  # an index line above the section-ending line on the page left out, and a
+  # control without it. The control passing shows the red is that line.
+  python3 - <<'PY' || fail "M112 T3 self-test: the bounded read's stranded-line refusal is not shown (the report is above)"
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+def pages(stranded):
+    second = [(72.0, 80.0, 'zebra, 3')] if stranded else []
+    second.append((72.0, 120.0, 'Below the first index'))
+    return [
+        (1, 612.0, [(72.0, 60.0, 'Index'), (72.0, 100.0, 'aardvark, 1'),
+                    (320.0, 100.0, 'yak, 2')]),
+        (2, 612.0, second),
+    ]
+
+for stranded in (False, True):
+    pdfindex._pages = lambda _path, _footer, s=stranded: iter(pages(s))
+    try:
+        entries = pdfindex.read('planted.pdf', 'Index', ('Below the first index',))
+    except LookupError as error:
+        if not stranded:
+            sys.exit(f'FAIL: M112 T3 self-test: the control, with nothing above '
+                     f'the section-ending line, was refused: {error}')
+        said = str(error)
+        if 'page 2 of planted.pdf' not in said or "['zebra, 3']" not in said:
+            sys.exit(f'FAIL: M112 T3 self-test: the stranded line was refused, '
+                     f'but not by naming page 2 and the line: {said}')
+        continue
+    if stranded:
+        sys.exit('FAIL: M112 T3 self-test: the bounded read returned '
+                 f'{[e.text for e in entries]} and dropped the line printed '
+                 f'above the section-ending line on the page it left out')
+    if [e.text for e in entries] != ['aardvark, 1', 'yak, 2']:
+        sys.exit(f'FAIL: M112 T3 self-test: the control read '
+                 f'{[e.text for e in entries]}, not its two entries')
+PY
+  pass "M112 T3 self-test: a bounded PDF index read is red, naming the page and the line, when the page it leaves out prints an index line above its section-ending line, and reads the same pages without that line in full"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares three indexes

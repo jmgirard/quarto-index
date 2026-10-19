@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M112: Three PDF index checks see a wrong index
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP6   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** internal — acceptance-suite checks and a suite reader, which no user of the extension runs   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m112-pdf-checks-see-wrong-index   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -123,6 +123,8 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-18: question set: which cluster — PDF wrong-index (KI63, KI69, KI102); add the footer fix (KI53) — no, left under the backlog row; rows for the EPUB dead code and the missing-log counts — yes, added as parked rows.
 - 2026-10-18: plan gate chose failing `read` when its left-out page carries a line above the section-ending line over reading that page up to the line, because the docstring records that a full-width line sorts ahead of the right column, so a line-bounded read loses entries; falsified by a fixture whose index must continue onto the next heading's page.
 - 2026-10-18: plan gate chose pinning the entry set and the accepted count over pinning the `.ilg`'s lines-written count, because that count includes makeindex's layout lines and no fixture fact states it; falsified by a defect that changes the written lines while both pinned figures hold.
+- 2026-10-18: implement started on branch m112-pdf-checks-see-wrong-index; status in-progress.
+- 2026-10-18: T1 code: the two heredocs became one `xref_typeset_check` reader called at both sites and by the new `--self-test` case, so the plant runs the run's own code; it also refuses a manifest with one row inside another, since such a row would count twice on a correct index. Scratch run on the 2026-10-18 captures: both checks green (7 and 66 rows), the doubled-row plant red naming the row. Full-suite verify batched after T3, because editing `tests/run-tests.sh` during a run corrupts that run (M073 lesson); T1 is ticked only after it.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

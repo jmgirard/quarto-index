@@ -7280,30 +7280,63 @@ XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 4 + 2 + 2 + (0x7F - 0x21) * 2 + 16 + 1 +
 grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escaping.ilg" \
   || { grep -E 'accepted|rejected' "$WORK/xref/xref-escaping.ilg" >&2; fail "M02-AC3: makeindex did not accept all $XREF_MARKS cross-reference probe entries"; }
 
+# One reader for the two typeset cross-reference checks, M02-AC3 over the
+# escaping probe here and M02-AC2 over the demo below, called at both sites
+# and again by the self-test's planted-defect cases, so a plant runs the code
+# the run uses. Each manifest row must occur EXACTLY once in the index region:
+# a presence test passes a cross-reference printed twice. A row inside another
+# row would count twice on a correct index, so the reader refuses a manifest
+# with one before it counts.
+xref_typeset_check() {   # <label> <pdftotext output> <manifest> <missing sentence> <ok sentence> [<region dump size>]
+  python3 - "$@" <<'PY'
+import re, sys
+label, txt_path, rows_path, missing_said, ok_said = sys.argv[1:6]
+dump = int(sys.argv[6]) if len(sys.argv) > 6 else 0
+txt = open(txt_path, encoding='utf-8').read()
+rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
+norm = [' '.join(r.split()) for r in rows]
+inside = [(a, b) for a in norm for b in norm if a != b and a in b]
+if inside:
+    print(f'FAIL: {label}: the manifest has a row inside another row, which '
+          f'would count twice on a correct index: {inside}', file=sys.stderr)
+    sys.exit(1)
+m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
+if not m:
+    print(f'FAIL: {label}: no "Index" heading in pdftotext output',
+          file=sys.stderr)
+    sys.exit(1)
+# The printed index is set in two columns, so runs of layout spacing collapse
+# to one space.
+region = ' '.join(txt[m.end():].split())
+counts = {r: region.count(' '.join(r.split())) for r in rows}
+missing = [r for r in rows if counts[r] == 0]
+repeated = [r for r in rows if counts[r] > 1]
+if missing:
+    print(f'FAIL: {label}: {missing_said}:', file=sys.stderr)
+    for r in missing:
+        print(f'  <<{r}>>', file=sys.stderr)
+if repeated:
+    print(f'FAIL: {label}: cross-reference(s) printed more than once in the '
+          f'index section, where the fixture writes each once:',
+          file=sys.stderr)
+    for r in repeated:
+        print(f'  <<{r}>> x{counts[r]}', file=sys.stderr)
+if missing or repeated:
+    if dump:
+        print(f'--- index region ---\n{region[:dump]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: all {len(rows)} {ok_said}')
+PY
+}
+
 # Typeset evidence from Quarto's own PDF: compiling proves the encap argument
 # READS, typesetting proves the character PRINTS in a cross-reference.
 pdftotext -layout "$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf" "$WORK/xref/xref-escaping.txt"
 printf '%s\n' "$XREF_PROBE_TEXT" > "$WORK/xrefprobe.txt"
-python3 - "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" <<'PY'
-import re, sys
-txt = open(sys.argv[1], encoding='utf-8').read()
-rows = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
-if not m:
-    print('FAIL: M02-AC3: the cross-reference probe produced no index section',
-          file=sys.stderr)
-    sys.exit(1)
-region = ' '.join(txt[m.end():].split())
-missing = [r for r in rows if ' '.join(r.split()) not in region]
-if missing:
-    print('FAIL: M02-AC3: special-handling character(s) did not typeset in '
-          'their cross-reference:', file=sys.stderr)
-    for r in missing:
-        print(f'  <<{r}>>', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M02-AC3: all {len(rows)} exact cross-reference strings typeset in '
-      f'the probe index')
-PY
+M02_AC3_MISSING='special-handling character(s) did not typeset in their cross-reference'
+M02_AC3_OK='exact cross-reference strings typeset once each in the probe index'
+xref_typeset_check M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" \
+  "$M02_AC3_MISSING" "$M02_AC3_OK" || exit 1
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
@@ -7339,29 +7372,37 @@ PY
 # ---------------------------------------------------------------------------
 section 'M02-AC2 — every cross-reference reaches the compiled index as typeset text.'
 printf '%s\n' "$XREF_PDF_TEXT" > "$WORK/xrefpdf.txt"
-python3 - "$WORK/demo.txt" "$WORK/xrefpdf.txt" <<'PY'
-import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-rows = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: M02-AC2: no "Index" heading in pdftotext output',
-          file=sys.stderr)
-    sys.exit(1)
-# Same whitespace normalization the AC6 check uses: the printed index is set in
-# two columns, so runs of layout spacing collapse to one space.
-region = ' '.join(text[m.end():].split())
-missing = [r for r in rows if ' '.join(r.split()) not in region]
-if missing:
-    print('FAIL: M02-AC2: cross-reference(s) missing from the PDF index '
-          'section:', file=sys.stderr)
-    for r in missing:
-        print(f'  <<{r}>>', file=sys.stderr)
-    print(f'--- index region ---\n{region[:1500]}', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M02-AC2: all {len(rows)} cross-references typeset in the PDF '
-      f'index, source entry and text together')
-PY
+M02_AC2_MISSING='cross-reference(s) missing from the PDF index section'
+M02_AC2_OK='cross-references typeset once each in the PDF index, source entry and text together'
+xref_typeset_check M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" \
+  "$M02_AC2_MISSING" "$M02_AC2_OK" 1500 || exit 1
+
+# M112 T1: the two typeset checks above count each row rather than test for
+# it, so a cross-reference printed twice is red. Each case writes one row's
+# text a second time into a copy of the check's own captured text, and runs
+# the same reader on it.
+if [ "${1:-}" = "--self-test" ]; then
+  M112W="$WORK/m112-xref"
+  rm -rf "$M112W"; mkdir -p "$M112W"
+  m112_twice() {   # <label> <captured text> <manifest> <missing> <ok>
+    local label="$1" txt="$2" rows="$3" row out
+    row=$(awk 'NF { print; exit }' "$rows")
+    [ -n "$row" ] || fail "M112 T1 self-test: the $label manifest has no row to plant"
+    xref_typeset_check "$label" "$txt" "$rows" "$4" "$5" > /dev/null \
+      || fail "M112 T1 self-test: $label is red on its own captured text, so a red below would not be the planted row"
+    { cat "$txt"; printf '%s\n' "$row"; } > "$M112W/$label.txt"
+    if out=$(xref_typeset_check "$label" "$M112W/$label.txt" "$rows" "$4" "$5" 2>&1); then
+      fail "M112 T1 self-test: $label passed its captured text with <<$row>> printed a second time"
+    fi
+    case "$out" in
+      *"printed more than once"*"<<$row>> x2"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M112 T1 self-test: $label failed on a row printed twice, but not by naming that row" ;;
+    esac
+  }
+  m112_twice M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" "$M02_AC3_MISSING" "$M02_AC3_OK"
+  m112_twice M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" "$M02_AC2_MISSING" "$M02_AC2_OK"
+  pass "M112 T1 self-test: M02-AC3 and M02-AC2 each pass their captured text and are red, naming the row, on a copy with one cross-reference printed a second time"
+fi
 
 # ---------------------------------------------------------------------------
 # M05 — book projects. A book renders each chapter in its own Pandoc process,

@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M112 | Three PDF index checks see a wrong index | in-progress | — | normal | milestones/M112-pdf-checks-see-wrong-index.md |
+| M112 | Three PDF index checks see a wrong index | review | — | normal | milestones/M112-pdf-checks-see-wrong-index.md |
 | M111 | Three suite checks tell apart what they now read alike | done | — | normal | milestones/archive/M111-suite-checks-tell-apart.md |
 | M110 | The site says which Quarto renders a Typst book | done | — | high | milestones/archive/M110-typst-book-pages.md |
 | M109 | The suite checks a Typst book on any Quarto that renders one | done | — | normal | milestones/archive/M109-typst-book-gate.md |

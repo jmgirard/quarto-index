@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M112: Three PDF index checks see a wrong index
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -84,7 +84,7 @@ three entries are removed from `cairn/DESIGN.md`.
 ## Tasks
 <!-- owner: plan (create) / implement (check-off, minor edits) -->
 
-- [ ] T1: In the M02-AC3 heredoc (`tests/run-tests.sh` ~7285-7306) and the
+- [x] T1: In the M02-AC3 heredoc (`tests/run-tests.sh` ~7285-7306) and the
       M02-AC2 heredoc (~7341-7364), replace the `not in region` test with a
       count of each normalized row in the region, failing with the row and
       its count when it is not exactly 1; check first that no row is a
@@ -92,7 +92,7 @@ three entries are removed from `cairn/DESIGN.md`.
       Add a `--self-test` case per check that writes one row a second time
       into a copy of the check's captured text and asserts that check's
       failure names that row, plus the unplanted copy passing.
-- [ ] T2: In `tests/m23probes.py`, state the fixture's mark count (six
+- [x] T2: In `tests/m23probes.py`, state the fixture's mark count (six
       `\index` calls today, read from `examples/range-nested.qmd` and
       `examples/range-position.qmd`, not from the `.ilg`) beside `RANGES`,
       fail when `_items` holds a term outside `RANGES` and `INNER`, and fail
@@ -100,14 +100,14 @@ three entries are removed from `cairn/DESIGN.md`.
       Add one plant per clause to the M23 self-test block (~17559, `M23W`):
       an extra `\item` line, and a changed accepted count, each asserting its
       own message.
-- [ ] T3: In `tests/pdfindex.py` `read` (~180-235), when `stop` ends the
+- [x] T3: In `tests/pdfindex.py` `read` (~180-235), when `stop` ends the
       read, check the left-out page for a line whose `y` is above the first
       section-ending line on it and raise naming the page and that line;
       update the docstring's account of the dropped page. Add a `--self-test`
       case that feeds `read` such a page (a stubbed `_pages` or a rendered
       variant of the named-indexes fixture, whichever reaches `read` through
       a real caller) and asserts the message.
-- [ ] T4: Remove KI63, KI69 and KI102 from `cairn/DESIGN.md` and check no
+- [x] T4: Remove KI63, KI69 and KI102 from `cairn/DESIGN.md` and check no
       ROADMAP row names them; run `tests/run-tests.sh --self-test` green.
 
 ## Work log
@@ -128,6 +128,9 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-18: T2 code: `tests/m23probes.py` states `MARKS = 2 * 2 + 2`, counted from both fixtures' `.index` spans, and `_ind` fails on an entry outside `RANGES` and `INNER` and on an accepted count other than `MARKS`; two plants in the M23 self-test block assert each clause's message. Scratch run: `ind` and `posind` green on the 2026-10-18 captures (6 accepted in both `.ilg`), each plant red with its own message. Full-suite verify still batched after T3.
 - 2026-10-18: T3 code: `pdfindex.read` raises LookupError, naming the page and the lines, when the page its `stop` bound leaves out prints a line above its first section-ending line; LookupError because all three bounded callers already report it as a FAIL line. The self-test feeds `read` stubbed `_pages` output, a stranded case and a control, in the M49 self-test block. A rendered plant was tried first: the named-indexes fixture with its page break removed puts the next heading on the index's own page, which `read` refuses as unbounded, so no render here builds the input class. Scratch runs: the four bounded reads green on the 2026-10-18 captures, no M098 capture refused, the pageplus plant still red for its own row, the case red on the pre-fix reader.
 - 2026-10-18: T4: KI63, KI69 and KI102 removed from `cairn/DESIGN.md`; no ROADMAP row, test file or page names them.
+- 2026-10-18: verify: the first `tests/run-tests.sh --self-test` run stopped at its PyYAML guard, because this session's PATH resolves `python3` to a new 3.14.6 install without PyYAML; re-run with `python3` alone pointed at `/usr/bin/python3` 3.9.6, the repo's local interpreter, nothing installed. That run: "All checks passed (1770 checks)" at 58d8c71, the three M112 self-test cases green. T1-T4 ticked.
+- 2026-10-18: claim audit: not owed — internal tier.
+- 2026-10-18: implement complete; status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

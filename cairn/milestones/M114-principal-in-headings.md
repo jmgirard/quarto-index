@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M114: A principal mention in a LaTeX heading or caption builds
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** high   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -119,12 +119,12 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
       lines, running head, PDF bookmarks, the caption package's processing)
       and the scrbook class by hand, and log the results. Update the
       subsystem comment in `core.lua`. AC1 and AC2 green.
-- [ ] T3: Show AC2's check able to fail with one plant per copy site and per
+- [x] T3: Show AC2's check able to fail with one plant per copy site and per
       command that reaches it in the fixture, a range end's copy corrupting a
       span among them. Each plant registers a copy's page and turns the check
       red, naming the entry. The self-test's planted-defect cases cover the
       new manifest.
-- [ ] T4: Write the changelog entry and the `site/principal-mention.qmd`
+- [x] T4: Write the changelog entry and the `site/principal-mention.qmd`
       sentence. Strike KI2 in `cairn/DESIGN.md` and correct any Architecture
       text about the three commands. Run `tests/run-tests.sh --self-test`.
 
@@ -165,6 +165,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 - 2026-10-19: first full suite run stopped at about 524 checks with no failure, so the corrections could be run once; the corrections were made with Edit and one literal-replacement script over tests/run-tests.sh.
 - 2026-10-19: second full run red at M20-AC3/AC4 (`tests/m20probes.py`'s registration regex read the new zero-argument definition `\providecommand*\quartoindexregister{\qi@guard…}` as a registration, after 614 checks); the three commands keep their `[1]` argument form and pass it to the guard, the shape the M20/M21/M31 definition checks read, and the T3 splice follows it; no probe changed.
 - 2026-10-19: third full run red at M41-AC1 after 962 checks: every fixture must be declared in `site/gallery.yml`; `examples/principal-headings.qmd` added under `not-shown:`, since a shown fixture needs an HTML index manifest and this one has a PDF one.
+- 2026-10-19: fourth full run `tests/run-tests.sh --self-test` green at 5d30241: 1789 checks, the M114 section 53s, all eleven M114 plants red or green as stated (Python 3.9 at /usr/bin/python3 for PyYAML). T3 and T4 ticked; status review.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

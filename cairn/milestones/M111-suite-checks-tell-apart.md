@@ -52,7 +52,7 @@ the line the T2 plant expects (KI276). The three entries are removed from
      coverage-complete counts AC checkboxes positionally (M107); departures:
      a "Deviations from RR<NN>" table ends this section. -->
 
-- [ ] AC1: `check_warning_count` in `tests/run-tests.sh` fails with a message
+- [x] AC1: `check_warning_count` in `tests/run-tests.sh` fails with a message
       naming the log path when the log it is given does not exist, both for an
       expected count of 0 and for a positive one; on a log that exists it
       counts occurrences as it does now.
@@ -63,7 +63,7 @@ the line the T2 plant expects (KI276). The three entries are removed from
       locator wording's clause (`its index locator links there`), or when a
       report naming any other term of its `REFUSED` set lacks the locator
       clause or carries the cross-reference clause.
-- [ ] AC3: Under `tests/run-tests.sh --self-test`, the self-test reports a
+- [x] AC3: Under `tests/run-tests.sh --self-test`, the self-test reports a
       failure for the M090 T3 plant (a locator mark no longer outranking a
       cross-reference mark for a shared name) when the M079-AC1 leg's output
       under that plant holds the line the M090 T2 plant expects (`the
@@ -164,3 +164,27 @@ the line the T2 plant expects (KI276). The three entries are removed from
      results, review findings + triage. EXEMPT from the 150-line cap (M55),
      as are the work log (D-046) and the decisions section (D-074); evidence
      never scrambles plan-owned content. -->
+
+Pass 1, 2026-10-18. Sync: `main` had not moved since the branch was cut; no PR yet (route (d)); Copilot round off.
+
+- Full run at ffbe932: `PATH="/usr/bin:$PATH" tests/run-tests.sh --self-test` green, "All checks passed (1767 checks)", 0 FAIL, 9 skips (D-065: local Quarto 1.10.19, pinned 1.10.18). PATH puts `/usr/bin/python3` (3.9.6, has PyYAML) ahead of `/usr/local/bin/python3` (3.14.6, lacks it). Prints "ok M111 T1 self-test", "ok M090 T3 self-test ... does not print <<the contested id 'xref-dup' ...>>", "ok M111 T4 self-test".
+- AC1 evidence: a scratch harness sourcing the current `check_warning_count` over a path that does not exist: want 0 and want 1 each exit 1 with "the log <path> does not exist, so no count of <<P>> can be read from it (want N)"; over a log holding two occurrences on one line, want 2 passes and want 1 fails "expected 1 occurrence(s) ... got 2". The full run's "M111 T1 self-test" line holds the same in the suite. HEAD's helper passed want 0 (implement work log).
+- AC3 evidence: the current `m081_census_plant`, stubbed so the leg's output is a recorded render's: over T2's output (`passes.lua` substitution) the T3 plant fails "the check also printed <<the contested id 'xref-dup' is still on the span printing 'rho'>> ..."; over T3's own output it passes; over output lacking the `chi` line it fails "not with <<the locator for 'chi' names>>". The full run's "M090 T3 self-test ... does not print" line is the unplanted pass.
+- Consistency gate: `cairn_validate.py` all checks passed; profile `generic` names no toolchain checks; no principle changed, so `cairn_impact` skipped.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the generated `id-collision-ids.py` read the clause variables with `os.environ[...]`, so a hand rerun gave a KeyError — fix now.
+- diff-bug #2: the wording check ran only on a report naming both the term and the expected id, narrower than AC2's "a refusal report naming a term" — fix now (the leg still went red there through `missing`).
+- diff-bug #3: one log line holding two reports could let one report's clause satisfy another's — reject, false: such a line drops the report count below `len(REFUSED)` and the leg fails on that clause.
+- diff-bug #4: "the T2 and T4 lines are printed by no other plant" now also covers M111 T4's plant, unchecked — reject, false: the leg over the T4 render prints neither line (grep count 0, scratch render).
+- diff-bug #5: three inline greps outside the helper (`nomarker_named`, the M068 T5 inverted count, the M062-AC1 `five.qmd` count) swallow a missing log the same way — follow-up: KI311 in `cairn/DESIGN.md`, per Scope Out.
+- diff-bug #6: the T1 self-test sits inline after the M02-AC5 count rather than in a self-test block — reject, style: M105 set the inline precedent and no convention names a place.
+- blame-history #1: the cross-reference wording is picked on `anchorless`, which D-048 front-matter marks of HTML book chapters also carry — reject, false: `passes.lua:640-641` records that only a cross-reference mark's `anchorless` reaches the Pandoc pass, and `contestable_xref` excludes `page_only` marks.
+- blame-history #2: `|| true` in `check_warning_count` (M02) was written for a no-match 0, never chosen for a missing file — noted; no defect, consistent with M076's refusal in `check_store_reports`.
+- blame-history #3: M111 reverses M090's scope choice on the wording gap and its accepted T3/T2 limit — noted; M090's recorded falsifier (a wording swap shipping green) is what the T4 plant shows, and M111's plan gate recorded the promotion.
+- blame-history #4: the wording check reads mark kind from the hand-kept `CONTESTED_XREF`, not the record — reject, planned change (T3); drift turns the leg red.
+- blame-history #5: the unplanted leg now enforces wording on every run, not only under `--self-test` — noted; matches M079's two-wording design.
+- blame-history #6: the `unwanted` branch and T3's forbidden line are sound — noted.
+- prior-review #1: the T4 plant types the leg's message sentence where M076's review asked for one shared expectation — reject, false as a hazard: a reword turns the plant red loudly (substring presence); only a silent green was M076's case, and the clause itself is shared.
+- prior-review #2: "no call over a never-written log" rests on a run with 9 skips — reject, false: none of the `on_pinned_quarto` or `typst_book_rendered` blocks (lines 6446, 18218, 26426, 30430, 30535) holds a `check_warning_count` call, as the diff-bug lens also found.
+- prior-review #3: the comment "differ in one clause each" understates how the two wordings differ — fix now.
+- ripple #1: `cairn/DESIGN.md`'s Known issues intro says a closing milestone "strikes" its entry, while M111 removes KI275-KI277 — reject, false: D-013's "strikes" is removal in this repo's practice (KI1, KI284-KI287 are absent, none struck through).

@@ -32429,6 +32429,109 @@ M102IDPY
 fi
 
 # ---------------------------------------------------------------------------
+# M114-AC1/AC2 — a principal mention in a LaTeX heading or caption builds and files its own page.
+#
+# LaTeX copies a heading into the contents list and the running head, and a
+# figure or table caption into the list of figures or tables. The commands a
+# principal mark and a principal range's two ends emit beside their `\index`
+# were expanded in those copies, and the PDF build stopped: a heading, a
+# running head, a figure caption and a table caption each failed with a
+# LaTeX error of its own.
+#
+# examples/principal-headings.qmd uses Quarto's default document class with
+# a contents list, lists of figures and tables, and `pagestyle: headings`.
+# Every page ends in an explicit page break, so each mark's page is a fact of
+# its source. Page 1 prints the title and the three lists, all short enough
+# for one page, and then a paragraph marking each term below once, plainly:
+# that page carries every contents-list copy, so a copy that registered its
+# own page would emphasize the term's page-1 locator. The manifest
+# tests/principal-headings-pdf.tsv is derived by hand from that source under
+# the ORACLE RULE above, one `level<TAB>line` row an entry. The terms, their
+# pages and why each prints as it does:
+#   aster    principal in a level-one heading on page 2; page 1 plain, and
+#            page 4 plain, a page under that heading's running head. Pages 3
+#            and 4 both carry it; page 3 is left without a mark, because
+#            three consecutive pages fold into a range makeindex prints whole
+#   basil    principal in a level-two heading on page 2; page 1 plain. In a
+#            one-sided document only a level-one heading sets the running head
+#   clover   principal in a level-four heading on page 3, which LaTeX runs in
+#            and the default contents depth leaves out; page 1 plain
+#   dahlia   a principal range opened in a level-one heading on page 5 and
+#            closed in another on page 6, printed 5–6; page 1 plain, and page
+#            8 plain under the closing heading's running head. Page 7 carries
+#            that head too and no mark, so 8 is not folded into the range
+#   elm      principal in a figure caption on page 9; page 1 plain
+#   fern     a principal range opened in a figure caption on page 10 and
+#            closed in the text on page 11, printed 10–11; page 1 plain
+#   ginkgo   principal in a table caption on page 12; page 1 plain
+#   holly    an ordinary mark in a level-one heading on page 9, the shape
+#            this milestone leaves alone; page 1 plain
+# The index is on page 13. Page 1 prints the index's contents line `Index` as
+# a line of its own, so the read starts at page 2. In PDF the fixture
+# redefines the principal command to print `[P:<page>]`, so an emphasized
+# locator is visible to pdftotext.
+# ---------------------------------------------------------------------------
+section 'M114-AC1/AC2 — a principal mention in a LaTeX heading or caption builds and files its own page.'
+M114_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/principal-headings.qmd || true; } | tr -d ' ')
+[ "$M114_BREAKS" = "12" ] \
+  || fail "M114-AC1: examples/principal-headings.qmd carries $M114_BREAKS page breaks, not the twelve its manifest numbers pages by"
+quarto render examples/principal-headings.qmd --to pdf \
+    > "$WORK/principal-headings-pdf.log" 2>&1 \
+  || { tail -40 "$WORK/principal-headings-pdf.log" >&2; fail "M114-AC1: examples/principal-headings.qmd failed to render to PDF"; }
+capture examples/principal-headings.qmd pdf "principal-headings-pdf"
+M114_PDF="$CAPTURE_ROOT/principal-headings-pdf/principal-headings.pdf"
+[ -s "$M114_PDF" ] || fail "M114-AC1: the render produced no $M114_PDF"
+check_extension_warning_count "$WORK/principal-headings-pdf.log" 0 \
+  "M114-AC1 (examples/principal-headings.qmd: every mark in it is well formed)"
+pass "M114-AC1: examples/principal-headings.qmd, with principal mentions in headings at levels 1, 2 and 4, a principal range across two headings, principal mentions and a principal range in figure and table captions, under a contents list, lists of figures and tables and running heads, renders to PDF"
+
+# A function, so the self-test plants below run this same comparison.
+m114_pdf_check() {   # <pdf> <manifest>
+  python3 - "$1" "$2" <<'M114PY'
+import sys
+import unicodedata
+sys.path.insert(0, 'tests')
+import pdfindex
+
+pdf, manifest = sys.argv[1:3]
+label = f'M114-AC2: {pdf}'
+nfc = lambda s: unicodedata.normalize('NFC', s)  # noqa: E731
+want = []
+with open(manifest, encoding='utf-8') as fh:
+    for line in fh:
+        line = line.rstrip('\n')
+        if line:
+            level, text = line.split('\t', 1)
+            want.append((int(level), nfc(text)))
+if not want:
+    print(f'FAIL: {label}: the manifest {manifest} is empty', file=sys.stderr)
+    sys.exit(1)
+try:
+    entries = pdfindex.read(pdf, from_page=2)
+except LookupError as err:
+    print(f'FAIL: {label}: the PDF prints no index to compare: {err}',
+          file=sys.stderr)
+    sys.exit(1)
+got = [(entry.level, nfc(entry.text)) for entry in entries]
+if got != want:
+    for i in range(max(len(got), len(want))):
+        g = got[i] if i < len(got) else None
+        w = want[i] if i < len(want) else None
+        if g != w:
+            print(f'FAIL: {label}: index line {i + 1} is {g!r}, not the '
+                  f'{w!r} {manifest} states', file=sys.stderr)
+            break
+    print(f'  got  {got!r}\n  want {want!r}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the printed index is the {len(want)} lines {manifest} '
+      f'states, each at its level and with its emphasis')
+M114PY
+}
+m114_pdf_check "$M114_PDF" tests/principal-headings-pdf.tsv \
+  || fail "M114-AC2: the PDF index of examples/principal-headings.qmd does not match tests/principal-headings-pdf.tsv (the report is above)"
+pass "M114-AC2: in the PDF index each principal mention in a heading or caption emphasizes its own page or range alone, and no contents-list or running-head copy emphasizes the page it prints on"
+
+# ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.
 #
 # One thing is held here: every section the source declares has exactly one

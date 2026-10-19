@@ -160,7 +160,8 @@ def _levels(edges):
             for edge in edges}
 
 
-def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
+def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY,
+         from_page=1):
     """Read the printed index, in the order it is printed.
 
     Returns a list of Entry, starting at the line after the index heading. With
@@ -192,10 +193,17 @@ def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
     out, a header would be refused here by name rather than read.
 
     `footer_pattern` is the footer each page prints, as `_pages` reads it.
+
+    `from_page` is the first page searched for the heading. A document with a
+    table of contents prints the index's heading there too, as a line of its
+    own, so a read of such a document names the page after its contents
+    lists, stated by hand from the `.qmd` source (M114).
     """
     pages = list(_pages(pdf_path, footer_pattern))
     start = None
     for i, (number, _width, lines) in enumerate(pages):
+        if number < from_page:
+            continue
         for j, (_x, _y, text) in enumerate(lines):
             if text == heading:
                 start = (i, j)

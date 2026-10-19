@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M114: A principal mention in a LaTeX heading or caption builds
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** high   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** IP2, GP6   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** user-facing — it changes the PDF that a document with a principal mention in a heading or caption gets   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m114-principal-in-headings   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -105,7 +105,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
      cites; an insertion, removal, or reorder renumbers the labels and the
      Coverage lines together. -->
 
-- [ ] T1: Write `examples/principal-headings.qmd` (AC1's marks) and its
+- [x] T1: Write `examples/principal-headings.qmd` (AC1's marks) and its
       hand-derived manifest, with a derivation comment that names the page of
       each mark. Place AC2's ordinary locators on the copy pages. Add the
       render, its capture and the AC2 index check to `tests/run-tests.sh`.
@@ -150,6 +150,9 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 - 2026-10-19: plan gate chose to make the three LaTeX commands safe in LaTeX's copies over moving them out of the heading or caption in the filter, as `latex.move_alt_commands` does for alt text, because a write between a heading and its paragraph can allow a page break after the heading and splits the registration from its `\index` (D-007's same-page agreement); falsified by a copy site where the changed commands still break the build or register the copy's page.
 - 2026-10-19: RB tripwire not tagged: the work restores IP2 and changes no principle.
 - 2026-10-19: criteria audit (full mode, fresh Opus reader) returned 9 findings. Fixed: 1 (`pagestyle: headings`; the caption range's close placed), 2 (PDF bookmarks probed; one failing variant per error), 3 and 5 (AC2 states the index property, then what the check compares), 4 (AC2 states the copy-page locators, each on a page apart from the mention's), 7 (T3 plants per copy site and per command), 8 (AC4 names the tested configuration), 9 (table captions probed, fail the same way, added to scope). Answered: 6 (AC3 is the profile's verify gate the template requires; T3's plants are review evidence for AC2, and AC3 now maps to T4 alone).
+- 2026-10-19: implement started; branch m114-principal-in-headings cut from main at 55edcd9; tree clean.
+- 2026-10-19: T1 red at base (Quarto 1.10.18, lualatex, base extension): a heading-only variant fails with `Illegal parameter number in definition of \^^@`, a figure-caption-only one with `Argument of \caption@ydblarg has an extra }`, a table-caption-only one with `Argument of \caption@listentry@ has an extra }`; the fixture itself, under `pagestyle: headings`, fails first at the running head with `Illegal parameter number in definition of \g__mark_tmp_tl` (a fourth copy site the Scope did not name).
+- 2026-10-19: T1 added `examples/principal-headings.qmd`, `tests/principal-headings-pdf.tsv`, the M114-AC1/AC2 section of `tests/run-tests.sh`, and `pdfindex.read`'s `from_page` (default 1, unchanged behavior), because page 1's contents line `Index` is a line exactly equal to the heading and the read would start there.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

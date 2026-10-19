@@ -2075,6 +2075,12 @@ NULLFIELDPY
 # on a run that warned about the wrong mark, or warned twice for one.
 check_warning_count() {
   local logfile="$1" pattern="$2" want="$3" label="$4" got
+  # A log that is not there is not a log with no warnings in it. The `|| true`
+  # below also swallows grep's exit 2 on a missing file, so without this line a
+  # zero count over a log nothing wrote passed: the render, or the manifest row
+  # naming it, could go and the zero control stay green (KI277; M111).
+  [ -f "$logfile" ] \
+    || fail "$label: the log $logfile does not exist, so no count of <<$pattern>> can be read from it (want $want)"
   # Occurrences, not matching lines: two warnings emitted onto one line would
   # count as one under `grep -c` and the check would pass.
   # `|| true` inside the pipeline, not after it: grep exits 1 on no match, and
@@ -2344,6 +2350,27 @@ dangling_report_index() {
 
 check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
 pass "M02-AC5: case (b) warned exactly once in the demo render"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # M111 T1 (KI277): `check_warning_count` over a log that does not exist is
+  # red for a zero count and for a positive one, and red for that reason: the
+  # positive count was red before M111 too, but as a count of 0 against 1. The
+  # control is the demo log just counted above. `fail` exits, so each call
+  # runs in a command substitution of its own.
+  m111_missing="$WORK/m111-no-such-render.log"
+  rm -f "$m111_missing"
+  for m111_want in 0 1; do
+    m111_out=$(check_warning_count "$m111_missing" "$WARN_BOTH" "$m111_want" "M111 probe" 2>&1) \
+      && m111_rc=0 || m111_rc=$?
+    [ "$m111_rc" -ne 0 ] \
+      || fail "M111 T1 self-test: a count of $m111_want over a log that does not exist passed"
+    printf '%s' "$m111_out" | grep -qF -- "FAIL: M111 probe: the log $m111_missing does not exist" \
+      || { printf '%s\n' "$m111_out" >&2; fail "M111 T1 self-test: a count of $m111_want over a log that does not exist failed, but not by naming the missing log"; }
+  done
+  m111_out=$(check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M111 control" 2>&1) \
+    || { printf '%s\n' "$m111_out" >&2; fail "M111 T1 self-test: the control count over the demo log failed, so the reds above may be the helper and not the missing log"; }
+  pass "M111 T1 self-test: a warning count over a log that does not exist is red, naming it, for want 0 and want 1; over the demo log it still counts"
+fi
 
 # Every warning the filter can emit must be distinct, or "identified by
 # distinctive message text" is not a property the suite can rely on. The

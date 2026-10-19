@@ -4,14 +4,14 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M111: Three suite checks tell apart what they now read alike
 
-- **Status:** planned   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
 - **Principles touched:** GP6   <!-- owner: plan · create/amend-via-gate; comma-separated IPn/GPn ids this milestone touches, or — -->
 - **Resolves:** —   <!-- owner: plan · create/amend-via-gate; comma-separated GitHub issues the scope absorbs, each `#N closes` (the PR closes it at merge) or `#N partial` (the remainder gets a candidate row), or — ; skill conduct only — no validate check parses it -->
 - **Surface tier:** internal — acceptance-suite checks and self-test plants, which no user of the extension runs   <!-- owner: plan · create/amend-via-gate; user-facing | internal — <one-clause reason>; skill conduct only — no validate check parses it -->
-- **Branch/PR:** —   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
+- **Branch/PR:** m111-suite-checks-tell-apart   <!-- owner: implement (branch) / review (PR URL) · create; a companion checkout the milestone also works in is one further entry per checkout, `companion: <abs-path> <branch>` (implement), its PR URL appended by review — /milestone-review merges companions first, in listed order -->
 
 ## Goal
 <!-- owner: plan · create; a wrong goal returns to plan, never edited in place -->
@@ -142,6 +142,8 @@ the line the T2 plant expects (KI276). The three entries are removed from
 - 2026-10-18: question set: which cluster — the warning and id checks (KI275-KI277); add KI274 anyway — no, left out.
 - 2026-10-18: plan gate chose a plant-side forbidden line for KI276 over a fixture case only T3 reaches, because T2's plant already prints a line (`xref-dup` on `rho`) T3's never does; falsified by the T3 plant's output holding that line on an unplanted fixture.
 - 2026-10-18: plan gate chose failing `check_warning_count` on a missing log over a per-call existence check at each zero count, because one helper change covers all its call sites; falsified by a call that must count over a log some runs legitimately do not write.
+- 2026-10-18: implement started on branch m111-suite-checks-tell-apart; tree clean.
+- 2026-10-18: T1 code: `check_warning_count` fails naming a missing log before its grep, plus a `--self-test` case in the M02-AC5 section. A scratch harness showed the HEAD helper passing want 0 over a missing log (grep exit 2 swallowed by `|| true`) and failing want 1 as "got 0"; the new one fails both naming the log. Unticked until the full run (T7).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

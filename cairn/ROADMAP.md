@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M111 | Three suite checks tell apart what they now read alike | planned | — | normal | milestones/M111-suite-checks-tell-apart.md |
+| M111 | Three suite checks tell apart what they now read alike | in-progress | — | normal | milestones/M111-suite-checks-tell-apart.md |
 | M110 | The site says which Quarto renders a Typst book | done | — | high | milestones/archive/M110-typst-book-pages.md |
 | M109 | The suite checks a Typst book on any Quarto that renders one | done | — | normal | milestones/archive/M109-typst-book-gate.md |
 | M108 | The acceptance suite passes on Quarto 1.5.52 | done | M107 | normal | milestones/archive/M108-suite-on-floor-quarto.md |

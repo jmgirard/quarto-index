@@ -19822,9 +19822,13 @@ PY
 
   # M113 T3: tests/typstindex.py's own bounded read takes the same refusal.
   # The cases mirror M112 T3's, fed as the (page, width, [[Word, ...]]) that
-  # its `_pages` yields, plus a page whose first line is a running header
-  # starting with the stop string and whose body follows it, which must read
-  # green: the header is the section-ending line, and nothing is ahead of it.
+  # its `_pages` yields, plus the running-header shapes of the Typst book: a
+  # header starting with the stop string with its body below it; a header row
+  # split into a left page number and a right header, alone, which is green
+  # because the number shares the header's row; the same row with a line one
+  # row below in the left column, which stays refused and names only that
+  # line; and that page with the line's first words given as a second stop,
+  # which is green.
   python3 - <<'PY' || fail "M113 T3 self-test: the Typst bounded read's stranded-line refusal is not shown (the report is above)"
 import sys
 sys.path.insert(0, 'tests')
@@ -19841,6 +19845,15 @@ def pages(case):
         'control': [line(72.0, 120.0, STOP)],
         'header': [line(72.0, 40.0, STOP + ' 2.1'),
                    line(72.0, 120.0, 'Body text of the next chapter')],
+        'header-row': [line(72.0, 40.0, '16'),
+                       line(371.0, 40.0, STOP + ' Index of People')],
+        'header-prose': [line(72.0, 40.0, '14'),
+                         line(371.0, 40.0, STOP + ' Index of Subjects'),
+                         line(72.0, 51.0, 'zebra, 3')],
+        'second-stop': [line(72.0, 40.0, '14'),
+                        line(371.0, 40.0, STOP + ' Index of Subjects'),
+                        line(72.0, 83.0, 'Prose opens the page'),
+                        line(72.0, 94.0, 'and goes on')],
         'above': [line(72.0, 80.0, 'zebra, 3'), line(72.0, 120.0, STOP)],
         'left-column': [line(320.0, 80.0, STOP), line(72.0, 120.0, 'zebra, 3')],
     }[case]
@@ -19850,12 +19863,14 @@ def pages(case):
         (2, 612.0, second),
     ]
 
-for case in ('control', 'header', 'above', 'left-column'):
+GREEN = ('control', 'header', 'header-row', 'second-stop')
+for case in GREEN + ('header-prose', 'above', 'left-column'):
     typstindex._pages = lambda _path, _footer=None, c=case: iter(pages(c))
+    stops = (STOP, 'Prose opens') if case == 'second-stop' else (STOP,)
     try:
-        got = typstindex.read('planted.pdf', 'Index', (STOP,))
+        got = typstindex.read('planted.pdf', 'Index', stops)
     except LookupError as error:
-        if case in ('control', 'header'):
+        if case in GREEN:
             sys.exit(f'FAIL: M113 T3 self-test ({case}): nothing is printed '
                      f'ahead of the section-ending line, but the read was '
                      f'refused: {error}')
@@ -19865,7 +19880,7 @@ for case in ('control', 'header', 'above', 'left-column'):
                      f'refused, but not by naming page 2 and the line: {said}')
         continue
     texts = [typstindex._text(l.words) for l in got]
-    if case not in ('control', 'header'):
+    if case not in GREEN:
         sys.exit(f'FAIL: M113 T3 self-test ({case}): the bounded read returned '
                  f'{texts} and dropped the line printed ahead of the '
                  f'section-ending line on the page it left out')
@@ -19873,7 +19888,7 @@ for case in ('control', 'header', 'above', 'left-column'):
         sys.exit(f'FAIL: M113 T3 self-test ({case}): the read returned '
                  f'{texts}, not its two entries')
 PY
-  pass "M113 T3 self-test: the Typst bounded read is red, naming the page and the line, when the page it leaves out prints an index line above its first stop line or in the left column below one set in the right, and reads in full a control and a page whose running header starts with the stop string"
+  pass "M113 T3 self-test: the Typst bounded read is red, naming the page and only the stranded line, when the page it leaves out prints a line above its first stop line, in the left column below one set in the right, or one row below a right-column running header, and reads in full a control, a page opening with a header that starts with the stop string, a header row split from its page number, and a page whose prose opens with a second stop"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares three indexes
@@ -30504,7 +30519,9 @@ fi
 #        heading to its page; Shared Term has a locator on 5, 7 and 9. `main` and `people` are placed by
 #        the markers in last.qmd and `places`, which no marker names, follows
 #        them. The page after each index opens with the template's running
-#        header, `Chapter 4.`, which is where each read stops.
+#        header, `Chapter 4.`, which is where each read stops; after the
+#        index of subjects that page also prints last.qmd's prose, whose
+#        first words `main` names as a second stop (M113).
 #   AC8  The four escaping and Unicode fixtures are compared with the entries
 #        their sources derive (`typstcheck.py source`), and that derivation is
 #        held to a hand statement for each: every printable ASCII
@@ -30762,8 +30779,12 @@ for part in MAIN PEOPLE PLACES; do
   printf '%s\n%s\n' "$M098_BOOK_CHAPTERS" "${!var}" > "$WORK/m098-book-$part.tsv"
 done
 if [ "$M098_TYPST_BOOK" = 1 ]; then
+  # The page after the index of subjects carries the running header and then
+  # last.qmd's prose below it, so that prose's first words end the read too
+  # (M113): with the header alone, the prose would be lines ahead of it, which
+  # the bounded read refuses rather than drops.
   python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-MAIN.tsv" \
-    "M098-AC5 (main)" "Index of Subjects" "Chapter 4." \
+    "M098-AC5 (main)" "Index of Subjects" "Chapter 4." "A second placement marker" \
     || fail "M098-AC5: the book's index of subjects is not the manifest's (the report is above)"
   python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PEOPLE.tsv" \
     "M098-AC5 (people)" "Index of People" "Chapter 4." \
@@ -31045,7 +31066,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_book_tree book-noclose typst.lua 's{node\.open_range\.close = mark\.label}{node.open_range.close = nil}'
   m098_red book-noclose "got 'entry\t0\tRanged Term\t7*" python3 tests/typstcheck.py book \
     "$(find "$CAPTURE_ROOT/m098-book-noclose/_book" -maxdepth 1 -name '*.pdf')" \
-    "$WORK/m098-book-MAIN.tsv" "M098 T5 plant book-noclose" "Index of Subjects" "Chapter 4."
+    "$WORK/m098-book-MAIN.tsv" "M098 T5 plant book-noclose" "Index of Subjects" "Chapter 4." "A second placement marker"
 
   # AC5 (T9): every locator one page on, which puts a chapter's locator on
   # its blank back page, a page the chapter-bound reading counted as the
@@ -31053,7 +31074,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_book_tree book-pageplus typst.lua 's{\.\.counter\(page\)\.at\(loc\)\)}{..counter(page).at(loc).map(n => n + 1))}'
   m098_red book-pageplus "got 'entry\t0\tAlpha\t6\t'" python3 tests/typstcheck.py book \
     "$(find "$CAPTURE_ROOT/m098-book-pageplus/_book" -maxdepth 1 -name '*.pdf')" \
-    "$WORK/m098-book-MAIN.tsv" "M098 T9 plant book-pageplus" "Index of Subjects" "Chapter 4."
+    "$WORK/m098-book-MAIN.tsv" "M098 T9 plant book-pageplus" "Index of Subjects" "Chapter 4." "A second placement marker"
 
   m098_book_tree book-unplaced marker.lua "$M098_UNPLACED"
   m098_red book-unplaced "no line '^A second placement marker in this chapter' follows" \

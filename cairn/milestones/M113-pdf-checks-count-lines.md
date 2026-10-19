@@ -63,9 +63,12 @@ three entries are removed from `cairn/DESIGN.md`.
       from the row's stated page count.
 - [ ] AC4: `tests/typstindex.py`'s `read`, given `stop`, raises LookupError
       naming the page and the lines when the page it leaves out prints a line
-      ahead of its first line that starts with a stop string: one above that
+      ahead of its first line, in reading order (left column before right,
+      each top to bottom), that starts with a stop string: one above that
       line, or, where that line sits in the right column, one in the left
-      column. Today such lines are dropped with no message.
+      column. A line that itself starts with a stop string, or that is
+      printed on the same row as one, as a running header's page number is,
+      is not ahead. Today such lines are dropped with no message.
 - [ ] AC5: A run of `tests/run-tests.sh --self-test` on the fixtures'
       current output passes every check it runs, M02-AC2, M02-AC3, AC6,
       M05-AC5 and every `tests/typstindex.py` reading among them.
@@ -106,7 +109,11 @@ three entries are removed from `cairn/DESIGN.md`.
       which says the refusal is absent. Add a `--self-test` case that feeds
       `read` stubbed `_pages` output with such a page and asserts the
       message, plus one where a running header is the first line and is
-      green.
+      green. Exempt a line starting with a stop string and a line on the same
+      row as one (y0 within 1pt); plant a line one row below a right-column
+      header, which stays refused. Add `A second placement marker` as a
+      second stop of the M098-AC5 main read (~30765), whose left-out page 14
+      prints body prose below its running header.
 - [ ] T4: Remove KI69, KI312 and KI313 from `cairn/DESIGN.md`, check that no ROADMAP row
       names a removed entry, and update every suite comment that describes
       the old substring reading of these checks. Run
@@ -128,3 +135,9 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-19: T1 done: `pdfindex.line_counts` counts a row as the entries whose `text` (or `term`) equals it, whitespace collapsed; `xref_typeset_check` reads the PDF through it and takes an optional planted-lines file in place of the region-dump size; the row-inside-another-row refusal is dropped, since whole-line counting makes it unneeded; the M02-AC3 `pdftotext -layout` call is removed. Checked against the 2026-10-18 captures (both green, a twice row red naming it, a longer line holding the row green); the full `--self-test` run is at T4, since a run takes about 15 minutes.
 - 2026-10-19: T2 done: AC6 is now `pdf_term_check` and M05-AC5 `book_pdf_check`, both reading through `pdfindex.read` and `line_counts` with the planted-lines argument; M05-AC5 reads a term's pages from its one line's locator tail. The demo `pdftotext -layout` call is removed; the book's stays, since `m21probes.py bookpdf` and a later heredoc read `book.txt`. Minor amendment: T2's page case plants the manifest (one page fewer), because a second line for the term trips the line count before its pages are read. Checked against the 2026-10-18 captures: both green, and each plant red naming its row.
 - 2026-10-19: T3 done: `typstindex.read` refuses, naming the page and the lines, a line ahead of the left-out page's first stop-matching line, column-aware as `pdfindex.read`; docstring updated. Self-test beside M112 T3's: control and running-header pages green, stranded line above and left-column cases red naming page 2 and the line; run against the pre-change `typstindex.py` it is red at the stranded-line case, so it discriminates. The M098 bounded read of the 2026-10-18 capture stays green.
+- 2026-10-19: T4 suite run 1 stopped at the tool guard: `/usr/local/bin/python3` is now 3.14.6 with no PyYAML, ahead of `/usr/bin/python3` 3.9.6 (PyYAML 6.0.3, which M112's run used). Later runs set `PATH=/usr/bin:$PATH`; nothing installed. The T3 self-test also ran green under 3.14.6. Run 2 stopped on a Quarto segfault in the M084 T6 self-test, which no file of this branch touches.
+- 2026-10-19: T4 suite run 3: every check this milestone changed passed, then M098-AC5 (main) was refused by T3's new rule. The Typst book's left-out page 14 holds a running header row ('14' left, 'Chapter 4. Index of Subjects' right) and body prose, and the old read dropped it in silence; page 16 holds a header row only. AC4 as written refused both, so it conflicted with AC5.
+- 2026-10-19: substantive amendment: AC4 now reads the first stop line in reading order and exempts a line that starts with a stop string or shares its row; T3 adds the row exemption, a one-row-below plant and a second stop for the M098-AC5 main read. Wording only for the user: the refusal of a stranded index line is unchanged.
+- 2026-10-19: re-audit: AC4 (reduced) — "first line" left open between topmost and reading order, and only reading order is satisfiable with AC5; fixed by "in reading order"; the reader also asked for a one-row-below plant (added to T3).
+- 2026-10-19: re-audit: AC4 (reduced) — satisfiable with AC5; asked that the row tolerance be named (moved to T3's text as y0 within 1pt, not into the criterion, since a second re-audit line ends re-entry) and noted "first line" could read as the page's first line (the written wording keeps "its first line, in reading order").
+- 2026-10-19: T3 amended code: `typstindex.read` exempts stop lines and lines within `SAME_ROW_PT` (1pt) of one; M098-AC5 (main) and the M098 T5/T9 book plants pass `A second placement marker` as a second stop; T3 self-test gains header-row, header-prose (one row below, still refused, naming only that line) and second-stop cases; green under 3.9.6 and 3.14.6, and both book reads green on run 3's capture.

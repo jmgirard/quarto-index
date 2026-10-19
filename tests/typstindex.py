@@ -51,6 +51,11 @@ NS = {'x': 'http://www.w3.org/1999/xhtml'}
 # index level is 1.2em, about 13pt at the default size (typst.lua).
 EDGE_TOLERANCE_PT = 3.0
 
+# Two lines whose tops are within this many points share a printed row, as a
+# running header's page number and its text do. Body rows are about 11pt apart
+# in the book fixture's Typst render (M113), so one row below is not the same.
+SAME_ROW_PT = 1.0
+
 # The bottom-most line of a page, when it is one word of nothing but digits or
 # the letters i, v, x, l, c, d and m, is the page number the template prints,
 # and is dropped.
@@ -521,10 +526,13 @@ def read(pdf_path, heading, stop=(), footer_pattern=None):
     index in a Typst book opens with a running header that names the chapter
     and then the section. Like that read, this one raises LookupError, naming
     the page and the lines, when the page left out prints a line ahead of its
-    first line that starts with a stop string: one above it, or, where that
-    line sits in the right column, one in the left column (M113). Such a line
-    would be a line of this index the read drops. A running header that
-    starts with a stop string is that first line, so nothing is ahead of it.
+    first line, in reading order, that starts with a stop string: one above
+    it, or, where that line sits in the right column, one in the left column
+    (M113). Such a line would be a line of this index the read drops. A line
+    that starts with a stop string, or that shares a row with one (a running
+    header's page number), is not ahead, so a page whose running header names
+    the stop reads clean; body text below a right-column header is ahead, and
+    a caller names its first line as a stop too.
     Without `stop` the read runs to the end of the document. `footer_pattern`
     names the pages' footer, as `_pages` reads it.
     """
@@ -552,11 +560,17 @@ def read(pdf_path, heading, stop=(), footer_pattern=None):
                               f'carries any of {sorted(wanted)!r}')
         number, width, lines = pages[end]
         column = lambda words: 0 if words[0].x0 < width / 2.0 else 1  # noqa: E731
-        first_col, first_y = min(
-            (column(words), words[0].y0) for words in lines
-            if any(_text(words).startswith(want) for want in wanted))
+        stops = [words for words in lines
+                 if any(_text(words).startswith(want) for want in wanted)]
+        first_col, first_y = min((column(words), words[0].y0)
+                                 for words in stops)
+        # pdftotext splits a running header's row into its page number and its
+        # text, so a line on the row of a stop line belongs to that row.
+        stop_rows = [words[0].y0 for words in stops]
         ahead = [_text(words) for words in lines
-                 if words[0].y0 < first_y or column(words) < first_col]
+                 if words not in stops
+                 and all(abs(words[0].y0 - y) > SAME_ROW_PT for y in stop_rows)
+                 and (words[0].y0 < first_y or column(words) < first_col)]
         if ahead:
             raise LookupError(
                 f'page {number} of {pdf_path} ends the {heading!r} read and '

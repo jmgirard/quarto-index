@@ -233,8 +233,8 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   "\\AtBeginDocument{\\let\\qi@index\\index}",
   "\\protected\\def\\qi@register#1{\\protected@write\\@auxout{}{\\string\\" ..
     PRINCIPALPAGE_COMMAND .. "{#1}{\\thepage}}}",
-  "\\providecommand*\\" .. REGISTER_COMMAND .. "{\\qi@guard\\" ..
-    REGISTER_COMMAND .. "\\qi@register}",
+  "\\providecommand*\\" .. REGISTER_COMMAND .. "[1]{\\qi@guard\\" ..
+    REGISTER_COMMAND .. "\\qi@register{#1}}",
   -- The empty-list guard is not decoration: `\qi@sniff` reads its first token
   -- as an undelimited argument, so a page list with no token in it would let
   -- it swallow the `\qi@stop` delimiter and run away — a hard render failure
@@ -319,12 +319,12 @@ local PRINCIPAL_SUBSYSTEM = table.concat({
   -- The range ends' own commands take the same guard as REGISTER_COMMAND.
   "\\protected\\def\\qi@rangefrom#1{\\protected@write\\@auxout{}{\\string\\" ..
     RANGEAT_COMMAND .. "{#1}{\\thepage}}}",
-  "\\providecommand*\\" .. RANGEFROM_COMMAND .. "{\\qi@guard\\" ..
-    RANGEFROM_COMMAND .. "\\qi@rangefrom}",
+  "\\providecommand*\\" .. RANGEFROM_COMMAND .. "[1]{\\qi@guard\\" ..
+    RANGEFROM_COMMAND .. "\\qi@rangefrom{#1}}",
   "\\protected\\def\\qi@rangeend#1{\\protected@write\\@auxout{}{\\string\\" ..
     RANGETO_COMMAND .. "{#1}{\\thepage}}}",
-  "\\providecommand*\\" .. RANGEEND_COMMAND .. "{\\qi@guard\\" ..
-    RANGEEND_COMMAND .. "\\qi@rangeend}",
+  "\\providecommand*\\" .. RANGEEND_COMMAND .. "[1]{\\qi@guard\\" ..
+    RANGEEND_COMMAND .. "\\qi@rangeend{#1}}",
   "\\makeatother",
 }, "\n")
 

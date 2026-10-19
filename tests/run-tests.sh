@@ -32617,8 +32617,8 @@ M114SPLICEPY
     m114_worker="${pair##*:}"
     m114_tree "leak-$m114_worker"
     m114_splice "$M114P/leak-$m114_worker/_extensions/index/modules/core.lua" \
-      "{\\\\qi@guard\\\\\" ..
-    $m114_name .. \"\\\\qi@$m114_worker}\"" "{\\\\qi@$m114_worker}\"" \
+      "[1]{\\\\qi@guard\\\\\" ..
+    $m114_name .. \"\\\\qi@$m114_worker{#1}}\"" "[1]{\\\\qi@$m114_worker{#1}}\"" \
       || fail "M114 T3 self-test (leak-$m114_worker): the guard of $m114_name could not be taken away (its own message is above)"
     m114_render "leak-$m114_worker"
   done

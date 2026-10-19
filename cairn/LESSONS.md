@@ -9,7 +9,7 @@
      How to build a check, an oracle or a criterion graduated to
      cairn/check-design.md at M27; read that module at plan gates. -->
 
-- 2026-08-16 (M01): Inside `\index{}` LaTeX reads under `\@sanitize` (`\` becomes catcode 12, so `\{` escapes nothing), and hyperref rewrites the argument at its first `|` before makeindex runs. Neither is discoverable from the character alone.
+- 2026-08-16 (M01): Inside `\index{}` LaTeX reads under `\@sanitize` (`\` becomes catcode 12, so `\{` escapes nothing), and hyperref rewrites the argument at its first `|` before makeindex runs. Neither is discoverable from the character alone. Extended M114: a contents line drops `\index` with `\@gobble@som`, not `\@gobble`, so compare `\index` with its document meaning.
 - 2026-08-16 (M02): makeindex parses `!` and `@` inside the encap argument too, so a cross-reference target needs the same quoting an entry key does — braces do not shield it. An unquoted `!` there is rejected outright, which under Quarto means a failed build rather than a lost entry.
 - 2026-08-17 (M03): `<span id=…>` written inline in markdown is nativized by Pandoc into an AST Span, id visible to filters. A fixture probing genuinely raw HTML must use a `{=html}` block, or it exercises nothing.
 - 2026-08-17 (M04): imakeidx's `\printindex` closes the `.idx` file it has just read, so an index printed mid-document silently drops every later `\index` — the entries go to the `.log` and the build stays clean. Its `noautomatic` option skips that close.

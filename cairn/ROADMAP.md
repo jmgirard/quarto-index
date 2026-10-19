@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M113 done and archived; KI69, KI312, KI313 closed, KI314-KI316 added; backlog row's started token removed; M110 row pruned; no lesson captured; validate green.)_
+_Last hygiene check: 2026-10-19 (M114 done and archived; KI2, KI74 closed, KI317 added; two parked rows added; M111 row pruned; M01 lesson extended; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M114 | A principal mention in a LaTeX heading or caption builds | review | — | high | milestones/M114-principal-in-headings.md |
+| M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
 | M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |
 | M112 | Three PDF index checks see a wrong index | done | — | normal | milestones/archive/M112-pdf-checks-see-wrong-index.md |
-| M111 | Three suite checks tell apart what they now read alike | done | — | normal | milestones/archive/M111-suite-checks-tell-apart.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

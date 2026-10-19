@@ -132,6 +132,7 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: implement complete; status review.
 - 2026-10-19: review: four-lens fan-out, 23 findings: 14 fixed on the branch in d2309c7, 3 to follow-up KI313, 6 rejected; the first review suite run was stopped before the fixes, and the run at d2309c7 is the evidence.
+- 2026-10-19: step-7 approval: m112-pdf-checks-see-wrong-index approved for merge
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->

@@ -104,6 +104,7 @@ page.
 - 2026-10-19: T8: `float_labels` no longer wraps several blocks: content of one Plain or Para takes the inlines at its end, one other block is wrapped with a Plain, and several blocks (Quarto's layout cells) give them to the first Plain or Para cell, or leave them in the caption where none is; a nil content returns early. New fixture `examples/typst-caption-layout.qmd` (a `layout-ncol=2` figure div with two text cells and a caption mark) with manifest `tests/typst-caption-layout.tsv` and a suite check that the cells share a line: on the committed code the cells printed on two lines, now on one, kestrel on page 1. A fourth picture in the lists fixture would have changed what AC2's "three picture captions" names, so the case has its own fixture.
 - 2026-10-19: T8: juniper's id is now `juniper-märk`, so the fixture runs the `label("…")` branch; the render compiles and the index reads green on 1.10.19. Self-test plants committed in the M115 section: link, lof, figure (the index red at alder), float (red at birch) and cells; the figure plant takes the fixture's link out so the planted copy builds. Comments on `id_inline` and the no-id fallback corrected; `site/typst.qmd` and `CHANGELOG.md` name the exceptions; DESIGN.md's Typst paragraph and KI290 rewritten; `site/tests.qmd` and `versions.yml` reflowed; `site/gallery.yml` lists the new fixture as not shown.
 - 2026-10-19: T8 done: dispatched `versions.yml` run 39340658487 at db2cdca green on every job (the caption-lists render and index reading on floor, pinned and release, which compiles `label("juniper-märk")` on Typst 0.11, and the lists reading on the pinned leg); suite run 6 at db2cdca (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1801, 10 skip lines, M115-AC2 among them; the five M115 self-test plants each red on its named failure. Status review.
+- 2026-10-19: review return 3: diff-bug #1 (pass 3) — joining the labels to an image Para in a laid-out float keeps the author's image width Quarto otherwise drops (an image about 260 times larger, index right). This is the third defect return, so the thrash rule's trigger (a) holds, and trigger (b) holds too: returns 2 and 3 are one shape, a change to a laid-out float's content that changes Quarto's layout. No retry is queued; the disposition is the user's, at the chip. The plan's recorded alternatives are a Typst-side choice among the label's copies and a label block after the float.
 
 ## Decisions
 
@@ -185,3 +186,30 @@ Pass 3, after review return 2. Evidence base: HEAD 256ba4f, tree outside `cairn/
 - AC6 (pass 3): `site/typst.qmd` keeps the caption sentences and the `List of Figures` call and adds the two exceptions; suite run 6 `ok M115-AC6` and its `lof` plant red; `CHANGELOG.md` sentence adds "A grid of subfigures or tables laid out in cells keeps the list's page."
 - Consistency gate (pass 3): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
 - spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1 (pass 3): appending the labels to an image Para in a laid-out float stops Quarto treating that cell as image-only, so the author's `width=80%` survives in one cell where main drops it in both; the first image printed about 260 times larger, index right, no warning — floor (IP2, silent corruption): review return 3, which reaches the thrash threshold; disposition at the user's chip
+- diff-bug #2 (pass 3): `examples/typst-caption-layout.qmd` has no list, so its index check passes whether or not the label moves — fix in the next round, per the chip's outcome
+- diff-bug #3 (pass 3): a float with several blocks, no layout attributes and no Plain or Para (a callout and a code block) also keeps its labels in the caption, and the docs name two kinds — fix in the next round (docs and KI290)
+- diff-bug #4 (pass 3): several blocks are not always layout cells — fix in the next round (comment and DESIGN.md)
+- diff-bug #5 (pass 3): KI318 and the breakable sentences say "where the float's content ends", but a multi-block float puts the label after its first paragraph cell — fix in the next round
+- diff-bug #6 (pass 3): `typst.lua:323` past 80 columns — reject, style
+- blame-history #1 (pass 3): image and table grids keep the list's page with no D-entry, the failure M115 fixes — follow-up at the chip: the descope option makes it a recorded known issue (KI290), never silent
+- blame-history #2 (pass 3): `site/typst.qmd` says "paragraph" where the code tests Plain or Para, so a no-id image figure reads as an exception — fix in the next round
+- blame-history #3 (pass 3): the CHANGELOG's "keeps the list's page" reads as a fix — fix in the next round
+- blame-history #4 (pass 3): the layout fixture calls text cells "a laid-out picture div" — fix in the next round
+- blame-history #5 (pass 3): the layout check runs only locally, off the pin, though its subject is Quarto's layout — fix in the next round, per the chip's outcome
+- blame-history #6 (pass 3): `typst.lua:323` long line — reject, style
+- blame-history #7 (pass 3): same as diff-bug #4 — fix in the next round
+- prior-review #1 (pass 3): the paragraph-cell join has no red probe — same as diff-bug #2
+- prior-review #2 (pass 3): `tests/typstlists.py` has no committed plant per clause — fix in the next round
+- prior-review #3 (pass 3): the plants are never shown passing unplanted (check-design M42) — reject, false: each plant's copy differs from the run's own green render by its one splice, and the run's own renders of the same fixture pass above
+- prior-review #4 (pass 3): AC1's "one case to a page" against page 7's two marks — reject, false: page 7 holds one case, one caption, which marks two terms
+- prior-review #5 (pass 3): `typst.lua:323` long line — reject, style
+- prior-review #6 (pass 3): the CHANGELOG carve-out wording — same as blame-history #3
+- ripple #1 (pass 3): KI290's "moves the labels of any float" against its own exceptions — fix in the next round
+- ripple #2 (pass 3): the layout fixture's last line is not a caption — reject, false: the render prints it as "Figure 1: A laid-out picture div, whose caption marks kestrel."
+- ripple #3 (pass 3): the CHANGELOG omits the no-id figure exception — fix in the next round
+- ripple #4 (pass 3): the caption rule is stated before its exceptions — reject, style: the exceptions follow in the same section and entry
+- ripple #5 (pass 3): same as diff-bug #5
+- ripple #6 (pass 3): the open candidate row — reject, planned, as before
+- ripple #7 (pass 3): `site/syntax.qmd` and an older CHANGELOG line say a caption mark files one locator — reject, false: still true, a list adds no second locator
+- ripple #8 (pass 3): two comments name only figures — fix in the next round

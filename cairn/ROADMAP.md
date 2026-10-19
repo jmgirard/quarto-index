@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-18 (M111 done and archived; KI275-KI277 closed, KI311 added; backlog row's started token removed; M108 row pruned; no lesson captured; validate green.)_
+_Last hygiene check: 2026-10-19 (M112 done and archived; KI63, KI102 closed, KI69 narrowed, KI312-KI313 added; backlog row's started token removed; M109 row pruned; no lesson captured; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,17 +11,16 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M112 | Three PDF index checks see a wrong index | review | — | normal | milestones/M112-pdf-checks-see-wrong-index.md |
+| M112 | Three PDF index checks see a wrong index | done | — | normal | milestones/archive/M112-pdf-checks-see-wrong-index.md |
 | M111 | Three suite checks tell apart what they now read alike | done | — | normal | milestones/archive/M111-suite-checks-tell-apart.md |
 | M110 | The site says which Quarto renders a Typst book | done | — | high | milestones/archive/M110-typst-book-pages.md |
-| M109 | The suite checks a Typst book on any Quarto that renders one | done | — | normal | milestones/archive/M109-typst-book-gate.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50 — started M112
+- The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - [parked] EPUB check dead code: delete the comparison in `epubcheck.cmd_same` that cannot fail, the unused `epubindex.section_rows`, and `cmd_absent`'s allowance parameter, which every caller leaves empty. Promote with any change to `tests/epubcheck.py` or `tests/epubindex.py` — added 2026-10-18 — M112 plan gate — KI92, KI94, KI95
 - [parked] Missing-log counts: make the inline log counts in `tests/run-tests.sh`, and `check_warning_names` and `check_warning_names_nth`, refuse a log that is not a file, as `check_warning_count` does. Promote on a render's log being renamed or removed — added 2026-10-18 — M112 plan gate — KI311
 - [parked] Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248

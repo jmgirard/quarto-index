@@ -1047,6 +1047,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   print, such as `description:`, has no label element on any page. Its entry
   prints the term with no locator, and nothing is reported. Observed on Quarto
   1.10.18 with `examples/front-matter.qmd`. — M098 T3
+- **KI318.** A mark in a float's caption has its label at the end of the
+  float's content, so where the document makes floats breakable
+  (`#show figure: set block(breakable: true)`) and a float splits, the
+  locator names the page where the content ends, not the caption's page. A
+  table whose caption printed on page 1 and which ran to page 4 printed `4`;
+  a picture on page 5 whose caption moved to page 6 printed `5`. Observed on
+  Quarto 1.10.19, where floats do not break unless the document says so. —
+  M115 T3
 - **KI290.** A mark inside a figure caption is unprobed where the document asks
   for a list of figures. Where that list copies the caption with its label,
   the locator names the first copy's page. — M098 T3

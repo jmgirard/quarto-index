@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M113: PDF index checks count whole printed lines
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** blocked   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -141,3 +141,5 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-19: re-audit: AC4 (reduced) — "first line" left open between topmost and reading order, and only reading order is satisfiable with AC5; fixed by "in reading order"; the reader also asked for a one-row-below plant (added to T3).
 - 2026-10-19: re-audit: AC4 (reduced) — satisfiable with AC5; asked that the row tolerance be named (moved to T3's text as y0 within 1pt, not into the criterion, since a second re-audit line ends re-entry) and noted "first line" could read as the page's first line (the written wording keeps "its first line, in reading order").
 - 2026-10-19: T3 amended code: `typstindex.read` exempts stop lines and lines within `SAME_ROW_PT` (1pt) of one; M098-AC5 (main) and the M098 T5/T9 book plants pass `A second placement marker` as a second stop; T3 self-test gains header-row, header-prose (one row below, still refused, naming only that line) and second-stop cases; green under 3.9.6 and 3.14.6, and both book reads green on run 3's capture.
+- 2026-10-19: T4 suite runs 4 and 5 (after the T3 amendment) each stopped on a Quarto 1.10.19 segfault ("Segmentation fault: 11" in Quarto's Deno), at M064-AC3 and M069-AC5, neither touched by this branch; every M113 check that ran before them passed. Three of five runs crashed this way at three different renders, while ten renders of examples/control.qmd in a row all passed; load average about 8.
+- 2026-10-19: status blocked: Quarto 1.10.19 crashes at random renders on this machine, so no full `tests/run-tests.sh --self-test` run completes and AC5 has no evidence. The blocker is the local Quarto; resume with `/milestone-implement M113`, which reruns T4's suite. T1-T3 are done and committed; T4's record edits are committed and its suite run is what remains.

@@ -183,7 +183,13 @@ def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
     Raises LookupError when `stop` is given and no page carries any of its
     lines: the caller asked for a bounded section and got an unbounded one, and
     passing that back as a short list would read every later index as part of
-    this one.
+    this one. Raises LookupError, naming the page and the lines, when the page
+    left out prints a line ahead of its first section-ending line: one above
+    it, or, where that line sits in the right column, one in the left column.
+    Such a line is read as a line of this index the read would drop. This
+    module already reads every line but the footer on an index's own pages as
+    an entry, so it assumes pages without a running header; on the page left
+    out, a header would be refused here by name rather than read.
 
     `footer_pattern` is the footer each page prints, as `_pages` reads it.
     """
@@ -213,6 +219,19 @@ def read(pdf_path, heading='Index', stop=(), footer_pattern=LOCATOR_ONLY):
                 f'no page after the {heading!r} heading in {pdf_path} carries '
                 f'any of the section-ending lines {sorted(wanted)!r}, so this '
                 f'read is unbounded and would run to the end of the document')
+        number, width, lines = pages[end]
+        middle = width / 2.0
+        column = lambda x: 0 if x < middle else 1  # noqa: E731
+        first_col, first_y = min((column(x), y) for x, y, text in lines
+                                 if text in wanted)
+        ahead = [text for x, y, text in lines
+                 if y < first_y or column(x) < first_col]
+        if ahead:
+            raise LookupError(
+                f'page {number} of {pdf_path} ends the {heading!r} read and '
+                f'is left out of it, but it prints {ahead!r} ahead of its '
+                f'section-ending line, so those lines would be dropped from '
+                f'the index; the index must end on an earlier page')
 
     collected = []
     for i, (number, width, lines) in enumerate(pages[start[0]:end], start[0]):

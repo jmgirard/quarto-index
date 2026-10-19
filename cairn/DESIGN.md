@@ -1160,10 +1160,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   claims a row form manifest 10 does not use. — M52 review F9
 - **KI97.** `epubindex.read` raises rather than reporting on a member it cannot
   decode or address. — M52 review F12
-- **KI102.** `pdfindex.read`'s `stop` bound drops the whole stop page, so an
-  index running onto it loses entries silently and an `absent` cell reads a
-  truncated entry identically to a dropped one, which is the distinction
-  M49-AC2 exists to make. — M49 review F6
 - **KI103.** `editorfixture.check_split` reads its titles from the snippet YAML
   while the row files come from a call site naming the headings separately, so
   nothing ties a row file to the title a failure message names and the plants
@@ -1311,6 +1307,17 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `nomarker_named` calls expect 2, the M068 count fails on 0, and the M062-AC1
   count follows a `check_warning_count` over the same log, which refuses a
   missing one. Latent. — M111 review
+- **KI312.** `tests/typstindex.py`'s own `read`, with `stop`, drops the page
+  carrying the section-ending line with no check of what that page prints
+  ahead of it, so an index running onto that page loses those lines
+  silently. M112 added that refusal to `tests/pdfindex.py`'s `read` only.
+  — M112 review
+- **KI313.** M02-AC2 and M02-AC3 count each manifest row as a substring of
+  the whitespace-flattened text from the `Index` heading to the end of the
+  document, so a row that also occurs inside other printed text there counts
+  twice and is reported as printed more than once on a correct index. The
+  reader refuses a manifest row inside another row, not inside other text.
+  Today every row counts once (2026-10-18 run). — M112 review
 
 ### The acceptance suite: coverage gaps
 
@@ -1371,11 +1378,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI62.** The pairing-report scope word a merged PDF book prints ("book") has
   no fixture exercising it: every book fixture's PDF render pairs its ranges and
   warns nothing. — M21 review round 5
-- **KI63.** `tests/m23probes.py`'s `_ind` tests only that its three expected
-  terms are present, and pins neither the entry total nor the `.ilg` line count,
-  so a defect that indexed the class-less `range=` span or gave the no-entry
-  mark an entry would leave both extents, the makeindex warning count and the
-  `(W)` count untouched and pass every AC2 check. — M23 review round 3 F7
 - **KI64.** The two range fixtures' opening marks fall on page 1 because the
   prose above them fits one page rather than by an explicit pagebreak, so a
   longer preamble in either silently moves the printed width the readers pin.
@@ -1392,10 +1394,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   silently. — M01 review P10
 - **KI68.** The demo's own makeindex acceptance is never asserted. — M01 review
   P11
-- **KI69.** The PDF cross-reference checks assert substring presence, not
-  counts, so a cross-reference printed twice would pass; the approach mirrors
-  M02's own AC6. M15 asserts counts for its contested keys and leaves the rest.
-  — M02 review, M15
+- **KI69.** Two PDF index checks in `tests/run-tests.sh` still assert
+  substring presence, not counts: AC6's term check over the demo PDF and the
+  M05-AC5 cross-reference check over the book PDF, so a term or a
+  cross-reference printed twice passes. — M02 review, M15; narrowed M112,
+  which made M02-AC2 and M02-AC3 count each row
 - **KI70.** Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both
   the no-leak sweep and the probe-coverage pin; for no-leak this is a false
   pass, not a false failure. The suite's `sort=` extraction is double-quote-only

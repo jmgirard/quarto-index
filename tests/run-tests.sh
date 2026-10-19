@@ -7280,30 +7280,63 @@ XREF_MARKS=$(( (0x7F - 0x21) * 2 + 16 * 4 + 2 + 2 + (0x7F - 0x21) * 2 + 16 + 1 +
 grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escaping.ilg" \
   || { grep -E 'accepted|rejected' "$WORK/xref/xref-escaping.ilg" >&2; fail "M02-AC3: makeindex did not accept all $XREF_MARKS cross-reference probe entries"; }
 
+# One reader for the two typeset cross-reference checks, M02-AC3 over the
+# escaping probe here and M02-AC2 over the demo below, called at both sites
+# and again by the self-test's planted-defect cases, so a plant runs the code
+# the run uses. Each manifest row must occur EXACTLY once in the index region:
+# a presence test passes a cross-reference printed twice. A row inside another
+# row would count twice on a correct index, so the reader refuses a manifest
+# with one before it counts.
+xref_typeset_check() {   # <label> <pdftotext output> <manifest> <missing sentence> <ok sentence> [<region dump size>]
+  python3 - "$@" <<'PY'
+import re, sys
+label, txt_path, rows_path, missing_said, ok_said = sys.argv[1:6]
+dump = int(sys.argv[6]) if len(sys.argv) > 6 else 0
+txt = open(txt_path, encoding='utf-8').read()
+rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
+norm = [' '.join(r.split()) for r in rows]
+inside = [(a, b) for a in norm for b in norm if a != b and a in b]
+if inside:
+    print(f'FAIL: {label}: the manifest has a row inside another row, which '
+          f'would count twice on a correct index: {inside}', file=sys.stderr)
+    sys.exit(1)
+m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
+if not m:
+    print(f'FAIL: {label}: no "Index" heading in pdftotext output',
+          file=sys.stderr)
+    sys.exit(1)
+# The printed index is set in two columns, so runs of layout spacing collapse
+# to one space.
+region = ' '.join(txt[m.end():].split())
+counts = {r: region.count(' '.join(r.split())) for r in rows}
+missing = [r for r in rows if counts[r] == 0]
+repeated = [r for r in rows if counts[r] > 1]
+if missing:
+    print(f'FAIL: {label}: {missing_said}:', file=sys.stderr)
+    for r in missing:
+        print(f'  <<{r}>>', file=sys.stderr)
+if repeated:
+    print(f'FAIL: {label}: cross-reference(s) printed more than once in the '
+          f'index section, where the fixture writes each once:',
+          file=sys.stderr)
+    for r in repeated:
+        print(f'  <<{r}>> x{counts[r]}', file=sys.stderr)
+if missing or repeated:
+    if dump:
+        print(f'--- index region ---\n{region[:dump]}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: all {len(rows)} {ok_said}')
+PY
+}
+
 # Typeset evidence from Quarto's own PDF: compiling proves the encap argument
 # READS, typesetting proves the character PRINTS in a cross-reference.
 pdftotext -layout "$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf" "$WORK/xref/xref-escaping.txt"
 printf '%s\n' "$XREF_PROBE_TEXT" > "$WORK/xrefprobe.txt"
-python3 - "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" <<'PY'
-import re, sys
-txt = open(sys.argv[1], encoding='utf-8').read()
-rows = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
-if not m:
-    print('FAIL: M02-AC3: the cross-reference probe produced no index section',
-          file=sys.stderr)
-    sys.exit(1)
-region = ' '.join(txt[m.end():].split())
-missing = [r for r in rows if ' '.join(r.split()) not in region]
-if missing:
-    print('FAIL: M02-AC3: special-handling character(s) did not typeset in '
-          'their cross-reference:', file=sys.stderr)
-    for r in missing:
-        print(f'  <<{r}>>', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M02-AC3: all {len(rows)} exact cross-reference strings typeset in '
-      f'the probe index')
-PY
+M02_AC3_MISSING='special-handling character(s) did not typeset in their cross-reference'
+M02_AC3_OK='exact cross-reference strings typeset once each in the probe index'
+xref_typeset_check M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" \
+  "$M02_AC3_MISSING" "$M02_AC3_OK" || exit 1
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
@@ -7339,29 +7372,37 @@ PY
 # ---------------------------------------------------------------------------
 section 'M02-AC2 — every cross-reference reaches the compiled index as typeset text.'
 printf '%s\n' "$XREF_PDF_TEXT" > "$WORK/xrefpdf.txt"
-python3 - "$WORK/demo.txt" "$WORK/xrefpdf.txt" <<'PY'
-import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-rows = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: M02-AC2: no "Index" heading in pdftotext output',
-          file=sys.stderr)
-    sys.exit(1)
-# Same whitespace normalization the AC6 check uses: the printed index is set in
-# two columns, so runs of layout spacing collapse to one space.
-region = ' '.join(text[m.end():].split())
-missing = [r for r in rows if ' '.join(r.split()) not in region]
-if missing:
-    print('FAIL: M02-AC2: cross-reference(s) missing from the PDF index '
-          'section:', file=sys.stderr)
-    for r in missing:
-        print(f'  <<{r}>>', file=sys.stderr)
-    print(f'--- index region ---\n{region[:1500]}', file=sys.stderr)
-    sys.exit(1)
-print(f'ok   M02-AC2: all {len(rows)} cross-references typeset in the PDF '
-      f'index, source entry and text together')
-PY
+M02_AC2_MISSING='cross-reference(s) missing from the PDF index section'
+M02_AC2_OK='cross-references typeset once each in the PDF index, source entry and text together'
+xref_typeset_check M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" \
+  "$M02_AC2_MISSING" "$M02_AC2_OK" 1500 || exit 1
+
+# M112 T1: the two typeset checks above count each row rather than test for
+# it, so a cross-reference printed twice is red. Each case writes one row's
+# text a second time into a copy of the check's own captured text, and runs
+# the same reader on it.
+if [ "${1:-}" = "--self-test" ]; then
+  M112W="$WORK/m112-xref"
+  rm -rf "$M112W"; mkdir -p "$M112W"
+  m112_twice() {   # <label> <captured text> <manifest> <missing> <ok>
+    local label="$1" txt="$2" rows="$3" row out
+    row=$(awk 'NF { print; exit }' "$rows")
+    [ -n "$row" ] || fail "M112 T1 self-test: the $label manifest has no row to plant"
+    xref_typeset_check "$label" "$txt" "$rows" "$4" "$5" > /dev/null \
+      || fail "M112 T1 self-test: $label is red on its own captured text, so a red below would not be the planted row"
+    { cat "$txt"; printf '%s\n' "$row"; } > "$M112W/$label.txt"
+    if out=$(xref_typeset_check "$label" "$M112W/$label.txt" "$rows" "$4" "$5" 2>&1); then
+      fail "M112 T1 self-test: $label passed its captured text with <<$row>> printed a second time"
+    fi
+    case "$out" in
+      *"printed more than once"*"<<$row>> x2"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M112 T1 self-test: $label failed on a row printed twice, but not by naming that row" ;;
+    esac
+  }
+  m112_twice M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" "$M02_AC3_MISSING" "$M02_AC3_OK"
+  m112_twice M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" "$M02_AC2_MISSING" "$M02_AC2_OK"
+  pass "M112 T1 self-test: M02-AC3 and M02-AC2 each pass their captured text and are red, naming the row, on a copy with one cross-reference printed a second time"
+fi
 
 # ---------------------------------------------------------------------------
 # M05 — book projects. A book renders each chapter in its own Pandoc process,
@@ -17618,6 +17659,41 @@ filtersrc.sources()" >/dev/null 2>&1; then
     m23_html "$M23W/twoloc.html"
   pass "M23 self-test: the nested-mark readers each fail on a planted defect of their own kind — a lost pairing, the two ranges swapping extents, a narrowed range, the range-free inner mark folded into one, a transcript warning, an HTML locator at neither mark, and a doubled one"
 
+  # M112 T2: the .ind reader holds the compiled index to the three entries the
+  # fixture writes and makeindex's accepted count to the marks it writes, so
+  # an entry the fixture never indexes, or a mark filed under a term already
+  # printed, is red. Each plant asserts its own clause's message, not merely a
+  # failure, since the clauses above fail on other plants too.
+  m112_ind_red() {   # <label> <.ind> <.ilg> <message the failure must carry>
+    local out
+    if out=$(m23_ind "$2" "$3" 2>&1); then
+      fail "M112 T2 self-test: the .ind reader passed $1"
+    fi
+    case "$out" in
+      *"$4"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M112 T2 self-test: the .ind reader failed on $1, but not by its own clause (<<$4>>)" ;;
+    esac
+  }
+  probe_plantpl "$M23W/clean.ind" "$M23W/extra.ind" \
+    's/(\\item pooka,)/\\item quokka, \\hyperpage{2}\n\n  $1/'
+  m112_ind_red "an entry the fixture never indexes" "$M23W/extra.ind" "$M23W/clean.ilg" \
+    "has an entry for ['quokka'], which the fixture never indexes"
+  # The mark count is the module's own `MARKS`, read rather than re-typed, so
+  # a change to it moves these plants with it.
+  M112_MARKS=$(cd tests && python3 -c 'import m23probes; print(m23probes.MARKS)' 2>/dev/null)
+  case "$M112_MARKS" in
+    ''|*[!0-9]*) fail "M112 T2 self-test: could not read MARKS from tests/m23probes.py (<<$M112_MARKS>>)" ;;
+  esac
+  probe_plant "$M23W/clean.ilg" "$M23W/accepted.ilg" \
+    -e "s/($M112_MARKS entries accepted, 0 rejected)/($((M112_MARKS + 1)) entries accepted, 0 rejected)/"
+  m112_ind_red "one accepted entry more than the fixture's marks" "$M23W/clean.ind" "$M23W/accepted.ilg" \
+    "makeindex accepted $((M112_MARKS + 1)) entries and rejected 0; the fixture writes $M112_MARKS index marks"
+  probe_plant "$M23W/clean.ilg" "$M23W/rejected.ilg" \
+    -e "s/($M112_MARKS entries accepted, 0 rejected)/($M112_MARKS entries accepted, 1 rejected)/"
+  m112_ind_red "a rejected entry beside the fixture's marks" "$M23W/clean.ind" "$M23W/rejected.ilg" \
+    "makeindex accepted $M112_MARKS entries and rejected 1; the fixture writes $M112_MARKS index marks"
+  pass "M112 T2 self-test: the .ind reader is red on an entry the fixture never indexes, on one accepted entry more than the fixture's marks, and on a rejected entry, each naming its own clause"
+
   # --- M23: the defect-injection battery. Task work, not AC2's promise.
   #
   #     AC2 says a range verdict is bound to its mark by document position.
@@ -19602,6 +19678,58 @@ if [ "${1:-}" = "--self-test" ]; then
       "$M49W/nopatterns.txt" "$WORK/m49-reports.txt" M49-probe
 
   pass "M49 T9 self-test: each clause of tests/namedpdf.py is planted on its own and shown red, while the same readers pass unplanted on this run's own capture and log — an entry stated and not printed, one printed and not stated, an index heading the PDF has no section for, a section-ending line it never prints (which would read the second index as part of the first), a manifest whose entry rows belong to no section, a manifest naming no section at all, a cell stating the wrong side of present/absent, a cell manifest of one kind only, a report drawn and not stated, one stated and not drawn, and a pattern file that would read no report at all"
+
+  # M112 T3: a bounded `pdfindex.read` leaves out the page carrying the
+  # section-ending line, so a line of the index printed above that line on
+  # the same page would be dropped. The one rendered variant tried, the
+  # named-indexes fixture with its page break removed, puts the next heading
+  # on the index's own page, which the read refuses as unbounded. So the cases
+  # feed `read` the pages `_pages` yields, as (page, width, [(x, y, text)]):
+  # an index line above the section-ending line on the page left out; an
+  # index line in the left column below a section-ending line set in the
+  # right one; and a control with neither. The control passing shows each red
+  # is its planted line.
+  python3 - <<'PY' || fail "M112 T3 self-test: the bounded read's stranded-line refusal is not shown (the report is above)"
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+
+STOP = 'Below the first index'
+
+def pages(case):
+    second = {
+        'control': [(72.0, 120.0, STOP)],
+        'above': [(72.0, 80.0, 'zebra, 3'), (72.0, 120.0, STOP)],
+        'left-column': [(320.0, 80.0, STOP), (72.0, 120.0, 'zebra, 3')],
+    }[case]
+    return [
+        (1, 612.0, [(72.0, 60.0, 'Index'), (72.0, 100.0, 'aardvark, 1'),
+                    (320.0, 100.0, 'yak, 2')]),
+        (2, 612.0, second),
+    ]
+
+for case in ('control', 'above', 'left-column'):
+    pdfindex._pages = lambda _path, _footer, c=case: iter(pages(c))
+    try:
+        entries = pdfindex.read('planted.pdf', 'Index', (STOP,))
+    except LookupError as error:
+        if case == 'control':
+            sys.exit(f'FAIL: M112 T3 self-test: the control, with nothing '
+                     f'ahead of the section-ending line, was refused: {error}')
+        said = str(error)
+        if 'page 2 of planted.pdf' not in said or "['zebra, 3']" not in said:
+            sys.exit(f'FAIL: M112 T3 self-test ({case}): the stranded line was '
+                     f'refused, but not by naming page 2 and the line: {said}')
+        continue
+    if case != 'control':
+        sys.exit(f'FAIL: M112 T3 self-test ({case}): the bounded read returned '
+                 f'{[e.text for e in entries]} and dropped the line printed '
+                 f'ahead of the section-ending line on the page it left out')
+    if [e.text for e in entries] != ['aardvark, 1', 'yak, 2']:
+        sys.exit(f'FAIL: M112 T3 self-test: the control read '
+                 f'{[e.text for e in entries]}, not its two entries')
+PY
+  pass "M112 T3 self-test: a bounded PDF index read is red, naming the page and the line, when the page it leaves out prints an index line above its section-ending line or in the left column below one set in the right, and reads the same pages without that line in full"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares three indexes

@@ -516,8 +516,9 @@ def read(pdf_path, heading, stop=(), footer_pattern=None):
 
     With `stop`, the read ends at the first later page carrying a line that
     starts with any of those strings, and drops that page, as
-    tests/pdfindex.py's bounded read does; a stop no later page carries raises
-    LookupError. A start rather than a whole line, because the page after an
+    tests/pdfindex.py's bounded read does, but without that read's refusal of
+    a page printing a line ahead of its section-ending line; a stop no later
+    page carries raises LookupError. A start rather than a whole line, because the page after an
     index in a Typst book opens with a running header that names the chapter
     and then the section. Without `stop` the read runs to the end of the
     document. `footer_pattern` names the pages' footer, as `_pages` reads it.

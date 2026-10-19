@@ -2078,7 +2078,7 @@ check_warning_count() {
   # A log that is not there is not a log with no warnings in it. The `|| true`
   # below also swallows grep's exit 2 on a missing file, so without this line a
   # zero count over a log nothing wrote passed: the render, or the manifest row
-  # naming it, could go and the zero control stay green (KI277; M111).
+  # naming it, could go and the zero control stay green (M111).
   [ -f "$logfile" ] \
     || fail "$label: the log $logfile does not exist, so no count of <<$pattern>> can be read from it (want $want)"
   # Occurrences, not matching lines: two warnings emitted onto one line would
@@ -2352,7 +2352,7 @@ check_warning_count "$WORK/demo-latex.log" "$WARN_BOTH" 1 "M02-AC5"
 pass "M02-AC5: case (b) warned exactly once in the demo render"
 
 if [ "${1:-}" = "--self-test" ]; then
-  # M111 T1 (KI277): `check_warning_count` over a log that does not exist is
+  # M111 T1: `check_warning_count` over a log that does not exist is
   # red for a zero count and for a positive one, and red for that reason: the
   # positive count was red before M111 too, but as a count of 0 against 1. The
   # control is the demo log just counted above. `fail` exits, so each call
@@ -4281,7 +4281,15 @@ section 'M079-AC1 — an author-written id never leaves two elements of one page
 # THIS check a second time, over a render made with a mutated filter: a plant
 # that reddened a smaller stand-in would say nothing about the check that
 # guards this behavior on every run.
+#
+# The two refusal wordings `html.lua` writes (`assign_anchors`) differ in one
+# clause each, held here once and read by the check below through the
+# environment, so the M111 T4 plant's expectation and the check's own needle
+# are the same string (M111 T3).
+export M111_XREF_CLAUSE='this mark files a cross-reference rather than a locator'
+export M111_LOCATOR_CLAUSE='its index locator links there'
 cat > "$WORK/id-collision-ids.py" <<'PY'
+import os
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
@@ -4596,6 +4604,13 @@ for term, wrote in sorted(KEPT_XREF.items()):
 # term it prints, and none for a mark that kept its own. The set is compared
 # whole rather than counted: a run reporting seven times about one mark counts
 # the same as one reporting about each.
+# And which of the two wordings each report carries: a cross-reference mark has
+# no locator to move, so telling its author one moved is false, and the text
+# the two wordings share cannot tell them apart (M111 T3). A mark of
+# CONTESTED_XREF takes the cross-reference clause and not the locator one;
+# every other yielding mark the reverse.
+XREF_CLAUSE = os.environ['M111_XREF_CLAUSE']
+LOCATOR_CLAUSE = os.environ['M111_LOCATOR_CLAUSE']
 lines = [line for line in open(log, encoding='utf-8').read().splitlines()
          if 'carries the id' in line and 'which another element of this page' in line]
 reported = set()
@@ -4603,6 +4618,15 @@ for line in lines:
     for term, wrote in REFUSED.items():
         if ('term "%s"' % term) in line and ('"%s"' % wrote) in line:
             reported.add(term)
+            want, other = ((XREF_CLAUSE, LOCATOR_CLAUSE)
+                           if term in CONTESTED_XREF
+                           else (LOCATOR_CLAUSE, XREF_CLAUSE))
+            if want not in line:
+                errs.append('the refusal report naming %r lacks <<%s>>'
+                            % (term, want))
+            if other in line:
+                errs.append('the refusal report naming %r carries <<%s>>'
+                            % (term, other))
     for term, wrote in KEPT_ALL.items():
         if ('term "%s"' % term) in line:
             errs.append('a refusal report names %r, whose author id nothing '
@@ -4622,7 +4646,8 @@ print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
       'contested author id(s) stayed on the element that kept them with the '
       'yielding mark anchored on a minted id of its own, %d uncontested one(s) '
       'are still their mark\'s anchor, and each yield is reported once by term '
-      'and id; the %d cross-reference mark(s) among them file no locator'
+      'and id in the wording for its kind of mark; the %d cross-reference '
+      'mark(s) among them file no locator'
       % (len(ids), len(REFUSED), len(KEPT_ALL), len(NO_LOCATOR)))
 PY
 python3 "$WORK/id-collision-ids.py" \
@@ -4632,10 +4657,10 @@ python3 "$WORK/id-collision-ids.py" \
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M081 T4 and M082 T4 — a planted defect per repair, the first plants over
-  # the id census. Ten plants run through the helper below: the six this
-  # comment explains, M084 T6's over the census's CDATA read, and M090's three
-  # over the cross-reference id rules, each of the last four explained where it
-  # is called.
+  # the id census. Eleven plants run through the helper below: the six this
+  # comment explains, M084 T6's over the census's CDATA read, M090's three
+  # over the cross-reference id rules, and M111 T4's over the refusal wording,
+  # each of the last five explained where it is called.
   #
   # One substitution per repair, each undoing that repair alone: the census
   # reads a construct a browser makes a comment as markup again, it ends a
@@ -4665,9 +4690,12 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # The fifth argument names the module the substitution is aimed at, under
   # `_extensions/index/modules/`; left off, it is `html.lua`, where the census
-  # lives. M090's plants undo rules written in `passes.lua` as well.
-  m081_census_plant() {   # <slug> <label> <expected substring> <perl substitution> [module]
-    local slug="$1" label="$2" want="$3" sub="$4" module="${5:-html.lua}"
+  # lives. M090's plants undo rules written in `passes.lua` as well. The sixth,
+  # when given, is a line the check must NOT print under this plant: one
+  # another plant's defect prints and this one's does not, so the plant's red
+  # is told from that other defect's (M111 T5).
+  m081_census_plant() {   # <slug> <label> <expected substring> <perl substitution> [module] [forbidden substring]
+    local slug="$1" label="$2" want="$3" sub="$4" module="${5:-html.lua}" unwanted="${6:-}"
     local dir="$M081W/$slug"
     mkdir -p "$dir"
     cp examples/id-collision.qmd examples/dot.png "$dir/"
@@ -4698,6 +4726,14 @@ if [ "${1:-}" = "--self-test" ]; then
       || { printf '%s\n' "$out" >&2; fail "$label: the check passed a page rendered with the repair undone, so its green says nothing about that repair"; }
     printf '%s' "$out" | grep -qF -- "$want" \
       || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the mutated copy, but not with <<$want>> — that failure is not this check catching this defect"; }
+    if [ -n "$unwanted" ]; then
+      if printf '%s' "$out" | grep -qF -- "$unwanted"; then
+        printf '%s\n' "$out" >&2
+        fail "$label: the check also printed <<$unwanted>>, which another plant's defect prints and this one's does not, so this red cannot be told from that defect's"
+      fi
+      pass "$label: the check is red on <<$want>> and does not print <<$unwanted>>"
+      return
+    fi
     pass "$label: the check is red on <<$want>>"
   }
 
@@ -4773,23 +4809,38 @@ if [ "${1:-}" = "--self-test" ]; then
   # control. The T2 and T4 lines are printed by no other plant here; the T3
   # line is not so placed, because untagging `phi` (T2) also leaves `chi`
   # yielding `twin-xref`, and every line the check prints under T3 it prints
-  # under T2 as well (observed 2026-09-10, M090 review F1). T3's red holds the
-  # check to that rule's case; it does not tell T3's defect from T2's.
+  # under T2 as well (observed 2026-09-10, M090 review F1). So the T3 plant
+  # also holds the check to NOT printing T2's own line: T2 untags every
+  # cross-reference mark, `rho` among them, while T3 touches only a
+  # cross-reference mark sharing its name with a locator mark, and `rho`
+  # shares its name with a div (M111 T5). The line is held once, here.
+  M090_T2_LINE="the contested id 'xref-dup' is still on the span printing 'rho'"
   m081_census_plant xref-untagged \
     'M090 T2 self-test: a cross-reference mark no longer tagged to contest its author-written id' \
-    "the contested id 'xref-dup' is still on the span printing 'rho'" \
+    "$M090_T2_LINE" \
     's{local contestable_xref = #xrefs > 0 and not page_only}{local contestable_xref = false and #xrefs > 0 and not page_only}' \
     passes.lua
 
   m081_census_plant outrank-dropped \
     'M090 T3 self-test: a locator mark no longer outranking a cross-reference mark for a shared name' \
     "the locator for 'chi' names" \
-    's{if standing == nil or \(anchoring and not standing\.anchoring\) then}{if standing == nil then}'
+    's{if standing == nil or \(anchoring and not standing\.anchoring\) then}{if standing == nil then}' \
+    html.lua \
+    "$M090_T2_LINE"
 
   m081_census_plant xref-always-yields \
     'M090 T4 self-test: a cross-reference mark giving up its author-written id when nothing contests it' \
     "the uncontested id 'xref-solo' is on 'nothing', not on the span printing 'upsilon'" \
     's{if span\.identifier ~= "" and keeper\[span\.identifier\] ~= pending then}{if span.identifier ~= "" and (keeper[span.identifier] ~= pending or (record and record.anchorless)) then}'
+
+  # M111 T4. `assign_anchors` picks the cross-reference wording for a
+  # mark that files no locator; with that test made false, every yielding
+  # cross-reference mark is told its index locator moved. The expected line is
+  # built from the clause the check itself reads, held once above the check.
+  m081_census_plant xref-locator-wording \
+    'M111 T4 self-test: a yielding cross-reference mark reported in the locator wording' \
+    "the refusal report naming 'rho' lacks <<$M111_XREF_CLAUSE>>" \
+    's{if record and record\.anchorless then}{if false and record and record.anchorless then}'
 fi
 
 # ---------------------------------------------------------------------------

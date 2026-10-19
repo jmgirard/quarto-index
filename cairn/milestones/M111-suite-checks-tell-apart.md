@@ -150,6 +150,7 @@ the line the T2 plant expects (KI276). The three entries are removed from
 - 2026-10-18: first full `--self-test` run stopped at check 142 on PyYAML missing: `python3` now resolves to Python 3.14.6 in `/usr/local/bin`, without PyYAML; `/usr/bin/python3` (3.9.6) has it. The M111 T1, M090 T3 and M111 T4 self-test lines had already passed. Not an M111 defect; the user's environment was left unchanged.
 - 2026-10-18: T2/T7: `bash -n` clean; `PATH="/usr/bin:$PATH" tests/run-tests.sh --self-test` green, "All checks passed (1767 checks)", 0 FAIL, 9 skips (D-065: local Quarto 1.10.19, pinned 1.10.18; none in the M079-AC1 leg or its plants). No call over a never-written log, so T2 repaired no call site. T1-T7 ticked.
 - 2026-10-18: claim audit: not owed — internal tier.
+- 2026-10-18: review pass 1 in progress: four reviewers reported, fresh full run in flight; KI311 (three inline greps outside the helper that read a missing log as 0) added to `cairn/DESIGN.md` per Scope Out. Fix-now edits to `tests/run-tests.sh` wait for the run to end (M073 lesson).
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

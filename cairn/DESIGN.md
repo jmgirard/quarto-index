@@ -1303,6 +1303,14 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `a/later chapter.html` beside `a/later x.html` — although neither can be read
   inside the other in the sweep's output. The 2026-09-10 capture root holds no
   such pair. — M086 review O4
+- **KI311.** Three counts in `tests/run-tests.sh` grep a log inline rather
+  than through `check_warning_count`, with `|| true` swallowing grep's exit 2
+  on a missing file, so each reads a log that is not there as 0 occurrences:
+  `nomarker_named`, the M068 T5 inverted-test count over `m068-inverted.log`,
+  and the M062-AC1 count naming `five.qmd`. None passes on that today: both
+  `nomarker_named` calls expect 2, the M068 count fails on 0, and the M062-AC1
+  count follows a `check_warning_count` over the same log, which refuses a
+  missing one. Latent. — M111 review
 
 ### The acceptance suite: coverage gaps
 

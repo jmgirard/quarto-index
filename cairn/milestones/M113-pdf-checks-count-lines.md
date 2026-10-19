@@ -42,17 +42,17 @@ three entries are removed from `cairn/DESIGN.md`.
 ## Acceptance criteria
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
-- [ ] AC1: The M02-AC2 and M02-AC3 typeset checks in `tests/run-tests.sh`
+- [x] AC1: The M02-AC2 and M02-AC3 typeset checks in `tests/run-tests.sh`
       count a manifest row as the printed index lines, read by
       `tests/pdfindex.py`'s `read`, whose text with whitespace collapsed
       equals the row, and fail naming the row when that count is not 1. A
       row's text occurring inside a longer printed line adds nothing to its
       count.
-- [ ] AC2: AC6's term check in `tests/run-tests.sh` counts a manifest term
+- [x] AC2: AC6's term check in `tests/run-tests.sh` counts a manifest term
       as the printed index lines, read by `tests/pdfindex.py`'s `read`,
       whose `term` (the line with its locators removed) equals it, and fails
       naming the term when that count is not 1.
-- [ ] AC3: The M05-AC5 check reads the book PDF's `Index of Subjects`
+- [x] AC3: The M05-AC5 check reads the book PDF's `Index of Subjects`
       through `tests/pdfindex.py`'s `read`, bounded by
       `stop=('Index of People',)`. It counts each term row as the lines
       that read returns whose `term` equals it, and each cross-reference row
@@ -61,7 +61,7 @@ three entries are removed from `cairn/DESIGN.md`.
       count is not 1, and fails naming the term when the pages its one
       line's locators cover, a range counted as every page in it, differ
       from the row's stated page count.
-- [ ] AC4: `tests/typstindex.py`'s `read`, given `stop`, raises LookupError
+- [x] AC4: `tests/typstindex.py`'s `read`, given `stop`, raises LookupError
       naming the page and the lines when the page it leaves out prints a line
       ahead of its first line, in reading order (left column before right,
       each top to bottom), that starts with a stop string: one above that
@@ -69,7 +69,7 @@ three entries are removed from `cairn/DESIGN.md`.
       column. A line that itself starts with a stop string, or that is
       printed on the same row as one, as a running header's page number is,
       is not ahead. Today such lines are dropped with no message.
-- [ ] AC5: A run of `tests/run-tests.sh --self-test` on the fixtures'
+- [x] AC5: A run of `tests/run-tests.sh --self-test` on the fixtures'
       current output passes every check it runs, M02-AC2, M02-AC3, AC6,
       M05-AC5 and every `tests/typstindex.py` reading among them.
 
@@ -147,3 +147,13 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-19: T4 done: suite run 6, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` under Python 3.9.6, ended "All checks passed (1773 checks)", exit 0, at 7774a1a; no Quarto segfault this run.
 - 2026-10-19: claim audit: not owed — internal tier.
 - 2026-10-19: implement complete; status review.
+
+## Review
+
+Evidence: suite run 6 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Python 3.9.6, Quarto 1.10.19) at 7774a1a, whose tree outside `cairn/` equals HEAD's; plus fresh reruns, at review, of each repaired check extracted from HEAD's `tests/run-tests.sh` over run 6's captures.
+
+- AC1: run 6 printed `ok M02-AC3: all 66 exact cross-reference strings typeset once each` and `ok M02-AC2: all 7 cross-references typeset once each`, and the M112 T1/M113 T1 self-test line. Fresh rerun of `xref_typeset_check` (reads `pdfindex.read`, counts by `line_counts`): both green; `cats, see Felines` planted once more is red with `<<cats, see Felines>> x2`; `Planted cats, see Felines, longer` planted is green.
+- AC2: run 6 printed `ok AC6: PDF index heading found, 10 derived terms printed once each` and the M113 T2 AC6 self-test line. Fresh rerun of `pdf_term_check` (compares `Entry.term` through `line_counts(..., field='term')`): green; `pandoc, 9` planted is red with `<<pandoc>> x2`.
+- AC3: run 6 printed `ok M05-AC5: the book PDF prints one index carrying all 10 derived terms once each with their derived locator counts, and all 2 cross-references once each` and the M113 T2 M05-AC5 self-test line. Fresh rerun of `book_pdf_check` (bounded `pdfindex.read`, `stop=('Index of People',)`, which returns the prose lines too): green; `Alpha, 9` planted is red with `'Alpha' is printed on 2 line(s)`; `Delta, see Alpha` planted is red with `printed on 2 line(s)`; a manifest stating Alpha at 0 pages is red with `'Alpha' is followed by 1 page(s) in the printed index, expected 0`.
+- AC4: run 6 printed the M113 T3 self-test line (stranded line above, left column below a right-column stop, and one row below a right-column header each red naming page 2 and only that line; control, opening header, split header row and second-stop pages green) and `ok M098-AC5 (main): the 25 lines under 'Index of Subjects' are the manifest's`. Fresh rerun: the T3 self-test green; M098-AC5 (main) green on the book capture; the same read with `Chapter 4.` alone is refused naming page 14 and its prose lines, the first stop line in reading order being the right-column header.
+- AC5: run 6 ended `All checks passed (1773 checks).`, exit 0, with every `tests/typstindex.py` reading among them green. Runs 2, 4 and 5 stopped on Quarto segfaults at renders this branch does not touch (work log); run 6 had none.

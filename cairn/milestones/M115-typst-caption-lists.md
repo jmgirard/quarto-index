@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -19,7 +19,7 @@ In a document rendered to Typst, a mark in the caption of a figure, a table or a
 (`_extensions/index/modules/typst.lua:269`) moves each label that pass writes
 inside a float's caption, and a caption mark's author id, into the float's own
 content, so a Typst `outline` copy of the caption carries
-neither. A new fixture `examples/typst-caption-lists.qmd`, its hand-derived
+neither, for a float whose content is one block. A new fixture `examples/typst-caption-lists.qmd`, its hand-derived
 manifest `tests/typst-caption-lists.tsv`, a suite section in
 `tests/run-tests.sh`, and the fixture's step in `.github/workflows/versions.yml`.
 Docs: `site/typst.qmd`, `CHANGELOG.md`, and `cairn/DESIGN.md`'s Typst
@@ -31,7 +31,10 @@ docs show the raw `outline` call instead. Subfigure captions, callout titles and
 custom float kinds stay unprobed: T5 narrows KI290 to them. A float an author
 makes breakable, whose content and caption can print on different pages: T3
 probes it and writes a Known issues entry if its caption mark names another
-page.
+page. A float whose content is several blocks, Quarto's layout cells among
+them, keeps its caption labels, because changing that content changed Quarto's
+layout twice (review returns 2 and 3): KI290 and the candidate row "Laid-out
+float caption marks".
 
 ## Acceptance criteria
 
@@ -47,9 +50,9 @@ page.
 - AC1 → T1, T2, T6, T7
 - AC2 → T1, T2, T4
 - AC3 → T1, T2, T7
-- AC4 → T6, T7, T8
+- AC4 → T6, T7, T8, T9
 - AC5 → T4, T7
-- AC6 → T5, T7
+- AC6 → T5, T7, T9
 
 ## Tasks
 
@@ -61,6 +64,7 @@ page.
 - [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
 - [x] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
 - [x] T8: Review return 2 (work log): a laid-out float keeps its cells, the labels joining a paragraph cell or staying in the caption, with a fixture red on the current code first; the Review section's pass-2 fix-now items, the plants committed to the self-test; then the suite, a dispatched matrix run, and the review hand-back.
+- [ ] T9: The narrowing chosen at the thrash stop (work log): `float_labels` leaves a float whose content is several blocks untouched, with a laid-out image case whose two images must print at one size, red on the current code first; the pass-3 fix-now items (docs and KI290 exceptions, comments, the CHANGELOG wording, the layout fixture's wording, plants per clause for `tests/typstlists.py`); the candidate row "Laid-out float caption marks"; then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -105,6 +109,9 @@ page.
 - 2026-10-19: T8: juniper's id is now `juniper-märk`, so the fixture runs the `label("…")` branch; the render compiles and the index reads green on 1.10.19. Self-test plants committed in the M115 section: link, lof, figure (the index red at alder), float (red at birch) and cells; the figure plant takes the fixture's link out so the planted copy builds. Comments on `id_inline` and the no-id fallback corrected; `site/typst.qmd` and `CHANGELOG.md` name the exceptions; DESIGN.md's Typst paragraph and KI290 rewritten; `site/tests.qmd` and `versions.yml` reflowed; `site/gallery.yml` lists the new fixture as not shown.
 - 2026-10-19: T8 done: dispatched `versions.yml` run 39340658487 at db2cdca green on every job (the caption-lists render and index reading on floor, pinned and release, which compiles `label("juniper-märk")` on Typst 0.11, and the lists reading on the pinned leg); suite run 6 at db2cdca (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1801, 10 skip lines, M115-AC2 among them; the five M115 self-test plants each red on its named failure. Status review.
 - 2026-10-19: review return 3: diff-bug #1 (pass 3) — joining the labels to an image Para in a laid-out float keeps the author's image width Quarto otherwise drops (an image about 260 times larger, index right). This is the third defect return, so the thrash rule's trigger (a) holds, and trigger (b) holds too: returns 2 and 3 are one shape, a change to a laid-out float's content that changes Quarto's layout. No retry is queued; the disposition is the user's, at the chip. The plan's recorded alternatives are a Typst-side choice among the label's copies and a label block after the float.
+- 2026-10-19: thrash stop chip: the user chose "Narrow it" over park, a re-plan of the approach, and dropping M115.
+- 2026-10-19: substantive amendment: Scope In now moves caption labels only "for a float whose content is one block"; Scope Out adds that a float whose content is several blocks, Quarto's layout cells among them, keeps its caption labels, sent to KI290 and the candidate row "Laid-out float caption marks" (split from M115). The acceptance criteria are unchanged: none names a laid-out float. The user approved this narrowing at the chip above.
+- 2026-10-19: added task T9 for the narrowing and the pass-3 fix-now items; Coverage gives T9 to AC4 and AC6 (minor amendment). Status in-progress.
 
 ## Decisions
 

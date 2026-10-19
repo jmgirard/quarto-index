@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M115 | Typst caption marks and a list of figures | review | — | high | milestones/M115-typst-caption-lists.md |
+| M115 | Typst caption marks and a list of figures | in-progress | — | high | milestones/M115-typst-caption-lists.md |
 | M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
 | M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |
 | M112 | Three PDF index checks see a wrong index | done | — | normal | milestones/archive/M112-pdf-checks-see-wrong-index.md |
@@ -39,6 +39,7 @@ _Released 0.4.0 2026-09-11._
 - [parked] Hold the Typst pages' Quarto facts to their sources: no check ties their "tested on Quarto 1.10.18" to the `pages.yml` pin, and the warning `site/typst.qmd` quotes is a second copy of the suite's `TYPST_BOOK_REFUSAL`. Promote on the pin moving or either string changing — added 2026-10-10 — M110 review
 - [parked] Tidy the M105 cell-guard self-test: derive the module list its red runs assert instead of pinning four names, put the commented-out-opener comment over its own plant, and rewrap the `tests/stateprobe.py` docstring. Promote on a new module gaining a reset, which turns that self-test red — added 2026-10-01 — M105 review W4, W8, W12
 - [parked] Typst numbering pattern's first symbol: Test that the first counting symbol of a Typst page numbering pattern sets a locator's kind: a pattern with two symbols of different kinds, where taking the last symbol changes an entry's order. Promote on any change to `qi-index-rank` or `qi-index-symbols` — added 2026-09-14 — M100 review round 2 F1
+- [parked] Laid-out float caption marks: split from M115; in Typst, file a caption mark of a float whose content is several blocks (Quarto's layout cells) at its caption's page under a list, without changing the layout. Promote on a placement shown not to move Quarto's cells or image widths — added 2026-10-19 — M115 review — KI290
 - [parked] Breakable float caption marks: in a Typst document that makes floats breakable, file a caption mark at its caption's page, not where the float's content ends. Promote on an author reporting such a locator — added 2026-10-19 — M115 review — KI318
 - [parked] Id census inside svg or math: close the last id-census shape M081 and M082 leave in `note_raw`, a `style` or `script` inside `svg` or `math`. Promote on evidence checked against a browser, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - [parked] Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254

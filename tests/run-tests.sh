@@ -17678,11 +17678,21 @@ filtersrc.sources()" >/dev/null 2>&1; then
     's/(\\item pooka,)/\\item quokka, \\hyperpage{2}\n\n  $1/'
   m112_ind_red "an entry the fixture never indexes" "$M23W/extra.ind" "$M23W/clean.ilg" \
     "has an entry for ['quokka'], which the fixture never indexes"
+  # The mark count is the module's own `MARKS`, read rather than re-typed, so
+  # a change to it moves these plants with it.
+  M112_MARKS=$(cd tests && python3 -c 'import m23probes; print(m23probes.MARKS)' 2>/dev/null)
+  case "$M112_MARKS" in
+    ''|*[!0-9]*) fail "M112 T2 self-test: could not read MARKS from tests/m23probes.py (<<$M112_MARKS>>)" ;;
+  esac
   probe_plant "$M23W/clean.ilg" "$M23W/accepted.ilg" \
-    -e 's/(6 entries accepted, 0 rejected)/(7 entries accepted, 0 rejected)/'
-  m112_ind_red "a seventh accepted entry" "$M23W/clean.ind" "$M23W/accepted.ilg" \
-    "makeindex accepted 7 entries; the fixture writes 6 index marks"
-  pass "M112 T2 self-test: the .ind reader is red on an entry the fixture never indexes and on a seventh accepted entry, each naming its own clause"
+    -e "s/($M112_MARKS entries accepted, 0 rejected)/($((M112_MARKS + 1)) entries accepted, 0 rejected)/"
+  m112_ind_red "one accepted entry more than the fixture's marks" "$M23W/clean.ind" "$M23W/accepted.ilg" \
+    "makeindex accepted $((M112_MARKS + 1)) entries and rejected 0; the fixture writes $M112_MARKS index marks"
+  probe_plant "$M23W/clean.ilg" "$M23W/rejected.ilg" \
+    -e "s/($M112_MARKS entries accepted, 0 rejected)/($M112_MARKS entries accepted, 1 rejected)/"
+  m112_ind_red "a rejected entry beside the fixture's marks" "$M23W/clean.ind" "$M23W/rejected.ilg" \
+    "makeindex accepted $M112_MARKS entries and rejected 1; the fixture writes $M112_MARKS index marks"
+  pass "M112 T2 self-test: the .ind reader is red on an entry the fixture never indexes, on one accepted entry more than the fixture's marks, and on a rejected entry, each naming its own clause"
 
   # --- M23: the defect-injection battery. Task work, not AC2's promise.
   #
@@ -19671,48 +19681,55 @@ if [ "${1:-}" = "--self-test" ]; then
 
   # M112 T3: a bounded `pdfindex.read` leaves out the page carrying the
   # section-ending line, so a line of the index printed above that line on
-  # the same page would be dropped. No fixture can print that page: removing
-  # the named-indexes fixture's page break puts its next heading on the
-  # index's own page, which the read refuses as unbounded. So the case feeds
-  # `read` the pages `_pages` yields, as (page, width, [(x, y, text)]), with
-  # an index line above the section-ending line on the page left out, and a
-  # control without it. The control passing shows the red is that line.
+  # the same page would be dropped. The one rendered variant tried, the
+  # named-indexes fixture with its page break removed, puts the next heading
+  # on the index's own page, which the read refuses as unbounded. So the cases
+  # feed `read` the pages `_pages` yields, as (page, width, [(x, y, text)]):
+  # an index line above the section-ending line on the page left out; an
+  # index line in the left column below a section-ending line set in the
+  # right one; and a control with neither. The control passing shows each red
+  # is its planted line.
   python3 - <<'PY' || fail "M112 T3 self-test: the bounded read's stranded-line refusal is not shown (the report is above)"
 import sys
 sys.path.insert(0, 'tests')
 import pdfindex
 
-def pages(stranded):
-    second = [(72.0, 80.0, 'zebra, 3')] if stranded else []
-    second.append((72.0, 120.0, 'Below the first index'))
+STOP = 'Below the first index'
+
+def pages(case):
+    second = {
+        'control': [(72.0, 120.0, STOP)],
+        'above': [(72.0, 80.0, 'zebra, 3'), (72.0, 120.0, STOP)],
+        'left-column': [(320.0, 80.0, STOP), (72.0, 120.0, 'zebra, 3')],
+    }[case]
     return [
         (1, 612.0, [(72.0, 60.0, 'Index'), (72.0, 100.0, 'aardvark, 1'),
                     (320.0, 100.0, 'yak, 2')]),
         (2, 612.0, second),
     ]
 
-for stranded in (False, True):
-    pdfindex._pages = lambda _path, _footer, s=stranded: iter(pages(s))
+for case in ('control', 'above', 'left-column'):
+    pdfindex._pages = lambda _path, _footer, c=case: iter(pages(c))
     try:
-        entries = pdfindex.read('planted.pdf', 'Index', ('Below the first index',))
+        entries = pdfindex.read('planted.pdf', 'Index', (STOP,))
     except LookupError as error:
-        if not stranded:
-            sys.exit(f'FAIL: M112 T3 self-test: the control, with nothing above '
-                     f'the section-ending line, was refused: {error}')
+        if case == 'control':
+            sys.exit(f'FAIL: M112 T3 self-test: the control, with nothing '
+                     f'ahead of the section-ending line, was refused: {error}')
         said = str(error)
         if 'page 2 of planted.pdf' not in said or "['zebra, 3']" not in said:
-            sys.exit(f'FAIL: M112 T3 self-test: the stranded line was refused, '
-                     f'but not by naming page 2 and the line: {said}')
+            sys.exit(f'FAIL: M112 T3 self-test ({case}): the stranded line was '
+                     f'refused, but not by naming page 2 and the line: {said}')
         continue
-    if stranded:
-        sys.exit('FAIL: M112 T3 self-test: the bounded read returned '
+    if case != 'control':
+        sys.exit(f'FAIL: M112 T3 self-test ({case}): the bounded read returned '
                  f'{[e.text for e in entries]} and dropped the line printed '
-                 f'above the section-ending line on the page it left out')
+                 f'ahead of the section-ending line on the page it left out')
     if [e.text for e in entries] != ['aardvark, 1', 'yak, 2']:
         sys.exit(f'FAIL: M112 T3 self-test: the control read '
                  f'{[e.text for e in entries]}, not its two entries')
 PY
-  pass "M112 T3 self-test: a bounded PDF index read is red, naming the page and the line, when the page it leaves out prints an index line above its section-ending line, and reads the same pages without that line in full"
+  pass "M112 T3 self-test: a bounded PDF index read is red, naming the page and the line, when the page it leaves out prints an index line above its section-ending line or in the left column below one set in the right, and reads the same pages without that line in full"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares three indexes

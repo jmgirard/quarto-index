@@ -53,14 +53,15 @@ INNER_LOCATORS = 2
 # of the nested range is one outer mark carrying one inner mark (2 x 2), and
 # the plain range is two marks (2). `range-position.qmd`'s class-less `range=`
 # span and its range mark that indexes nothing write none, so a render that
-# gave either an entry shows here, in makeindex's accepted count, even where
-# it files under a term already printed.
+# gave either an entry shows here, in makeindex's accepted or rejected count,
+# even where it files under a term already printed.
 MARKS = 2 * 2 + 2
 
 
 # The criterion these readers are speaking for. Both fixtures assert the same
 # clauses — one paired range per term, the widths their page breaks put them
-# at, the inner mark unmoved — so they are read by ONE reader under two
+# at, the inner mark unmoved, no entry beyond those three terms, and every
+# mark accepted — so they are read by ONE reader under two
 # labels rather than by two readers that could drift (M16). `AC` is set by
 # `main` from the mode it was called in, and every message below takes its
 # label from here rather than carrying one of its own.
@@ -87,10 +88,13 @@ def _ind(argv):
 
     A range that lost its pairing prints its two ends as two locators, and a
     range paired with the wrong counterpart prints a span of the wrong width.
-    Both are read here against the fixture's own page breaks. The `.ilg` is
-    read for the warning COUNT rather than searched as a substring, for the
-    reason D-007 records: makeindex reports every range fault as a warning at
-    exit 0, and Quarto alone fails the render on a regex over the transcript.
+    Both are read here against the fixture's own page breaks. The `.ind` is
+    also held to the three terms the fixture writes, and nothing else. The
+    `.ilg` is searched for the range-fault phrases and also read for its
+    warning COUNT, for the reason D-007 records: makeindex reports every range
+    fault as a warning at exit 0, and Quarto alone fails the render on a regex
+    over the transcript. Its accepted and rejected counts are read too, held
+    to the `MARKS` the fixture writes and to none rejected.
     """
     ind_path, ilg_path = argv[0], argv[1]
     items = M21._items(open(ind_path, encoding='utf-8').read())
@@ -137,9 +141,10 @@ def _ind(argv):
     if not accepted:
         _afail('could not read an accepted-entry count out of the makeindex '
               'transcript:\n' + ilg)
-    if int(accepted.group(1)) != MARKS:
-        _afail('makeindex accepted %s entries; the fixture writes %d index '
-              'marks:\n%s' % (accepted.group(1), MARKS, ilg))
+    if int(accepted.group(1)) != MARKS or accepted.group(2) != '0':
+        _afail('makeindex accepted %s entries and rejected %s; the fixture '
+              'writes %d index marks, every one of them accepted:\n%s'
+              % (accepted.group(1), accepted.group(2), MARKS, ilg))
     for phrase in ('Unmatched range', 'Extra range', 'inconsistent encapsulator',
                    'Inconsistent page encapsulator'):
         if phrase in ilg:

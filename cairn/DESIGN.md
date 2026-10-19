@@ -1307,17 +1307,22 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `nomarker_named` calls expect 2, the M068 count fails on 0, and the M062-AC1
   count follows a `check_warning_count` over the same log, which refuses a
   missing one. Latent. — M111 review
-- **KI312.** `tests/typstindex.py`'s own `read`, with `stop`, drops the page
-  carrying the section-ending line with no check of what that page prints
-  ahead of it, so an index running onto that page loses those lines
-  silently. M112 added that refusal to `tests/pdfindex.py`'s `read` only.
-  — M112 review
-- **KI313.** M02-AC2 and M02-AC3 count each manifest row as a substring of
-  the whitespace-flattened text from the `Index` heading to the end of the
-  document, so a row that also occurs inside other printed text there counts
-  twice and is reported as printed more than once on a correct index. The
-  reader refuses a manifest row inside another row, not inside other text.
-  Today every row counts once (2026-10-18 run). — M112 review
+- **KI314.** `tests/typstindex.py`'s bounded `read` exempts from its
+  stranded-line refusal every line within `SAME_ROW_PT` of a stop line's
+  row, whatever it prints, not only a running header's page number. An
+  index line that shares a row with a stop line on the page left out is
+  dropped with no message. No capture has such a line (2026-10-19 run).
+  — M113 review
+- **KI315.** The PDF checks that count whole printed lines (M02-AC2, M02-AC3,
+  AC6, M05-AC5) read a row as missing when its printed line carries more
+  than the row: a wrapped continuation, or a locator-only line
+  `tests/pdfindex.py` folds into it. The failure is red, but its message
+  says the row did not typeset or is missing from the index. No row is
+  affected today (2026-10-19 run). — M113 review
+- **KI316.** Two PDF index checks still test presence over flattened text,
+  so a term printed twice passes: M04-AC2's term check in
+  `tests/run-tests.sh` and `tests/gallerycheck.py`'s pdf mode (M41-AC4).
+  — M113 review
 
 ### The acceptance suite: coverage gaps
 
@@ -1394,11 +1399,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   silently. — M01 review P10
 - **KI68.** The demo's own makeindex acceptance is never asserted. — M01 review
   P11
-- **KI69.** Two PDF index checks in `tests/run-tests.sh` still assert
-  substring presence, not counts: AC6's term check over the demo PDF and the
-  M05-AC5 cross-reference check over the book PDF, so a term or a
-  cross-reference printed twice passes. — M02 review, M15; narrowed M112,
-  which made M02-AC2 and M02-AC3 count each row
 - **KI70.** Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both
   the no-leak sweep and the probe-coverage pin; for no-leak this is a false
   pass, not a false failure. The suite's `sort=` extraction is double-quote-only

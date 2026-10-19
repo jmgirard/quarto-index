@@ -723,8 +723,8 @@ letter	W
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 1c — cross-reference text expected in the compiled PDF's index
-# region (M02-AC2). Each row is the source entry as makeindex prints it —
+# Manifest 1c — cross-reference lines expected in the compiled PDF's index,
+# each printed once (M02-AC2). Each row is the source entry as makeindex prints it —
 # for a multi-level source, its deepest level, which is the sub-item the
 # cross-reference hangs off — then makeindex's own `, ` delimiter, then the
 # typeset cross-reference text.
@@ -876,7 +876,7 @@ read -r -d '' VISIBLE_TERMS <<'MANIFEST' || true
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 4 — terms that must appear in the compiled PDF's index (AC6): the
+# Manifest 4 — terms that must each print on one line of the compiled PDF's index (AC6): the
 # derived-from-visible-text, single-level, non-`entry=` terms only.
 # ---------------------------------------------------------------------------
 read -r -d '' PDF_TERMS <<'MANIFEST' || true
@@ -1010,8 +1010,8 @@ Delta	Alpha
 MANIFEST
 
 # ---------------------------------------------------------------------------
-# Manifest 6 — terms that must appear in the compiled book PDF's index
-# (M05-AC5), each with the number of PAGES its locators must cover (makeindex
+# Manifest 6 — terms that must each print on one line of the compiled book
+# PDF's index (M05-AC5), each with the number of PAGES its locators must cover (makeindex
 # prints three or more consecutive pages as a range, so printed tokens are not
 # the same thing as pages).
 # The page NUMBERS are never derived here: what a chapter's content lands on
@@ -6898,8 +6898,9 @@ if after < 0:
           'index in the compiled PDF, so the index was not printed at the '
           'marker', file=sys.stderr)
     sys.exit(1)
-# Two-column index setting collapses to single spaces, as the other PDF
-# checks do.
+# Two-column index setting collapses to single spaces. A presence test over
+# that flattened text, where M113 made AC6, M02-AC2, M02-AC3 and M05-AC5
+# count whole printed lines: a term printed twice passes here.
 region = ' '.join(text[m.end():after].split())
 missing = [t for t in terms if ' '.join(t.split()) not in region]
 if missing:
@@ -7283,32 +7284,35 @@ grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escapin
 # One reader for the two typeset cross-reference checks, M02-AC3 over the
 # escaping probe here and M02-AC2 over the demo below, called at both sites
 # and again by the self-test's planted-defect cases, so a plant runs the code
-# the run uses. Each manifest row must occur EXACTLY once in the index region:
-# a presence test passes a cross-reference printed twice. A row inside another
-# row would count twice on a correct index, so the reader refuses a manifest
-# with one before it counts.
-xref_typeset_check() {   # <label> <pdftotext output> <manifest> <missing sentence> <ok sentence> [<region dump size>]
+# the run uses. The index is read line by line through tests/pdfindex.py, and
+# each manifest row must be EXACTLY one printed line: a presence test passes a
+# cross-reference printed twice. Counting whole lines rather than substrings of
+# the flattened text (M113) means a row whose text sits inside a longer line,
+# another row's included, adds nothing to its count, so the manifest needs no
+# refusal of a row inside another row. The optional last argument names a file
+# of lines appended to the read as extra printed lines, which is how the
+# self-test plants a defect into what the check reads.
+xref_typeset_check() {   # <label> <pdf> <manifest> <missing sentence> <ok sentence> [<planted lines file>]
   python3 - "$@" <<'PY'
-import re, sys
-label, txt_path, rows_path, missing_said, ok_said = sys.argv[1:6]
-dump = int(sys.argv[6]) if len(sys.argv) > 6 else 0
-txt = open(txt_path, encoding='utf-8').read()
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+label, pdf_path, rows_path, missing_said, ok_said = sys.argv[1:6]
+plant = sys.argv[6] if len(sys.argv) > 6 else ''
 rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
-norm = [' '.join(r.split()) for r in rows]
-inside = [(a, b) for a in norm for b in norm if a != b and a in b]
-if inside:
-    print(f'FAIL: {label}: the manifest has a row inside another row, which '
-          f'would count twice on a correct index: {inside}', file=sys.stderr)
+if not rows:
+    print(f'FAIL: {label}: the manifest {rows_path} has no rows, so there is '
+          f'nothing to count', file=sys.stderr)
     sys.exit(1)
-m = re.search(r'^\s*Index\s*$', txt, re.MULTILINE)
-if not m:
-    print(f'FAIL: {label}: no "Index" heading in pdftotext output',
-          file=sys.stderr)
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: {label}: {error}', file=sys.stderr)
     sys.exit(1)
-# The printed index is set in two columns, so runs of layout spacing collapse
-# to one space.
-region = ' '.join(txt[m.end():].split())
-counts = {r: region.count(' '.join(r.split())) for r in rows}
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(entries, rows)
 missing = [r for r in rows if counts[r] == 0]
 repeated = [r for r in rows if counts[r] > 1]
 if missing:
@@ -7322,8 +7326,10 @@ if repeated:
     for r in repeated:
         print(f'  <<{r}>> x{counts[r]}', file=sys.stderr)
 if missing or repeated:
-    if dump:
-        print(f'--- index region ---\n{region[:dump]}', file=sys.stderr)
+    print(f'--- first index lines read ({len(entries)} in all) ---',
+          file=sys.stderr)
+    for entry in entries[:60]:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
 print(f'ok   {label}: all {len(rows)} {ok_said}')
 PY
@@ -7331,39 +7337,80 @@ PY
 
 # Typeset evidence from Quarto's own PDF: compiling proves the encap argument
 # READS, typesetting proves the character PRINTS in a cross-reference.
-pdftotext -layout "$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf" "$WORK/xref/xref-escaping.txt"
 printf '%s\n' "$XREF_PROBE_TEXT" > "$WORK/xrefprobe.txt"
 M02_AC3_MISSING='special-handling character(s) did not typeset in their cross-reference'
 M02_AC3_OK='exact cross-reference strings typeset once each in the probe index'
-xref_typeset_check M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" \
+M02_AC3_PDF="$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf"
+xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$WORK/xrefprobe.txt" \
   "$M02_AC3_MISSING" "$M02_AC3_OK" || exit 1
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
 capture examples/demo.qmd pdf "demo-pdf"
 [ -s "$CAPTURE_ROOT/demo-pdf/demo.pdf" ] || fail "AC6: $CAPTURE_ROOT/demo-pdf/demo.pdf is empty"
-pdftotext -layout "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/demo.txt"
-
 printf '%s\n' "$PDF_TERMS" > "$WORK/pdfterms.txt"
-python3 - "$WORK/demo.txt" "$WORK/pdfterms.txt" <<'PY'
-import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-terms = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-
-m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: AC6: no "Index" heading in pdftotext output', file=sys.stderr)
+# Each term must be EXACTLY one printed index line, read through
+# tests/pdfindex.py and compared on the line's term, its locators removed
+# (M113): a presence test over flattened text passed a term printed twice. The
+# optional last argument plants extra lines, as xref_typeset_check's does.
+pdf_term_check() {   # <pdf> <terms> [<planted lines file>]
+  python3 - "$@" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, terms_path = sys.argv[1:3]
+plant = sys.argv[3] if len(sys.argv) > 3 else ''
+terms = [l.rstrip('\n') for l in open(terms_path, encoding='utf-8') if l.strip()]
+if not terms:
+    print(f'FAIL: AC6: the manifest {terms_path} has no terms, so there is '
+          f'nothing to count', file=sys.stderr)
     sys.exit(1)
-region = ' '.join(text[m.end():].split())
-missing = [t for t in terms if ' '.join(t.split()) not in region]
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: AC6: {error}', file=sys.stderr)
+    sys.exit(1)
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(entries, terms, field='term')
+missing = [t for t in terms if counts[t] == 0]
+repeated = [t for t in terms if counts[t] > 1]
 if missing:
     print('FAIL: AC6: term(s) missing from the PDF index section:', file=sys.stderr)
     for t in missing:
         print(f'  <<{t}>>', file=sys.stderr)
-    print(f'--- index region ---\n{region[:1200]}', file=sys.stderr)
+if repeated:
+    print('FAIL: AC6: term(s) printed on more than one line of the PDF index, '
+          'where the fixture indexes each once:', file=sys.stderr)
+    for t in repeated:
+        print(f'  <<{t}>> x{counts[t]}', file=sys.stderr)
+if missing or repeated:
+    print(f'--- index lines read ({len(entries)}) ---', file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
-print(f'ok   AC6: PDF index heading found, {len(terms)} derived terms listed')
+print(f'ok   AC6: PDF index heading found, {len(terms)} derived terms printed '
+      f'once each')
 PY
+}
+pdf_term_check "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/pdfterms.txt" || exit 1
+# M113 T2: a term's line given once more is red naming the term.
+if [ "${1:-}" = "--self-test" ]; then
+  M113W="$WORK/m113-ac6"
+  rm -rf "$M113W"; mkdir -p "$M113W"
+  m113_term=$(awk 'NF { print; exit }' "$WORK/pdfterms.txt")
+  [ -n "$m113_term" ] || fail "M113 T2 self-test: the AC6 term manifest has no row to plant"
+  printf '%s, 9\n' "$m113_term" > "$M113W/twice.txt"
+  if out=$(pdf_term_check "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/pdfterms.txt" "$M113W/twice.txt" 2>&1); then
+    fail "M113 T2 self-test: AC6 passed the demo PDF with <<$m113_term>> printed on a second line"
+  fi
+  case "$out" in
+    *"more than one line"*"<<$m113_term>> x2"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M113 T2 self-test: AC6 failed on a term printed twice, but not by naming that term" ;;
+  esac
+  pass "M113 T2 self-test: AC6 is red, naming the term, on the demo PDF with one term printed on a second line"
+fi
 
 # ---------------------------------------------------------------------------
 # M02-AC2 — every cross-reference reaches the compiled index as typeset text.
@@ -7374,34 +7421,38 @@ section 'M02-AC2 — every cross-reference reaches the compiled index as typeset
 printf '%s\n' "$XREF_PDF_TEXT" > "$WORK/xrefpdf.txt"
 M02_AC2_MISSING='cross-reference(s) missing from the PDF index section'
 M02_AC2_OK='cross-references typeset once each in the PDF index, source entry and text together'
-xref_typeset_check M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" \
-  "$M02_AC2_MISSING" "$M02_AC2_OK" 1500 || exit 1
+xref_typeset_check M02-AC2 "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/xrefpdf.txt" \
+  "$M02_AC2_MISSING" "$M02_AC2_OK" || exit 1
 
-# M112 T1: the two typeset checks above count each row rather than test for
-# it, so a cross-reference printed twice is red. Each case writes one row's
-# text a second time into a copy of the check's own captured text, and runs
-# the same reader on it.
+# M112 T1, M113 T1: the two typeset checks above count each row as whole
+# printed lines. Each case plants extra lines into the check's own read of
+# its captured PDF, through the reader's planted-lines argument: the row's
+# line once more is red naming the row, and the row inside a longer line is
+# green, which a substring count over flattened text read as a second copy.
 if [ "${1:-}" = "--self-test" ]; then
   M112W="$WORK/m112-xref"
   rm -rf "$M112W"; mkdir -p "$M112W"
-  m112_twice() {   # <label> <captured text> <manifest> <missing> <ok>
-    local label="$1" txt="$2" rows="$3" row out
+  m112_twice() {   # <label> <pdf> <manifest> <missing> <ok>
+    local label="$1" pdf="$2" rows="$3" row out
     row=$(awk 'NF { print; exit }' "$rows")
     [ -n "$row" ] || fail "M112 T1 self-test: the $label manifest has no row to plant"
-    xref_typeset_check "$label" "$txt" "$rows" "$4" "$5" > /dev/null \
-      || fail "M112 T1 self-test: $label is red on its own captured text, so a red below would not be the planted row"
-    { cat "$txt"; printf '%s\n' "$row"; } > "$M112W/$label.txt"
-    if out=$(xref_typeset_check "$label" "$M112W/$label.txt" "$rows" "$4" "$5" 2>&1); then
-      fail "M112 T1 self-test: $label passed its captured text with <<$row>> printed a second time"
+    xref_typeset_check "$label" "$pdf" "$rows" "$4" "$5" > /dev/null \
+      || fail "M112 T1 self-test: $label is red on its own captured PDF, so a red below would not be the planted row"
+    printf '%s\n' "$row" > "$M112W/$label-twice.txt"
+    if out=$(xref_typeset_check "$label" "$pdf" "$rows" "$4" "$5" "$M112W/$label-twice.txt" 2>&1); then
+      fail "M112 T1 self-test: $label passed its captured PDF with <<$row>> printed a second time"
     fi
     case "$out" in
       *"printed more than once"*"<<$row>> x2"*) ;;
       *) printf '%s\n' "$out" >&2; fail "M112 T1 self-test: $label failed on a row printed twice, but not by naming that row" ;;
     esac
+    printf 'Planted %s, longer\n' "$row" > "$M112W/$label-inside.txt"
+    xref_typeset_check "$label" "$pdf" "$rows" "$4" "$5" "$M112W/$label-inside.txt" > /dev/null \
+      || fail "M113 T1 self-test: $label is red where a longer printed line holds <<$row>>, so it counts substrings rather than lines"
   }
-  m112_twice M02-AC3 "$WORK/xref/xref-escaping.txt" "$WORK/xrefprobe.txt" "$M02_AC3_MISSING" "$M02_AC3_OK"
-  m112_twice M02-AC2 "$WORK/demo.txt" "$WORK/xrefpdf.txt" "$M02_AC2_MISSING" "$M02_AC2_OK"
-  pass "M112 T1 self-test: M02-AC3 and M02-AC2 each pass their captured text and are red, naming the row, on a copy with one cross-reference printed a second time"
+  m112_twice M02-AC3 "$M02_AC3_PDF" "$WORK/xrefprobe.txt" "$M02_AC3_MISSING" "$M02_AC3_OK"
+  m112_twice M02-AC2 "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/xrefpdf.txt" "$M02_AC2_MISSING" "$M02_AC2_OK"
+  pass "M112 T1, M113 T1 self-test: M02-AC3 and M02-AC2 each pass their captured PDF, are red naming the row on one cross-reference printed a second time, and stay green on a longer line holding it"
 fi
 
 # ---------------------------------------------------------------------------
@@ -7900,36 +7951,43 @@ pdftotext -layout "$BOOK_PDF" "$WORK/book.txt"
 
 printf '%s\n' "$BOOK_PDF_TERMS" > "$WORK/book-pdf-terms.txt"
 printf '%s\n' "$BOOK_PDF_XREFS" > "$WORK/book-pdf-xrefs.txt"
-python3 - "$WORK/book.txt" "$WORK/book-pdf-terms.txt" \
-  "$WORK/book-pdf-xrefs.txt" <<'PY'
+# Read line by line through tests/pdfindex.py (M113): each term row must be
+# exactly one line, compared on its term, and each cross-reference row exactly
+# one line, compared on its whole text, so a row printed twice is red where a
+# search over flattened text took the first match and passed. The optional
+# last argument plants extra lines, as xref_typeset_check's does.
+book_pdf_check() {   # <pdf> <terms> <xrefs> [<planted lines file>]
+  python3 - "$@" <<'PY'
 import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-rows = [l.rstrip('\n').split('\t') for l in open(sys.argv[2], encoding='utf-8')
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, terms_path, xrefs_path = sys.argv[1:4]
+plant = sys.argv[4] if len(sys.argv) > 4 else ''
+rows = [l.rstrip('\n').split('\t') for l in open(terms_path, encoding='utf-8')
         if l.strip()]
-xrefs = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
+xrefs = [l.rstrip('\n') for l in open(xrefs_path, encoding='utf-8')
          if l.strip()]
+if not rows or not xrefs:
+    print('FAIL: M05-AC5: a manifest has no rows, so there is nothing to '
+          'count', file=sys.stderr)
+    sys.exit(1)
 
 # The book declares two indexes, and since M49 a PDF book prints both, each
 # under its declared title -- so this reads the FIRST one, bounded by the
 # second's heading. Unbounded it would take the second index and everything
-# after it as part of the first, and every count below would be over a region
-# no single index printed. Both titles are read by hand off
-# examples/book/_quarto.yml.
-m = re.search(r'^\s*Index of Subjects\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: M05-AC5: no "Index of Subjects" heading in the book PDF',
-          file=sys.stderr)
+# after it as part of the first. Both titles are read by hand off
+# examples/book/_quarto.yml. The bounded read also returns the body prose the
+# last chapter prints between the two indexes, so every count below is over
+# the index plus that prose; no prose line equals a row.
+try:
+    entries = pdfindex.read(pdf_path, heading='Index of Subjects',
+                            stop=('Index of People',))
+except LookupError as error:
+    print(f'FAIL: M05-AC5: {error}', file=sys.stderr)
     sys.exit(1)
-rest = text[m.end():]
-second = re.search(r'^\s*Index of People\s*$', rest, re.MULTILINE)
-if not second:
-    print('FAIL: M05-AC5: no "Index of People" heading follows the first '
-          'index in the book PDF, so this read is unbounded and would take '
-          'the second index as part of the first', file=sys.stderr)
-    sys.exit(1)
-# The printed index is set in two columns, so layout spacing collapses the
-# same way the single-document checks collapse it.
-region = ' '.join(rest[:second.start()].split())
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
 
 # One printed locator: a page number, or a range of them. makeindex collapses
 # three or more consecutive pages into a range (`3--5`, typeset as an en
@@ -7939,21 +7997,21 @@ region = ' '.join(rest[:second.start()].split())
 LOCATOR = r'\d+(?:[-–—]\d+)?'
 
 
-def pages_after(term):
-    # Anchored on both sides: without a boundary, a row asserting a term has
-    # NO page numbers passes on a region where that term never reached the
-    # index and only appears inside a longer one.
-    m = re.search(r'(?<![\w])' + re.escape(term) + r'(?![\w])'
-                  + r'((?:,\s' + LOCATOR + r')*)', region)
-    if m is None:
-        return None
+def pages_on(entry):
+    # The locator list is what `Entry.term` removes from the line's end; a
+    # line with none, as a row asserting a term has NO page numbers expects,
+    # covers 0 pages.
+    tail = entry.text[len(entry.term):]
     total = 0
-    for token in re.findall(LOCATOR, m.group(1)):
+    for token in re.findall(LOCATOR, tail):
         ends = re.split(r'[-–—]', token)
         total += 1 if len(ends) == 1 else int(ends[1]) - int(ends[0]) + 1
     return total
 
 
+terms = [term for _count, term in rows]
+term_counts = pdfindex.line_counts(entries, terms, field='term')
+xref_counts = pdfindex.line_counts(entries, xrefs)
 bad = []
 for count, term in rows:
     # The page numbers themselves are the layout's business and are never
@@ -7961,25 +8019,70 @@ for count, term in rows:
     # sources — one per locator-contributing mark, each in its own chapter,
     # and a book class starts every chapter on a new page — and that count is
     # what shows the printed index aggregated across chapters.
-    got = pages_after(term)
-    if got is None:
-        bad.append(f'  {term!r} is not in the printed index at all')
-    elif got != int(count):
+    if term_counts[term] != 1:
+        bad.append(f'  {term!r} is printed on {term_counts[term]} line(s) of '
+                   f'the index, expected 1')
+        continue
+    line = next(e for e in entries
+                if ' '.join(e.term.split()) == ' '.join(term.split()))
+    got = pages_on(line)
+    if got != int(count):
         bad.append(f'  {term!r} is followed by {got} page(s) in the printed '
                    f'index, expected {count}')
 for xref in xrefs:
-    if ' '.join(xref.split()) not in region:
-        bad.append(f'  cross-reference <<{xref}>> is not in the printed index')
+    if xref_counts[xref] != 1:
+        bad.append(f'  cross-reference <<{xref}>> is printed on '
+                   f'{xref_counts[xref]} line(s) of the index, expected 1')
 if bad:
     print('FAIL: M05-AC5: the book PDF index does not match the manifest:',
           file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
-    print(f'--- index region ---\n{region[:1200]}', file=sys.stderr)
+    print(f'--- lines read ({len(entries)}) ---', file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M05-AC5: the book PDF prints one index carrying all {len(rows)} '
-      f'derived terms with their derived locator counts, and all '
-      f'{len(xrefs)} cross-references')
+      f'derived terms once each with their derived locator counts, and all '
+      f'{len(xrefs)} cross-references once each')
 PY
+}
+book_pdf_check "$BOOK_PDF" "$WORK/book-pdf-terms.txt" "$WORK/book-pdf-xrefs.txt" || exit 1
+# M113 T2: a term's line and a cross-reference's line, each given once more,
+# are red naming the row; a manifest row stating one page fewer than its
+# term's line covers is red naming the term. The page case plants the
+# manifest, because a second line for the term would be refused by the line
+# count before its pages were read.
+if [ "${1:-}" = "--self-test" ]; then
+  M113B="$WORK/m113-book"
+  rm -rf "$M113B"; mkdir -p "$M113B"
+  m113_book_red() {   # <case> <expected fragment> <terms> <planted lines file>
+    local out
+    if out=$(book_pdf_check "$BOOK_PDF" "$3" "$WORK/book-pdf-xrefs.txt" "$4" 2>&1); then
+      fail "M113 T2 self-test: M05-AC5 passed the book PDF under the $1 plant"
+    fi
+    case "$out" in
+      *"$2"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M113 T2 self-test: M05-AC5 failed under the $1 plant, but not with <<$2>>" ;;
+    esac
+  }
+  : > "$M113B/none.txt"
+  m113_row=$(awk -F '\t' '$1 > 0 { print; exit }' "$WORK/book-pdf-terms.txt")
+  m113_pages=${m113_row%%	*}
+  m113_bterm=${m113_row#*	}
+  [ -n "$m113_bterm" ] || fail "M113 T2 self-test: the book term manifest has no row with a page to plant"
+  printf '%s, 9\n' "$m113_bterm" > "$M113B/term-twice.txt"
+  m113_book_red term-twice "'$m113_bterm' is printed on 2 line(s)" \
+    "$WORK/book-pdf-terms.txt" "$M113B/term-twice.txt"
+  m113_xref=$(awk 'NF { print; exit }' "$WORK/book-pdf-xrefs.txt")
+  printf '%s\n' "$m113_xref" > "$M113B/xref-twice.txt"
+  m113_book_red xref-twice "<<$m113_xref>> is printed on 2 line(s)" \
+    "$WORK/book-pdf-terms.txt" "$M113B/xref-twice.txt"
+  M113_T="$m113_bterm" awk -F '\t' -v OFS='\t' '$2 == ENVIRON["M113_T"] { $1 = $1 - 1 } { print }' \
+    "$WORK/book-pdf-terms.txt" > "$M113B/terms-short.txt"
+  m113_book_red page-short "'$m113_bterm' is followed by $m113_pages page(s) in the printed index, expected $((m113_pages - 1))" \
+    "$M113B/terms-short.txt" "$M113B/none.txt"
+  pass "M113 T2 self-test: M05-AC5 is red, naming the row, on a term or a cross-reference printed on a second line and on a term whose line covers one page more than its row states"
+fi
 
 # ---------------------------------------------------------------------------
 # M05 hardening — the dimensions one clean-slate render cannot reach: a second
@@ -19730,6 +19833,76 @@ for case in ('control', 'above', 'left-column'):
                  f'{[e.text for e in entries]}, not its two entries')
 PY
   pass "M112 T3 self-test: a bounded PDF index read is red, naming the page and the line, when the page it leaves out prints an index line above its section-ending line or in the left column below one set in the right, and reads the same pages without that line in full"
+
+  # M113 T3: tests/typstindex.py's own bounded read takes the same refusal.
+  # The cases mirror M112 T3's, fed as the (page, width, [[Word, ...]]) that
+  # its `_pages` yields, plus the running-header shapes of the Typst book: a
+  # header starting with the stop string with its body below it; a header row
+  # split into a left page number and a right header, alone, which is green
+  # because the number shares the header's row; the same row with a line one
+  # row below in the left column, which stays refused and names only that
+  # line; and that page with the line's first words given as a second stop,
+  # which is green.
+  python3 - <<'PY' || fail "M113 T3 self-test: the Typst bounded read's stranded-line refusal is not shown (the report is above)"
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+
+STOP = 'Below the first index'
+
+def line(x, y, text):
+    return [typstindex.Word(w, x + 30.0 * i, y, x + 30.0 * i + 25.0, y + 10.0)
+            for i, w in enumerate(text.split())]
+
+def pages(case):
+    second = {
+        'control': [line(72.0, 120.0, STOP)],
+        'header': [line(72.0, 40.0, STOP + ' 2.1'),
+                   line(72.0, 120.0, 'Body text of the next chapter')],
+        'header-row': [line(72.0, 40.0, '16'),
+                       line(371.0, 40.0, STOP + ' Index of People')],
+        'header-prose': [line(72.0, 40.0, '14'),
+                         line(371.0, 40.0, STOP + ' Index of Subjects'),
+                         line(72.0, 51.0, 'zebra, 3')],
+        'second-stop': [line(72.0, 40.0, '14'),
+                        line(371.0, 40.0, STOP + ' Index of Subjects'),
+                        line(72.0, 83.0, 'Prose opens the page'),
+                        line(72.0, 94.0, 'and goes on')],
+        'above': [line(72.0, 80.0, 'zebra, 3'), line(72.0, 120.0, STOP)],
+        'left-column': [line(320.0, 80.0, STOP), line(72.0, 120.0, 'zebra, 3')],
+    }[case]
+    return [
+        (1, 612.0, [line(72.0, 60.0, 'Index'), line(72.0, 100.0, 'aardvark, 1'),
+                    line(320.0, 100.0, 'yak, 2')]),
+        (2, 612.0, second),
+    ]
+
+GREEN = ('control', 'header', 'header-row', 'second-stop')
+for case in GREEN + ('header-prose', 'above', 'left-column'):
+    typstindex._pages = lambda _path, _footer=None, c=case: iter(pages(c))
+    stops = (STOP, 'Prose opens') if case == 'second-stop' else (STOP,)
+    try:
+        got = typstindex.read('planted.pdf', 'Index', stops)
+    except LookupError as error:
+        if case in GREEN:
+            sys.exit(f'FAIL: M113 T3 self-test ({case}): nothing is printed '
+                     f'ahead of the section-ending line, but the read was '
+                     f'refused: {error}')
+        said = str(error)
+        if 'page 2 of planted.pdf' not in said or "['zebra, 3']" not in said:
+            sys.exit(f'FAIL: M113 T3 self-test ({case}): the stranded line was '
+                     f'refused, but not by naming page 2 and the line: {said}')
+        continue
+    texts = [typstindex._text(l.words) for l in got]
+    if case not in GREEN:
+        sys.exit(f'FAIL: M113 T3 self-test ({case}): the bounded read returned '
+                 f'{texts} and dropped the line printed ahead of the '
+                 f'section-ending line on the page it left out')
+    if texts != ['aardvark, 1', 'yak, 2']:
+        sys.exit(f'FAIL: M113 T3 self-test ({case}): the read returned '
+                 f'{texts}, not its two entries')
+PY
+  pass "M113 T3 self-test: the Typst bounded read is red, naming the page and only the stranded line, when the page it leaves out prints a line above its first stop line, in the left column below one set in the right, or one row below a right-column running header, and reads in full a control, a page opening with a header that starts with the stop string, a header row split from its page number, and a page whose prose opens with a second stop"
 fi
 
 # M38-AC5's second half — a book chapter. examples/book/ declares three indexes
@@ -30360,7 +30533,11 @@ fi
 #        heading to its page; Shared Term has a locator on 5, 7 and 9. `main` and `people` are placed by
 #        the markers in last.qmd and `places`, which no marker names, follows
 #        them. The page after each index opens with the template's running
-#        header, `Chapter 4.`, which is where each read stops.
+#        header, `Chapter 4.`, which is where the `main` and `people` reads
+#        stop; `places` ends the document and passes no stop. After the
+#        index of subjects that page also prints last.qmd's prose in the
+#        left column under a right-column header, so `main` names its first
+#        words as a second stop (M113).
 #   AC8  The four escaping and Unicode fixtures are compared with the entries
 #        their sources derive (`typstcheck.py source`), and that derivation is
 #        held to a hand statement for each: every printable ASCII
@@ -30618,8 +30795,13 @@ for part in MAIN PEOPLE PLACES; do
   printf '%s\n%s\n' "$M098_BOOK_CHAPTERS" "${!var}" > "$WORK/m098-book-$part.tsv"
 done
 if [ "$M098_TYPST_BOOK" = 1 ]; then
+  # The page after the index of subjects carries the running header, set in
+  # the right column, and then last.qmd's prose in the left column, so that
+  # prose's first words end the read too (M113): with the header alone, the
+  # left-column prose would be lines ahead of it in reading order, which the
+  # bounded read refuses rather than drops.
   python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-MAIN.tsv" \
-    "M098-AC5 (main)" "Index of Subjects" "Chapter 4." \
+    "M098-AC5 (main)" "Index of Subjects" "Chapter 4." "A second placement marker" \
     || fail "M098-AC5: the book's index of subjects is not the manifest's (the report is above)"
   python3 tests/typstcheck.py book "$M098_BOOK_PDF" "$WORK/m098-book-PEOPLE.tsv" \
     "M098-AC5 (people)" "Index of People" "Chapter 4." \
@@ -30901,7 +31083,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_book_tree book-noclose typst.lua 's{node\.open_range\.close = mark\.label}{node.open_range.close = nil}'
   m098_red book-noclose "got 'entry\t0\tRanged Term\t7*" python3 tests/typstcheck.py book \
     "$(find "$CAPTURE_ROOT/m098-book-noclose/_book" -maxdepth 1 -name '*.pdf')" \
-    "$WORK/m098-book-MAIN.tsv" "M098 T5 plant book-noclose" "Index of Subjects" "Chapter 4."
+    "$WORK/m098-book-MAIN.tsv" "M098 T5 plant book-noclose" "Index of Subjects" "Chapter 4." "A second placement marker"
 
   # AC5 (T9): every locator one page on, which puts a chapter's locator on
   # its blank back page, a page the chapter-bound reading counted as the
@@ -30909,7 +31091,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_book_tree book-pageplus typst.lua 's{\.\.counter\(page\)\.at\(loc\)\)}{..counter(page).at(loc).map(n => n + 1))}'
   m098_red book-pageplus "got 'entry\t0\tAlpha\t6\t'" python3 tests/typstcheck.py book \
     "$(find "$CAPTURE_ROOT/m098-book-pageplus/_book" -maxdepth 1 -name '*.pdf')" \
-    "$WORK/m098-book-MAIN.tsv" "M098 T9 plant book-pageplus" "Index of Subjects" "Chapter 4."
+    "$WORK/m098-book-MAIN.tsv" "M098 T9 plant book-pageplus" "Index of Subjects" "Chapter 4." "A second placement marker"
 
   m098_book_tree book-unplaced marker.lua "$M098_UNPLACED"
   m098_red book-unplaced "no line '^A second placement marker in this chapter' follows" \

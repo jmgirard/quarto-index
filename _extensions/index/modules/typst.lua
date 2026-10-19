@@ -314,6 +314,81 @@ local function assign_labels(doc, taken)
   })
 end
 
+-- Typst's `outline` copies the caption of each figure it lists, so a label
+-- left in a caption names a second element on the list's page, and a list
+-- that comes before the figure files the mark there. An id of the author's on
+-- a mark in the caption is copied the same way, and Typst refuses a link to a
+-- label that names two elements. So each label `assign_labels` wrote into a
+-- float's caption, and each such id, moves to the end of the float's content,
+-- which no list copies. A Typst figure does not break across pages unless the
+-- document makes it, so its content and its caption print on one page. The
+-- move runs as a filter of its own after the Pandoc pass, because Quarto
+-- hands a float with an id to a filter's `FloatRefTarget` function and not
+-- to `doc:walk`. A float with no id is a Pandoc `Figure`.
+local function caption_moves(caption)
+  local moved = pandoc.Inlines({})
+  local rest = caption:walk({
+    Span = function(span)
+      if not span.classes:includes(qi_core.INDEX_CLASS) or span.identifier == "" then
+        return nil
+      end
+      local anchor = pandoc.Span({})
+      anchor.identifier = span.identifier
+      moved:insert(anchor)
+      span.identifier = ""
+      return span
+    end,
+    RawInline = function(raw)
+      if raw.format == "typst"
+          and raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true) then
+        moved:insert(raw)
+        return {}
+      end
+    end,
+  })
+  return rest, moved
+end
+
+local function figure_labels(figure)
+  if not qi_core.is_typst() then
+    return nil
+  end
+  local rest, moved = caption_moves(figure.caption.long)
+  if #moved == 0 then
+    return nil
+  end
+  figure.caption.long = rest
+  -- Quarto writes only the first block of a figure with no id, so the moved
+  -- inlines join that block where it holds inlines.
+  local last = figure.content[#figure.content]
+  if last ~= nil and (last.t == "Plain" or last.t == "Para") then
+    last.content:extend(moved)
+  else
+    figure.content:insert(pandoc.Plain(moved))
+  end
+  return figure
+end
+
+local function float_labels(float)
+  if not qi_core.is_typst() or float.caption_long == nil then
+    return nil
+  end
+  local rest, moved = caption_moves(float.caption_long)
+  if #moved == 0 then
+    return nil
+  end
+  float.caption_long = rest
+  local blocks = pandoc.Blocks({})
+  if pandoc.utils.type(float.content) == "Blocks" then
+    blocks:extend(float.content)
+  else
+    blocks:insert(float.content)
+  end
+  blocks:insert(pandoc.Plain(moved))
+  float.content = pandoc.Div(blocks)
+  return float
+end
+
 -- Exported through the bracket form, never `M.NAME = NAME`: the source
 -- scans take the FIRST match for `NAME =` over the whole source set, and
 -- the M16-AC3 probe relocates a definition into another file — a plain
@@ -322,6 +397,8 @@ M["TYPST_HELPERS"] = TYPST_HELPERS
 M["typst_string"] = typst_string
 M["label_inline"] = label_inline
 M["assign_labels"] = assign_labels
+M["figure_labels"] = figure_labels
+M["float_labels"] = float_labels
 M["typst_locator"] = typst_locator
 M["entry_lines"] = entry_lines
 M["index_blocks"] = index_blocks

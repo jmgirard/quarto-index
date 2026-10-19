@@ -32677,6 +32677,135 @@ EOF
 fi
 
 # ---------------------------------------------------------------------------
+# M115-AC1/AC2/AC3 — a Typst caption mark files its caption's page under a list of floats.
+#
+# Typst's `outline` copies the caption of each float it lists. A label left in
+# a caption then named a second element on the list's page, and the locator
+# took the first, so a list before the floats printed its own page for every
+# caption mark. An id of the author's on a caption mark was copied the same
+# way, and a raw Typst link to it stopped the compile with Typst's error that
+# the label occurs multiple times.
+#
+# examples/typst-caption-lists.qmd prints a list of pictures, of tables and of
+# listings on page 1, alone, and the same three on page 10, after the last
+# case, so a locator naming either list's page is red. Each case is one page,
+# each ending in an explicit page break, so each caption's page is a fact of
+# the source. The manifest is the tracked file tests/typst-caption-lists.tsv,
+# derived by hand, so the version matrix reads the same rows. The terms:
+#   alder    page 2, the caption of a picture with no id, on a mark with the
+#            id `alder-mark`; the raw Typst link on page 9 names that id
+#   birch    page 3, a principal mark in the caption of a picture with an id
+#   cedar    page 4, the caption of a picture div
+#   dogwood  a range opened in the caption of a table with an id on page 5,
+#            closed in the text on page 6
+#   elder    page 7, the caption of a table div
+#   hazel    page 8, the caption of a code listing
+#   larch    page 9, a mark in the text, which no list copies
+# ---------------------------------------------------------------------------
+section 'M115-AC1/AC2/AC3 — a Typst caption mark files its caption'\''s page under a list of floats.'
+for needle in '#outline(title: [Pictures (front)], target: figure.where(kind: "quarto-float-fig"))' \
+    '#outline(title: [Tables (front)], target: figure.where(kind: "quarto-float-tbl"))' \
+    '#outline(title: [Listings (front)], target: figure.where(kind: "quarto-float-lst"))' \
+    '#outline(title: [Pictures (back)], target: figure.where(kind: "quarto-float-fig"))' \
+    '#outline(title: [Tables (back)], target: figure.where(kind: "quarto-float-tbl"))' \
+    '#outline(title: [Listings (back)], target: figure.where(kind: "quarto-float-lst"))' \
+    '![A picture with no id, whose caption marks [alder]{#alder-mark .index}.](dot.png)' \
+    '![A picture with an id, whose caption marks [birch]{.index mention="principal"}.](dot.png){#fig-birch}' \
+    '::: {#fig-cedar}' 'A picture div, whose caption marks [cedar]{.index}.' \
+    ': A table with an id, whose caption opens [dogwood]{.index range="open"}. {#tbl-dogwood}' \
+    'The range of dogwood closes here: [dogwood]{.index range="close"}.' \
+    '::: {#tbl-elder}' 'A table div, whose caption marks [elder]{.index}.' \
+    '::: {#lst-hazel}' 'A code listing, whose caption marks [hazel]{.index}.' \
+    'A mark in the text, which no list copies: [larch]{.index}. The link below goes' \
+    '#link(<alder-mark>)[the caption with an id]'; do
+  grep -qxF -- "$needle" examples/typst-caption-lists.qmd \
+    || fail "M115-AC1/AC2/AC3: examples/typst-caption-lists.qmd no longer carries the line <<$needle>>, so the case the checks below state is no longer rendered"
+done
+M115_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/typst-caption-lists.qmd || true; } | tr -d ' ')
+[ "$M115_BREAKS" = "9" ] \
+  || fail "M115-AC1: examples/typst-caption-lists.qmd carries $M115_BREAKS page breaks, not the nine its manifest numbers pages by"
+pass "M115-AC1/AC2/AC3: examples/typst-caption-lists.qmd carries each case and list the checks below state, and nine page breaks"
+
+# The render is AC3's first check: before M115 the compile stopped on the
+# author's id, which the list of pictures had copied.
+quarto render examples/typst-caption-lists.qmd --to typst \
+    > "$WORK/typst-caption-lists.log" 2>&1 \
+  || { tail -40 "$WORK/typst-caption-lists.log" >&2; fail "M115-AC3: examples/typst-caption-lists.qmd failed to render to Typst"; }
+capture examples/typst-caption-lists.qmd typst "typst-caption-lists"
+M115_TYPST="$CAPTURE_ROOT/typst-caption-lists/typst-caption-lists.pdf"
+[ -s "$M115_TYPST" ] || fail "M115-AC1: the render produced no $M115_TYPST"
+check_extension_warning_count "$WORK/typst-caption-lists.log" 0 \
+  "M115-AC1 (examples/typst-caption-lists.qmd: every mark in it is well formed)"
+
+python3 tests/typstindex.py "$M115_TYPST" tests/typst-caption-lists.tsv \
+    "M115-AC1 (Typst)" "Index" \
+  || fail "M115-AC1: the Typst index of examples/typst-caption-lists.qmd does not match tests/typst-caption-lists.tsv (the report is above)"
+python3 tests/typstindex.py pages "$M115_TYPST" tests/typst-caption-lists.tsv \
+    "M115-AC5 (Typst, the version matrix's reading)" "Index" \
+  || fail "M115-AC5: the version matrix's reading of examples/typst-caption-lists.qmd does not match tests/typst-caption-lists.tsv (the report is above)"
+
+# AC3: page 9 carries one link, the author's, and it goes to page 2, alder's
+# caption. The lists' entries are links too, but on pages 1 and 10.
+python3 - "$M115_TYPST" <<'M115PY' \
+  || fail "M115-AC3: the link to the author's id in examples/typst-caption-lists.qmd does not go to its caption's page (the report is above)"
+import sys
+sys.path.insert(0, 'tests')
+import typstindex
+
+links = typstindex._links(sys.argv[1]).get(9, [])
+targets = [link[4] for link in links]
+if targets != [2]:
+    print(f'FAIL: M115-AC3: page 9 carries links to pages {targets!r}, '
+          f'not the one link to page 2', file=sys.stderr)
+    sys.exit(1)
+M115PY
+pass "M115-AC1/AC3: in Typst, with lists of pictures, tables and listings before and after the floats, a mark in the caption of a picture with or without an id, a picture div, a table with an id, a table div or a code listing files its caption's page, a principal one bold and a range from its caption's page; and a link to an author's id on a caption mark builds and goes to that caption's page"
+
+# AC2: each list holds the caption of each float of its kind. Which kind
+# Quarto gives each float is Quarto's own behavior, so this runs on the pinned
+# Quarto (D-065).
+M115_WHY="which Typst kind Quarto gives each float, and so which list holds it, is Quarto's own behavior"
+if on_pinned_quarto "$M115_WHY" "M115-AC2"; then
+  python3 - "$M115_TYPST" <<'M115PY' \
+    || fail "M115-AC2: a list in examples/typst-caption-lists.qmd does not hold the captions of its kind (the report is above)"
+import subprocess
+import sys
+
+pdf = sys.argv[1]
+captions = {
+    'Pictures': ['A picture with no id, whose caption marks alder.',
+                 'A picture with an id, whose caption marks birch.',
+                 'A picture div, whose caption marks cedar.'],
+    'Tables': ['A table with an id, whose caption opens dogwood.',
+               'A table div, whose caption marks elder.'],
+    'Listings': ['A code listing, whose caption marks hazel.'],
+}
+bad = []
+for page, side in ((1, 'front'), (10, 'back')):
+    text = subprocess.run(['pdftotext', '-f', str(page), '-l', str(page),
+                           '-layout', pdf, '-'], check=True,
+                          capture_output=True, text=True).stdout
+    lines = [line.strip() for line in text.splitlines()]
+    titles = [f'{kind} ({side})' for kind in captions]
+    at = {title: lines.index(title) for title in titles if title in lines}
+    for kind, title in zip(captions, titles):
+        if title not in at:
+            bad.append(f'page {page} prints no list title {title!r}')
+            continue
+        ends = [i for i in at.values() if i > at[title]] + [len(lines)]
+        body = ' '.join(' '.join(lines[at[title] + 1:min(ends)]).split())
+        for caption in captions[kind]:
+            if caption not in body:
+                bad.append(f'the list {title!r} on page {page} does not '
+                           f'hold {caption!r}')
+for line in bad:
+    print(f'FAIL: M115-AC2: {line}', file=sys.stderr)
+sys.exit(1 if bad else 0)
+M115PY
+  pass "M115-AC2: in Typst, each of the six lists, front and back, holds the caption of each picture, table or listing of its kind"
+fi
+
+# ---------------------------------------------------------------------------
 # M075 — the timing file names the sections this source has.
 #
 # One thing is held here: every section the source declares has exactly one

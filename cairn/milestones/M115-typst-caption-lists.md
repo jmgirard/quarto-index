@@ -1,13 +1,13 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — the page a Typst index prints for a caption mark
-- **Branch/PR:** —
+- **Branch/PR:** m115-typst-caption-lists
 
 ## Goal
 
@@ -15,9 +15,10 @@ In a document rendered to Typst, a mark in the caption of a figure, a table or a
 
 ## Scope
 
-**In:** `typst.assign_labels` (`_extensions/index/modules/typst.lua:269`) moves
-each label it writes inside a float's caption, and a caption mark's author id,
-into the float's own content, so a Typst `outline` copy of the caption carries
+**In:** a filter stage after `typst.assign_labels`
+(`_extensions/index/modules/typst.lua:269`) moves each label that pass writes
+inside a float's caption, and a caption mark's author id, into the float's own
+content, so a Typst `outline` copy of the caption carries
 neither. A new fixture `examples/typst-caption-lists.qmd`, its hand-derived
 manifest `tests/typst-caption-lists.tsv`, a suite section in
 `tests/run-tests.sh`, and the fixture's step in `.github/workflows/versions.yml`.
@@ -52,8 +53,8 @@ page.
 
 ## Tasks
 
-- [ ] T1: Write `examples/typst-caption-lists.qmd` and `tests/typst-caption-lists.tsv` by hand from its page breaks, and the suite section: the index through `tests/typstindex.py`, each list's text per kind, and the author-id link's destination page. No term, caption or list title holds `fi`, `fl`, `ff` or `!!`, which the floor's Typst sets as one glyph and `typstindex.py pages` does not fold; the fixture header says so. See AC1 red on today's `typst.lua` at the first list's page, and AC3 red on Typst's duplicate-label error, each failure named.
-- [ ] T2: In `typst.assign_labels`, move each label written in a float's caption, and a caption mark's author id, into the float's content. The filter sees a Pandoc `Figure` for an image figure with no id and Quarto's float scaffold for the other five cases (observed 2026-10-19); probe which handler reaches each on the pinned Quarto. The alt-text move at `typst.lua:297` stays. AC1 to AC3 green.
+- [x] T1: Write `examples/typst-caption-lists.qmd` and `tests/typst-caption-lists.tsv` by hand from its page breaks, and the suite section: the index through `tests/typstindex.py`, each list's text per kind, and the author-id link's destination page. No term, caption or list title holds `fi`, `fl`, `ff` or `!!`, which the floor's Typst sets as one glyph and `typstindex.py pages` does not fold; the fixture header says so. See AC1 red on today's `typst.lua` at the first list's page, and AC3 red on Typst's duplicate-label error, each failure named.
+- [x] T2: In a filter stage after `typst.assign_labels`, move each label written in a float's caption, and a caption mark's author id, into the float's content. The filter sees a Pandoc `Figure` for an image figure with no id and Quarto's float scaffold for the other five cases (observed 2026-10-19); probe which handler reaches each on the pinned Quarto. The alt-text move at `typst.lua:297` stays. AC1 to AC3 green.
 - [ ] T3: Probe a float made breakable (`#show figure: set block(breakable: true)`) whose content crosses a page. If its caption mark names a page other than its caption's, write a `cairn/DESIGN.md` Known issues entry under the Typst back-end.
 - [ ] T4: Add the fixture to `versions.yml`'s PDF job and to its WHAT IT CHECKS comment, dispatch a run on the branch, and log each leg's result.
 - [ ] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
@@ -71,6 +72,10 @@ page.
 - 2026-10-19: plan gate chose moving the caption label into the float's content over choosing among the label's copies in Typst, because Typst 0.11 cannot tell an outline copy from the caption and taking the first or last copy fails by where the list sits; falsified by a test, portable from Typst 0.11, of whether an element lies inside an outline.
 - 2026-10-19: plan gate chose the float's content over a label block after the float, because an invisible element after a block can land on the next page; falsified by a float that breaks across pages by default in Quarto's Typst output.
 - 2026-10-19: changelog: one sentence in the Unreleased Output section, since the Typst back-end has not been released.
+- 2026-10-19: status in-progress; branch m115-typst-caption-lists cut from main at f2e5794.
+- 2026-10-19: T1 done: fixture (11 pages: lists on 1 and 10, cases 2-9, index 11), manifest and suite section. On the base `typst.lua` (Quarto 1.10.19) the render stopped on Typst's error "label `<alder-mark>` occurs multiple times" (AC3 red), and with the link removed every caption mark printed page 1 while larch, in the text, printed 9 (AC1 red).
+- 2026-10-19: T2: `doc:walk` does not reach a Quarto float by name, but a filter stage's `FloatRefTarget` function does, so the move is a new last stage in `index.lua` (`typst.figure_labels`, `typst.float_labels`); Quarto writes only the first block of a figure with no id, so its moved inlines join that block. AC1 (both readings), AC2 and AC3 checks green on 1.10.19 run by hand; `figure-marks.qmd`'s Typst index unchanged.
+- 2026-10-19: substantive amendment: Scope In and T2 name a filter stage after `typst.assign_labels` instead of `assign_labels` itself; the deliverable is unchanged, so no stop.
 
 ## Decisions
 

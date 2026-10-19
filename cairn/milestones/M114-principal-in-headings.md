@@ -164,6 +164,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
 - 2026-10-19: claim audit: 105 claims read, 6 corrected — core.lua (running heads set `\index` to `\relax`, not removed), CHANGELOG.md and site/principal-mention.qmd (narrowed to contents-list, list and running-head copies; a `\nameref` copy registers, now KI317), examples/principal-headings.qmd (contents list leaves clover out; `\paragraph` is set on its own line, not run in), tests/run-tests.sh (clover derivation line; AC1 pass message; plant expectations now grep the first-difference line, not the whole got/want dump).
 - 2026-10-19: first full suite run stopped at about 524 checks with no failure, so the corrections could be run once; the corrections were made with Edit and one literal-replacement script over tests/run-tests.sh.
 - 2026-10-19: second full run red at M20-AC3/AC4 (`tests/m20probes.py`'s registration regex read the new zero-argument definition `\providecommand*\quartoindexregister{\qi@guard…}` as a registration, after 614 checks); the three commands keep their `[1]` argument form and pass it to the guard, the shape the M20/M21/M31 definition checks read, and the T3 splice follows it; no probe changed.
+- 2026-10-19: third full run red at M41-AC1 after 962 checks: every fixture must be declared in `site/gallery.yml`; `examples/principal-headings.qmd` added under `not-shown:`, since a shown fixture needs an HTML index manifest and this one has a PDF one.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local; promote

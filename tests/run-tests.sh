@@ -7343,28 +7343,64 @@ quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
 capture examples/demo.qmd pdf "demo-pdf"
 [ -s "$CAPTURE_ROOT/demo-pdf/demo.pdf" ] || fail "AC6: $CAPTURE_ROOT/demo-pdf/demo.pdf is empty"
-pdftotext -layout "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/demo.txt"
-
 printf '%s\n' "$PDF_TERMS" > "$WORK/pdfterms.txt"
-python3 - "$WORK/demo.txt" "$WORK/pdfterms.txt" <<'PY'
-import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-terms = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-
-m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: AC6: no "Index" heading in pdftotext output', file=sys.stderr)
+# Each term must be EXACTLY one printed index line, read through
+# tests/pdfindex.py and compared on the line's term, its locators removed
+# (M113): a presence test over flattened text passed a term printed twice. The
+# optional last argument plants extra lines, as xref_typeset_check's does.
+pdf_term_check() {   # <pdf> <terms> [<planted lines file>]
+  python3 - "$@" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, terms_path = sys.argv[1:3]
+plant = sys.argv[3] if len(sys.argv) > 3 else ''
+terms = [l.rstrip('\n') for l in open(terms_path, encoding='utf-8') if l.strip()]
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: AC6: {error}', file=sys.stderr)
     sys.exit(1)
-region = ' '.join(text[m.end():].split())
-missing = [t for t in terms if ' '.join(t.split()) not in region]
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(entries, terms, field='term')
+missing = [t for t in terms if counts[t] == 0]
+repeated = [t for t in terms if counts[t] > 1]
 if missing:
     print('FAIL: AC6: term(s) missing from the PDF index section:', file=sys.stderr)
     for t in missing:
         print(f'  <<{t}>>', file=sys.stderr)
-    print(f'--- index region ---\n{region[:1200]}', file=sys.stderr)
+if repeated:
+    print('FAIL: AC6: term(s) printed on more than one line of the PDF index, '
+          'where the fixture indexes each once:', file=sys.stderr)
+    for t in repeated:
+        print(f'  <<{t}>> x{counts[t]}', file=sys.stderr)
+if missing or repeated:
+    print(f'--- index lines read ({len(entries)}) ---', file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
-print(f'ok   AC6: PDF index heading found, {len(terms)} derived terms listed')
+print(f'ok   AC6: PDF index heading found, {len(terms)} derived terms printed '
+      f'once each')
 PY
+}
+pdf_term_check "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/pdfterms.txt" || exit 1
+# M113 T2: a term's line given once more is red naming the term.
+if [ "${1:-}" = "--self-test" ]; then
+  M113W="$WORK/m113-ac6"
+  rm -rf "$M113W"; mkdir -p "$M113W"
+  m113_term=$(awk 'NF { print; exit }' "$WORK/pdfterms.txt")
+  printf '%s, 9\n' "$m113_term" > "$M113W/twice.txt"
+  if out=$(pdf_term_check "$CAPTURE_ROOT/demo-pdf/demo.pdf" "$WORK/pdfterms.txt" "$M113W/twice.txt" 2>&1); then
+    fail "M113 T2 self-test: AC6 passed the demo PDF with <<$m113_term>> printed on a second line"
+  fi
+  case "$out" in
+    *"more than one line"*"<<$m113_term>> x2"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M113 T2 self-test: AC6 failed on a term printed twice, but not by naming that term" ;;
+  esac
+  pass "M113 T2 self-test: AC6 is red, naming the term, on the demo PDF with one term printed on a second line"
+fi
 
 # ---------------------------------------------------------------------------
 # M02-AC2 — every cross-reference reaches the compiled index as typeset text.
@@ -7905,36 +7941,39 @@ pdftotext -layout "$BOOK_PDF" "$WORK/book.txt"
 
 printf '%s\n' "$BOOK_PDF_TERMS" > "$WORK/book-pdf-terms.txt"
 printf '%s\n' "$BOOK_PDF_XREFS" > "$WORK/book-pdf-xrefs.txt"
-python3 - "$WORK/book.txt" "$WORK/book-pdf-terms.txt" \
-  "$WORK/book-pdf-xrefs.txt" <<'PY'
+# Read line by line through tests/pdfindex.py (M113): each term row must be
+# exactly one line, compared on its term, and each cross-reference row exactly
+# one line, compared on its whole text, so a row printed twice is red where a
+# search over flattened text took the first match and passed. The optional
+# last argument plants extra lines, as xref_typeset_check's does.
+book_pdf_check() {   # <pdf> <terms> <xrefs> [<planted lines file>]
+  python3 - "$@" <<'PY'
 import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-rows = [l.rstrip('\n').split('\t') for l in open(sys.argv[2], encoding='utf-8')
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, terms_path, xrefs_path = sys.argv[1:4]
+plant = sys.argv[4] if len(sys.argv) > 4 else ''
+rows = [l.rstrip('\n').split('\t') for l in open(terms_path, encoding='utf-8')
         if l.strip()]
-xrefs = [l.rstrip('\n') for l in open(sys.argv[3], encoding='utf-8')
+xrefs = [l.rstrip('\n') for l in open(xrefs_path, encoding='utf-8')
          if l.strip()]
 
 # The book declares two indexes, and since M49 a PDF book prints both, each
 # under its declared title -- so this reads the FIRST one, bounded by the
 # second's heading. Unbounded it would take the second index and everything
-# after it as part of the first, and every count below would be over a region
-# no single index printed. Both titles are read by hand off
-# examples/book/_quarto.yml.
-m = re.search(r'^\s*Index of Subjects\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: M05-AC5: no "Index of Subjects" heading in the book PDF',
-          file=sys.stderr)
+# after it as part of the first. Both titles are read by hand off
+# examples/book/_quarto.yml. The bounded read also returns the body prose the
+# last chapter prints between the two indexes, so every count below is over
+# the index plus that prose; no prose line equals a row.
+try:
+    entries = pdfindex.read(pdf_path, heading='Index of Subjects',
+                            stop=('Index of People',))
+except LookupError as error:
+    print(f'FAIL: M05-AC5: {error}', file=sys.stderr)
     sys.exit(1)
-rest = text[m.end():]
-second = re.search(r'^\s*Index of People\s*$', rest, re.MULTILINE)
-if not second:
-    print('FAIL: M05-AC5: no "Index of People" heading follows the first '
-          'index in the book PDF, so this read is unbounded and would take '
-          'the second index as part of the first', file=sys.stderr)
-    sys.exit(1)
-# The printed index is set in two columns, so layout spacing collapses the
-# same way the single-document checks collapse it.
-region = ' '.join(rest[:second.start()].split())
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
 
 # One printed locator: a page number, or a range of them. makeindex collapses
 # three or more consecutive pages into a range (`3--5`, typeset as an en
@@ -7944,21 +7983,21 @@ region = ' '.join(rest[:second.start()].split())
 LOCATOR = r'\d+(?:[-–—]\d+)?'
 
 
-def pages_after(term):
-    # Anchored on both sides: without a boundary, a row asserting a term has
-    # NO page numbers passes on a region where that term never reached the
-    # index and only appears inside a longer one.
-    m = re.search(r'(?<![\w])' + re.escape(term) + r'(?![\w])'
-                  + r'((?:,\s' + LOCATOR + r')*)', region)
-    if m is None:
-        return None
+def pages_on(entry):
+    # The locator list is what `Entry.term` removes from the line's end; a
+    # line with none, as a row asserting a term has NO page numbers expects,
+    # covers 0 pages.
+    tail = entry.text[len(entry.term):]
     total = 0
-    for token in re.findall(LOCATOR, m.group(1)):
+    for token in re.findall(LOCATOR, tail):
         ends = re.split(r'[-–—]', token)
         total += 1 if len(ends) == 1 else int(ends[1]) - int(ends[0]) + 1
     return total
 
 
+terms = [term for _count, term in rows]
+term_counts = pdfindex.line_counts(entries, terms, field='term')
+xref_counts = pdfindex.line_counts(entries, xrefs)
 bad = []
 for count, term in rows:
     # The page numbers themselves are the layout's business and are never
@@ -7966,25 +8005,70 @@ for count, term in rows:
     # sources — one per locator-contributing mark, each in its own chapter,
     # and a book class starts every chapter on a new page — and that count is
     # what shows the printed index aggregated across chapters.
-    got = pages_after(term)
-    if got is None:
-        bad.append(f'  {term!r} is not in the printed index at all')
-    elif got != int(count):
+    if term_counts[term] != 1:
+        bad.append(f'  {term!r} is printed on {term_counts[term]} line(s) of '
+                   f'the index, expected 1')
+        continue
+    line = next(e for e in entries
+                if ' '.join(e.term.split()) == ' '.join(term.split()))
+    got = pages_on(line)
+    if got != int(count):
         bad.append(f'  {term!r} is followed by {got} page(s) in the printed '
                    f'index, expected {count}')
 for xref in xrefs:
-    if ' '.join(xref.split()) not in region:
-        bad.append(f'  cross-reference <<{xref}>> is not in the printed index')
+    if xref_counts[xref] != 1:
+        bad.append(f'  cross-reference <<{xref}>> is printed on '
+                   f'{xref_counts[xref]} line(s) of the index, expected 1')
 if bad:
     print('FAIL: M05-AC5: the book PDF index does not match the manifest:',
           file=sys.stderr)
     print('\n'.join(bad), file=sys.stderr)
-    print(f'--- index region ---\n{region[:1200]}', file=sys.stderr)
+    print(f'--- lines read ({len(entries)}) ---', file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
 print(f'ok   M05-AC5: the book PDF prints one index carrying all {len(rows)} '
-      f'derived terms with their derived locator counts, and all '
-      f'{len(xrefs)} cross-references')
+      f'derived terms once each with their derived locator counts, and all '
+      f'{len(xrefs)} cross-references once each')
 PY
+}
+book_pdf_check "$BOOK_PDF" "$WORK/book-pdf-terms.txt" "$WORK/book-pdf-xrefs.txt" || exit 1
+# M113 T2: a term's line and a cross-reference's line, each given once more,
+# are red naming the row; a manifest row stating one page fewer than its
+# term's line covers is red naming the term. The page case plants the
+# manifest, because a second line for the term would be refused by the line
+# count before its pages were read.
+if [ "${1:-}" = "--self-test" ]; then
+  M113B="$WORK/m113-book"
+  rm -rf "$M113B"; mkdir -p "$M113B"
+  m113_book_red() {   # <case> <expected fragment> <terms> <planted lines file>
+    local out
+    if out=$(book_pdf_check "$BOOK_PDF" "$3" "$WORK/book-pdf-xrefs.txt" "$4" 2>&1); then
+      fail "M113 T2 self-test: M05-AC5 passed the book PDF under the $1 plant"
+    fi
+    case "$out" in
+      *"$2"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M113 T2 self-test: M05-AC5 failed under the $1 plant, but not with <<$2>>" ;;
+    esac
+  }
+  : > "$M113B/none.txt"
+  m113_row=$(awk -F '\t' '$1 > 0 { print; exit }' "$WORK/book-pdf-terms.txt")
+  m113_pages=${m113_row%%	*}
+  m113_bterm=${m113_row#*	}
+  [ -n "$m113_bterm" ] || fail "M113 T2 self-test: the book term manifest has no row with a page to plant"
+  printf '%s, 9\n' "$m113_bterm" > "$M113B/term-twice.txt"
+  m113_book_red term-twice "'$m113_bterm' is printed on 2 line(s)" \
+    "$WORK/book-pdf-terms.txt" "$M113B/term-twice.txt"
+  m113_xref=$(awk 'NF { print; exit }' "$WORK/book-pdf-xrefs.txt")
+  printf '%s\n' "$m113_xref" > "$M113B/xref-twice.txt"
+  m113_book_red xref-twice "<<$m113_xref>> is printed on 2 line(s)" \
+    "$WORK/book-pdf-terms.txt" "$M113B/xref-twice.txt"
+  awk -F '\t' -v OFS='\t' -v t="$m113_bterm" '$2 == t { $1 = $1 - 1 } { print }' \
+    "$WORK/book-pdf-terms.txt" > "$M113B/terms-short.txt"
+  m113_book_red page-short "'$m113_bterm' is followed by $m113_pages page(s) in the printed index, expected $((m113_pages - 1))" \
+    "$M113B/terms-short.txt" "$M113B/none.txt"
+  pass "M113 T2 self-test: M05-AC5 is red, naming the row, on a term or a cross-reference printed on a second line and on a term whose line covers one page more than its row states"
+fi
 
 # ---------------------------------------------------------------------------
 # M05 hardening — the dimensions one clean-slate render cannot reach: a second

@@ -92,13 +92,13 @@ three entries are removed from `cairn/DESIGN.md`.
       cases (~7383) to plant entries: one row's line given twice is red
       naming that row, a line that holds the row inside longer text is green,
       and the unplanted entries are green.
-- [ ] T2: Point AC6's term check (~7343) and the M05-AC5 check (~7900) at
+- [x] T2: Point AC6's term check (~7343) and the M05-AC5 check (~7900) at
       the same function, terms compared by each line's `term`. In M05-AC5,
       replace `pages_after`'s first-match search with the page total of the
       term's one line, keeping its range arithmetic. Add self-test cases: a
       manifest row's line given twice is red naming that row, for each
-      check, and a term line whose locators cover one page too many is red
-      naming the term.
+      check, and a manifest row stating one page fewer than its term's line
+      covers is red naming the term.
 - [ ] T3: In `tests/typstindex.py` `read` (~514-568), when `stop` ends the
       read, check the left-out page for a line ahead of its first line that
       starts with a stop string, column-aware as `tests/pdfindex.py`'s `read`
@@ -126,3 +126,4 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-19: reduced criteria re-audit of the new AC2 and AC3 (two Opus readers, fresh context): one found AC3's "printed index lines" false for the book, whose bounded read also returns the body prose between the two indexes; AC3 narrowed to the lines the read returns, prose included. The other found nothing.
 - 2026-10-19: status in-progress; branch m113-pdf-checks-count-lines cut from main at fea09c9.
 - 2026-10-19: T1 done: `pdfindex.line_counts` counts a row as the entries whose `text` (or `term`) equals it, whitespace collapsed; `xref_typeset_check` reads the PDF through it and takes an optional planted-lines file in place of the region-dump size; the row-inside-another-row refusal is dropped, since whole-line counting makes it unneeded; the M02-AC3 `pdftotext -layout` call is removed. Checked against the 2026-10-18 captures (both green, a twice row red naming it, a longer line holding the row green); the full `--self-test` run is at T4, since a run takes about 15 minutes.
+- 2026-10-19: T2 done: AC6 is now `pdf_term_check` and M05-AC5 `book_pdf_check`, both reading through `pdfindex.read` and `line_counts` with the planted-lines argument; M05-AC5 reads a term's pages from its one line's locator tail. The demo `pdftotext -layout` call is removed; the book's stays, since `m21probes.py bookpdf` and a later heredoc read `book.txt`. Minor amendment: T2's page case plants the manifest (one page fewer), because a second line for the term trips the line count before its pages are read. Checked against the 2026-10-18 captures: both green, and each plant red naming its row.

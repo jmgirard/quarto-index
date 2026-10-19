@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -60,7 +60,7 @@ page.
 - [x] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
 - [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
 - [x] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
-- [ ] T8: Review return 2 (work log): a laid-out float keeps its cells, the labels joining a paragraph cell or staying in the caption, with a fixture red on the current code first; the Review section's pass-2 fix-now items, the plants committed to the self-test; then the suite, a dispatched matrix run, and the review hand-back.
+- [x] T8: Review return 2 (work log): a laid-out float keeps its cells, the labels joining a paragraph cell or staying in the caption, with a fixture red on the current code first; the Review section's pass-2 fix-now items, the plants committed to the self-test; then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -103,6 +103,7 @@ page.
 - 2026-10-19: T8: added task T8 for review return 2; Coverage gives T8 to AC4 (minor amendment).
 - 2026-10-19: T8: `float_labels` no longer wraps several blocks: content of one Plain or Para takes the inlines at its end, one other block is wrapped with a Plain, and several blocks (Quarto's layout cells) give them to the first Plain or Para cell, or leave them in the caption where none is; a nil content returns early. New fixture `examples/typst-caption-layout.qmd` (a `layout-ncol=2` figure div with two text cells and a caption mark) with manifest `tests/typst-caption-layout.tsv` and a suite check that the cells share a line: on the committed code the cells printed on two lines, now on one, kestrel on page 1. A fourth picture in the lists fixture would have changed what AC2's "three picture captions" names, so the case has its own fixture.
 - 2026-10-19: T8: juniper's id is now `juniper-märk`, so the fixture runs the `label("…")` branch; the render compiles and the index reads green on 1.10.19. Self-test plants committed in the M115 section: link, lof, figure (the index red at alder), float (red at birch) and cells; the figure plant takes the fixture's link out so the planted copy builds. Comments on `id_inline` and the no-id fallback corrected; `site/typst.qmd` and `CHANGELOG.md` name the exceptions; DESIGN.md's Typst paragraph and KI290 rewritten; `site/tests.qmd` and `versions.yml` reflowed; `site/gallery.yml` lists the new fixture as not shown.
+- 2026-10-19: T8 done: dispatched `versions.yml` run 39340658487 at db2cdca green on every job (the caption-lists render and index reading on floor, pinned and release, which compiles `label("juniper-märk")` on Typst 0.11, and the lists reading on the pinned leg); suite run 6 at db2cdca (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1801, 10 skip lines, M115-AC2 among them; the five M115 self-test plants each red on its named failure. Status review.
 
 ## Decisions
 

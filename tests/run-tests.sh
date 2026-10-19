@@ -31266,7 +31266,7 @@ python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m098-tests-claims.txt" \
 # names (M106 review R5). Each is a sentence of the Tests page's matrix
 # section, stated against .github/workflows/versions.yml.
 cat > "$WORK/m106-tests-claims.txt" <<'M106TESTS'
-matrix typst render	It renders four fixtures to Typst:
+matrix typst render	It renders five fixtures to Typst:
 matrix two-index	`named-indexes.qmd` must print both of its declared indexes as the acceptance suite's manifest states them
 matrix book epub	The book's EPUB is read against the acceptance suite's manifest for it.
 M106TESTS

@@ -82,6 +82,7 @@ page.
 - 2026-10-19: second dispatched `versions.yml` run 39329284098 at 92026d4: green on the floor (1.5.52), pinned (1.10.18) and release legs, the caption-lists render and reading steps included. The run reads the index alone, so it cannot show which floor list copies which caption.
 - 2026-10-19: T6 revert probe, in a scratch copy with the new filter stage removed: the render stopped on "label `<alder-mark>` occurs multiple times" (AC3), and without the link the index was red at row 1, alder `1@1` against `2@2`, every caption mark on page 1 (AC1).
 - 2026-10-19: T6 suite run 1 (Quarto 1.10.19) stopped at M41-AC1: `site/gallery.yml` did not list the new fixture; added under `not-shown:`.
+- 2026-10-19: T6 suite run 2 stopped at M106: the suite holds `site/tests.qmd` to "It renders four fixtures to Typst:", which T5 made five; the held sentence now says five.
 - 2026-10-19: claim audit: 55 claims read, 3 corrected — examples/typst-caption-lists.qmd, tests/typst-caption-lists.tsv, tests/run-tests.sh (page 1 also holds the title), _extensions/index/modules/typst.lua (the no-id figure's labels now join its first block, and stay in the caption where that block holds no inlines, rather than going to a block Quarto drops), CHANGELOG.md (the no-break condition)
 
 ## Decisions

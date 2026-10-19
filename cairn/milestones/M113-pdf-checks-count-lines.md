@@ -157,3 +157,30 @@ Evidence: suite run 6 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Pyt
 - AC3: run 6 printed `ok M05-AC5: the book PDF prints one index carrying all 10 derived terms once each with their derived locator counts, and all 2 cross-references once each` and the M113 T2 M05-AC5 self-test line. Fresh rerun of `book_pdf_check` (bounded `pdfindex.read`, `stop=('Index of People',)`, which returns the prose lines too): green; `Alpha, 9` planted is red with `'Alpha' is printed on 2 line(s)`; `Delta, see Alpha` planted is red with `printed on 2 line(s)`; a manifest stating Alpha at 0 pages is red with `'Alpha' is followed by 1 page(s) in the printed index, expected 0`.
 - AC4: run 6 printed the M113 T3 self-test line (stranded line above, left column below a right-column stop, and one row below a right-column header each red naming page 2 and only that line; control, opening header, split header row and second-stop pages green) and `ok M098-AC5 (main): the 25 lines under 'Index of Subjects' are the manifest's`. Fresh rerun: the T3 self-test green; M098-AC5 (main) green on the book capture; the same read with `Chapter 4.` alone is refused naming page 14 and its prose lines, the first stop line in reading order being the right-column header.
 - AC5: run 6 ended `All checks passed (1773 checks).`, exit 0, with every `tests/typstindex.py` reading among them green. Runs 2, 4 and 5 stopped on Quarto segfaults at renders this branch does not touch (work log); run 6 had none.
+- Consistency gate: `cairn_validate.py` all checks passed; no principle changed, so `cairn_impact` skipped; the generic profile's gate adds no toolchain check.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the same-row exemption in `typstindex.read` covers any line within 1pt of a stop line's row, not only a page number, so an index line on that row is dropped unseen — follow-up, KI314 under the backlog row; AC4 as written exempts such a line, and narrowing it changes AC4, whose re-audit bound is spent.
+- diff-bug #2: the `typstindex.read` docstring and the M098-AC5 comment say body text "below" a right-column header is ahead, where the rule is by column — fix now, fixed 918a628.
+- diff-bug #3: the main book read and the T5/T9 plants depend on last.qmd's prose opening words — reject, planned change (the AC4 amendment); a change to that prose fails loudly with "no page carries".
+- diff-bug #4: a count of 0 also means the row's line carries extra text, so "did not typeset" or "missing" can be false — follow-up, KI315.
+- diff-bug #5: `LOCATOR` accepts an em dash that `Entry.term` does not strip — reject, false impact: makeindex prints ranges with an en dash, and such a line fails loudly as 0 lines.
+- diff-bug #6: `pdfindex` folds digit- or comma-only terms into the line above, now on M02-AC3's path — follow-up, KI315; no cross-reference row is affected.
+- diff-bug #7: the AC6 plant takes its term with no non-empty guard, and the three checks pass an empty manifest as "all 0" — fix now, fixed 918a628 (guard added; each check refuses an empty manifest by name).
+- diff-bug #8: `awk -v t=` reads backslash escapes in the page-short plant's term — fix now, fixed 918a628 (`ENVIRON`).
+- diff-bug #9: a right-column line above a left-column first stop line is refused though it follows the stop in reading order — reject, planned change: AC4's "one above that line", as `pdfindex.read` does.
+- diff-bug #10: the page-short plant would also be red under the old first-match code — reject, false as a defect: it shows the page clause fires; the one-line change is held by the line-count plants.
+- diff-bug #11: the M098 fixture comment says each read stops at the running header, but `places` passes no stop — fix now, fixed 918a628.
+- blame-history #1: whole-line counts read a wrapped term or cross-reference as missing — follow-up, KI315.
+- blame-history #2: the prose stop couples the read to fixture text, and T5/T9 no longer run the header-only read — reject, planned change; the header-only refusal is held by the T3 self-test's header-prose case.
+- blame-history #3: the failure dump shows the first 60 lines read, not a 1500-character region — reject, false loss: each failing row is named, and the old dump was cut too.
+- blame-history #4: the M112 row-inside-another-row refusal is deleted — reject, planned change (AC1, T1); M112's archive is history.
+- blame-history #5: M05's comment on the boundary-anchored search is gone — reject, false: whole-line equality has no boundary to explain, and the no-page case is in `pages_on`'s comment.
+- blame-history #6: the row exemption exists in `typstindex.read` only — fix now, fixed 918a628 (the docstring says "Unlike that read" and why).
+- prior-review #1: same as diff-bug #1, reproduced with a stub ("zebra, 3" on a stop line's row read green) — follow-up, KI314.
+- prior-review #2: a wrapped row reads as missing, which M15 and M110 met before — follow-up, KI315.
+- prior-review #3: the row-inside-another-row guard is gone with no replacement — reject, planned change; whole-line counts do not double count.
+- ripple #1: `tests/run-tests.sh` M04-AC2 comment says its collapse matches "the other PDF checks" — fix now, fixed 918a628.
+- ripple #2: M04-AC2's term check is still a presence test — follow-up, KI316.
+- ripple #3: `pdfindex.read`'s docstring says a header on the left-out page is refused, while `typstindex.read` exempts one — fix now, fixed 918a628 (same change as blame-history #6).
+- ripple #4: `tests/gallerycheck.py`'s pdf mode is still a presence test — follow-up, KI316.
+- Return floor: no finding shows a criterion failing, and the tier is internal, so none returns the milestone; 7 fixed now, 8 to follow-up (KI314-KI316, under the older acceptance-suite backlog row), 9 rejected.

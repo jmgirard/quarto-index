@@ -4,7 +4,7 @@
      cairn_validate's <150 over the plan-owned body. -->
 # M113: PDF index checks count whole printed lines
 
-- **Status:** in-progress   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
+- **Status:** review   <!-- owner: transitioning skill · mirror-update; cairn/ROADMAP.md is the authority -->
 - **Priority:** normal   <!-- owner: plan · create/amend-via-gate; high | normal | low -->
 - **Depends on:** —   <!-- owner: plan · create/amend-via-gate; M<xx>, M<yy> or — -->
 - **Driving RR:** —   <!-- owner: plan · create/amend-via-gate; RR<NN> whose Binding criteria bind this milestone's ACs (binding-criteria check), or — -->
@@ -114,7 +114,7 @@ three entries are removed from `cairn/DESIGN.md`.
       header, which stays refused. Add `A second placement marker` as a
       second stop of the M098-AC5 main read (~30765), whose left-out page 14
       prints body prose below its running header.
-- [ ] T4: Remove KI69, KI312 and KI313 from `cairn/DESIGN.md`, check that no ROADMAP row
+- [x] T4: Remove KI69, KI312 and KI313 from `cairn/DESIGN.md`, check that no ROADMAP row
       names a removed entry, and update every suite comment that describes
       the old substring reading of these checks. Run
       `tests/run-tests.sh --self-test` green.
@@ -144,3 +144,6 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-19: T4 suite runs 4 and 5 (after the T3 amendment) each stopped on a Quarto 1.10.19 segfault ("Segmentation fault: 11" in Quarto's Deno), at M064-AC3 and M069-AC5, neither touched by this branch; every M113 check that ran before them passed. Three of five runs crashed this way at three different renders, while ten renders of examples/control.qmd in a row all passed; load average about 8.
 - 2026-10-19: status blocked: Quarto 1.10.19 crashes at random renders on this machine, so no full `tests/run-tests.sh --self-test` run completes and AC5 has no evidence. The blocker is the local Quarto; resume with `/milestone-implement M113`, which reruns T4's suite. T1-T3 are done and committed; T4's record edits are committed and its suite run is what remains.
 - 2026-10-19: resumed at the user's request after they closed Docker and LM Studio; status in-progress. Load average still about 9.9 from other work (four R test and check processes, two Xcode clang compiles), left running; T4's suite run retried.
+- 2026-10-19: T4 done: suite run 6, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` under Python 3.9.6, ended "All checks passed (1773 checks)", exit 0, at 7774a1a; no Quarto segfault this run.
+- 2026-10-19: claim audit: not owed — internal tier.
+- 2026-10-19: implement complete; status review.

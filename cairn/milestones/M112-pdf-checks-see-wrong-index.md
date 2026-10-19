@@ -49,25 +49,25 @@ three entries are removed from `cairn/DESIGN.md`.
 ## Acceptance criteria
 <!-- owner: plan · create/amend-via-gate; review reads, never reinterprets. -->
 
-- [ ] AC1: The M02-AC2 and M02-AC3 typeset checks in `tests/run-tests.sh`
+- [x] AC1: The M02-AC2 and M02-AC3 typeset checks in `tests/run-tests.sh`
       fail, naming the row, when a manifest row's text occurs more than once
       in the index region they read; today a row printed twice passes. Given
       its captured text with one row written a second time, each check fails
       naming that row.
-- [ ] AC2: `tests/m23probes.py`'s `ind` and `posind` modes fail when the
+- [x] AC2: `tests/m23probes.py`'s `ind` and `posind` modes fail when the
       compiled index carries an `\item` entry other than the three terms the
       module states, and when the `.ilg`'s accepted-entry count differs from
       the number of marks the module states the fixture writes. Given a copy
       of the `range-nested` capture with an extra `\item` entry, `ind` fails
       with the entry clause's message; given a copy whose accepted count is
       changed, it fails with the count clause's message.
-- [ ] AC3: `tests/pdfindex.py`'s `read`, given `stop`, fails with a message
+- [x] AC3: `tests/pdfindex.py`'s `read`, given `stop`, fails with a message
       naming the page when the page it leaves out carries a line printed
       above that page's first section-ending line; today such a line is
       dropped with no message. Given input whose left-out page carries an
       index line above its first section-ending line, `read` fails with that
       message.
-- [ ] AC4: The repaired checks (M02-AC2, M02-AC3, `m23probes` `ind` and
+- [x] AC4: The repaired checks (M02-AC2, M02-AC3, `m23probes` `ind` and
       `posind`, and every bounded `pdfindex.read` call the suite makes through
       `tests/namedpdf.py`, `tests/indexdump.py` and `tests/typstindex.py`)
       pass on the fixtures' current output in a run of
@@ -131,9 +131,72 @@ three entries are removed from `cairn/DESIGN.md`.
 - 2026-10-18: verify: the first `tests/run-tests.sh --self-test` run stopped at its PyYAML guard, because this session's PATH resolves `python3` to a new 3.14.6 install without PyYAML; re-run with `python3` alone pointed at `/usr/bin/python3` 3.9.6, the repo's local interpreter, nothing installed. That run: "All checks passed (1770 checks)" at 58d8c71, the three M112 self-test cases green. T1-T4 ticked.
 - 2026-10-18: claim audit: not owed — internal tier.
 - 2026-10-18: implement complete; status review.
+- 2026-10-19: review: four-lens fan-out, 23 findings: 14 fixed on the branch in d2309c7, 3 to follow-up KI313, 6 rejected; the first review suite run was stopped before the fixes, and the run at d2309c7 is the evidence.
 
 ## Decisions
 <!-- owner: implement / review · append-only; milestone-local. -->
 
 ## Review
 <!-- owner: review · exclusive -->
+
+Fresh run: `tests/run-tests.sh --self-test` at d2309c7, `python3` pointed at
+`/usr/bin/python3` 3.9.6 (the session's default 3.14.6 lacks PyYAML):
+"All checks passed (1770 checks)", 0 FAIL lines.
+
+- AC1: `ok M02-AC3: all 66 … typeset once each` and `ok M02-AC2: all 7 …
+  typeset once each` on the captures; `ok M112 T1 self-test`: each check red
+  on its captured text with one row written a second time, the failure
+  naming `<<row>> x2`. The pre-milestone presence test reads both planted
+  copies (`tests/.work/m112-xref/`) with nothing missing, so the plants pass
+  without the fix.
+- AC2: `ok M23-AC1` (`ind`) and `ok M23-AC2` (`posind`) on the captures;
+  `ok M112 T2 self-test`: `ind` red with the entry clause's message on an
+  extra `\item quokka`, and with the count clause's message on one accepted
+  entry more than `MARKS` and on one rejected entry. The pre-milestone
+  `tests/m23probes.py` passes all three planted copies (`tests/.work/m23-planted/`).
+- AC3: `ok M112 T3 self-test`: `read`, fed `_pages` output whose left-out
+  page prints `zebra, 3` above its section-ending line, raises LookupError
+  naming page 2 and that line; it does the same for `zebra, 3` in the left
+  column below a section-ending line set in the right; the control without
+  either reads its two entries. The `main` reader returns the two entries on
+  both planted inputs, and the implement-time y-only reader on the
+  left-column one.
+- AC4: the fresh run above is green with M02-AC2, M02-AC3, M23-AC1 and
+  M23-AC2 on the captures, and with every bounded `pdfindex.read` the run
+  makes: M49-AC1/AC2/AC4 and the M49-AC2 cells through `tests/namedpdf.py`,
+  the M50 fixture's two indexes through `tests/indexdump.py`, and M098-AC6's
+  two `typstindex.py pages` reads.
+
+Consistency gate: `cairn_validate.py` all checks passed; no principle
+changed, so `cairn_impact` skipped; the generic profile names no toolchain
+checks.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: the stranded-line refusal reads any line above the stop line as index content, so a running header there is refused, and the docstring said every such line is an index line — fix now: the docstring states the no-running-header assumption the module already makes on index pages, and that a header would be refused by name, not read, fixed d2309c7
+- diff-bug #2: the T3 plant stubs `_pages` rather than reaching `read` through a real caller — reject (false): AC3 names `read`'s behavior, and the callers' LookupError-to-FAIL path is already planted by M49's `nostop` case through the same `except` clause
+- diff-bug #3: the T3 comment "No fixture can print that page" overstates one tried render — fix now: reworded to the one variant tried, fixed d2309c7
+- diff-bug #4: the refusal grows a checker over a shape no output shows, which D-059 and D-064 refuse, unrecorded — reject (planned change): the plan gate chose this cluster, and a LaTeX index's next heading can share a page with index content, as the no-page-break render showed
+- diff-bug #5: an extra mark makeindex rejects (6 accepted, 1 rejected) passes the count clause — fix now: the clause also requires 0 rejected, with a plant, fixed d2309c7
+- diff-bug #6: the T2 plants re-type 6 and 7 rather than reading `MARKS` — fix now: the plants read `MARKS` from the module, fixed d2309c7
+- diff-bug #7: a row that also occurs inside other printed text counts twice on a correct index — follow-up: KI313, under the backlog candidate row's subheading
+- diff-bug #8: `|| exit 1` where the file usually writes `|| fail "…"` — reject (style)
+- diff-bug #9: the T1 plant appends the doubled row after the text rather than inside the columns — reject (false): the count runs over the flattened region, where a row's position does not change it
+- diff-bug #10: `_items` keys by term, so a second `\item pooka` collapses — reject (false): a second entry for a term needs another mark, which the accepted-count clause and its plant catch
+- diff-bug #11: `y < top` compares lines set in different font sizes — reject (false): a section-ending line matches a whole pdftotext line exactly, and no fixture's heading row carries another line
+- blame-history #1: deleting KI69 erases the record of the M05-AC5 book cross-reference presence check — fix now: KI69 restored, narrowed to that check and AC6's term check, fixed d2309c7
+- blame-history #2: the refusal is column-blind, so a section-ending line in the right column drops left-column lines below it — fix now: the refusal also takes left-column lines when that line sits in the right one, with a plant red on the y-only reader, fixed d2309c7
+- blame-history #3: the counts are substring counts — follow-up: KI313
+- blame-history #4: the `_ind` docstring says the `.ilg` is read for a count rather than searched, while the phrases are searched — fix now: docstring states both, fixed d2309c7
+- prior-review #1: AC6's term check keeps the presence test KI69 named — fix now: KI69 narrowed names it, fixed d2309c7
+- prior-review #2: the refusal is column-blind — fix now: as blame-history #2, fixed d2309c7
+- prior-review #3: the counts are substring counts — follow-up: KI313
+- ripple #1: `tests/typstindex.py`'s `read` docstring says it drops the stop page as `pdfindex.read` does — fix now: docstring names the difference, fixed d2309c7; the silent drop itself is follow-up KI312
+- ripple #2: `pdfindex.read`'s Raises paragraph omits the new LookupError — fix now: moved into that paragraph, fixed d2309c7
+- ripple #3: the `_ind` docstring omits the accepted-count read — fix now: added, fixed d2309c7
+- ripple #4: the comment above `AC` lists the clauses without the two new ones — fix now: added, fixed d2309c7
+- ripple #5: removing KI69 drops the record of two presence-only checks — fix now: KI69 restored narrowed, fixed d2309c7
+
+Return floor: no finding shows a criterion failing or a defect users meet, so
+no status change. The fix-now commit landed before this checkpoint; the run
+recorded above is on it.

@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -98,6 +98,7 @@ page.
 - 2026-10-19: T7 plants, by hand in scratch copies: AC3's check red on a link to `juniper-mark` ("links to pages [7], not the one link to page 2"); AC6's grep red on a `site/typst.qmd` without the line; with only the `Figure` handler removed the render stopped on the duplicate `alder-mark` label and, without the link, only alder read red; with only the `FloatRefTarget` handler removed alder read right and birch, cedar, dogwood, elder, hazel and juniper read page 1.
 - 2026-10-19: T7 docs and records: KI290 names the no-id figure fallback; DESIGN.md's pass count names the Typst stage; `versions.yml`'s WHAT IT CHECKS and reader list name the pinned-leg lists reading; `site/tests.qmd` names it; `site/typst.qmd`'s `lof:` sentence is a dated observation; candidate row "Breakable float caption marks" added, parked. The claim audit ran once at implement and is not re-run (one pass); the return's added prose is derived from this session's probes.
 - 2026-10-19: T7 done: dispatched `versions.yml` run 39337730177 at 6f0f4c5 green on every job, the caption-lists render and index reading on all three legs and the lists reading on the pinned leg; suite run 5 at 6f0f4c5 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1793, 10 skip lines, M115-AC2 among them. Status review.
+- 2026-10-19: review return 2: diff-bug #1 (pass 2) — `float_labels` wraps a float's content in one Div, which collapses Quarto's `layout-ncol` grid into one cell when the float's own caption holds a mark (probe: `fig-parent` hands the stage Blocks[Div,Div], `fig-pair` Blocks[Para,Para], `tbl-pair` Blocks[Table,Table], each with `layout-ncol=2`). The return also carries pass 2's fix-now items: the `id_inline` and fallback comments, a non-ASCII fixture id for the `label("…")` branch, a nil-content guard, the docs' caption exceptions, committed self-test plants for AC3's link, AC6's grep and each handler, the two long lines, and DESIGN.md's wrapper sentence and KI290. Status in-progress.
 
 ## Decisions
 
@@ -146,3 +147,26 @@ Pass 2, after review return 1. Evidence base: HEAD 3553374, tree outside `cairn/
 - AC6 (pass 2): `site/typst.qmd` keeps the caption sentences and the `List of Figures` call, its `lof:` sentence now a dated observation; suite run 5 `ok M115-AC6`; plant: a copy without the call line fails the grep. CHANGELOG sentence unchanged.
 - Consistency gate (pass 2): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
 - spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1 (pass 2): wrapping a float's content in one Div collapses Quarto's `layout-ncol` grid when the float's own caption holds a mark (subfigures, a pair of images, a pair of tables stacked in one cell), the index right and the layout silently changed — fix now, return floor (IP2, silent corruption): review return 2
+- diff-bug #2 (pass 2): `id_inline`'s comment says it writes an id "as Pandoc writes an id", but `%w` is ASCII, where Pandoc writes Unicode letters bare — fix now (comment; both forms name the same label)
+- diff-bug #3 (pass 2): no fixture or leg runs the `label("…")` branch, so the floor's Typst 0.11 never compiles it — fix now: a fixture id outside ASCII
+- diff-bug #4 (pass 2): a raw Typst inline in a caption holding `<qi-mark-` moves with the labels — reject, false as a defect: `qi-mark-` labels are the filter's own minted names, matched the same way in alt text since M098
+- diff-bug #5 (pass 2): `float_labels` has no guard for a nil `float.content` — fix now (guard)
+- diff-bug #6 (pass 2): a plain span id in a caption is still copied by a list — reject, present on main and outside the extension's marks (the plan's probe showed it fails without the extension)
+- blame-history #1 (pass 2): `typst.lua`'s "never taken from the author's id" comment — reject, false: each mark's locator label is still minted; the moved element carries the author's id for the author's own links, not as a locator
+- blame-history #2 (pass 2): same as diff-bug #2 — fix now
+- blame-history #3 (pass 2): `CHANGELOG.md` and `site/typst.qmd` state the caption rule without the no-id figure fallback — fix now, with the layout exception return 2 adds
+- blame-history #4 (pass 2): an anchorless cross-reference mark's id moves too — reject, false as a defect: the reviewer found no visible effect and the id still names one element
+- prior-review #1 (pass 2): the caption-lists render step has no `if:`, so an earlier red step skips it — reject, planned: every fixture step in the PDF job follows the same pattern, and a run with an earlier red step is red and re-dispatched after its fix
+- prior-review #2 (pass 2): docs over-claim — fix now, same as blame-history #3
+- prior-review #3 (pass 2): return 1's plants were hand-run, not committed self-test plants as M101 and M114 did — fix now: self-test plants for AC3's link, AC6's grep and each handler
+- prior-review #4 (pass 2): the fixture never varies breakability — reject, planned: the plan's Out item sends breakable floats to KI318 and the parked row "Breakable float caption marks"
+- prior-review #5 (pass 2): `site/tests.qmd:46` (106 columns) and `versions.yml:353` (105) and its orphan `figuremarks.py` wrap reintroduce what M097 fixed — fix now (rewrap)
+- prior-review #6 (pass 2): DESIGN.md never mentions the Div wrapper — fix now, with return 2's change to when a wrapper is used
+- prior-review #7 (pass 2): "List of Figures" holds `F` next to `i` — reject, false: the fixture's claim and the M30 lesson are about lowercase `fi`
+- ripple #1 (pass 2): KI290 says labels move out of "any float" yet lists custom kinds as unprobed — fix now: KI290 rewritten with return 2's exceptions
+- ripple #2 (pass 2): the no-id figure comment says "holds no inlines" where the code tests the block's type — fix now (comment)
+- ripple #3 (pass 2): DESIGN.md says `index.lua` "defines the Pandoc pass and nothing else" — reject, false: the new stage only names two module functions, and `index.lua` defines nothing new
+- ripple #4 (pass 2): `site/typst.qmd` omits the caption exceptions — fix now, same as blame-history #3
+- ripple #5 (pass 2): the candidate row is still open — reject, planned, as ripple #5 of pass 1
+- ripple #6 (pass 2): KI318 sits before KI290 — reject, false as a defect: the Typst subsection is not in number order (KI310 precedes KI296)

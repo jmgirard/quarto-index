@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -59,7 +59,7 @@ page.
 - [x] T4: Add the fixture to `versions.yml`'s PDF job and to its WHAT IT CHECKS comment, with a pinned-leg step running `tests/typstlists.py` for AC2, dispatch a run on the branch, and log each leg's result.
 - [x] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
 - [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
-- [ ] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
+- [x] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -97,6 +97,7 @@ page.
 - 2026-10-19: T7: elder's table-div caption now also marks juniper with the id `juniper-mark` (manifest gains `juniper 7@7`, the lists manifest the longer caption). On the committed `typst.lua` the render warned "content labelled multiple times" and the index read elder with no locator (row 9). `caption_moves` now writes a moved id as `#[#metadata(none)<id>]`, or `label("…")` for an id Pandoc would not write bare (`label()` attaching checked on Typst 1.10.19's bundle); index, `pages` reading, lists and the page-9 link green, and page 7 renders pixel-identical with and without the id (diff-bug #3).
 - 2026-10-19: T7 plants, by hand in scratch copies: AC3's check red on a link to `juniper-mark` ("links to pages [7], not the one link to page 2"); AC6's grep red on a `site/typst.qmd` without the line; with only the `Figure` handler removed the render stopped on the duplicate `alder-mark` label and, without the link, only alder read red; with only the `FloatRefTarget` handler removed alder read right and birch, cedar, dogwood, elder, hazel and juniper read page 1.
 - 2026-10-19: T7 docs and records: KI290 names the no-id figure fallback; DESIGN.md's pass count names the Typst stage; `versions.yml`'s WHAT IT CHECKS and reader list name the pinned-leg lists reading; `site/tests.qmd` names it; `site/typst.qmd`'s `lof:` sentence is a dated observation; candidate row "Breakable float caption marks" added, parked. The claim audit ran once at implement and is not re-run (one pass); the return's added prose is derived from this session's probes.
+- 2026-10-19: T7 done: dispatched `versions.yml` run 39337730177 at 6f0f4c5 green on every job, the caption-lists render and index reading on all three legs and the lists reading on the pinned leg; suite run 5 at 6f0f4c5 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1793, 10 skip lines, M115-AC2 among them. Status review.
 
 ## Decisions
 

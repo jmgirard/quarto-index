@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -58,7 +58,7 @@ page.
 - [x] T3: Probe a float made breakable (`#show figure: set block(breakable: true)`) whose content crosses a page. If its caption mark names a page other than its caption's, write a `cairn/DESIGN.md` Known issues entry under the Typst back-end.
 - [x] T4: Add the fixture to `versions.yml`'s PDF job and to its WHAT IT CHECKS comment, with a pinned-leg step running `tests/typstlists.py` for AC2, dispatch a run on the branch, and log each leg's result.
 - [x] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
-- [ ] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
+- [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
 
 ## Work log
 
@@ -89,6 +89,8 @@ page.
 - 2026-10-19: re-audit: AC2 (full) — the amended wording was near tautological ("each float of that kind" holds by construction of an `outline` target), could read as a count, and the suite still read inline; fixed by naming the partition and the two positions and moving the suite onto `tests/typstlists.py`.
 - 2026-10-19: re-audit: AC2 (full) — sound; flags "holds the three picture captions" as readable as "only those", where the reader checks presence (left as written, presence being the promise), the evidence being the dispatched pinned leg, and an unguarded step (guarded).
 - 2026-10-19: the claim audit found AC1's "first page holds only" the three lists false, the title printing there too; the fixture drops its `title:` so the criterion holds as written, and the three comments say no title prints. Index, `pages` reading, lists and the page-9 link re-read green on 1.10.19.
+- 2026-10-19: dispatched `versions.yml` run 39334750678 at 1e28f44: every job green; the caption-lists render and index reading green on the floor, pinned and release legs, and the lists reading green on the pinned leg (1.10.18) and skipped on the other two, as its guard says.
+- 2026-10-19: T6 done: suite run 4 at 1e28f44 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1793, 10 skip lines, M115-AC2 among them. Status review.
 
 ## Decisions
 

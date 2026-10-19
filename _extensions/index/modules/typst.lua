@@ -319,8 +319,8 @@ end
 -- that comes before the figure files the mark there. An id of the author's on
 -- a mark in the caption is copied the same way, and Typst refuses a link to a
 -- label that names two elements. So each label `assign_labels` wrote into a
--- float's caption, and each such id, moves to the end of the float's content,
--- which no list copies. A Typst figure does not break across pages unless the
+-- float's caption, and each such id, moves into the float's content, which no
+-- list copies (`figure_labels` and `float_labels` say where). A Typst figure does not break across pages unless the
 -- document makes it, so its content and its caption print on one page. The
 -- move runs as a filter of its own after the Pandoc pass, because Quarto
 -- hands a float with an id to a filter's `FloatRefTarget` function and not
@@ -330,8 +330,9 @@ end
 -- a label. An empty span would not do: Pandoc writes its id as a bare label,
 -- which attaches to the element before it, the label element of another mark
 -- among them, and Typst then keeps only one of the two labels (M115 review).
--- The label is written as Pandoc writes an id: `<id>` where every character
--- is a letter, a digit, `_`, `-`, `.` or `:`, and `label("…")` otherwise.
+-- The label is `<id>` where every character is an ASCII letter or digit, `_`,
+-- `-`, `.` or `:`, and `label("…")` otherwise. Pandoc writes some ids outside
+-- ASCII bare where this writes `label("…")`; both name the same label.
 local function id_inline(id)
   local label
   if id:match("^[%w_%-%.:]+$") then
@@ -369,8 +370,8 @@ local function figure_labels(figure)
     return nil
   end
   -- Quarto writes only the first block of a figure with no id, so the moved
-  -- inlines join that block. A figure made from an image holds one block of
-  -- inlines. Where the first block holds no inlines, the labels stay in the
+  -- inlines join that block. A figure made from an image holds one Plain.
+  -- Where the first block is not a Plain or a Para, the labels stay in the
   -- caption, which a list copies, rather than in a block Quarto drops.
   local first = figure.content[1]
   if first == nil or (first.t ~= "Plain" and first.t ~= "Para") then
@@ -385,23 +386,48 @@ local function figure_labels(figure)
   return figure
 end
 
+-- Where the moved inlines go in a float with an id. A float whose content is
+-- one Plain or Para takes them at its end. A float whose content is one other
+-- block, a table or a code block, is wrapped with a Plain holding them, which
+-- leaves the page as it was. A float whose content is several blocks is laid
+-- out by Quarto, each block a cell (`layout-ncol` and its kin), and a wrapper
+-- would make them one cell, so the inlines join the first of those blocks that
+-- is a Plain or a Para. Where none is, the labels stay in the caption, which a
+-- list copies (M115 review).
 local function float_labels(float)
-  if not qi_core.is_typst() or float.caption_long == nil then
+  if not qi_core.is_typst() or float.caption_long == nil
+      or float.content == nil then
     return nil
+  end
+  local content = float.content
+  if pandoc.utils.type(content) == "Blocks" and #content == 1 then
+    content = content[1]
+  end
+  local target
+  if pandoc.utils.type(content) == "Blocks" then
+    for _, block in ipairs(content) do
+      if block.t == "Plain" or block.t == "Para" then
+        target = block
+        break
+      end
+    end
+    if target == nil then
+      return nil
+    end
+  elseif content.t == "Plain" or content.t == "Para" then
+    target = content
   end
   local rest, moved = caption_moves(float.caption_long)
   if #moved == 0 then
     return nil
   end
   float.caption_long = rest
-  local blocks = pandoc.Blocks({})
-  if pandoc.utils.type(float.content) == "Blocks" then
-    blocks:extend(float.content)
+  if target ~= nil then
+    target.content:extend(moved)
+    float.content = content
   else
-    blocks:insert(float.content)
+    float.content = pandoc.Div({ content, pandoc.Plain(moved) })
   end
-  blocks:insert(pandoc.Plain(moved))
-  float.content = pandoc.Div(blocks)
   return float
 end
 

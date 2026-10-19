@@ -1,0 +1,21 @@
+---
+title: "Caption layout"
+format: typst
+filters:
+  - index
+---
+
+The fixture for a mark in the caption of a float that Quarto lays out in
+cells (M115 review). The filter moves a caption's labels into the float's
+content, so that a Typst list of figures does not copy them. Wrapping all of
+a laid-out float's content in one block made its cells one cell, so the two
+cells below printed one above the other. They must print side by side, on one
+line of text, and the mark files this page.
+
+::: {#fig-kestrel layout-ncol=2}
+The west cell.
+
+The east cell.
+
+A laid-out picture div, whose caption marks [kestrel]{.index}.
+:::

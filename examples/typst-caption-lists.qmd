@@ -68,7 +68,7 @@ author's, which must not take the label of the first:
 |---|---|
 | 3 | 4 |
 
-A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-mark .index}.
+A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-märk .index}.
 :::
 
 {{< pagebreak >}}

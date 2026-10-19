@@ -121,6 +121,12 @@ place, so a link to it builds. Both hold when the float does not break across
 pages, which is Quarto's default. In a document that makes floats breakable,
 such a mark files the page where the float's content ends.
 
+Two kinds of float keep a caption mark's label in the caption, so a list
+before them still files the mark on the list's page. The first is a float laid
+out in cells with `layout-ncol` or its kin where no cell is a paragraph. A grid
+of subfigures or of tables is such a float. The second is a figure with no id
+whose content does not start with a paragraph.
+
 ## A mark Typst never prints
 
 A mark in a front-matter field that Quarto's Typst template does not print,

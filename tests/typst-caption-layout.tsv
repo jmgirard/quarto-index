@@ -1,0 +1,9 @@
+# The index examples/typst-caption-layout.qmd prints in a Typst render
+# (M115 review).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states. The source has one page before its index:
+#   kestrel  the caption of a picture div laid out in two cells, page 1
+group	K
+entry	0	kestrel	1@1

@@ -350,12 +350,12 @@ jobs:
   # tests/typst-caption-lists.tsv states it, each caption mark on its
   # caption's page under lists that copy the caption (M115). On the pinned
   # leg alone, that each of those lists holds the captions
-  # tests/typst-caption-lists-lists.tsv names for it (M115-AC2). The render alone is not the check: a PDF
-  # that typesets at exit 0 while the index prints empty is exactly the break
-  # this job exists to catch, and the reading step after each render
-  # (`indexdump.py`, `namedpdf.py`, `typstindex.py`, `typstlists.py` or
-  # `figuremarks.py`) is
-  # what makes the difference between the two visible.
+  # tests/typst-caption-lists-lists.tsv names for it (M115-AC2). The render
+  # alone is not the check: a PDF that typesets at exit 0 while the index
+  # prints empty is exactly the break this job exists to catch, and the
+  # reading step after each render (`indexdump.py`, `namedpdf.py`,
+  # `typstindex.py`, `typstlists.py` or `figuremarks.py`) is what makes the
+  # difference between the two visible.
   #
   # WHAT IT DELIBERATELY DOES NOT CHECK. Whether two legs print the SAME
   # index. See the render job's note above on why a PDF comparison would be

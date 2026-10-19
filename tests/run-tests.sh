@@ -32700,17 +32700,23 @@ fi
 #            closed in the text on page 6
 #   elder    page 7, the caption of a table div, before juniper
 #   hazel    page 8, the caption of a code listing
-#   juniper  page 7, the same caption, on a mark with the id `juniper-mark`.
-#            Moved as an empty span, that id took elder's label, and elder
-#            printed no locator at exit 0 (M115 review)
+#   juniper  page 7, the same caption, on a mark with the id `juniper-märk`,
+#            which is not all ASCII, so the filter writes it as `label("…")`.
+#            Moved as an empty span, an id there took elder's label, and
+#            elder printed no locator at exit 0 (M115 review)
 #   larch    page 9, a mark in the text, which no list copies
 # ---------------------------------------------------------------------------
 section 'M115-AC1/AC2/AC3 — a Typst caption mark files its caption'\''s page under a list of floats.'
 # The fixture's list of figures, which site/typst.qmd shows as its example
 # (M115-AC6), held in one variable so the two cannot drift apart.
 M115_LOF='#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))'
-grep -qxF -- "$M115_LOF" site/typst.qmd \
-  || fail "M115-AC6: site/typst.qmd does not show the line <<$M115_LOF>>, the list of figures examples/typst-caption-lists.qmd renders"
+# A function, so the self-test plant below runs this same check.
+m115_lof_check() {   # <page>
+  grep -qxF -- "$M115_LOF" "$1" \
+    || { printf 'FAIL: M115-AC6: %s does not show the line <<%s>>\n' "$1" "$M115_LOF" >&2; return 1; }
+}
+m115_lof_check site/typst.qmd \
+  || fail "M115-AC6: site/typst.qmd does not show the list of figures examples/typst-caption-lists.qmd renders (the report is above)"
 pass "M115-AC6: site/typst.qmd shows the list-of-figures call examples/typst-caption-lists.qmd renders"
 for needle in "$M115_LOF" \
     '#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))' \
@@ -32723,7 +32729,7 @@ for needle in "$M115_LOF" \
     '::: {#fig-cedar}' 'A picture div, whose caption marks [cedar]{.index}.' \
     ': A table with an id, whose caption opens [dogwood]{.index range="open"}. {#tbl-dogwood}' \
     'The range of dogwood closes here: [dogwood]{.index range="close"}.' \
-    '::: {#tbl-elder}' 'A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-mark .index}.' \
+    '::: {#tbl-elder}' 'A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-märk .index}.' \
     '::: {#lst-hazel}' 'A code listing, whose caption marks [hazel]{.index}.' \
     'A mark in the text, which no list copies: [larch]{.index}. The link below goes' \
     '#link(<alder-mark>)[the caption with an id]'; do
@@ -32754,9 +32760,10 @@ python3 tests/typstindex.py pages "$M115_TYPST" tests/typst-caption-lists.tsv \
   || fail "M115-AC5: the version matrix's reading of examples/typst-caption-lists.qmd does not match tests/typst-caption-lists.tsv (the report is above)"
 
 # AC3: page 9 carries one link, the author's, and it goes to page 2, alder's
-# caption. The lists' entries are links too, but on pages 1 and 10.
-python3 - "$M115_TYPST" <<'M115PY' \
-  || fail "M115-AC3: the link to the author's id in examples/typst-caption-lists.qmd does not go to its caption's page (the report is above)"
+# caption. The lists' entries are links too, but on pages 1 and 10. A
+# function, so the self-test plant below runs this same check.
+m115_link_check() {   # <pdf>
+  python3 - "$1" <<'M115PY'
 import sys
 sys.path.insert(0, 'tests')
 import typstindex
@@ -32768,6 +32775,9 @@ if targets != [2]:
           f'not the one link to page 2', file=sys.stderr)
     sys.exit(1)
 M115PY
+}
+m115_link_check "$M115_TYPST" \
+  || fail "M115-AC3: the link to the author's id in examples/typst-caption-lists.qmd does not go to its caption's page (the report is above)"
 pass "M115-AC1/AC3: in Typst, with lists of pictures, tables and listings before and after the floats, a mark in the caption of a picture with or without an id, a picture div, a table with an id, a table div or a code listing files its caption's page, a principal one bold and a range from its caption's page; and a link to an author's id on a caption mark builds and goes to that caption's page"
 
 # AC2: each list holds the caption of each float of its kind. Which kind
@@ -32780,6 +32790,134 @@ if on_pinned_quarto "$M115_WHY" "M115-AC2"; then
   python3 tests/typstlists.py "$M115_TYPST" tests/typst-caption-lists-lists.tsv \
       "M115-AC2" \
     || fail "M115-AC2: a list in examples/typst-caption-lists.qmd does not hold the captions tests/typst-caption-lists-lists.tsv names for it (the report is above)"
+fi
+
+# A float Quarto lays out in cells keeps its cells (M115 review). The move
+# once wrapped all of a float's content in one block, which made the two cells
+# of examples/typst-caption-layout.qmd one cell, so they printed one above the
+# other and the index still read right. The cells are text, so the PDF's
+# layout text shows whether they share a line.
+quarto render examples/typst-caption-layout.qmd --to typst \
+    > "$WORK/typst-caption-layout.log" 2>&1 \
+  || { tail -40 "$WORK/typst-caption-layout.log" >&2; fail "M115 review: examples/typst-caption-layout.qmd failed to render to Typst"; }
+capture examples/typst-caption-layout.qmd typst "typst-caption-layout"
+M115_LAYOUT="$CAPTURE_ROOT/typst-caption-layout/typst-caption-layout.pdf"
+[ -s "$M115_LAYOUT" ] || fail "M115 review: the render produced no $M115_LAYOUT"
+python3 tests/typstindex.py "$M115_LAYOUT" tests/typst-caption-layout.tsv \
+    "M115 review (Typst, a laid-out float's caption)" "Index" \
+  || fail "M115 review: the Typst index of examples/typst-caption-layout.qmd does not match tests/typst-caption-layout.tsv (the report is above)"
+m115_cells_check() {   # <pdf>
+  pdftotext -f 1 -l 1 -layout "$1" - | grep -q 'The west cell\. *The east cell\.' \
+    || { printf 'FAIL: M115 review: page 1 of %s does not print its two cells on one line\n' "$1" >&2; return 1; }
+}
+m115_cells_check "$M115_LAYOUT" \
+  || fail "M115 review: the cells of examples/typst-caption-layout.qmd's laid-out float do not print side by side (the report is above)"
+pass "M115 review: a mark in the caption of a float laid out in two cells files its page, and the cells still print side by side"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M115 self-test: each check above shown red on the defect it names.
+  #   link      the fixture's link pointed at juniper's id on page 7: the
+  #             AC3 check reads page 9's link going to page 7
+  #   lof       site/typst.qmd without the list-of-figures line: the AC6 check
+  #   figure    the extension without its `Figure` handler, and the fixture
+  #             without its link, so it builds: alder's label stays in a
+  #             copied caption, and the index reads page 1 for alder
+  #   float     the extension without its `FloatRefTarget` handler: birch's
+  #             label stays in a copied caption, and the index reads page 1
+  #   cells     the moved inlines put in a block of their own after the cells,
+  #             as a wrapper did: the cells check
+  # -------------------------------------------------------------------------
+  M115P="$WORK/m115plant"
+  mkdir -p "$M115P"
+
+  m115_splice() {   # <path> <old> <new>: replace the one occurrence of <old>
+    python3 - "$1" "$2" "$3" <<'M115SPLICEPY'
+import sys
+path, old, new = sys.argv[1:4]
+text = open(path, encoding='utf-8').read()
+n = text.count(old)
+if n != 1:
+    sys.exit(f'M115 self-test: {old!r} occurs {n} time(s) in {path}, not once')
+open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+M115SPLICEPY
+  }
+
+  m115_tree() {   # <slug> <fixture>: a fresh copy of the fixture and the extension
+    local dir="$M115P/$1"
+    [ ! -e "$dir" ] || fail "M115 self-test ($1): $dir already exists"
+    mkdir -p "$dir/_extensions"
+    cp "examples/$2" examples/dot.png "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m115_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M115 self-test ($slug): the check passed the plant, so its green says nothing about this defect"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M115 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this check catching this plant"; }
+    pass "M115 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  # <slug> <fixture>: render the planted copy, which must build, and capture it.
+  m115_render() {
+    ( cd "$M115P/$1" && quarto render "$2" --to typst ) \
+      > "$WORK/m115-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m115-$1.log" >&2; fail "M115 self-test ($1): the planted copy failed to render to Typst"; }
+    capture "$M115P/$1/$2" typst "m115-$1"
+  }
+
+  m115_tree link typst-caption-lists.qmd
+  m115_splice "$M115P/link/typst-caption-lists.qmd" \
+    '#link(<alder-mark>)[the caption with an id]' \
+    '#link(label("juniper-märk"))[the caption with an id]' \
+    || fail "M115 self-test (link): the plant could not be written (its own message is above)"
+  m115_render link typst-caption-lists.qmd
+  m115_red link "page 9 carries links to pages [7], not the one link to page 2" \
+    m115_link_check "$CAPTURE_ROOT/m115-link/typst-caption-lists.pdf"
+
+  grep -vxF -- "$M115_LOF" site/typst.qmd > "$M115P/typst.qmd"
+  cmp -s site/typst.qmd "$M115P/typst.qmd" \
+    && fail "M115 self-test (lof): the plant left site/typst.qmd unchanged"
+  m115_red lof "does not show the line" m115_lof_check "$M115P/typst.qmd"
+
+  m115_tree figure typst-caption-lists.qmd
+  m115_splice "$M115P/figure/_extensions/index/index.lua" \
+    '{ Figure = qi_typst.figure_labels, FloatRefTarget = qi_typst.float_labels }' \
+    '{ FloatRefTarget = qi_typst.float_labels }' \
+    || fail "M115 self-test (figure): the plant could not be written (its own message is above)"
+  m115_splice "$M115P/figure/typst-caption-lists.qmd" \
+    '#link(<alder-mark>)[the caption with an id]' '' \
+    || fail "M115 self-test (figure): the link could not be taken out (its own message is above)"
+  m115_render figure typst-caption-lists.qmd
+  m115_red figure "'entry\\t0\\talder\\t1@1\\t'" \
+    python3 tests/typstindex.py "$CAPTURE_ROOT/m115-figure/typst-caption-lists.pdf" \
+      tests/typst-caption-lists.tsv "M115 self-test (figure)" "Index"
+
+  m115_tree float typst-caption-lists.qmd
+  m115_splice "$M115P/float/_extensions/index/index.lua" \
+    '{ Figure = qi_typst.figure_labels, FloatRefTarget = qi_typst.float_labels }' \
+    '{ Figure = qi_typst.figure_labels }' \
+    || fail "M115 self-test (float): the plant could not be written (its own message is above)"
+  m115_render float typst-caption-lists.qmd
+  m115_red float "'entry\\t0\\tbirch\\t1*@1\\t'" \
+    python3 tests/typstindex.py "$CAPTURE_ROOT/m115-float/typst-caption-lists.pdf" \
+      tests/typst-caption-lists.tsv "M115 self-test (float)" "Index"
+
+  m115_tree cells typst-caption-layout.qmd
+  m115_splice "$M115P/cells/_extensions/index/modules/typst.lua" \
+    $'    target.content:extend(moved)\n    float.content = content\n' \
+    $'    content:insert(pandoc.Plain(moved))\n    float.content = pandoc.Div(content)\n' \
+    || fail "M115 self-test (cells): the plant could not be written (its own message is above)"
+  m115_render cells typst-caption-layout.qmd
+  m115_red cells "does not print its two cells on one line" \
+    m115_cells_check "$CAPTURE_ROOT/m115-cells/typst-caption-layout.pdf"
+
+  pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, and the cells check on the moved inlines wrapped with the cells"
 fi
 
 # ---------------------------------------------------------------------------

@@ -47,7 +47,7 @@ page.
 - AC1 → T1, T2, T6, T7
 - AC2 → T1, T2, T4
 - AC3 → T1, T2, T7
-- AC4 → T6, T7
+- AC4 → T6, T7, T8
 - AC5 → T4, T7
 - AC6 → T5, T7
 
@@ -60,6 +60,7 @@ page.
 - [x] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
 - [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
 - [x] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
+- [ ] T8: Review return 2 (work log): a laid-out float keeps its cells, the labels joining a paragraph cell or staying in the caption, with a fixture red on the current code first; the Review section's pass-2 fix-now items, the plants committed to the self-test; then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -99,6 +100,9 @@ page.
 - 2026-10-19: T7 docs and records: KI290 names the no-id figure fallback; DESIGN.md's pass count names the Typst stage; `versions.yml`'s WHAT IT CHECKS and reader list name the pinned-leg lists reading; `site/tests.qmd` names it; `site/typst.qmd`'s `lof:` sentence is a dated observation; candidate row "Breakable float caption marks" added, parked. The claim audit ran once at implement and is not re-run (one pass); the return's added prose is derived from this session's probes.
 - 2026-10-19: T7 done: dispatched `versions.yml` run 39337730177 at 6f0f4c5 green on every job, the caption-lists render and index reading on all three legs and the lists reading on the pinned leg; suite run 5 at 6f0f4c5 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1793, 10 skip lines, M115-AC2 among them. Status review.
 - 2026-10-19: review return 2: diff-bug #1 (pass 2) — `float_labels` wraps a float's content in one Div, which collapses Quarto's `layout-ncol` grid into one cell when the float's own caption holds a mark (probe: `fig-parent` hands the stage Blocks[Div,Div], `fig-pair` Blocks[Para,Para], `tbl-pair` Blocks[Table,Table], each with `layout-ncol=2`). The return also carries pass 2's fix-now items: the `id_inline` and fallback comments, a non-ASCII fixture id for the `label("…")` branch, a nil-content guard, the docs' caption exceptions, committed self-test plants for AC3's link, AC6's grep and each handler, the two long lines, and DESIGN.md's wrapper sentence and KI290. Status in-progress.
+- 2026-10-19: T8: added task T8 for review return 2; Coverage gives T8 to AC4 (minor amendment).
+- 2026-10-19: T8: `float_labels` no longer wraps several blocks: content of one Plain or Para takes the inlines at its end, one other block is wrapped with a Plain, and several blocks (Quarto's layout cells) give them to the first Plain or Para cell, or leave them in the caption where none is; a nil content returns early. New fixture `examples/typst-caption-layout.qmd` (a `layout-ncol=2` figure div with two text cells and a caption mark) with manifest `tests/typst-caption-layout.tsv` and a suite check that the cells share a line: on the committed code the cells printed on two lines, now on one, kestrel on page 1. A fourth picture in the lists fixture would have changed what AC2's "three picture captions" names, so the case has its own fixture.
+- 2026-10-19: T8: juniper's id is now `juniper-märk`, so the fixture runs the `label("…")` branch; the render compiles and the index reads green on 1.10.19. Self-test plants committed in the M115 section: link, lof, figure (the index red at alder), float (red at birch) and cells; the figure plant takes the fixture's link out so the planted copy builds. Comments on `id_inline` and the no-id fallback corrected; `site/typst.qmd` and `CHANGELOG.md` name the exceptions; DESIGN.md's Typst paragraph and KI290 rewritten; `site/tests.qmd` and `versions.yml` reflowed; `site/gallery.yml` lists the new fixture as not shown.
 
 ## Decisions
 

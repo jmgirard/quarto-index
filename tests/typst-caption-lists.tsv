@@ -18,7 +18,7 @@
 #   elder    the caption of a table div, page 7, before juniper
 #   hazel    the caption of a code listing, page 8
 #   juniper  the same caption as elder, page 7, on a mark carrying the id
-#            `juniper-mark`: that id must not take elder's label
+#            `juniper-märk`: that id must not take elder's label
 #   larch    a mark in the text, page 9, which no list copies
 group	A
 entry	0	alder	2@2

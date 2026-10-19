@@ -184,3 +184,4 @@ Evidence: suite run 6 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Pyt
 - ripple #3: `pdfindex.read`'s docstring says a header on the left-out page is refused, while `typstindex.read` exempts one — fix now, fixed 918a628 (same change as blame-history #6).
 - ripple #4: `tests/gallerycheck.py`'s pdf mode is still a presence test — follow-up, KI316.
 - Return floor: no finding shows a criterion failing, and the tier is internal, so none returns the milestone; 7 fixed now, 8 to follow-up (KI314-KI316, under the older acceptance-suite backlog row), 9 rejected.
+- Verify after the fixes: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at bb921f8 ended "All checks passed (1773 checks).", exit 0.

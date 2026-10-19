@@ -55,6 +55,10 @@ A principal range opens in this heading.
 
 {{< pagebreak >}}
 
+This page's running head is a copy of the dahlia section's heading.
+
+{{< pagebreak >}}
+
 # The [dahlia]{.index range="close"} closing section
 
 The range closes in this heading.

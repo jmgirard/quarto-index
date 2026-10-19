@@ -32457,24 +32457,28 @@ fi
 #   clover   principal in a level-four heading on page 3, which LaTeX runs in
 #            and the default contents depth leaves out; page 1 plain
 #   dahlia   a principal range opened in a level-one heading on page 5 and
-#            closed in another on page 6, printed 5–6; page 1 plain, and page
-#            8 plain under the closing heading's running head. Page 7 carries
-#            that head too and no mark, so 8 is not folded into the range
-#   elm      principal in a figure caption on page 9; page 1 plain
-#   fern     a principal range opened in a figure caption on page 10 and
-#            closed in the text on page 11, printed 10–11; page 1 plain
-#   ginkgo   principal in a table caption on page 12; page 1 plain
-#   holly    an ordinary mark in a level-one heading on page 9, the shape
+#            closed in another on page 7, printed 5–7; page 1 plain, and page
+#            9 plain under the closing heading's running head. Page 6 prints
+#            the opening heading's running head inside the range, and page 8
+#            the closing one's with no mark, so 9 is not folded into the range
+#   elm      principal in a figure caption on page 10; page 1 plain
+#   fern     a principal range opened in a figure caption on page 11 and
+#            closed in the text on page 12, printed 11–12; page 1 plain
+#   ginkgo   principal in a table caption on page 13; page 1 plain
+#   holly    an ordinary mark in a level-one heading on page 10, the shape
 #            this milestone leaves alone; page 1 plain
-# The index is on page 13. Page 1 prints the index's contents line `Index` as
+# A running head also prints on its own heading's page, and a page between
+# two marked pages folds them into one range, so not every copy's page can
+# carry an ordinary mark. Each kind of copy a term gets has one that does.
+# The index is on page 14. Page 1 prints the index's contents line `Index` as
 # a line of its own, so the read starts at page 2. In PDF the fixture
 # redefines the principal command to print `[P:<page>]`, so an emphasized
 # locator is visible to pdftotext.
 # ---------------------------------------------------------------------------
 section 'M114-AC1/AC2 — a principal mention in a LaTeX heading or caption builds and files its own page.'
 M114_BREAKS=$( { grep -cxF '{{< pagebreak >}}' examples/principal-headings.qmd || true; } | tr -d ' ')
-[ "$M114_BREAKS" = "12" ] \
-  || fail "M114-AC1: examples/principal-headings.qmd carries $M114_BREAKS page breaks, not the twelve its manifest numbers pages by"
+[ "$M114_BREAKS" = "13" ] \
+  || fail "M114-AC1: examples/principal-headings.qmd carries $M114_BREAKS page breaks, not the thirteen its manifest numbers pages by"
 quarto render examples/principal-headings.qmd --to pdf \
     > "$WORK/principal-headings-pdf.log" 2>&1 \
   || { tail -40 "$WORK/principal-headings-pdf.log" >&2; fail "M114-AC1: examples/principal-headings.qmd failed to render to PDF"; }

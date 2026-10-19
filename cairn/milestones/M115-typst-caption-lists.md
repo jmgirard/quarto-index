@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -91,6 +91,7 @@ page.
 - 2026-10-19: the claim audit found AC1's "first page holds only" the three lists false, the title printing there too; the fixture drops its `title:` so the criterion holds as written, and the three comments say no title prints. Index, `pages` reading, lists and the page-9 link re-read green on 1.10.19.
 - 2026-10-19: dispatched `versions.yml` run 39334750678 at 1e28f44: every job green; the caption-lists render and index reading green on the floor, pinned and release legs, and the lists reading green on the pinned leg (1.10.18) and skipped on the other two, as its guard says.
 - 2026-10-19: T6 done: suite run 4 at 1e28f44 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1793, 10 skip lines, M115-AC2 among them. Status review.
+- 2026-10-19: review return 1: diff-bug #1 — a moved author id on a caption mark is written as a bare `<id>` that takes the label of the mark before it, so in a caption with two marks the earlier one prints no locator at exit 0 (IP2). The return also carries the fix-now items of the Review section: fixture cases with two marks in one caption and an author id on a float with an id (diff-bug #2), no blank line from a moved id (#3), KI290 naming the no-id figure fallback (#5, blame-history #2), the lists reading named in `versions.yml`'s comments and `site/tests.qmd` (#6, ripple #2/#3), the `lof:` sentence as a dated observation (blame-history #4), plants for AC3's link destination and AC6's grep (prior-review #1), per-handler revert probes (prior-review #4), DESIGN.md's pass count (ripple #1), and the candidate row "Breakable float caption marks" (blame-history #1). Status in-progress.
 
 ## Decisions
 
@@ -106,3 +107,26 @@ Evidence base: HEAD 55f1100, whose tree outside `cairn/` equals 1e28f44's (`git 
 - AC6: `site/typst.qmd` section "Lists of figures, tables and listings" says a mark "in the caption of a figure, a figure div, a table or a code listing still files the page its caption prints on", that "Both hold when the float does not break across pages", and that such a list copies each caption; line 111 is `#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))`, which the suite's `ok M115-AC6` holds equal to the fixture's line. `CHANGELOG.md` `## Unreleased` → `### Output`, first bullet: "A mark in the caption of a figure, a table or a code listing files the page its caption prints on. That is also true under a list of those floats that Typst's `outline` prints, which copies each caption. This needs a float that does not break across pages, which is Quarto's default."
 - Consistency gate: `cairn_validate.py` all checks passed (coverage complete included); no DESIGN.md principle changed, so `cairn_impact` not run; the generic profile's consistency-gate names no toolchain checks. Main unmoved since the branch was cut (f2e5794). Copilot round off (no `# Copilot review:` line).
 - spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: `caption_moves` writes a moved author id as an empty Span, which Pandoc writes as a bare `<id>` that attaches to the label element before it; a caption `[oak]{.index} and [pine]{#pine-id .index}` printed oak and pine with no locator at exit 0 (Typst: "content labelled multiple times") — fix now, return floor (a silent lost locator, IP2): review return 1
+- diff-bug #2: no case holds two marks in one caption, or an author id on a float with an id — fix now (fixture cases, in return 1)
+- diff-bug #3: a moved author id opens a new Plain that Pandoc writes as a zero-width space plus `<id>`, adding a blank line under a table or listing — fix now (in return 1, with #1)
+- diff-bug #4: the Div wrap changes the Typst source of a table or listing float with a moved label — reject, planned change: the reviewer's own page-image comparison found the pages identical
+- diff-bug #5: a figure with no id whose first block holds no inlines keeps its labels in the caption, and the docs do not say so — fix now (KI290 names it; in return 1)
+- diff-bug #6: `versions.yml`'s reader list and `site/tests.qmd` omit the pinned-leg lists reading — fix now (in return 1)
+- diff-bug #7: `tests/typstlists.py` takes a title's first match — reject, false within its domain: the fixture's six titles are distinct and no caption equals a title, and a list running onto another page reads red, never green
+- diff-bug #8: the new stage walks every document in every format — reject, false as a defect: it returns nil outside Typst, and the reviewer found HTML and LaTeX output byte-identical
+- blame-history #1: a breakable float's caption mark now files the content-end page where main filed the caption's — follow-up: KI318 records it; candidate row "Breakable float caption marks" (in return 1's tracking edit)
+- blame-history #2: the no-id figure fallback leaves a gap — fix now, same as diff-bug #5
+- blame-history #3: the Div wrap is unrecorded — reject, planned change, as diff-bug #4; DESIGN.md's Typst paragraph names the move to the float's content
+- blame-history #4: `site/typst.qmd` names Quarto 1.10.19 for `lof:`, off the 1.10.18 pin — fix now: worded as a dated observation (in return 1)
+- blame-history #5: the pinned-leg step is skipped by GitHub with no skip line — reject, planned change: D-065's skip line governs the suite, where the AC2 check prints one; the run shows the step as skipped on each other leg
+- prior-review #1: AC3's link-destination clause and AC6's grep were never shown red alone — fix now: plants in return 1
+- prior-review #2: the `lof:` version string — fix now, same as blame-history #4
+- prior-review #3: the pinned-leg step's `!cancelled()` guard is unproven by a red probe — reject, false: the same guard form was proved past a red reading in this workflow at M106 (LESSONS M43, extended M106)
+- prior-review #4: removing one of the two handlers alone was not shown red — fix now: per-handler revert probes in return 1
+- prior-review #5: 45 added lines over 80 columns — reject, style
+- ripple #1: DESIGN.md's "five passes" no longer counts the filter's passes — fix now (in return 1)
+- ripple #2: `site/tests.qmd` does not name the pinned-leg lists reading — fix now, same as diff-bug #6; README.md's "reads an index from each printed PDF" stays true — rejected for README
+- ripple #3: `versions.yml`'s WHAT IT CHECKS and reader list omit the lists step — fix now, same as diff-bug #6
+- ripple #4: version strings off the pin — fix now, same as blame-history #4; KI318's "Observed on Quarto 1.10.19" is a dated observation and stays
+- ripple #5: the ROADMAP candidate row still states the caption problem — reject, planned: it carries ` — started M115` and graduates at post-merge hygiene

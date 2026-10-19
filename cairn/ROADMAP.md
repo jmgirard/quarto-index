@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M114 done and archived; KI2, KI74 closed, KI317 added; two parked rows added; M111 row pruned; M01 lesson extended; validate green.)_
+_Last hygiene check: 2026-10-19 (triage pass: "Typst caption marks and a list of figures" promoted, normal → high; retitled "The older acceptance-suite backlog held under…" → "Older acceptance-suite backlog" and "Repair the site and gallery checks; promote on…" → "Site and gallery check repairs"; KI7 and KI228 compressed; no drops, no decision entry; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -20,8 +20,8 @@ _Released 0.4.0 2026-09-11._
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
-- Typst caption marks and a list of figures: make a mark in a figure caption file the figure's page, not the page of the caption's copy in a list of figures. Promote at any time — added 2026-10-19 — M114 plan gate — KI290
+- [high] Typst caption marks and a list of figures: make a mark in a figure caption file the figure's page, not the page of the caption's copy in a list of figures. Promote at any time — added 2026-10-19 — M114 plan gate — KI290
+- Older acceptance-suite backlog: The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - [parked] EPUB check dead code: delete the comparison in `epubcheck.cmd_same` that cannot fail, the unused `epubindex.section_rows`, and `cmd_absent`'s allowance parameter, which every caller leaves empty. Promote with any change to `tests/epubcheck.py` or `tests/epubindex.py` — added 2026-10-18 — M112 plan gate — KI92, KI94, KI95
 - [parked] Missing-log counts: make the inline log counts in `tests/run-tests.sh`, and `check_warning_names` and `check_warning_names_nth`, refuse a log that is not a file, as `check_warning_count` does. Promote on a render's log being renamed or removed — added 2026-10-18 — M112 plan gate — KI311
 - [parked] Give the suite's banner headings a form the run can use: the heading text sits in executable source the read and pairing sweeps scan, and a wrapped banner names its section by a truncated first line. Promote on a heading a new section wants that either shape refuses — added 2026-09-04 — M075 review F7/F11 — KI247, KI248
@@ -33,7 +33,7 @@ _Released 0.4.0 2026-09-11._
 - [parked] Version-portable matrix PDF comparison: Make the version matrix's PDF comparison version-portable. M108 takes the suite half. Promote on an extraction shown engine-neutral across the two engines — added 2026-08-26 — M43, split 2026-10-01, narrowed 2026-10-01 by M108 — KI111
 - [parked] Floor-Quarto CI suite job: A CI job that runs the whole acceptance suite on the floor Quarto, which M108 makes pass locally. Promote on a floor-only regression that reaches the default branch unseen by the version matrix — added 2026-10-01 — M107/M108 plan gate
 - [parked] Gallery page for the two-index PDF: A `site/gallery/` page for the two-index PDF fixture; promote with any other gallery extension, the gallery build's own checks (M41) needing extending — added 2026-08-27 — M49 Scope Out
-- [parked] Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249
+- [parked] Site and gallery check repairs: Repair the site and gallery checks; promote on any turning a run red for a reason that is not the defect it names — added 2026-08-26, clustered 2026-09-04, narrowed 2026-09-30 when M103 took M46's two clauses and the publishing gaps stayed Known issues only — M29, M41, M46, M074 reviews — KI84, KI85, KI140-KI151, KI155, KI156, KI249
 - [parked] Word caption fill in the changelog: Name in the changelog that Word output on Quarto 1.10.18 now keeps a marker-only captioned figure and its caption, which M107's empty-Plain fill restored, with a suite check that reads the docx. Promote on any milestone that renders Word in the suite — added 2026-10-01 — M107 review F1, F2
 - [parked] Hold the Typst pages' Quarto facts to their sources: no check ties their "tested on Quarto 1.10.18" to the `pages.yml` pin, and the warning `site/typst.qmd` quotes is a second copy of the suite's `TYPST_BOOK_REFUSAL`. Promote on the pin moving or either string changing — added 2026-10-10 — M110 review
 - [parked] Tidy the M105 cell-guard self-test: derive the module list its red runs assert instead of pinning four names, put the commented-out-opener comment over its own plant, and rewrap the `tests/stateprobe.py` docstring. Promote on a new module gaining a reset, which turns that self-test red — added 2026-10-01 — M105 review W4, W8, W12

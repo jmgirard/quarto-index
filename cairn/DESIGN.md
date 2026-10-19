@@ -895,9 +895,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   recoverable from the document — so it reports the pair instead: M09's
   `clamped_paths` registry is keyed on the clamped printed path and warns
   `index entries printed as "…" file under more than one key (…)`, asserted
-  message-whole in the suite over `examples/sortkey-clamp.qmd`. The "with no
-  report" this entry claimed was written three milestones before that report
-  shipped. — M06 review pass 2 F9; corrected 2026-08-28 at a plan gate
+  message-whole in the suite over `examples/sortkey-clamp.qmd`. — M06 review
+  pass 2 F9; corrected 2026-08-28 at a plan gate
 - **KI9.** see-also entries keep their locators in both back-ends — M03's gate
   chose LaTeX-aligned no-locator semantics and M15 keeps that semantics for a
   contested key — and the extension prints `see One Way; see Another Way` where
@@ -1772,12 +1771,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   chapter runs before the chapters behind it, meets their absent records,
   recovers them, and warns "render that chapter again" about chapters that are
   about to render. Nothing is wrong with that render and the second is silent.
-  Observed 2026-09-02 in the suite's own `place-first` leg, which moved from 2
-  extension warnings to 8, six of them recovery reports; M074 draws one report
-  per reading chapter naming every chapter it covers, so the same leg now
-  stands at 4, two of them recovery reports, and the render still reports on
-  itself (corrected M074). Recorded in D-045's consequences and accepted at the
-  M069 merge gate. — M069 review F1
+  The suite's own `place-first` leg shows it: two of its four extension
+  warnings are recovery reports (observed 2026-09-02, corrected M074).
+  Recorded in D-045's consequences and accepted at the M069 merge gate. —
+  M069 review F1
 - **KI229.** `recover_absent` answers eligibility, not building, so a chapter
   admitted by the gate that prints no section still parses every other chapter's
   source. The reachable shape is a last chapter carrying no marker in a book

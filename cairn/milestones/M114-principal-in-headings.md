@@ -61,7 +61,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
      coverage-complete counts AC checkboxes positionally (M107); departures:
      a "Deviations from RR<NN>" table ends this section. -->
 
-- [ ] AC1: `quarto render examples/principal-headings.qmd --to pdf` exits 0
+- [x] AC1: `quarto render examples/principal-headings.qmd --to pdf` exits 0
       in the suite. The fixture uses Quarto's default document class with
       `toc: true`, `lof: true`, `lot: true` and `pagestyle: headings`. It
       carries a principal mention in a heading at each of levels 1, 2 and 4;
@@ -69,7 +69,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
       principal mention in a figure caption; a principal range opened in a
       figure caption and closed in body text on a later page; a principal
       mention in a table caption; and one ordinary mark in a heading.
-- [ ] AC2: In the fixture's printed index, each principal mention's page and
+- [x] AC2: In the fixture's printed index, each principal mention's page and
       each principal range's span is emphasized, and no other locator of the
       fixture's terms is. The suite checks this by reading the index with
       `tests/pdfindex.py` through the fixture's `\quartoindexprincipal`
@@ -179,3 +179,7 @@ and suite checks, a changelog entry and a docs sentence, and strikes KI2.
      results, review findings + triage. EXEMPT from the 150-line cap (M55),
      as are the work log (D-046) and the decisions section (D-074); evidence
      never scrambles plan-owned content. -->
+
+- 2026-10-19 sync: branch level with origin/main (0 behind); no PR yet; Copilot round off (no `# Copilot review:` line in PROFILE.md).
+- AC1 evidence (2026-10-19, ae78813 tree, scratch copy of extension + fixture): `quarto render principal-headings.qmd --to pdf` exit 0, 0 WARN lines; the fixture sets `toc`, `lof`, `lot: true`, `pagestyle: headings`, no `documentclass` (Quarto's default), and carries principal mentions in headings at levels 1/2/4 (aster, basil, clover), a principal range across two level-one headings (dahlia), principal mentions in a figure caption (elm) and a table caption (ginkgo), a principal range opened in a figure caption and closed in body text (fern), and an ordinary heading mark (holly); 13 page breaks. The suite's own M114-AC1 line was green in the 5d30241 run.
+- AC2 evidence (2026-10-19, same render): `m114_pdf_check` (pdfindex.read from page 2, level + NFC text per line) exit 0, the 8 lines of tests/principal-headings-pdf.tsv: aster 1, [P:2], 4; basil 1, [P:2]; clover 1, [P:3]; dahlia 1, [P:5–7], 9; elm 1, [P:10]; fern 1, [P:11–12]; ginkgo 1, [P:13]; holly 1, 10 — each principal page or span emphasized, every other locator plain. Discrimination: the 5d30241 `--self-test` run showed the check red on all ten plants meant to be red (two command leaks, five copy-site plants, three manifest plants), each on its first-difference line, and green on the range-closing leak.

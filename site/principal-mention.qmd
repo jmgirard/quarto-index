@@ -26,9 +26,8 @@ a table caption. A principal range can open or close in a heading and open in
 a figure caption. LaTeX copies a heading into the table of contents and the
 running head, and a caption into the list of figures or tables. Only the
 mention's own page is emphasized, and the page one of those copies prints on
-is not. The
-suite tests this under Quarto's default document class with a table of
-contents, lists of figures and tables, and running heads.
+is not. The suite tests this under Quarto's default document class with a
+table of contents, lists of figures and tables, and running heads.
 
 **Redefining the emphasis.** The LaTeX back-end wraps the locator in
 `\quartoindexprincipal`, defined with `\providecommand` as `\textbf` and

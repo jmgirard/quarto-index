@@ -14,7 +14,10 @@
   prints `5 / 30`. Page numbers that print the same text, as they can after a
   page counter reset, print once. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
-  book template needs an `author:`.
+  book template needs an `author:`. A mark in the caption of a figure, a table
+  or a code listing files the page its caption prints on. That is also true
+  under a list of those floats that Typst's `outline` prints, which copies
+  each caption.
 - A Typst index orders an entry's page numbers as the PDF index does: lower
   roman numbers first, then upper roman numbers, arabic numbers, lowercase
   letters, uppercase letters, and any other numbering, and inside each kind by

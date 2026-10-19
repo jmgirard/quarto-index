@@ -57,7 +57,7 @@ page.
 - [x] T2: In a filter stage after `typst.assign_labels`, move each label written in a float's caption, and a caption mark's author id, into the float's content. The filter sees a Pandoc `Figure` for an image figure with no id and Quarto's float scaffold for the other five cases (observed 2026-10-19); probe which handler reaches each on the pinned Quarto. The alt-text move at `typst.lua:297` stays. AC1 to AC3 green.
 - [x] T3: Probe a float made breakable (`#show figure: set block(breakable: true)`) whose content crosses a page. If its caption mark names a page other than its caption's, write a `cairn/DESIGN.md` Known issues entry under the Typst back-end.
 - [ ] T4: Add the fixture to `versions.yml`'s PDF job and to its WHAT IT CHECKS comment, dispatch a run on the branch, and log each leg's result.
-- [ ] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
+- [x] T5: Docs: `site/typst.qmd` (the caption sentence and the `outline` call, held to the fixture's own call by the suite), the `CHANGELOG.md` sentence, `site/tests.qmd`'s count of Typst fixtures, `cairn/DESIGN.md`'s Typst paragraph, and KI290 narrowed to the unprobed captions.
 - [ ] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
 
 ## Work log
@@ -77,6 +77,8 @@ page.
 - 2026-10-19: T2: `doc:walk` does not reach a Quarto float by name, but a filter stage's `FloatRefTarget` function does, so the move is a new last stage in `index.lua` (`typst.figure_labels`, `typst.float_labels`); Quarto writes only the first block of a figure with no id, so its moved inlines join that block. AC1 (both readings), AC2 and AC3 checks green on 1.10.19 run by hand; `figure-marks.qmd`'s Typst index unchanged.
 - 2026-10-19: substantive amendment: Scope In and T2 name a filter stage after `typst.assign_labels` instead of `assign_labels` itself; the deliverable is unchanged, so no stop.
 - 2026-10-19: T3 done: with `#show figure: set block(breakable: true)` a long table captioned on page 1 printed `4` and a picture on 5 captioned on 6 printed `5`; without that rule Quarto 1.10.19 kept both whole and both printed the caption's page. Written as KI318.
+- 2026-10-19: T4: the fixture's render and `typstindex.py pages` reading joined the PDF job of `versions.yml`; dispatched run 39329028850 on the branch at 439181e.
+- 2026-10-19: T5 done: `site/typst.qmd` gained "Lists of figures, tables and listings" with the fixture's own list-of-figures call, which the suite now greps there (M115_LOF, one variable for both sites); the fixture's lists were retitled `List of Figures` and so on, `(end)` for the back ones. CHANGELOG sentence in the Unreleased Typst bullet; `site/tests.qmd` counts five Typst fixtures; DESIGN.md's Typst paragraph names the new stage; KI290 narrowed to subfigures, callout titles and custom float kinds. The simple-english hook reports 207 pre-existing hits in CHANGELOG.md; only this milestone's sentences were rewritten to its limits.
 
 ## Decisions
 

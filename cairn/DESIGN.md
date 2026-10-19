@@ -471,7 +471,12 @@ Three back-ends ship:
   span, not inside it: Pandoc writes an author's id as a label straight after
   the span's content, and a label element there would carry both. A label
   stays out of a heading because Typst's outline copies a heading's body, and
-  a copied label names two elements. A label written in an image's alt text
+  a copied label names two elements. For the same reason a last filter stage,
+  `typst.figure_labels` for a Pandoc `Figure` and `typst.float_labels` for a
+  Quarto `FloatRefTarget`, moves each label and each mark's author id out of a
+  float's caption to the end of its content (M115); `doc:walk` does not reach
+  a Quarto float by name, and Quarto writes only the first block of a figure
+  with no id, so there they join that block. A label written in an image's alt text
   moves to just after the image, because Pandoc's Typst writer prints alt
   text as a string and drops raw Typst there (M098 review). The HTML, EPUB and
   LaTeX back-ends move an alt-text mark's target the same way, and the version
@@ -1055,9 +1060,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   a picture on page 5 whose caption moved to page 6 printed `5`. Observed on
   Quarto 1.10.19, where floats do not break unless the document says so. —
   M115 T3
-- **KI290.** A mark inside a figure caption is unprobed where the document asks
-  for a list of figures. Where that list copies the caption with its label,
-  the locator names the first copy's page. — M098 T3
+- **KI290.** A mark in a subfigure's caption, in a callout's title, or in the
+  caption of a custom float kind is unprobed where a Typst list copies it. M115
+  moves the labels out of the caption of any float Quarto hands a filter, and
+  tests figures, tables and code listings. — M098 T3, narrowed M115
 - **KI291.** `tests/typstindex.py` reads links from PDF link annotations written
   as plain dictionaries, which Typst 0.15.1 writes. A PDF whose annotations sit
   in a compressed object stream reads as having no page tree and fails the

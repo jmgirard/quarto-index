@@ -32703,12 +32703,18 @@ fi
 #   larch    page 9, a mark in the text, which no list copies
 # ---------------------------------------------------------------------------
 section 'M115-AC1/AC2/AC3 — a Typst caption mark files its caption'\''s page under a list of floats.'
-for needle in '#outline(title: [Pictures (front)], target: figure.where(kind: "quarto-float-fig"))' \
-    '#outline(title: [Tables (front)], target: figure.where(kind: "quarto-float-tbl"))' \
-    '#outline(title: [Listings (front)], target: figure.where(kind: "quarto-float-lst"))' \
-    '#outline(title: [Pictures (back)], target: figure.where(kind: "quarto-float-fig"))' \
-    '#outline(title: [Tables (back)], target: figure.where(kind: "quarto-float-tbl"))' \
-    '#outline(title: [Listings (back)], target: figure.where(kind: "quarto-float-lst"))' \
+# The fixture's list of figures, which site/typst.qmd shows as its example
+# (M115-AC6), held in one variable so the two cannot drift apart.
+M115_LOF='#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))'
+grep -qxF -- "$M115_LOF" site/typst.qmd \
+  || fail "M115-AC6: site/typst.qmd does not show the line <<$M115_LOF>>, the list of figures examples/typst-caption-lists.qmd renders"
+pass "M115-AC6: site/typst.qmd shows the list-of-figures call examples/typst-caption-lists.qmd renders"
+for needle in "$M115_LOF" \
+    '#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))' \
+    '#outline(title: [List of Listings], target: figure.where(kind: "quarto-float-lst"))' \
+    '#outline(title: [List of Figures (end)], target: figure.where(kind: "quarto-float-fig"))' \
+    '#outline(title: [List of Tables (end)], target: figure.where(kind: "quarto-float-tbl"))' \
+    '#outline(title: [List of Listings (end)], target: figure.where(kind: "quarto-float-lst"))' \
     '![A picture with no id, whose caption marks [alder]{#alder-mark .index}.](dot.png)' \
     '![A picture with an id, whose caption marks [birch]{.index mention="principal"}.](dot.png){#fig-birch}' \
     '::: {#fig-cedar}' 'A picture div, whose caption marks [cedar]{.index}.' \
@@ -32773,20 +32779,20 @@ import sys
 
 pdf = sys.argv[1]
 captions = {
-    'Pictures': ['A picture with no id, whose caption marks alder.',
-                 'A picture with an id, whose caption marks birch.',
-                 'A picture div, whose caption marks cedar.'],
+    'Figures': ['A picture with no id, whose caption marks alder.',
+                'A picture with an id, whose caption marks birch.',
+                'A picture div, whose caption marks cedar.'],
     'Tables': ['A table with an id, whose caption opens dogwood.',
                'A table div, whose caption marks elder.'],
     'Listings': ['A code listing, whose caption marks hazel.'],
 }
 bad = []
-for page, side in ((1, 'front'), (10, 'back')):
+for page, side in ((1, ''), (10, ' (end)')):
     text = subprocess.run(['pdftotext', '-f', str(page), '-l', str(page),
                            '-layout', pdf, '-'], check=True,
                           capture_output=True, text=True).stdout
     lines = [line.strip() for line in text.splitlines()]
-    titles = [f'{kind} ({side})' for kind in captions]
+    titles = [f'List of {kind}{side}' for kind in captions]
     at = {title: lines.index(title) for title in titles if title in lines}
     for kind, title in zip(captions, titles):
         if title not in at:

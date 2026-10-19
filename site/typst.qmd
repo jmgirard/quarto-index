@@ -14,7 +14,9 @@ A page number is known only once Typst has laid out the pages, and the
 extension runs before that. So it writes an invisible Typst label at each mark,
 and each locator in the index asks Typst for the page of its label while the
 document is typeset. A mark in a heading gets its label just after the
-heading, so the copy of that heading in the table of contents carries none.
+heading, so the copy of that heading in the table of contents carries none. A
+mark in a caption gets its label in the float's content for the same reason.
+See [Lists of figures, tables and listings](#lists-of-figures-tables-and-listings).
 
 ## Where the index goes
 
@@ -98,6 +100,25 @@ another pairs. Books were tested on Quarto 1.10.18. On that version Quarto's
 Typst book template does not compile a book whose `book:` metadata has no
 `author:`. Quarto 1.5.52 does not render a Typst book. It prints the warning
 `The typst format is not supported by book projects` and writes no PDF.
+
+## Lists of figures, tables and listings
+
+On Quarto 1.10.19, `lof: true` prints no list of figures in a Typst document.
+To print one, write Typst's own `outline` in a raw Typst block:
+
+````markdown
+```{=typst}
+#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))
+```
+````
+
+A list of tables takes the kind `quarto-float-tbl`, and a list of code listings
+takes `quarto-float-lst`. Such a list copies each caption it lists. A mark in
+the caption of a figure, a figure div, a table or a code listing still files
+the page its caption prints on. An id you give that mark still names one
+place, so a link to it builds. Both hold when the float does not break across
+pages, which is Quarto's default. In a document that makes floats breakable,
+such a mark files the page where the float's content ends.
 
 ## A mark Typst never prints
 

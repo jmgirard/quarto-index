@@ -6,9 +6,9 @@ filters:
 ---
 
 ```{=typst}
-#outline(title: [Pictures (front)], target: figure.where(kind: "quarto-float-fig"))
-#outline(title: [Tables (front)], target: figure.where(kind: "quarto-float-tbl"))
-#outline(title: [Listings (front)], target: figure.where(kind: "quarto-float-lst"))
+#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))
+#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))
+#outline(title: [List of Listings], target: figure.where(kind: "quarto-float-lst"))
 ```
 
 {{< pagebreak >}}
@@ -94,7 +94,7 @@ to the id the author gave the mark in the caption on page 2:
 {{< pagebreak >}}
 
 ```{=typst}
-#outline(title: [Pictures (back)], target: figure.where(kind: "quarto-float-fig"))
-#outline(title: [Tables (back)], target: figure.where(kind: "quarto-float-tbl"))
-#outline(title: [Listings (back)], target: figure.where(kind: "quarto-float-lst"))
+#outline(title: [List of Figures (end)], target: figure.where(kind: "quarto-float-fig"))
+#outline(title: [List of Tables (end)], target: figure.where(kind: "quarto-float-tbl"))
+#outline(title: [List of Listings (end)], target: figure.where(kind: "quarto-float-lst"))
 ```

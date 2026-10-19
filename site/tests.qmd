@@ -41,9 +41,9 @@ exit 0.
 
 Weekly and on demand, and not on every push, a second job renders four
 fixtures to PDF through LaTeX on each version: `demo.qmd`, the book,
-`named-indexes.qmd` and `figure-marks.qmd`. It renders four fixtures to Typst:
-`typst-index.qmd`, `typst-numbering.qmd`, `typst-order.qmd` and
-`figure-marks.qmd`. This job is kept off the push path because it installs a
+`named-indexes.qmd` and `figure-marks.qmd`. It renders five fixtures to Typst:
+`typst-index.qmd`, `typst-numbering.qmd`, `typst-order.qmd`,
+`figure-marks.qmd` and `typst-caption-lists.qmd`. This job is kept off the push path because it installs a
 TeX distribution and a package from a third-party repository. Its red can
 therefore trace to upstream mirror state rather than to a commit.
 
@@ -66,6 +66,9 @@ That job reads the printed index of each PDF:
   each print its entries' text in order as its manifest states.
 - `figure-marks.qmd` rendered to Typst must print its index as its manifest
   states.
+- `typst-caption-lists.qmd`, whose captions Typst lists of figures, tables and
+  listings copy, must print its index as its manifest states, each caption
+  mark on its caption's page.
 
 Where a Typst locator links to is read only by the acceptance suite.
 

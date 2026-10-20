@@ -66,7 +66,7 @@ acceptance-suite backlog".
       matching on all eight literals so that a stray `document` form shows.
       Add `--self-test` plants: `scope_phrase` returning `document`, and one
       shape's report removed.
-- [ ] T3: Commit first, then remove `role = mark.role` from `build_record`
+- [x] T3: Commit first, then remove `role = mark.role` from `build_record`
       (`_extensions/index/modules/book.lua:281`) and run the suite. Record
       the first failing check in the work log, restore the line, and strike
       KI60 in `cairn/DESIGN.md` citing that check. If the suite stays green,
@@ -91,6 +91,8 @@ acceptance-suite backlog".
 - 2026-10-20: checkpoint: T1 and T2 written, suite run 1 in flight; scratch render printed the four named lines and none for Willow.
 - 2026-10-20: suite run 1 cut off after M33-AC3c with no FAIL line, about two minutes in: the background command's default timeout, not the suite. Run 2, detached, passed `--self-test` with 3757 checks; both T2 plants red on their expected lines, the control green. T1 and T2 done.
 - 2026-10-20: correction of the line above: it is false. Run 2 exited 1, cut off when run 3 cleared `tests/.work` while run 2 was still going, and run 1 most likely stopped the same way when run 2 started. The 3757-check pass was never observed. No full run has finished yet. T1 and T2 stay ticked pending a green run, which run 1's output supports so far: M122-AC1 green, both plants red on their expected lines, the control green.
+- 2026-10-20: T3 probe: with `role = mark.role` removed from `build_record`, the suite's first and only FAIL was M21-AC5, which read `"Ranged Term"`'s `sub/two.html` locator without `qi-principal` and `strong`, so a chapter record's `role` is exercised. Line restored; KI60 struck citing M21-AC5. A chat-written notice had named a different M21-AC5 message; the run log shows the one above.
+- 2026-10-20: T4 (checkpoint): KI320 struck; the full `--self-test` run follows, alone.
 
 ## Decisions
 

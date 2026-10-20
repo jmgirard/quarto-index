@@ -1199,9 +1199,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   at all, so a change that moves rendered output outside the roughly 100 checks
   now passes unseen — D-004's own residual risk. D-011 records the second:
   a source-shape regression no render probes. — D-004, D-011
-- **KI60.** `book.lua`'s `role` field is written, validated and read with no
-  book fixture exercising the round trip. — M20 review round 1 F5, round 2
-  R2-F12
 - **KI61.** The docs' `\newcommand*` redefinition recipe (in README before M40,
   on the LaTeX and PDF page since) is exercised in one
   header ordering only, where `\providecommand*` would be correct in both and
@@ -1267,12 +1264,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   happens or why. Since M106 the render job also renders the book to EPUB on
   every push. That is a second place the same flake can turn a push red.
   — M102 T6, widened M106 review R10
-- **KI320.** No fixture draws the index-naming forms of the two composed-entry
-  reports M116 added, a plain mark beside two or more cross-references and
-  three or more with none (`index entry %s in %s carries …`), so a defect in
-  either wording ships with the suite green. M116's review probe rendered both
-  correctly. The older index-naming forms of that report are unpinned too.
-  — M116 review diff-bug #4
 - **KI326.** M02-AC3's derived cross-reference rows are counted on each printed
   line's text alone. So a cross-reference printed at the wrong level of the PDF
   index passes, and so does a cross-reference line that the source does not

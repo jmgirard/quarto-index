@@ -35,7 +35,7 @@ acceptance-suite backlog".
 
 ## Acceptance criteria
 
-- [ ] AC1: `examples/xref-conflict-named.qmd` declares two indexes. In one
+- [x] AC1: `examples/xref-conflict-named.qmd` declares two indexes. In one
       of them, it marks a term for each of the four merged-entry shapes. Two
       shapes are a plain mark beside one cross-reference, or beside two or
       more different ones. The other two are two different cross-references
@@ -46,7 +46,7 @@ acceptance-suite backlog".
       those lines to a hand-stated list, line for line. The list holds one
       line per shape, each naming its term and `index "<name>"`. It holds no
       line for the term marked in both indexes.
-- [ ] AC2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
+- [x] AC2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
 
@@ -133,3 +133,6 @@ acceptance-suite backlog".
 - ripple #3: README says that page lists what each fixture exercises — follow-up: KI327.
 - diff-bug note, not ranked: the control does not go through the splice path — reject (false): a broken splice fails on its own `die`, `cmp`, render or want check.
 - Fixes committed in 1fff89b.
+- Pass 2: main had not moved (0 commits behind). Evidence is run 7, a `--self-test` run on 1fff89b with nothing outside `cairn/` changed since.
+- AC1 evidence: `examples/xref-conflict-named.qmd` declares `plants` and `places`. In `plants` it marks Alder (plain + one `see=`), Cedar (plain + two), Hazel (two, no plain) and Oak (three, no plain), and it marks Willow plainly in `plants` and with `see=` in `places`. Run 7 rendered it to PDF and printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check selects lines by all eight literals, anchored at the line's end, and holds them to a four-line hand-stated list, each line naming its term and `index "plants"`. Run 7's render log holds 4 report lines and no line naming Willow. The plants were red on the `document` form (line 1), a removed Oak report (line 4) and text after a report (line 4), and the control was green.
+- AC2 evidence: run 7, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, run alone, wrote exit code 0 and ended "All checks passed (1884 checks)" with no FAIL line, read from its log.

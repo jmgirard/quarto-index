@@ -150,6 +150,7 @@ backlog", in part.
 - 2026-10-20: claim audit re-read of the 6 corrected claims: all true; one comment widened at its note to name the link and table plants (comment only, after run 2).
 - 2026-10-20: T5 run 2 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at ec8c8c8): exit 0, "All checks passed (1859 checks)", 18 M119 ok lines. Status set to review.
 - 2026-10-20: review pass 1: main unmoved (33de9da), Copilot round off; a suite run at 3dcf248 was stopped before its end, since fix-now commits follow and the evidence run goes on the final head.
+- 2026-10-20: step-7 approval: m119-typst-xref-places approved for merge
 
 ## Review
 

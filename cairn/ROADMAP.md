@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (triage pass: "Typst caption marks and a list of figures" promoted, normal → high; retitled "The older acceptance-suite backlog held under…" → "Older acceptance-suite backlog" and "Repair the site and gallery checks; promote on…" → "Site and gallery check repairs"; KI7 and KI228 compressed; no drops, no decision entry; validate green.)_
+_Last hygiene check: 2026-10-19 (M115 done: "Typst caption marks and a list of figures" graduated; M112 row pruned; two LESSONS lines pruned at the cap for M115's; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,17 +11,15 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M115 | Typst caption marks and a list of figures | review | — | high | milestones/M115-typst-caption-lists.md |
+| M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |
 | M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
 | M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |
-| M112 | Three PDF index checks see a wrong index | done | — | normal | milestones/archive/M112-pdf-checks-see-wrong-index.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
 ## Candidates
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
-- [high] Typst caption marks and a list of figures: make a mark in a figure caption file the figure's page, not the page of the caption's copy in a list of figures. Promote at any time — added 2026-10-19 — M114 plan gate — KI290 — started M115
 - Older acceptance-suite backlog: The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31 — M35-M50
 - [parked] EPUB check dead code: delete the comparison in `epubcheck.cmd_same` that cannot fail, the unused `epubindex.section_rows`, and `cmd_absent`'s allowance parameter, which every caller leaves empty. Promote with any change to `tests/epubcheck.py` or `tests/epubindex.py` — added 2026-10-18 — M112 plan gate — KI92, KI94, KI95
 - [parked] Missing-log counts: make the inline log counts in `tests/run-tests.sh`, and `check_warning_names` and `check_warning_names_nth`, refuse a log that is not a file, as `check_warning_count` does. Promote on a render's log being renamed or removed — added 2026-10-18 — M112 plan gate — KI311

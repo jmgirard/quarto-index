@@ -1,13 +1,13 @@
 # M122: Merged-entry reports are checked where they name their index
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it adds an acceptance-suite check and one test fixture, which no external consumer of the repo relies on
-- **Branch/PR:** —
+- **Branch/PR:** m122-named-merged-entry-reports
 
 ## Goal
 
@@ -86,6 +86,9 @@ acceptance-suite backlog".
 - 2026-10-20: criteria audit (reduced, internal tier): fresh Opus reader returned 2 findings here. AC1 now matches all eight literals. The `role` criterion was dropped: the removal stops the suite at M21-AC5 before the M065-AC4 control, and the work is outside the goal, so it moved to T3 as a probe and a strike.
 - 2026-10-20: plan gate chose a new fixture over rendering `examples/index-labels-misuse.qmd` or `examples/index-separators-scoped.qmd` to PDF, because neither holds all four shapes and a silent case; falsified by one of them reaching all four named forms with no edit.
 - 2026-10-20: lessons surfaced: M116 (fixture registration and `warn-distinct.py`'s count), M117 (plants resting on old output), M13 (the multi-index metadata key), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`).
+- 2026-10-20: implement started on branch m122-named-merged-entry-reports.
+- 2026-10-20: choices: indexes `plants` and `places`; Willow is the term in both; the check is a Python script in `$WORK` reused by the plants; plants re-render a mutated extension copy to PDF (about 4 s each) beside an unmutated control; an extension-warning count of 4 over the render is added beside the list.
+- 2026-10-20: checkpoint: T1 and T2 written, suite run 1 in flight; scratch render printed the four named lines and none for Willow.
 
 ## Decisions
 

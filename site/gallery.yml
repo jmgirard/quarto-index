@@ -104,6 +104,7 @@ not-shown:
   - examples/typst-unprinted.qmd
   - examples/typst-xref-places.qmd
   - examples/unicode.qmd
+  - examples/xref-conflict-named.qmd
   - examples/xref-escaping.qmd
   - examples/xref-joined-separator.qmd
   - examples/xref-joined.qmd

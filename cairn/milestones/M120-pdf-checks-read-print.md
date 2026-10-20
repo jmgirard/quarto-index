@@ -39,7 +39,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 
 ## Acceptance criteria
 
-- [ ] AC1: M02-AC3's typeset check in `tests/run-tests.sh` reads the index
+- [x] AC1: M02-AC3's typeset check in `tests/run-tests.sh` reads the index
       in Quarto's own PDF of `examples/xref-escaping.qmd`. It holds each
       entry that `typstcheck.derived_entries` derives from that fixture with
       a cross-reference to exactly one line of that index. The expected line
@@ -49,19 +49,19 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
       `` ` `` as `‘`. The comparison with the line's text is in NFC. The
       check fails naming each such entry printed on no line or on more than
       one.
-- [ ] AC2: M06-AC3 reads the index in Quarto's own PDF of
+- [x] AC2: M06-AC3 reads the index in Quarto's own PDF of
       `examples/sort-escaping.qmd`. It holds each `term-XX` mark that its
       scan of the fixture finds to exactly one line whose term is the mark's
       text. A line's term is the line with its locators removed. The check
       fails naming each mark printed on no line or on more than one. It does
       not check the order of the lines.
-- [ ] AC3: M04-AC2's PDF check reads `examples/marker.qmd`'s PDF with
+- [x] AC3: M04-AC2's PDF check reads `examples/marker.qmd`'s PDF with
       `pdfindex.read` and keeps the lines on the `After the marker`
       heading's page whose position is above that heading. It holds each
       term of `MARKER_PDF_TERMS` to exactly one kept line, compared on the
       line's term. It fails naming each term on no kept line or on more
       than one. If the read finds no `After the marker` line, it also fails.
-- [ ] AC4: For each shown fixture that the registry gives a PDF manifest,
+- [x] AC4: For each shown fixture that the registry gives a PDF manifest,
       `tests/gallerycheck.py pdf` reads the fixture's linked PDF with
       `pdfindex.read` from the `Index` heading. It holds each entry that the
       manifest states to as many read lines, compared on the line's term, as
@@ -132,6 +132,13 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 ## Decisions
 
 ## Review
+
+Evidence run: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at eafcef2, 2026-10-20 13:30-13:45, "All checks passed (1869 checks)", rc 0. An earlier run at 1e13b9e, before the fix-now work, was green at 1868.
+
+- AC1: `ok M02-AC3: all 255 cross-reference lines the source derives typeset once each in the probe index` (Quarto's own PDF, `xref-pdf/xref-escaping.pdf`, rows from `typstcheck.derived_entries` with the two quotation-mark facts, compared in NFC), beside `the 255 cross-reference lines derived from examples/xref-escaping.qmd are the ones stated by hand`. Failure naming: `M120 T1 self-test` green, so the check went red naming the row on a multi-level, a source-entry and a non-ASCII row printed twice and on each missing from the print.
+- AC2: `ok M06-AC3: each of the 94 sort-keyed marks prints on exactly one line of the index in Quarto's own PDF` (`sortesc-pdf/sort-escaping.pdf`, marks from M06-AC3's own regex scan, compared on the line's term, no order read). Failure naming: `M120 T2 self-test` green (a mark printed twice, x2, and a mark the PDF does not print).
+- AC3: `ok M04-AC2: ... prints each of the 4 derived terms on exactly one line` (`marker_pdf_check` keeps lines on the `After the marker` line's page with y above it, compared on the term). Failure naming: `M120 T3 self-test` green (a term printed twice, a term not printed, and an ending heading the PDF lacks).
+- AC4: `ok M41-AC4: each of the 5 shown fixture(s) with a hand-derived PDF index manifest ... prints each of the 65 entry(s) ... on as many lines as the manifest states it` (registry rows of kind `pdf`, `pdfindex.read` from `Index`, term counts against the manifest's counts). Failure naming: self-test lines for a PDF whose index drops the entries, a manifest stating once a term printed twice (`von Neumann`), and stating twice a term printed once (`pandoc`), each red with its own message.
 
 spawned: diff-bug, blame-history, prior-review, ripple
 

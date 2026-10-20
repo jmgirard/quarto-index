@@ -13488,6 +13488,87 @@ print(f'ok   M06-AC3: all {len(terms)} entries carry a sort field split at '
       f'one of them as its text alone')
 SORTFIELDPY
 
+# M120 T2 — the index Quarto's own PDF prints. The `.ind` above comes from a
+# second pdflatex and makeindex run over the captured `.tex`; the PDF an author
+# gets is Quarto's render, captured as sortesc-pdf. Each probe mark must print
+# as exactly one line whose term (the line with its locators removed) is the
+# mark's text. The order of the lines is not checked: the LaTeX back-end
+# orders by the escaped form it writes for each key (site/sorting.qmd), and no
+# source states that order apart from the index tool itself. The optional
+# last argument plants extra printed lines, as xref_typeset_check's does.
+sortesc_pdf_check() {   # <pdf> <qmd> [<planted lines file>]
+  python3 - "$@" <<'SORTESCPDFPY'
+import re, sys
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, qmd_path = sys.argv[1:3]
+plant = sys.argv[3] if len(sys.argv) > 3 else ''
+qmd = open(qmd_path, encoding='utf-8').read()
+terms = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
+if not terms:
+    print('FAIL: M06-AC3: no probe marks found in the fixture', file=sys.stderr)
+    sys.exit(1)
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: M06-AC3: {error}', file=sys.stderr)
+    sys.exit(1)
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(entries, terms, field='term')
+missing = [t for t in terms if counts[t] == 0]
+repeated = [t for t in terms if counts[t] > 1]
+if missing:
+    print('FAIL: M06-AC3: sort-keyed mark(s) printed on no line of the PDF '
+          'index:', file=sys.stderr)
+    for t in missing:
+        print(f'  <<{t}>>', file=sys.stderr)
+if repeated:
+    print('FAIL: M06-AC3: sort-keyed mark(s) printed on more than one line of '
+          'the PDF index, where the fixture marks each once:', file=sys.stderr)
+    for t in repeated:
+        print(f'  <<{t}>> x{counts[t]}', file=sys.stderr)
+if missing or repeated:
+    print(f'--- index lines read ({len(entries)}) ---', file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: each of the {len(terms)} sort-keyed marks prints on '
+      f'exactly one line of the index in Quarto\'s own PDF')
+SORTESCPDFPY
+}
+sortesc_pdf_check "$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf" \
+  examples/sort-escaping.qmd || exit 1
+# M120 T2 self-test: a mark's line given once more is red naming the mark, and
+# a mark the source writes and the PDF does not print is red naming it.
+if [ "${1:-}" = "--self-test" ]; then
+  M120S="$WORK/m120-sortesc"
+  rm -rf "$M120S"; mkdir -p "$M120S"
+  printf 'term-40, 9\n' > "$M120S/twice.txt"
+  if out=$(sortesc_pdf_check "$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf" \
+      examples/sort-escaping.qmd "$M120S/twice.txt" 2>&1); then
+    fail "M120 T2 self-test: M06-AC3 passed the PDF with <<term-40>> printed on a second line"
+  fi
+  case "$out" in
+    *"more than one line"*"<<term-40>> x2"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T2 self-test: M06-AC3 failed on a mark printed twice, but not by naming it" ;;
+  esac
+  grep -c '^\[term-40\]{\.index sort="@"}$' examples/sort-escaping.qmd | grep -qx 1 \
+    || fail "M120 T2 self-test: the fixture does not write term-40's mark once in the shape this plant renames"
+  sed 's/^\[term-40\]{\.index sort="@"}$/[term-ff]{.index sort="@"}/' \
+    examples/sort-escaping.qmd > "$M120S/renamed.qmd"
+  if out=$(sortesc_pdf_check "$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf" \
+      "$M120S/renamed.qmd" 2>&1); then
+    fail "M120 T2 self-test: M06-AC3 passed with <<term-ff>> marked in the source and printed nowhere"
+  fi
+  case "$out" in
+    *"printed on no line"*"<<term-ff>>"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T2 self-test: M06-AC3 failed on a mark the PDF does not print, but not by naming it" ;;
+  esac
+  pass "M120 T2 self-test: M06-AC3's PDF read is red naming the mark on one printed twice and on one the PDF does not print"
+fi
+
 # Leg 2 — HTML: the same characters reach the generated section as entries.
 quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \
   || { tail -20 "$WORK/sortesc-html.log" >&2; fail "M06-AC3: sort-escaping.qmd failed to render to HTML"; }

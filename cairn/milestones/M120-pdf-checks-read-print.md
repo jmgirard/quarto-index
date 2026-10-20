@@ -86,7 +86,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
       line missing, one each for a multi-level, a source-entry and a
       non-ASCII mark. Grep the M112 and M113 plants for want strings that
       the change moves before the first run (the M117 lesson).
-- [ ] T2: After the M06-AC3 `.ind` check (`tests/run-tests.sh:13393`), read
+- [x] T2: After the M06-AC3 `.ind` check (`tests/run-tests.sh:13393`), read
       `$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf` and count each scanned
       mark on the line's term. Add `--self-test` plants for a mark printed
       twice and a mark missing.
@@ -120,6 +120,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: lessons surfaced: M30 (typesetting facts, NFC), M117 (plants resting on old output), M118 (apply plant substitutions by script), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`).
 - 2026-10-20: implement started on branch m120-pdf-checks-read-print.
 - 2026-10-20: T1 done: `xref_derived_rows` writes 255 rows from `typstcheck.derived_entries`, refusing a row with an unmodelled ligature input (shown red on a planted `a--b`); `xref_typeset_check` now compares in NFC; self-test plants six cases. Checked alone against the last run's capture; the full suite runs at T5. No M112/M113 want string moved: the hand manifest call is unchanged.
+- 2026-10-20: T2 done: `sortesc_pdf_check` counts the 94 scanned marks on the line's term in `sortesc-pdf/sort-escaping.pdf`; self-test plants a mark printed twice and a renamed mark the PDF does not print. Checked alone against the last run's capture. Per-task checks run each new block alone because editing `tests/run-tests.sh` mid-run corrupts the run (M073); one full `--self-test` run at T5 is the verify.
 
 ## Decisions
 

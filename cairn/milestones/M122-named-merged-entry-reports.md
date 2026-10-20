@@ -1,6 +1,6 @@
 # M122: Merged-entry reports are checked where they name their index
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -98,7 +98,32 @@ acceptance-suite backlog".
 - 2026-10-20: claim audit: not owed — internal tier.
 - 2026-10-20: implementation complete, status review.
 - 2026-10-20: review: run 6 stopped by hand before the review fixes, since they change the suite. The T3 line's "first and only FAIL" is corrected: `fail()` exits at the first failure, so M21-AC5 was the first red check and no later check ran. KI60 narrowed rather than struck: the probe covers the write and read of a string `role`, not the refusal of a non-string one.
+- 2026-10-20: review return 1: AC1 — the check held only the span of each line from "index entry" to "meant", so a report with text after it passed; the fix (patterns anchored at the line's end, plus a plant) is in 1fff89b, and run 7 is in flight.
 
 ## Decisions
 
 ## Review
+
+- Sync: main had not moved since the branch was cut (`git rev-list --count HEAD..origin/main` = 0). No PR yet; the Copilot round is off.
+- Consistency gate: `cairn_validate.py` exit 0, all checks passed. No principle changed, so `cairn_impact` was skipped. The generic profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the check compared only the span from "index entry" to "meant", so text after a report passed — fix now, and a floor return: AC1 holds the lines "line for line", and the check held a part of each. Patterns now run to the line's end, with a self-test plant.
+- diff-bug #2: the KI60 strike covered more than the probe showed; the refusal of a non-string `role` (`book.lua:440`) is unchecked — fix now: KI60 narrowed to that leg.
+- diff-bug #3: "first and only FAIL" in the T3 line overstates, since `fail()` exits at the first failure — fix now: corrected by a work-log line.
+- diff-bug #4: the check's comment said `%d` matches any text, where it matches digits — fix now.
+- diff-bug #5: the section comment left out D-021's condition that the back-end keeps the indexes apart — fix now.
+- blame-history #1: the KI60 strike rests on one probe of one leg — fix now, as diff-bug #2.
+- blame-history #2: "first and only FAIL" — fix now, as diff-bug #3.
+- blame-history #3: the ROADMAP row still names KI320 and KI60 — reject (planned change): post-merge hygiene graduates the row, as M121's review did.
+- blame-history #4: the strike carries no citation of M21-AC5 outside the work log — fix now: the narrowed KI60 names M21-AC5.
+- blame-history #5: T1's pointer `tests/run-tests.sh:15163` is stale — reject (false as a defect): it is the plan's record, correct when written, and the file grew under it.
+- blame-history #6: `m122_plant` lacks m081's "unwanted substring" argument — reject (style): the two plants' want strings name different lines, and neither prints the other's.
+- prior-review #1: the KI60 strike closes an M20 finding on partial evidence — fix now, as diff-bug #2.
+- prior-review #2: the ROADMAP row is still present — reject (planned change), as blame-history #3.
+- prior-review #3: a missing log gave a traceback blaming the list (M111) — fix now: refused by name, with a self-test plant.
+- prior-review #4: only the matched span is held — fix now, as diff-bug #1.
+- ripple #1: the ROADMAP row names struck entries — reject (planned change), as blame-history #3.
+- ripple #2: `site/examples.qmd` says the whole corpus is described below, and the new fixture is not — follow-up: KI327 (the page already left out most fixtures, `xref-conflict.qmd` among them).
+- ripple #3: README says that page lists what each fixture exercises — follow-up: KI327.
+- diff-bug note, not ranked: the control does not go through the splice path — reject (false): a broken splice fails on its own `die`, `cmp`, render or want check.
+- Fixes committed in 1fff89b.

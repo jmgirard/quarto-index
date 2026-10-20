@@ -1,13 +1,13 @@
 # M119: A Typst cross-reference mark keeps one label wherever it sits
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes the Typst output for an author's id in an image's alt text
-- **Branch/PR:** —
+- **Branch/PR:** m119-typst-xref-places
 
 ## Goal
 
@@ -81,7 +81,7 @@ backlog", in part.
 
 ## Tasks
 
-- [ ] T1: Tests first. Write `examples/typst-xref-places.qmd`. Page 1 holds a
+- [x] T1: Tests first. Write `examples/typst-xref-places.qmd`. Page 1 holds a
       list of figures and a list of tables, and `toc: true` lists the
       headings. Each AC1 place sits on a page of its own after an explicit
       page break. The body marks one term that the cross-references name.
@@ -104,14 +104,14 @@ backlog", in part.
       through `typstindex._links`, as M115-AC3 does. Before the first run,
       grep the self-tests for want strings that rest on alt-text output (the
       M117 lesson). Run the section and see the alt-text links fail.
-- [ ] T2: The fix. In the `Image` function of `assign_labels` (`typst.lua`
+- [x] T2: The fix. In the `Image` function of `assign_labels` (`typst.lua`
       near line 436), move the author's id of each span of class `index` in
       the alt text to an `id_inline` element just after the image. Clear the
       span's id, as `caption_moves` does for a caption. Move `id_inline`
       above `assign_labels`. `caption_moves` (near line 487) also moves the
       elements `id_inline` writes, so an id moved out of an alt text inside a
       caption leaves the caption too.
-- [ ] T3: Plants. Each is one substitution, seen red on its own clause before
+- [x] T3: Plants. Each is one substitution, seen red on its own clause before
       the green is trusted. Remove the T2 id move: the alt-text links fail
       with the label error. Leave `caption_moves` blind to `id_inline`
       elements: the caption's alt-text link fails with "occurs multiple
@@ -140,3 +140,7 @@ backlog", in part.
 - 2026-10-20: plan gate chose `quarto typst query` over the laid-out document over a grep of the `.typ` file, because the outline copies a label at layout time and the `.typ` never shows the copy; falsified by the pinned Quarto's Typst dropping `typst query`.
 - 2026-10-20: plan gate chose a check in the suite over a `panic` written into the fixture's own Typst, because that would put the extension's label prefix in the artifact under test; falsified by the query's output differing from what the compile sees.
 - 2026-10-20: criteria audit (full, fresh Opus reader): 6 findings, all accepted. T2 as first written broke an alt-text id inside a listed caption ("occurs multiple times"), so `caption_moves` also moves `id_inline` elements and the fixture holds that case (1); AC2 narrowed to labels of `metadata` elements, since author ids on text elements are reached by AC3's links (2); T1 renders the query copy under `$WORK` and reads stderr (3); AC3's scan moved to T1 with a floor (4); T3 adds plants for `figure_labels`, `caption_moves` and the heading id (5); AC1 states the printed index, not the manifest (6). Clean: AC1 renders as written, the T2 premise, AC5, no principle or decision conflict.
+- 2026-10-20: implement started on branch m119-typst-xref-places, cut from main at 33de9da.
+- 2026-10-20: T1: fixture (12 marks, 11 page breaks, 12 linked ids), manifests `tests/typst-xref-places.tsv` and `tests/typst-xref-places-links.tsv` by hand, reader `tests/typstlabels.py` (labels and links modes), M119 suite section after M115's, corpus row and gallery line. Before T2 the render stopped on ``label `<id-elm>` does not exist`` and the same for `id-gum`; `id-lark` already resolved, since `caption_moves` reaches a span in a caption's alt text.
+- 2026-10-20: T2: `id_inline` moved above `assign_labels` and now opens with the comment `/* qi-id */` (`ID_INLINE_OPEN`), so `caption_moves` moves the filter's own id elements and never an author's raw Typst; chose the comment over matching `#[#metadata(none)`, which an author's raw Typst in a caption could also open with; falsified by Typst ever reading a comment there as content.
+- 2026-10-20: T3: ten plants red on the clause each names, run in a scratch harness that sources the section alone (full suite at T5). The audit's heading-id plant was dropped: an author's id left in a Typst heading stays on one element (`= … ash<id-ash>`, query lists one), so no plant can show AC3 red there. Skipping the heading relocation loses ash's label to the heading's own label rather than copying it, so that plant is red on AC2's mark floor (11 for 12), not on a label listed twice.

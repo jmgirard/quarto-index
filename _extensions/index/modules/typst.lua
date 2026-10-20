@@ -394,6 +394,27 @@ local function label_inline(label)
   return pandoc.RawInline("typst", "#[#metadata(none)<" .. label .. ">]")
 end
 
+-- An author's id written as an invisible element of its own carrying the id
+-- as a label. An empty span would not do: Pandoc writes its id as a bare
+-- label, which attaches to the element before it, the label element of
+-- another mark among them, and Typst then keeps only one of the two labels
+-- (M115 review). The label is `<id>` where every character is an ASCII
+-- letter or digit, `_`, `-`, `.` or `:`, and `label("…")` otherwise. Pandoc
+-- writes some ids outside ASCII bare where this writes `label("…")`; both
+-- name the same label. The element opens with a Typst comment that marks it
+-- as this filter's, so `caption_moves` can tell it from raw Typst an author
+-- wrote.
+local ID_INLINE_OPEN = "#[/* qi-id */#metadata(none)"
+local function id_inline(id)
+  local label
+  if id:match("^[%w_%-%.:]+$") then
+    label = "<" .. id .. ">"
+  else
+    label = "#label(" .. typst_string(id) .. ")"
+  end
+  return pandoc.RawInline("typst", ID_INLINE_OPEN .. label .. "]")
+end
+
 -- Give every still-pending mark its label. The Span pass tagged each mark with
 -- qi_core.HTML_PENDING_ATTR, and `relocate_heading_anchors` has already moved a
 -- heading mark's tag after its heading, where Typst's outline does not copy
@@ -432,10 +453,22 @@ local function assign_labels(doc, taken)
     -- any raw Typst in it, so a label written there names no element and its
     -- locator would be lost. Each such label moves to just after the image,
     -- which is on the same page. The walk is bottom-up, so the Span function
-    -- above has already written them.
+    -- above has already written them. An author's id on a mark there is
+    -- dropped the same way, so a link to it would name no label and stop the
+    -- compile: each such id moves after the image too, as an element of its
+    -- own (M119).
     Image = function(image)
       local moved = {}
       image.caption = image.caption:walk({
+        Span = function(span)
+          if not span.classes:includes(qi_core.INDEX_CLASS)
+              or span.identifier == "" then
+            return nil
+          end
+          moved[#moved + 1] = id_inline(span.identifier)
+          span.identifier = ""
+          return span
+        end,
         RawInline = function(raw)
           if raw.format == "typst"
               and raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true) then
@@ -467,23 +500,10 @@ end
 -- filter's `FloatRefTarget` function and not to `doc:walk`. A float with no
 -- id is a Pandoc `Figure`.
 --
--- An author's id moves as an invisible element of its own carrying the id as
--- a label. An empty span would not do: Pandoc writes its id as a bare label,
--- which attaches to the element before it, the label element of another mark
--- among them, and Typst then keeps only one of the two labels (M115 review).
--- The label is `<id>` where every character is an ASCII letter or digit, `_`,
--- `-`, `.` or `:`, and `label("…")` otherwise. Pandoc writes some ids outside
--- ASCII bare where this writes `label("…")`; both name the same label.
-local function id_inline(id)
-  local label
-  if id:match("^[%w_%-%.:]+$") then
-    label = "<" .. id .. ">"
-  else
-    label = "#label(" .. typst_string(id) .. ")"
-  end
-  return pandoc.RawInline("typst", "#[#metadata(none)" .. label .. "]")
-end
-
+-- An author's id moves as an `id_inline` element. One that `assign_labels`
+-- already moved out of the alt text of an image in the caption is such an
+-- element in the caption, and it moves with the labels: left there, a list
+-- would copy it (M119 review of the plan).
 local function caption_moves(caption)
   local moved = pandoc.Inlines({})
   local rest = caption:walk({
@@ -497,7 +517,8 @@ local function caption_moves(caption)
     end,
     RawInline = function(raw)
       if raw.format == "typst"
-          and raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true) then
+          and (raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true)
+            or raw.text:find(ID_INLINE_OPEN, 1, true) == 1) then
         moved:insert(raw)
         return {}
       end

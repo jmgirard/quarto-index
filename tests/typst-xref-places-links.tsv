@@ -1,0 +1,31 @@
+# The page each author's id in examples/typst-xref-places.qmd names (M119).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. Read by
+# tests/typstlabels.py links. One row per id, in the order page 12 links to
+# them. The pages come from the source's explicit page breaks: page 1 holds
+# the contents and the two lists, and each break starts the next page.
+#   id-ash    the heading on page 2
+#   id-oak    the body text on page 2
+#   id-beech  the caption of the picture with an id, page 3
+#   id-cork   the caption of the table with an id, page 4
+#   id-date   the caption of the picture with no id, page 5
+#   id-elm    the alt text of the image on page 6
+#   id-gum    the same alt text, page 6
+#   id-hazel  the footnote on page 7, printed at the foot of that page
+#   id-ivy    the callout title written as its attribute, page 8
+#   id-jade   the callout title written as its first heading, page 9
+#   id-kelp   the callout body, page 10
+#   id-lark   the alt text of the image in the caption on page 11
+id-ash	2
+id-oak	2
+id-beech	3
+id-cork	4
+id-date	5
+id-elm	6
+id-gum	6
+id-hazel	7
+id-ivy	8
+id-jade	9
+id-kelp	10
+id-lark	11

@@ -1,0 +1,47 @@
+# The index examples/typst-xref-places.qmd prints in a Typst render (M119).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states.
+#
+# Each cross-reference mark names Oak, which the body marks on page 2, so
+# every target prints. A cross-reference mark adds no locator (M118), and
+# each of these terms has no other mark, so its row has no locator:
+#   ash    a heading the table of contents lists, page 2
+#   beech  the caption of a picture with an id, page 3
+#   cork   the caption of a table with an id, page 4, `see-also=`
+#   date   the caption of a picture with no id, page 5
+#   elm    the alt text of an image that is not a figure, page 6
+#   hazel  a footnote, page 7
+#   ivy    a callout's `title` attribute, page 8
+#   jade   a callout's first heading, page 9
+#   kelp   a callout's body, page 10
+# Three page-number marks:
+#   Oak    the body text, page 2
+#   gum    the same alt text as elm, page 6
+#   lark   the alt text of an image in the caption of a picture with an id,
+#          page 11
+group	A
+entry	0	ash		see|Oak
+group	B
+entry	0	beech		see|Oak
+group	C
+entry	0	cork		see also|Oak
+group	D
+entry	0	date		see|Oak
+group	E
+entry	0	elm		see|Oak
+group	G
+entry	0	gum	6@6
+group	H
+entry	0	hazel		see|Oak
+group	I
+entry	0	ivy		see|Oak
+group	J
+entry	0	jade		see|Oak
+group	K
+entry	0	kelp		see|Oak
+group	L
+entry	0	lark	11@11
+group	O
+entry	0	Oak	2@2

@@ -1,0 +1,85 @@
+---
+# No title: page 1 holds only the table of contents and the two lists (M119).
+format: typst
+toc: true
+filters:
+  - index
+---
+
+```{=typst}
+#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))
+#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))
+```
+
+{{< pagebreak >}}
+
+# A heading that marks [ash]{#id-ash .index see="Oak"}
+
+The fixture for cross-reference marks in the places where Typst copies or
+drops a label (M119). Each mark gets a label of its own, and a label that a
+table of contents or a list copies names two elements. Every mark carries an
+author's id, and the last page links to each one. The term every
+cross-reference names is marked here: [Oak]{#id-oak .index}.
+
+Every case ends in an explicit page break, so the page each mark sits on is a
+fact of this source: page 1 holds the contents and the lists, and each break
+starts the next page. No term holds the letters `f` and `i`, `f` and `l`, two
+`f`s, or two `!`s in a row, which the Typst floor sets as one glyph.
+
+{{< pagebreak >}}
+
+![A picture with an id, whose caption marks [beech]{#id-beech .index see="Oak"}.](dot.png){#fig-beech}
+
+{{< pagebreak >}}
+
+| a | b |
+|---|---|
+| 1 | 2 |
+
+: A table with an id, whose caption marks [cork]{#id-cork .index see-also="Oak"}. {#tbl-cork}
+
+{{< pagebreak >}}
+
+![A picture with no id, whose caption marks [date]{#id-date .index see="Oak"}.](dot.png)
+
+{{< pagebreak >}}
+
+An image that is not a figure, whose alt text marks two terms:
+![alt text that marks [elm]{#id-elm .index see="Oak"} and [gum]{#id-gum .index}](dot.png){width=1cm}.
+
+{{< pagebreak >}}
+
+A paragraph with a footnote.[^hazel]
+
+[^hazel]: The footnote marks [hazel]{#id-hazel .index see="Oak"}.
+
+{{< pagebreak >}}
+
+::: {.callout-note title='A callout title that marks [ivy]{#id-ivy .index see="Oak"}'}
+A callout whose `title` attribute holds the mark.
+:::
+
+{{< pagebreak >}}
+
+::: {.callout-note}
+## A callout heading that marks [jade]{#id-jade .index see="Oak"}
+
+A callout whose first heading holds the mark.
+:::
+
+{{< pagebreak >}}
+
+::: {.callout-note}
+A callout body that marks [kelp]{#id-kelp .index see="Oak"}.
+:::
+
+{{< pagebreak >}}
+
+![A picture with an id, whose caption holds an image ![alt text that marks [lark]{#id-lark .index}](dot.png){width=5mm} in its text.](dot.png){#fig-lark}
+
+{{< pagebreak >}}
+
+A link to each mark's id:
+[ash](#id-ash), [Oak](#id-oak), [beech](#id-beech), [cork](#id-cork),
+[date](#id-date), [elm](#id-elm), [gum](#id-gum), [hazel](#id-hazel),
+[ivy](#id-ivy), [jade](#id-jade), [kelp](#id-kelp), [lark](#id-lark).

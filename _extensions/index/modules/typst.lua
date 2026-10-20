@@ -390,14 +390,15 @@ end
 
 -- Where the moved inlines go in a float with an id. A float whose content is
 -- one Plain or Para takes them at its end. A float whose content is one table
--- or one code block is wrapped with a Plain holding them, which printed the
--- page as before (M115 review). A float whose content is anything else keeps
--- them in its caption, which a list copies (KI290), because each change made
--- to such content changed Quarto's layout. With several blocks, Quarto's
--- layout cells: a wrapper made the cells one cell, and inlines joined to an
--- image's cell kept the image's width, which Quarto drops in a cell holding
--- an image alone. With one Div, a code cell's output among them: a wrapper
--- stopped Quarto unwrapping the cell, and the float printed at the margin.
+-- or one code block is wrapped in a Div that holds it and then a Plain holding
+-- them, which printed the page as before (M115 review). A float whose content
+-- is anything else keeps them in its caption, which a list copies (KI290),
+-- because each change made to such content changed Quarto's layout. Several
+-- blocks are Quarto's layout cells where the float asks for them: a wrapper
+-- made the cells one cell, and inlines joined to an image's cell kept the
+-- image's width, which Quarto drops in a cell holding an image alone. One Div
+-- can be a code cell's output, which Quarto unwraps: a wrapper stopped that,
+-- and the float printed at the margin.
 local function float_labels(float)
   if not qi_core.is_typst() or float.caption_long == nil
       or float.content == nil then

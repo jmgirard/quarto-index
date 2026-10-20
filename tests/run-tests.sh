@@ -32826,12 +32826,16 @@ m115_images_check() {   # <pdf>
   pdfimages -list "$1" | awk '
     NR > 2 && $1 == 2 && $3 == "image" { n++; ppi[n] = $13 }
     END {
-      same = (n == 4)
+      if (n != 4) {
+        printf "FAIL: M115 review: page 2 prints %d image(s), not the four of the figure and its twin\n", n
+        exit 1
+      }
+      same = 1
       for (i = 2; i <= n; i++) if (ppi[i] != ppi[1]) same = 0
       if (!same) {
-        printf "FAIL: M115 review: page 2 prints %d image(s) at resolutions", n
+        printf "FAIL: M115 review: page 2 prints its four images at resolutions"
         for (i = 1; i <= n; i++) printf " %s", ppi[i]
-        print ", not four at one size"
+        print ", not at one size"
         exit 1
       }
     }' >&2
@@ -32842,10 +32846,16 @@ m115_center_check() {   # <pdf>
   pdftotext -f 3 -l 3 -bbox-layout "$1" - | awk '
     /<word / && />Figure</ { n++; match($0, /xMin="[0-9.]+"/); x[n] = substr($0, RSTART + 6, RLENGTH - 7) }
     END {
-      if (n != 2 || x[1] != x[2]) {
-        printf "FAIL: M115 review: page 3 prints %d caption(s) opening with Figure, at x", n
-        for (i = 1; i <= n; i++) printf " %s", x[i]
-        print ", not two at one x"
+      if (n != 2) {
+        printf "FAIL: M115 review: page 3 prints %d caption(s) opening with Figure, not the two of the figure and its twin\n", n
+        exit 1
+      }
+      # Half a point allows the kerning a caption word can gain once the
+      # label leaves the caption text (0.11 pt at most in the M115 review);
+      # the wrapper defect moved the caption by 63 pt.
+      d = x[1] - x[2]
+      if (d < -0.5 || d > 0.5) {
+        printf "FAIL: M115 review: page 3 prints its two captions at x %s and %s, not at one x\n", x[1], x[2]
         exit 1
       }
     }' >&2
@@ -32970,7 +32980,7 @@ M115SPLICEPY
     $'    if #content ~= 1 then\n      for _, block in ipairs(content) do\n        if block.t == "Plain" or block.t == "Para" then\n          local rest, moved = caption_moves(float.caption_long)\n          float.caption_long = rest\n          block.content:extend(moved)\n          return float\n        end\n      end\n      return nil\n    end\n' \
     || fail "M115 self-test (images): the plant could not be written (its own message is above)"
   m115_render images typst-caption-layout.qmd
-  m115_red images "not four at one size" \
+  m115_red images "page 2 prints its four images at resolutions" \
     m115_images_check "$CAPTURE_ROOT/m115-images/typst-caption-layout.pdf"
 
   m115_tree center typst-caption-layout.qmd
@@ -32979,7 +32989,7 @@ M115SPLICEPY
     '' \
     || fail "M115 self-test (center): the plant could not be written (its own message is above)"
   m115_render center typst-caption-layout.qmd
-  m115_red center "not two at one x" \
+  m115_red center "page 3 prints its two captions at x" \
     m115_center_check "$CAPTURE_ROOT/m115-center/typst-caption-layout.pdf"
 
   M115L=tests/typst-caption-lists-lists.tsv

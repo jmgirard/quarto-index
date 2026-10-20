@@ -1061,7 +1061,8 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   prints the term with no locator, and nothing is reported. Observed on Quarto
   1.10.18 with `examples/front-matter.qmd`. — M098 T3
 - **KI318.** A mark in the caption of a float whose content is one paragraph,
-  table or code block has its label at the end of that content (M115), so
+  table or code block has its label at the end of that content, or just after
+  the table or code block in a wrapper (M115), so
   where the document makes floats breakable
   (`#show figure: set block(breakable: true)`) and a float splits, the
   locator names the page where the content ends, not the caption's page. A
@@ -1077,8 +1078,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   subfigures, images or tables, a callout beside a code block, a code cell's
   output Div), and a figure with no id whose first block is not a Plain or
   Para, which no fixture holds. The candidate row "Laid-out float caption
-  marks" holds the first. A subfigure's own caption, a callout's title and a
-  custom float kind's caption are unprobed under a list. M115's fixtures test
+  marks" holds the first. A code listing with a `filename` is of the first
+  kind: Quarto hands the stage a Div for it (M115 review pass 5). A
+  subfigure's or subtable's own caption labels move into its content, which
+  the M115 review rendered with an unchanged layout and no fixture holds. A
+  callout's title and a custom float kind's caption are unprobed under a
+  list. M115's fixtures test
   figures, tables and code listings whose content is one such block, and that
   two laid-out figures and a code-cell figure keep their layout. — M098 T3,
   narrowed M115

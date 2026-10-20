@@ -14,9 +14,10 @@ A page number is known only once Typst has laid out the pages, and the
 extension runs before that. So it writes an invisible Typst label at each mark,
 and each locator in the index asks Typst for the page of its label while the
 document is typeset. A mark in a heading gets its label just after the
-heading, so the copy of that heading in the table of contents carries none. A
-mark in a caption gets its label in the float's content for the same reason.
-See [Lists of figures, tables and listings](#lists-of-figures-tables-and-listings).
+heading, so the copy of that heading in the table of contents carries none.
+For the same reason, a mark in the caption of most figures, tables and code
+listings gets its label in the float's content. See [Lists of figures, tables
+and listings](#lists-of-figures-tables-and-listings) for which floats.
 
 ## Where the index goes
 
@@ -126,10 +127,12 @@ Any other float keeps a caption mark's label in the caption, because moving
 it into that content changed the layout. A list before such a float files the
 mark on the list's page. An id you give the mark is copied with the caption,
 so a Typst link to it fails to compile. These floats include a float laid out
-in cells with `layout-ncol` or its kin, such as a grid of subfigures, images
-or tables, and a figure or table from a code cell. They also include a figure
-with no id whose content does not start with text or an image, which Markdown
-does not make.
+in cells with `layout-ncol` or its kin, such as a grid of images or tables. A
+code listing with a `filename` is one, as is a figure or table whose content
+Quarto keeps in a code cell's output div, as a knitr `kable` does. They also
+include a figure with no id whose content does not start with text or an
+image, which Markdown does not make. A knitr plot and a table knitr writes
+with `output: asis` take the label in their content.
 
 ## A mark Typst never prints
 

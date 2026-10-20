@@ -32797,10 +32797,16 @@ fi
 # cells of examples/typst-caption-layout.qmd one cell, so they printed one
 # above the other; then it joined the labels to the first image cell, which
 # kept that image's width where Quarto drops it, so one image printed far
-# larger. The index read right both times. A float whose content is several
-# blocks now keeps its labels in its caption (KI290). The text cells must share
-# a line of the PDF's layout text, and the two images on page 2 must print at
-# one size, which `pdfimages -list` reads as their resolution.
+# larger; and a wrapper around a code cell's output stopped Quarto unwrapping
+# it, so the figure printed at the left margin. The index read right each
+# time. A float whose content is not one paragraph, table or code block now
+# keeps its labels in its caption (KI290). The text cells must share a line of
+# the PDF's layout text. Page 2 holds the image figure and the same figure with
+# no mark, so its four images must print at one size, which `pdfimages -list`
+# reads as their resolution; page 3 holds the code-cell figure and its unmarked
+# twin, whose captions print the same text, so they must start at one x.
+command -v pdfimages > /dev/null \
+  || fail "M115 review: pdfimages, from poppler like pdftotext, is not on the PATH, so the image sizes of examples/typst-caption-layout.qmd cannot be read"
 quarto render examples/typst-caption-layout.qmd --to typst \
     > "$WORK/typst-caption-layout.log" 2>&1 \
   || { tail -40 "$WORK/typst-caption-layout.log" >&2; fail "M115 review: examples/typst-caption-layout.qmd failed to render to Typst"; }
@@ -32820,17 +32826,33 @@ m115_images_check() {   # <pdf>
   pdfimages -list "$1" | awk '
     NR > 2 && $1 == 2 && $3 == "image" { n++; ppi[n] = $13 }
     END {
-      if (n != 2 || ppi[1] != ppi[2]) {
+      same = (n == 4)
+      for (i = 2; i <= n; i++) if (ppi[i] != ppi[1]) same = 0
+      if (!same) {
         printf "FAIL: M115 review: page 2 prints %d image(s) at resolutions", n
         for (i = 1; i <= n; i++) printf " %s", ppi[i]
-        print ", not two at one size"
+        print ", not four at one size"
         exit 1
       }
     }' >&2
 }
 m115_images_check "$M115_LAYOUT" \
-  || fail "M115 review: the two images of examples/typst-caption-layout.qmd's laid-out float do not print at one size (the report is above)"
-pass "M115 review: a mark in the caption of a float laid out in two text cells or two image cells files its page, the text cells still print side by side, and the images at one size"
+  || fail "M115 review: the images of examples/typst-caption-layout.qmd's marked laid-out figure do not print at the size of its unmarked twin's (the report is above)"
+m115_center_check() {   # <pdf>
+  pdftotext -f 3 -l 3 -bbox-layout "$1" - | awk '
+    /<word / && />Figure</ { n++; match($0, /xMin="[0-9.]+"/); x[n] = substr($0, RSTART + 6, RLENGTH - 7) }
+    END {
+      if (n != 2 || x[1] != x[2]) {
+        printf "FAIL: M115 review: page 3 prints %d caption(s) opening with Figure, at x", n
+        for (i = 1; i <= n; i++) printf " %s", x[i]
+        print ", not two at one x"
+        exit 1
+      }
+    }' >&2
+}
+m115_center_check "$M115_LAYOUT" \
+  || fail "M115 review: the marked code-cell figure of examples/typst-caption-layout.qmd does not print where its unmarked twin does (the report is above)"
+pass "M115 review: a mark in the caption of a float laid out in two text cells or two image cells, or of a figure in a code cell's shape, files its page; the text cells still print side by side, the images at the size of an unmarked twin's, and the code-cell figure where its unmarked twin prints"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -32847,6 +32869,8 @@ if [ "${1:-}" = "--self-test" ]; then
   #             them, as the first fix did: the cells check
   #   images    the moved inlines joined to the first paragraph cell of
   #             several blocks, as the second fix did: the images check
+  #   center    any one block wrapped, a code cell's output among them, as
+  #             the third fix did: the center check
   #   lists-*   the AC2 reader against this run's own render with its
   #             manifest planted: a caption no list holds, a title no page
   #             prints, a caption put under the wrong list, and no rows
@@ -32946,8 +32970,17 @@ M115SPLICEPY
     $'    if #content ~= 1 then\n      for _, block in ipairs(content) do\n        if block.t == "Plain" or block.t == "Para" then\n          local rest, moved = caption_moves(float.caption_long)\n          float.caption_long = rest\n          block.content:extend(moved)\n          return float\n        end\n      end\n      return nil\n    end\n' \
     || fail "M115 self-test (images): the plant could not be written (its own message is above)"
   m115_render images typst-caption-layout.qmd
-  m115_red images "not two at one size" \
+  m115_red images "not four at one size" \
     m115_images_check "$CAPTURE_ROOT/m115-images/typst-caption-layout.pdf"
+
+  m115_tree center typst-caption-layout.qmd
+  m115_splice "$M115P/center/_extensions/index/modules/typst.lua" \
+    $'  elseif content.t ~= "Table" and content.t ~= "CodeBlock" then\n    return nil\n' \
+    '' \
+    || fail "M115 self-test (center): the plant could not be written (its own message is above)"
+  m115_render center typst-caption-layout.qmd
+  m115_red center "not two at one x" \
+    m115_center_check "$CAPTURE_ROOT/m115-center/typst-caption-layout.pdf"
 
   M115L=tests/typst-caption-lists-lists.tsv
   sed 's/whose caption marks hazel\.$/whose caption marks yew./' "$M115L" > "$M115P/lists-caption.tsv"
@@ -32967,7 +33000,7 @@ M115SPLICEPY
   m115_red lists-empty "names no caption" \
     python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-empty.tsv" "M115 self-test (lists-empty)"
 
-  pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, the cells check on laid-out content wrapped in one Div, the images check on the labels joined to an image cell, and the AC2 reader on a caption no list holds, a title no page prints, a caption under the wrong list and an empty manifest"
+  pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, the cells check on laid-out content wrapped in one Div, the images check on the labels joined to an image cell, the center check on a code cell's output wrapped, and the AC2 reader on a caption no list holds, a title no page prints, a caption under the wrong list and an empty manifest"
 fi
 
 # ---------------------------------------------------------------------------

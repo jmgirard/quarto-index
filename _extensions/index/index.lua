@@ -534,6 +534,6 @@ return {
   { Span = qi_passes.Span },
   { Pandoc = Pandoc },
   -- Typst only: a caption's labels move out of reach of a list of figures,
-  -- tables or listings.
+  -- tables or listings, where the float's content allows it.
   { Figure = qi_typst.figure_labels, FloatRefTarget = qi_typst.float_labels },
 }

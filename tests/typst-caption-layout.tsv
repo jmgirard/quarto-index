@@ -3,10 +3,13 @@
 #
 # Derived BY HAND from that source, under the ORACLE RULE at the head of
 # tests/run-tests.sh, and never copied from a render. The row shape is the one
-# tests/typst-index-main.tsv states. The source has two pages before its
-# index, the second starting at its one page break:
-#   kestrel  the caption of a figure div laid out in two text cells, page 1
-#   linden   the caption of a figure div laid out in two image cells, page 2
+# tests/typst-index-main.tsv states. The source has three pages before its
+# index, each page break starting the next:
+#   kestrel   the caption of a figure div laid out in two text cells, page 1
+#   linden    the caption of a figure div laid out in two image cells, page 2
+#   hornbeam  the caption of a figure in a code cell's shape, page 3
+group	H
+entry	0	hornbeam	3@3
 group	K
 entry	0	kestrel	1@1
 group	L

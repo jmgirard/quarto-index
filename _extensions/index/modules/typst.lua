@@ -323,10 +323,10 @@ end
 -- moves into the float's content, which no list copies, where that content
 -- allows it (`figure_labels` and `float_labels` say where). A Typst figure
 -- does not break across pages unless the document makes it, so its content
--- and its caption print on one page. The
--- move runs as a filter of its own after the Pandoc pass, because Quarto
--- hands a float with an id to a filter's `FloatRefTarget` function and not
--- to `doc:walk`. A float with no id is a Pandoc `Figure`.
+-- and its caption print on one page. The move runs as a filter of its own
+-- after the Pandoc pass, because Quarto hands a float with an id to a
+-- filter's `FloatRefTarget` function and not to `doc:walk`. A float with no
+-- id is a Pandoc `Figure`.
 --
 -- An author's id moves as an invisible element of its own carrying the id as
 -- a label. An empty span would not do: Pandoc writes its id as a bare label,
@@ -389,14 +389,15 @@ local function figure_labels(figure)
 end
 
 -- Where the moved inlines go in a float with an id. A float whose content is
--- one Plain or Para takes them at its end. A float whose content is one other
--- block, a table or a code block, is wrapped with a Plain holding them, which
--- leaves the page as it was. A float whose content is several blocks keeps
--- them in its caption, which a list copies (KI290): Quarto lays such content
--- out in cells where the float asks for it, and each change to it changed that
--- layout. A wrapper made the cells one cell, and inlines joined to an image's
--- cell kept the image's width, which Quarto drops in a cell holding an image
--- alone (M115 review).
+-- one Plain or Para takes them at its end. A float whose content is one table
+-- or one code block is wrapped with a Plain holding them, which printed the
+-- page as before (M115 review). A float whose content is anything else keeps
+-- them in its caption, which a list copies (KI290), because each change made
+-- to such content changed Quarto's layout. With several blocks, Quarto's
+-- layout cells: a wrapper made the cells one cell, and inlines joined to an
+-- image's cell kept the image's width, which Quarto drops in a cell holding
+-- an image alone. With one Div, a code cell's output among them: a wrapper
+-- stopped Quarto unwrapping the cell, and the float printed at the margin.
 local function float_labels(float)
   if not qi_core.is_typst() or float.caption_long == nil
       or float.content == nil then
@@ -412,6 +413,8 @@ local function float_labels(float)
   local target
   if content.t == "Plain" or content.t == "Para" then
     target = content
+  elseif content.t ~= "Table" and content.t ~= "CodeBlock" then
+    return nil
   end
   local rest, moved = caption_moves(float.caption_long)
   if #moved == 0 then

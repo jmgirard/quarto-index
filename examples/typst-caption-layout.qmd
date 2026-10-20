@@ -6,13 +6,15 @@ filters:
 ---
 
 The fixture for a mark in the caption of a float that Quarto lays out in
-cells (M115 review). The filter moves a caption's labels into the content of a
-float whose content is one block, so that a Typst list of figures does not copy
-them. It leaves a float whose content is several blocks as it is, because each
-change to that content changed Quarto's layout: a wrapper made two cells one,
-and a label joined to an image's cell kept a width Quarto drops there. So the
-two text cells below print side by side, on one line of text, and the two
-images on the next page print at one size. Each mark files its own page.
+cells, or that a code cell writes (M115 review). The filter moves a caption's
+labels into the content of a float whose content is one paragraph, table or
+code block, so that a Typst list of figures does not copy them. It leaves any
+other float's content as it is, because each change to such content changed
+Quarto's layout: a wrapper made two cells one, a label joined to an image's
+cell kept a width Quarto drops there, and a wrapper around a code cell's
+output moved the figure to the margin. So the two text cells below print side
+by side, on one line of text, and the figures on the next two pages print as
+the same figures with no mark print beside them. Each mark files its own page.
 
 ::: {#fig-kestrel layout-ncol=2}
 The west cell.
@@ -30,4 +32,34 @@ A figure div laid out in two text cells, whose caption marks [kestrel]{.index}.
 ![](dot.png){width=80%}
 
 A figure div laid out in two image cells, whose caption marks [linden]{.index}.
+:::
+
+The same figure with no mark, whose images must print at the size of those
+above:
+
+::: {#fig-linden-control layout-ncol=2}
+![](dot.png){width=80%}
+
+![](dot.png){width=80%}
+
+A figure div laid out in two image cells, whose caption marks linden.
+:::
+
+{{< pagebreak >}}
+
+A figure in the shape a code cell writes, its one block the cell's output div,
+which Quarto unwraps when it is the figure's whole content. A wrapper around it
+stopped that, and the figure printed at the left margin. It must print where
+the same figure with no mark, below it, prints.
+
+::: {#fig-hornbeam .cell fig-cap="A figure from a code cell, whose caption marks [hornbeam]{.index}."}
+::: {.cell-output-display}
+![](dot.png){width=30%}
+:::
+:::
+
+::: {#fig-hornbeam-control .cell fig-cap="A figure from a code cell, whose caption marks hornbeam."}
+::: {.cell-output-display}
+![](dot.png){width=30%}
+:::
 :::

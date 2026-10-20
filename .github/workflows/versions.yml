@@ -347,8 +347,8 @@ jobs:
   # tests/figure-marks-pdf.txt (M102), and the Typst index is
   # tests/figure-marks-typst.tsv. And that `quarto render --to typst`
   # succeeds on examples/typst-caption-lists.qmd and prints its index as
-  # tests/typst-caption-lists.tsv states it, each caption mark on its
-  # caption's page under lists that copy the caption (M115). On the pinned
+  # tests/typst-caption-lists.tsv states it, each of the fixture's caption
+  # marks on its caption's page under lists that copy the caption (M115). On the pinned
   # leg alone, that each of those lists holds the captions
   # tests/typst-caption-lists-lists.tsv names for it (M115-AC2). The render
   # alone is not the check: a PDF that typesets at exit 0 while the index
@@ -620,9 +620,10 @@ jobs:
           python3 tests/typstindex.py pages examples/figure-marks.pdf \
             tests/figure-marks-typst.tsv 'Typst index of figure marks' 'Index'
 
-      # A mark in a caption that a Typst list of pictures, tables or listings
-      # copies files its caption's page, with the lists both before and after
-      # the floats (M115). The footer is the page number alone, as above.
+      # Each caption mark of the fixture's figures, tables and listings, which
+      # Typst lists copy, files its caption's page, with the lists both before
+      # and after the floats (M115). The footer is the page number alone, as
+      # above.
       - name: Render examples/typst-caption-lists.qmd to Typst
         id: caption_lists_render
         shell: bash

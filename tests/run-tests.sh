@@ -33104,11 +33104,9 @@ for fmt in html epub; do
 done
 
 # AC1. Each printed line whole, in printed order. The fixture writes no
-# sub-entry, so a line `tests/pdfindex.py` read below the top level would be
-# the rest of the line above it, wrapped by the two-column index, and is
-# joined back with one space. On the pinned engine no line of this index
-# wraps, so the join is a guard for a narrower column, not a path the run
-# takes.
+# sub-entry, so every line is read at the top level; a line `tests/pdfindex.py`
+# reads deeper, a sub-entry or a wrapped line, is reported with its level and
+# fails the comparison. No line of this index wraps on the pinned engine.
 read -r -d '' M116_PDF <<'MANIFEST' || true
 Ash, 5
 Aster, 5
@@ -33138,12 +33136,9 @@ if not want:
     print(f'FAIL: {label}: the manifest {manifest_path} has no rows',
           file=sys.stderr)
     sys.exit(1)
-got = []
-for entry in pdfindex.read(pdf_path):
-    if entry.level > 0 and got:
-        got[-1] += ' ' + entry.text
-    else:
-        got.append(entry.text)
+got = [entry.text if entry.level == 0
+       else f'<read at level {entry.level}> {entry.text}'
+       for entry in pdfindex.read(pdf_path)]
 if got != want:
     print(f'FAIL: {label}: the printed index does not match the manifest',
           file=sys.stderr)
@@ -33235,6 +33230,9 @@ m116_separators U+061B > "$WORK/m116-sep-set.txt"
 python3 tests/sepcheck.py html "$CAPTURE_ROOT/xref-joined-html/xref-joined.html" \
     "$HTML_SECTION_ID" "$WORK/m116-sep-default.txt" "M116-AC3 (HTML, default)" \
   || fail "M116-AC3: the HTML index of examples/xref-joined.qmd does not put a semicolon between two targets of one kind (the report is above)"
+python3 tests/sepcheck.py epub "$CAPTURE_ROOT/xref-joined-epub/xref-joined.epub" \
+    "$HTML_SECTION_ID" "$WORK/m116-sep-default.txt" "M116-AC3 (EPUB, default)" \
+  || fail "M116-AC3: the EPUB index of examples/xref-joined.qmd does not put a semicolon between two targets of one kind (the report is above)"
 python3 tests/sepcheck.py html \
     "$CAPTURE_ROOT/xref-joined-separator-html/xref-joined-separator.html" \
     "$HTML_SECTION_ID" "$WORK/m116-sep-set.txt" "M116-AC3 (HTML, xref-separator set)" \
@@ -33306,6 +33304,12 @@ python3 tests/typstindex.py "$CAPTURE_ROOT/xref-joined-typst/xref-joined.pdf" \
 python3 tests/typstindex.py pages "$CAPTURE_ROOT/xref-joined-typst/xref-joined.pdf" \
     "$WORK/m116-typst.tsv" "M116-AC5 (Typst, the version matrix's reading)" "Index" \
   || fail "M116-AC5: pdfindex's reading of the Typst index of examples/xref-joined.qmd does not match the manifest (the report is above)"
+# The source derivation M098-AC8 reads its fixtures with joins a kind's
+# targets as the index prints them; this is the one fixture it reads that
+# carries two targets of one kind.
+python3 tests/typstcheck.py source "$CAPTURE_ROOT/xref-joined-typst/xref-joined.pdf" \
+    examples/xref-joined.qmd "M116-AC5 (Typst, derived from the source)" "Index" \
+  || fail "M116-AC5: the Typst index of examples/xref-joined.qmd does not print the entries its source derives (the report is above)"
 pass "M116-AC1/AC5: the PDF and Typst indexes print each kind's word once, see before see also, the targets of a kind in the order of their marks"
 
 if [ "${1:-}" = "--self-test" ]; then
@@ -33334,8 +33338,7 @@ M116PLANTPY
     esac
   done
   # The order comparison in m116_pdf_check: a manifest stating Sorrel's
-  # targets sorted is red against the same PDF. No line of this index wraps,
-  # so the join is not exercised here.
+  # targets sorted is red against the same PDF.
   sed 's/^Sorrel, .*/Sorrel, see Ash; Zed; see also Fern; Moss/' "$WORK/m116-pdf.txt" > "$M116W/pdf-sorted.txt"
   if m116_pdf_check "$CAPTURE_ROOT/xref-joined-pdf/xref-joined.pdf" "$M116W/pdf-sorted.txt" \
       "M116 self-test (pdf-sorted)" 2>/dev/null; then

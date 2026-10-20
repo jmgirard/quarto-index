@@ -84,7 +84,7 @@ page.
 ## Cross-references
 
 A cross-reference prints its word in italics, then its target as plain text,
-with no link. The words are `see` and `see also`, your document language's
+with no link. Two targets of one kind share one word: `see Felines; Pets`. The words are `see` and `see also`, your document language's
 words where the extension covers that language, or the words you set under
 `index-labels:`, which Typst reads for `symbols`, `see` and `see-also`.
 

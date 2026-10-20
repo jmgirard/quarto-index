@@ -175,8 +175,8 @@ covered — so a `lang: fr` document prints `voir` and `voir aussi` with nothing
 written under `index-labels:` at all, and a language the extension does not
 cover keeps the English words.
 
-The words reach the HTML, EPUB and Typst indexes, and the two marks the HTML
-and EPUB indexes only, since a Typst index always prints a comma and a
-semicolon. A LaTeX index gets the two words from babel, which sets them from your document's `lang:`, and takes its
-punctuation from `makeindex` and from the LaTeX this extension emits around
+The three words reach the HTML, EPUB and Typst indexes. The two marks reach
+the HTML and EPUB indexes only, since a Typst index always prints a comma and a
+semicolon. A LaTeX index gets the two words from babel, which sets them from
+your document's `lang:`, and takes its punctuation from `makeindex` and from the LaTeX this extension emits around
 `\see` and `\seealso`, which neither separator key touches.

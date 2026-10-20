@@ -322,8 +322,16 @@ def derived_entries(qmd):
             ref = (ENGLISH[attr], ': '.join(target))
             if ref not in nodes[path]:
                 nodes[path].append(ref)
-    return Counter((len(path) - 1, nfc(path[-1]),
-                    tuple(sorted((w, nfc(t)) for w, t in refs)))
+    # The Typst index prints a kind's word once, its targets joined by `; `
+    # in the order of their first marks (M116), and the reader takes that as
+    # one reference, so the derivation joins each kind's targets the same way.
+    def joined(refs):
+        by_word = {}
+        for word, target in refs:
+            by_word.setdefault(word, []).append(nfc(target))
+        return tuple(sorted((word, '; '.join(targets))
+                            for word, targets in by_word.items()))
+    return Counter((len(path) - 1, nfc(path[-1]), joined(refs))
                    for path, refs in nodes.items())
 
 

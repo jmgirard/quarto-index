@@ -280,9 +280,9 @@ local function Pandoc(doc)
   -- risks one; it says what the author's two marks print as, which is the one
   -- thing about the outcome they did not write down.
   --
-  -- Two shapes, two messages, because the outcome they describe differs: a key
-  -- with a plain mark keeps its page numbers, and a key with none has never
-  -- had any. One message covering both would tell the author of a `see=`
+  -- Two shapes, each with its own messages, because the outcome they describe
+  -- differs: a key with a plain mark keeps its page numbers, and a key with
+  -- none has never had any. One message covering both would tell the author of a `see=`
   -- against a `see-also=` that their entry prints page numbers it does not.
   --
   -- One index at a time, and the report says which (D-021): each declared
@@ -311,10 +311,10 @@ local function Pandoc(doc)
     return a.index < b.index
   end)
   for _, clash in ipairs(conflicting) do
-    -- Four literals rather than two with a spliced clause, for the reason
-    -- sortkeys.lua states: the scope sits in the MIDDLE of each message, so
-    -- neither shape's unscoped form is a prefix of its scoped one and a grep
-    -- for the shorter cannot match both.
+    -- Eight literals, two per wording, rather than one per wording with a
+    -- spliced clause, for the reason sortkeys.lua states: the scope sits in
+    -- the MIDDLE of each message, so no wording's unscoped form is a prefix of
+    -- its scoped one and a grep for the shorter cannot match both.
     local scope = qi_indexes.scope_phrase(clash.index, "document")
     if clash.plain and clash.count > 1 then
       if scope == "document" then

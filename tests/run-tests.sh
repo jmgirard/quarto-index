@@ -2694,14 +2694,18 @@ cp "$CAPTURE_ROOT/conflict-latex/xref-conflict.tex" "$WORK/conflict-latex.tex"
 WARN_CLASH='so check that is the entry you meant'
 WARN_CLASH_PLAIN='they are printed as one entry with its page numbers and its cross-reference together'
 WARN_CLASH_XREFS='they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all'
+WARN_CLASH_PLAIN_MANY='they are printed as one entry with its page numbers and its cross-references together'
 # Eight contested entries, of which six have a plain mark (chi, Deep!Level,
 # kappa, phi, tau, Tree!Branch!Cedar, Dogwood) and two do not (lambda,
 # upsilon); mu (two identical see= marks) and nu (two plain marks) must NOT be
 # reported at all, which the exact counts are what fence. A no-plain entry told
 # it prints page numbers would be told something false, so the split is
-# asserted rather than the total alone.
+# asserted rather than the total alone. Of the six, phi's plain mark stands
+# beside one mark carrying two cross-references, so its report counts them
+# (M116): five reports name one cross-reference and one names two.
 check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH" 8 "M02-AC5"
-check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH_PLAIN" 6 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH_PLAIN" 5 "M02-AC5"
+check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH_PLAIN_MANY" 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" "$WARN_CLASH_XREFS" 2 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index entry kappa ' 1 "M02-AC5"
 check_warning_count "$WORK/conflict-latex.log" 'index entry lambda ' 1 "M02-AC5"
@@ -15251,7 +15255,7 @@ plain	Deep!Level
 plain	Tree!Branch!Cedar, Dogwood
 plain	chi
 plain	kappa
-plain	phi
+plain-two	phi
 plain	tau
 xrefs	lambda
 xrefs	upsilon
@@ -15269,6 +15273,12 @@ TEMPLATE = {
               'are printed as one entry carrying both targets and, since '
               'neither mark contributes one, no page numbers at all, so check '
               'that is the entry you meant'),
+    # phi's plain mark stands beside a mark carrying a see AND a see-also, so
+    # its report counts two cross-references (M116).
+    'plain-two': ('index entry {} carries a plain locator and 2 different '
+                  'cross-references; they are printed as one entry with its '
+                  'page numbers and its cross-references together, so check '
+                  'that is the entry you meant'),
 }
 
 log = open(sys.argv[1], encoding='utf-8').read()
@@ -15280,13 +15290,16 @@ for shape, key in rows:
     if n != 1:
         bad.append(f'  {key!r}: the full {shape} report appears {n} times, '
                    f'expected 1')
-    # And not the OTHER shape's report, which would tell this author the
-    # opposite about their page numbers.
-    other = 'xrefs' if shape == 'plain' else 'plain'
-    m = log.count(TEMPLATE[other].format(key))
-    if m:
-        bad.append(f'  {key!r}: also drew the {other} report {m} time(s), '
-                   f'which contradicts the {shape} one')
+    # And not ANOTHER shape's report, which would tell this author the
+    # opposite about their page numbers, or a wrong count of their
+    # cross-references.
+    for other in TEMPLATE:
+        if other == shape:
+            continue
+        m = log.count(TEMPLATE[other].format(key))
+        if m:
+            bad.append(f'  {key!r}: also drew the {other} report {m} '
+                       f'time(s), which contradicts the {shape} one')
 # A key the fixture does NOT contest would not be seen by a count per key;
 # the exact count of this report over the same log, asserted above with the
 # other clash counts, is what fences that direction.

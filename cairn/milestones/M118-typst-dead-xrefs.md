@@ -1,6 +1,6 @@
 # M118: A Typst index leaves out what no page backs
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -102,13 +102,13 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       corpus and its extension-warning count to one. Before the first run,
       grep the self-tests for want strings resting on today's output (the
       M117 lesson). Run the section and see the new rows fail.
-- [ ] T2: Label cross-reference marks. `assign_labels`
+- [x] T2: Label cross-reference marks. `assign_labels`
       (`typst.lua` near line 362) gives a Typst cross-reference mark a label;
       `typst_locator` adds no locator for a mark with cross-references; and
       `build_entry_tree` (`entries.lua` near line 163) keeps on each
       cross-reference the labels of every mark that writes it, the duplicate
       branch included.
-- [ ] T3: The print rule. For each entry, write once the Typst condition under
+- [x] T3: The print rule. For each entry, write once the Typst condition under
       which it prints: one of its own labels names an element, one of its
       cross-references prints, or one of its sub-entries prints. A
       cross-reference prints where a label of a mark writing it names an
@@ -118,22 +118,22 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       near line 96) gets each cross-reference with its condition and puts the
       kind's word before the first printed target of each kind; the
       letter-group heading in `index_blocks` reads the same conditions.
-- [ ] T4: The empty index. `index_blocks` (`typst.lua` near line 295) writes
+- [x] T4: The empty index. `index_blocks` (`typst.lua` near line 295) writes
       the heading and the body of an index under the condition that one of
       its top-level entries prints, so the heading, its outline line and its
       page go together.
-- [ ] T5: Plants, each seen red before its fix is trusted: a cross-reference
+- [x] T5: Plants, each seen red before its fix is trusted: a cross-reference
       mark with no label (the AC1 rows return), a dead target kept (the AC2
       rows return), the path guard removed (the AC2 cycle rows), and the
       heading written unconditionally (the AC3 twin differs).
-- [ ] T6: Docs and records. The `site/typst.qmd` section and the
+- [x] T6: Docs and records. The `site/typst.qmd` section and the
       `CHANGELOG.md` entry per AC4, written from a render, with that entry's
       "holds at least one mark" sentence and `site/books.qmd` near line 250
       brought in line; the comment above
       `TYPST_HELPERS` (`typst.lua` lines 39-50); the M117-AC1 pass line; and
       in `DESIGN.md`, KI321-KI323 struck and the Typst architecture lines
       that name them brought in line.
-- [ ] T7: Run `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` once, in
+- [x] T7: Run `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` once, in
       the background, and read its result.
 
 ## Work log
@@ -152,3 +152,4 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 - 2026-10-20: T2-T4, T6 written (checkpoint, suite not yet run): `build_entry_tree` keeps a copy of each cross-reference with `writers`; `lookup_entry` moved from `html.lua` to `entries.lua` so both back-ends read one definition; `passes.lua` tags every Typst cross-reference mark so `assign_labels` labels it (first render showed none were tagged: only xref marks with an author id were); `typst_locator` adds no locator for them. Chose one `qi-index-prints` pass per index, a greatest fixed point that starts every entry printing and drops entries until stable, over per-entry inline conditions, because inline conditions grow with every path through cross-references and the fixed point evaluates each label once; falsified by a document whose index compile time grows past the render's. The index's page break, heading and columns sit in one `#context` block under `qi-p.any`. A writer with no label returns `true`, keeping the cross-reference (IP2). Fixture renders match all 30 manifest rows; the twin's text equals the fixture's; ten plants each red on their row by hand (M117's six rewritten for the new code, four new).
 - 2026-10-20: first full `--self-test` run stopped at M098's `xreflink` plant, whose substitution aimed at the Lua format string M118 moved into `qi-index-entry`; rewritten for the new site and seen red on `see|Bee@` by hand. Every other plant substitution in the suite that names Typst code was applied to the new `typst.lua` by a script; all matched.
 - 2026-10-20: claim audit: 39 claims read, 2 corrected — examples/typst-unprinted.qmd ("Five" description cross-reference marks, four), tests/run-tests.sh (the M14 comment calling `lookup_entry` the HTML back-end's own and the tree one format's only); the `allentries` plant comment reworded (loose "as before M117").
+- 2026-10-20: T7: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0 at 5fa7cd6, 1838 checks; the ten M117/M118 plants each red on their row. T2-T7 ticked; status review.

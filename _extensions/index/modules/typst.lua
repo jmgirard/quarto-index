@@ -59,7 +59,7 @@ local M = {}
 -- prints as a range (the M098 question gate). The separators are the ones
 -- the LaTeX back-end's makeindex prints, a comma before each locator and
 -- before the first cross-reference, and a semicolon between two
--- cross-references.
+-- cross-references, two targets of one kind included.
 local TYPST_HELPERS = [[
 #let qi-index-symbols(pattern) = pattern.clusters().filter(c => numbering(c + "1", 2) != c + "2")
 #let qi-index-counters(pattern) = qi-index-symbols(pattern).len()
@@ -183,11 +183,21 @@ local function entry_lines(node, depth, name, out)
     items[#items + 1] = ("(<%s>, %s, %s),"):format(locator.label, close,
       tostring(locator.role == "principal"))
   end
+  -- `node.xrefs` holds each kind's targets together, `see` first, so the
+  -- kind's word goes in front of its first target only, and `qi-index-entry`
+  -- joins the items with `; `: `see A; B` (M116).
   local xrefs = {}
+  local previous_kind = nil
   for _, xref in ipairs(node.xrefs) do
-    xrefs[#xrefs + 1] = ("[#emph(%s) #(%s)],"):format(
-      typst_string(qi_indexes.label(name, xref.kind.label_key, xref.kind.label)),
-      typst_string(qi_entries.target_text(xref.levels)))
+    local target = typst_string(qi_entries.target_text(xref.levels))
+    if xref.kind.attr ~= previous_kind then
+      xrefs[#xrefs + 1] = ("[#emph(%s) #(%s)],"):format(
+        typst_string(qi_indexes.label(name, xref.kind.label_key, xref.kind.label)),
+        target)
+    else
+      xrefs[#xrefs + 1] = ("[#(%s)],"):format(target)
+    end
+    previous_kind = xref.kind.attr
   end
   out[#out + 1] = ("#qi-index-entry(%d, %s, (%s), (%s))"):format(depth,
     typst_string(node.key), table.concat(items, " "), table.concat(xrefs, " "))

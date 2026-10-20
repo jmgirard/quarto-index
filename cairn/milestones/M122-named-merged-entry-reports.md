@@ -97,6 +97,7 @@ acceptance-suite backlog".
 - 2026-10-20: run 5 (alone) passed `--self-test`: exit 0, "All checks passed (1883 checks)", no FAIL line, read from its log. T4 done.
 - 2026-10-20: claim audit: not owed — internal tier.
 - 2026-10-20: implementation complete, status review.
+- 2026-10-20: review: run 6 stopped by hand before the review fixes, since they change the suite. The T3 line's "first and only FAIL" is corrected: `fail()` exits at the first failure, so M21-AC5 was the first red check and no later check ran. KI60 narrowed rather than struck: the probe covers the write and read of a string `role`, not the refusal of a non-string one.
 
 ## Decisions
 

@@ -2722,7 +2722,8 @@ pass "M02-AC5: the composed-entry report names each of the eight contested entri
 # M122 — the same report where it names its index. index.lua writes each of
 # the four composed-entry wordings twice: once for a document with one
 # namespace, and once naming the index for a document that declares two or
-# more (D-021). The fixtures above reach only the first form.
+# more and renders to a back-end that keeps them apart, as LaTeX does
+# (D-021). The fixtures above reach only the first form.
 # examples/xref-conflict-named.qmd declares two indexes and marks one term in
 # the first for each of the four shapes, and one term in both that is merged
 # in neither.
@@ -2742,14 +2743,21 @@ capture examples/xref-conflict-named.qmd pdf "conflict-named-pdf"
 [ -s "$CAPTURE_ROOT/conflict-named-pdf/xref-conflict-named.pdf" ] \
   || fail "M122-AC1: $CAPTURE_ROOT/conflict-named-pdf/xref-conflict-named.pdf is empty"
 cat > "$WORK/m122-named-reports.py" <<'PY'
+import os
 import re
 import sys
 
 log_path, label = sys.argv[1:3]
+if not os.path.isfile(log_path):
+    print(f'FAIL: {label}: the log {log_path} does not exist, so no report '
+          f'can be read from it', file=sys.stderr)
+    sys.exit(1)
 
 # The eight literals, two per wording, copied by hand from index.lua. A `%s`
-# or `%d` matches any text, so a line in either scope form is read whatever
-# term, index or count it names.
+# matches any text and a `%d` any run of digits, so a line in either scope
+# form is read whatever term, index or count it names. Each pattern runs to
+# the end of the line, so text written after a report is part of no match:
+# that line is not read, and the list comes up short.
 LITERALS = [
     'index entry %s carries a plain locator and %d different cross-references; they are printed as one entry with its page numbers and its cross-references together, so check that is the entry you meant',
     'index entry %s in %s carries a plain locator and %d different cross-references; they are printed as one entry with its page numbers and its cross-references together, so check that is the entry you meant',
@@ -2760,7 +2768,7 @@ LITERALS = [
     'index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant',
     'index entry %s in %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant',
 ]
-PATTERNS = [re.compile(re.escape(lit).replace('%s', '.+?').replace('%d', r'\d+'))
+PATTERNS = [re.compile(re.escape(lit).replace('%s', '.+?').replace('%d', r'\d+') + '$')
             for lit in LITERALS]
 
 TAIL = 'so check that is the entry you meant'
@@ -2867,6 +2875,24 @@ if [ "${1:-}" = "--self-test" ]; then
     'line 4: got <<no such line>> where the list holds <<index entry Oak in index "plants" carries 3 different cross-references;' \
     's{qi_core\.warn\(\(\x27index entry %s in %s carries %d different cross-references}{local _ = ((\x27index entry %s in %s carries %d different cross-references}' \
     index.lua
+
+  # Two plants over the control's log rather than the extension (M122
+  # review): text written after one report, which a match that stopped short
+  # of the line's end would pass, and a log that is not there, which must be
+  # refused by name rather than read as an empty one.
+  perl -pe 's/(index entry Oak .*meant)$/$1 (and more text)/' \
+    "$WORK/m122-clean.log" > "$M122W/trailing.log"
+  grep -qF 'meant (and more text)' "$M122W/trailing.log" \
+    || fail "M122 review self-test: the trailing-text plant matched nothing in the control's log"
+  m122_out=$(python3 "$WORK/m122-named-reports.py" "$M122W/trailing.log" 'M122 review self-test' 2>&1) \
+    && { printf '%s\n' "$m122_out" >&2; fail "M122 review self-test: the check passed a log with text after Oak's report"; }
+  printf '%s' "$m122_out" | grep -qF 'line 4: got <<no such line>>' \
+    || { printf '%s\n' "$m122_out" >&2; fail "M122 review self-test: the check failed on the trailing-text log, but not on Oak's line"; }
+  m122_out=$(python3 "$WORK/m122-named-reports.py" "$M122W/no-such.log" 'M122 review self-test' 2>&1) \
+    && { printf '%s\n' "$m122_out" >&2; fail "M122 review self-test: the check passed a log that does not exist"; }
+  printf '%s' "$m122_out" | grep -qF "the log $M122W/no-such.log does not exist" \
+    || { printf '%s\n' "$m122_out" >&2; fail "M122 review self-test: the check failed on a missing log, but not by naming it"; }
+  pass "M122 review self-test: the check is red on text after a report and on a missing log, naming each"
 fi
 
 # ---------------------------------------------------------------------------

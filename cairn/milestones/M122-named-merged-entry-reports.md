@@ -204,3 +204,6 @@ acceptance-suite backlog".
 - prior-review #7: `\d` matches any Unicode digit (M36) — fix now: `[0-9]`.
 - prior-review #8: a non-UTF-8 log has no FAIL header — fix now, as diff-bug #6.
 - ripple: no ripple evidence.
+- Fixes committed in 96a97c3; the KI60 probe repeated alone in run 9 (FAIL M21-AC5, as in run 3).
+- AC1 evidence (final): run 10, a `--self-test` run alone on 753d49c, whose code outside `cairn/` equals 96a97c3's, printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check picks out each line holding any of the eight literals (each literal also required in `index.lua`), splits the log on `\n` alone, removes colour codes only, and holds each picked line whole, `(W) ` prefix included, to the four hand-stated lines. Run 10's plants were red on the `document` form (all four lines), Oak's report removed, text after, before (at the line's start and after the prefix), a missing prefix, a trailing space and a `\r`, and on missing, directory, unreadable, non-UTF-8 and empty logs and a stale literal, each by name; colour codes stayed green.
+- AC2 evidence (final): run 10, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, alone, wrote exit code 0 and ended "All checks passed (1896 checks)" with no FAIL line.

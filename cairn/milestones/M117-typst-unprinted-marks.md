@@ -165,14 +165,21 @@ Review pass 2, 2026-10-20, after the AC1 amendment (8e6b19c). `git diff 635f9cc.
 
 - AC1 (amended): `quarto --version` prints 1.10.19. In the 635f9cc run, M117-AC1 passed: `examples/typst-unprinted.qmd` rendered to Typst with no extension warning, its description's sentence absent before the index, and `tests/typstindex.py` matched all 23 lines of `tests/typst-unprinted.tsv`, which holds each shape AC1 names (no Halyard, Hawser or `H` group; `Bitt 2@2`; `Cleat 1@1` and no Horn; Davit over `Arm 2@2`; Fender over Rope over `Eye 2@2`; Gaff over `Jaw, see Bitt`; `Kedge, see Bitt`). Its five plants were red on their own rows.
 - spawned: diff-bug, blame-history, prior-review, ripple (blame-history, prior-review and ripple in one Haiku reader), over `git diff 49d6735..635f9cc`.
-- diff-bug #1: no fixture shape or plant covers a parent kept only by a sub-entry's range closing on a page, so dropping closing labels from `labels_below` stays green — fix now (`Mast!Step` shape and `noclosebelow` plant).
-- diff-bug #2: the M117-AC1 comment says eleven description marks; there are twelve — fix now (now thirteen, with `Mast!Step`).
+- diff-bug #1: no fixture shape or plant covers a parent kept only by a sub-entry's range closing on a page, so dropping closing labels from `labels_below` stays green — fix now (`Mast!Step` shape and `noclosebelow` plant), fixed ef36856.
+- diff-bug #2: the M117-AC1 comment says eleven description marks; there are twelve — fix now (now thirteen, with `Mast!Step`), fixed ef36856.
 - diff-bug #3: an entry kept by a closing label alone prints no page number — reject, planned change: the docs state it, and main printed such an entry the same way.
 - diff-bug #4: a range opened in the body and closed in front matter never pairs, because front-matter marks are read first — follow-up, the new row "Pair a range closed in front matter" (KI324); not from this diff.
-- diff-bug #5: the M117-AC1 pass line does not name the range case — fix now.
+- diff-bug #5: the M117-AC1 pass line does not name the range case — fix now, fixed ef36856.
 - blame-history: no finding.
 - prior-review #1: the M38 lesson (re-read every message naming a changed set) was missed in two places, ripple #1 and #2 — fixed with them.
-- ripple #1: DESIGN.md's Typst paragraph names opening labels only — fix now.
-- ripple #2: the same stale count as diff-bug #2 — fix now.
-- ripple #3: the M110 retired-phrase comment names one clause — fix now.
+- ripple #1: DESIGN.md's Typst paragraph names opening labels only — fix now, fixed ef36856.
+- ripple #2: the same stale count as diff-bug #2 — fix now, fixed ef36856.
+- ripple #3: the M110 retired-phrase comment names one clause — fix now, fixed ef36856.
 - ripple #4: the changelog does not name the closing-label case — reject, false: its rule turns on page-number marks in the field, and a closing mark on a page keeps the entry under it.
+
+Evidence, pass 2, at ef36856 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, exit 0, "All checks passed (1834 checks)", Quarto 1.10.19):
+
+- AC1 (amended): M117-AC1 passed. The render of `examples/typst-unprinted.qmd` wrote no extension warning, its description's sentence did not print before the index, and `tests/typstindex.py` matched all 26 lines of `tests/typst-unprinted.tsv`. The manifest holds each shape AC1 names, as listed in pass 2 above, plus `Rig` and `Mast` over `Step` with no locator. Its six plants were red on their own rows.
+- AC2: unchanged since pass 1 (`git diff 635f9cc..ef36856 -- site CHANGELOG.md` is empty); the page and changelog claims rows and the retired-phrase sweep passed in this run.
+- AC3: `tests/run-tests.sh --self-test` exited 0 at ef36856, 1834 checks.
+- Gate: `cairn_validate.py` all checks passed; no principle changed, so `cairn_impact` was skipped; the generic profile names no toolchain checks.

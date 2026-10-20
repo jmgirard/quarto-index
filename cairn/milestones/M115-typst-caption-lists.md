@@ -223,3 +223,14 @@ Pass 3, after review return 2. Evidence base: HEAD 256ba4f, tree outside `cairn/
 - ripple #6 (pass 3): the open candidate row — reject, planned, as before
 - ripple #7 (pass 3): `site/syntax.qmd` and an older CHANGELOG line say a caption mark files one locator — reject, false: still true, a list adds no second locator
 - ripple #8 (pass 3): two comments name only figures — fix in the next round
+- Pass-3 fix-now items, landed at 7aceb61 (T9): diff-bug #2 and prior-review #1 (the `images` case and plant), #3 and #4 (docs, KI290, comments), #5 (KI318 holds again: a one-block float's label sits at its content's end); blame-history #2, #3, #4, #7; prior-review #2 (four `lists-*` plants); ripple #1, #8. Settled without a change, with reasons in the work log: blame-history #5, ripple #3.
+
+Pass 4, after review return 3 and the narrowing. Evidence base: HEAD 1ae0eca, tree outside `cairn/` equal to 7aceb61's; main unmoved (f2e5794).
+- AC1 (pass 4): fresh render exited 0 with no warning; `tests/typstindex.py` "the 16 lines of 'Index' match the manifest, each locator's face and link included"; every AC1 case's content is one block, so the narrowing leaves them as they were. Suite run 7 at 7aceb61: `ok M115-AC1 (Typst)`; plants `figure` and `float` red.
+- AC2 (pass 4): dispatched `versions.yml` run 39344727546 at 7aceb61, `pdf (pinned, 1.10.18)` step "Read the Typst caption-lists lists against their manifest": success; skipped on floor and release. Review render on 1.10.19: "each of the 12 captions the manifest names is in its list"; plants `lists-caption`, `lists-title`, `lists-wrong`, `lists-empty` red.
+- AC3 (pass 4): fresh render exited 0; page 9 carries one link, to page 2; plant `link` red.
+- AC4 (pass 4): suite run 7, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at 7aceb61, Quarto 1.10.19: "All checks passed (1806 checks)", 10 skip lines, all pinned-only; includes the layout fixture (kestrel 1, linden 2, cells on one line, both images 72 ppi) and its `cells` and `images` plants red.
+- AC5 (pass 4): run 39344727546 at 7aceb61: caption-lists render and `typstindex.py pages` reading success on `pdf (floor, 1.5.52)` and `pdf (pinned, 1.10.18)` (and release); every job success.
+- AC6 (pass 4): `site/typst.qmd` keeps the caption sentences and the `List of Figures` call, and its exceptions now name a float whose content is several blocks and a figure with no id whose content does not start with text or an image; suite run 7 `ok M115-AC6`, plant `lof` red; `CHANGELOG.md` ends the bullet "A mark in the caption of a float laid out in cells, such as a grid of subfigures, still files the list's page."
+- Consistency gate (pass 4): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
+- spawned: diff-bug, blame-history, prior-review, ripple

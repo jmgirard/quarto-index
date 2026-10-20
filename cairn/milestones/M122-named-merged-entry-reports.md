@@ -179,3 +179,27 @@ acceptance-suite backlog".
 - Pass 3: main had not moved. Evidence is run 8, a `--self-test` run on 56b52d0; later commits touch only the milestone file and ROADMAP. `cairn_validate.py` exit 0.
 - AC1 evidence (pass 3): run 8 rendered the fixture to PDF and printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check picks out every line holding any of the eight literals, splits the log on `\n` alone, and holds each picked line whole, `(W) ` prefix included, to the four hand-stated lines. Run 8's render log holds 4 lines starting `(W) index entry` and none naming Willow. Plants red in run 8: `document` form (line 1), Oak's report removed (line 4), text after, before, and after a `\r` (each on its line), and a missing, directory and empty log by name.
 - AC2 evidence (pass 3): run 8, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, alone, wrote exit code 0 and ended "All checks passed (1889 checks)" with no FAIL line.
+- Pass 3 spawned: diff-bug, blame-history, prior-review, ripple. The diff-bug lens found AC1 holding: every log it built to pass with a line unlike the list went red. No finding shows a criterion failing, so the findings below take no return.
+- diff-bug #1: no colour strip, unlike `check_extension_warning_count` on the same log (M094), so a coloured Quarto log is a false red — fix now: colour codes removed, with a plant that must stay green. This changes the "nothing is stripped" detail stated at the pass-2 stop; the whole-line hold stands.
+- diff-bug #2: no plant holds whitespace, text before `(W) `, or the colour handling — fix now: plants for text at the line's start, a missing prefix, a trailing space, and colour.
+- diff-bug #3: the `document-scope` plant asserts line 1 only — fix now: it asserts all four one-namespace lines.
+- diff-bug #4: the eight literals are a hand copy that can go stale in silence — fix now: the check requires each copied literal in `index.lua`, with a plant that rewords one.
+- diff-bug #5: a report with broken literal text is not picked out at all — reject (planned change): AC1 selects by the eight literals, and the warning count of 4 catches an extra report line.
+- diff-bug #6: a non-UTF-8 log gives a traceback, and the main call's message blames the list for every refusal — fix now: named refusal, and the call points at the check's own FAIL line.
+- diff-bug #7: KI60's "by removing that line" overstates; the line also carries `context` and `range` — fix now: KI60 names the `role = mark.role` field.
+- diff-bug #8: the T3 probe (run 3) started while run 2 still ran — fix now: the probe is repeated alone (run 9).
+- diff-bug #9: the plant comment says each plant is held to "its own line" — fix now: reworded to the part of the report its defect prints.
+- diff-bug #10: "`%s` matches … any kind" ignores that `.` excludes a newline — fix now: comment says "other than a newline".
+- blame-history #1: the colour strip, as diff-bug #1 — fix now.
+- blame-history #2: an unreadable or non-UTF-8 log is not refused by name — fix now: "cannot be read" and "is not UTF-8", with plants.
+- blame-history #3: the comment cites D-021, whose fold clause DESIGN.md retired — fix now: the comment cites the DESIGN.md correction (M55) beside D-021.
+- blame-history #4: KI60's body held a process record — fix now, as diff-bug #7.
+- prior-review #1: the colour strip, as diff-bug #1 — fix now.
+- prior-review #2: comments claim the prefix and escape handling with no plant (M32) — fix now, as diff-bug #2.
+- prior-review #3: the red branches print no count of the lines read (M45) — fix now: the header names how many report lines were read.
+- prior-review #4: the leading plant put its text after `(W) `, not at the line's start (M35) — fix now: both shapes planted.
+- prior-review #5: missing and directory logs shared one message (M45) — fix now: "does not exist" and "is not a file".
+- prior-review #6: the `(W) ` prefix is typed in each expected line (M076) — fix now: one `PREFIX` in the check; the plants' want strings stay literal.
+- prior-review #7: `\d` matches any Unicode digit (M36) — fix now: `[0-9]`.
+- prior-review #8: a non-UTF-8 log has no FAIL header — fix now, as diff-bug #6.
+- ripple: no ripple evidence.

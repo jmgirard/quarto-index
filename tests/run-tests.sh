@@ -2722,7 +2722,8 @@ pass "M02-AC5: the composed-entry report names each of the eight contested entri
 # M122 — the same report where it names its index. index.lua writes each of
 # the four composed-entry wordings twice: once for a document with one
 # namespace, and once naming the index for a document that declares two or
-# more (D-021). The fixtures above reach only the first form.
+# more (D-021; no back-end folds the indexes any more, DESIGN.md, corrected
+# M55). The fixtures above reach only the first form.
 # examples/xref-conflict-named.qmd declares two indexes and marks one term in
 # the first for each of the four shapes, and one term in both that is merged
 # in neither.
@@ -2748,16 +2749,28 @@ import re
 import sys
 
 log_path, label = sys.argv[1:3]
-if not os.path.isfile(log_path):
-    print(f'FAIL: {label}: the log {log_path} is not a file, so no report '
-          f'can be read from it', file=sys.stderr)
+
+
+def refuse(why):
+    print(f'FAIL: {label}: the log {log_path} {why}, so no report can be read '
+          f'from it', file=sys.stderr)
     sys.exit(1)
 
+
+# Each way a log can be unusable is refused in its own words, never read as a
+# list come up short.
+if not os.path.lexists(log_path):
+    refuse('does not exist')
+if not os.path.isfile(log_path):
+    refuse('is not a file')
+if not os.access(log_path, os.R_OK):
+    refuse('cannot be read')
+
 # The eight literals, two per wording, copied by hand from index.lua. A `%s`
-# matches one or more characters of any kind and a `%d` a run of digits, so a
-# line in either scope form is picked out whatever term, index or count it
-# names. A pattern only picks a line out: the whole line is what the list
-# holds.
+# matches one or more characters other than a newline and a `%d` a run of the
+# ASCII digits, so a line in either scope form is picked out whatever term,
+# index or count it names. A pattern only picks a line out: the whole line is
+# what the list holds.
 LITERALS = [
     'index entry %s carries a plain locator and %d different cross-references; they are printed as one entry with its page numbers and its cross-references together, so check that is the entry you meant',
     'index entry %s in %s carries a plain locator and %d different cross-references; they are printed as one entry with its page numbers and its cross-references together, so check that is the entry you meant',
@@ -2768,23 +2781,43 @@ LITERALS = [
     'index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant',
     'index entry %s in %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant',
 ]
-PATTERNS = [re.compile(re.escape(lit).replace('%s', '.+?').replace('%d', r'\d+'))
+PATTERNS = [re.compile(re.escape(lit).replace('%s', '.+?').replace('%d', '[0-9]+'))
             for lit in LITERALS]
 
+# A hand copy goes stale in silence: a literal reworded in index.lua would
+# leave its stray form picked out by nothing. So each copied literal must
+# still be in the source, written exactly as here.
+SOURCE = '_extensions/index/index.lua'
+with open(SOURCE, encoding='utf-8') as fh:
+    source = fh.read()
+stale = [lit for lit in LITERALS if f"('{lit}')" not in source]
+if stale:
+    print(f'FAIL: {label}: {len(stale)} of the {len(LITERALS)} literals copied '
+          f'here are not in {SOURCE}; the first is <<{stale[0]}>>',
+          file=sys.stderr)
+    sys.exit(1)
+
+PREFIX = '(W) '
 TAIL = 'so check that is the entry you meant'
-EXPECTED = [
-    '(W) index entry Alder in index "plants" carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, ' + TAIL,
-    '(W) index entry Cedar in index "plants" carries a plain locator and 2 different cross-references; they are printed as one entry with its page numbers and its cross-references together, ' + TAIL,
-    '(W) index entry Hazel in index "plants" carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, ' + TAIL,
-    '(W) index entry Oak in index "plants" carries 3 different cross-references; they are printed as one entry carrying all 3 targets and, since no mark contributes one, no page numbers at all, ' + TAIL,
-]
+EXPECTED = [PREFIX + line for line in [
+    'index entry Alder in index "plants" carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, ' + TAIL,
+    'index entry Cedar in index "plants" carries a plain locator and 2 different cross-references; they are printed as one entry with its page numbers and its cross-references together, ' + TAIL,
+    'index entry Hazel in index "plants" carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, ' + TAIL,
+    'index entry Oak in index "plants" carries 3 different cross-references; they are printed as one entry carrying all 3 targets and, since no mark contributes one, no page numbers at all, ' + TAIL,
+]]
 
 # Split on `\n` alone. Python's line reading also ends a line at a bare `\r`,
-# which would cut a report free of the text written after it. Nothing is
-# stripped from inside a line: an escape code in a report is a difference
-# from the list, not something to read past.
+# which would cut a report free of the text written after it. Colour codes
+# are removed first, as check_extension_warning_count removes them from the
+# same log (M094): Quarto can colour a warning line, and the colour is not
+# text the author reads. Nothing else is removed from a line.
 with open(log_path, 'rb') as fh:
-    text = fh.read().decode('utf-8')
+    raw = fh.read()
+try:
+    text = raw.decode('utf-8')
+except UnicodeDecodeError as err:
+    refuse(f'is not UTF-8 ({err})')
+text = re.sub(r'\x1b\[[0-9;]*m', '', text)
 got = [line for line in text.split('\n')
        if any(pattern.search(line) for pattern in PATTERNS)]
 
@@ -2794,8 +2827,9 @@ if not got:
           f'{len(EXPECTED)}', file=sys.stderr)
     sys.exit(1)
 if got != EXPECTED:
-    print(f'FAIL: {label}: the composed-entry reports in {log_path} are not '
-          f'the hand-stated list', file=sys.stderr)
+    print(f'FAIL: {label}: the {len(got)} composed-entry report line(s) in '
+          f'{log_path} are not the {len(EXPECTED)} of the hand-stated list',
+          file=sys.stderr)
     for i in range(max(len(got), len(EXPECTED))):
         # repr, so a carriage return or an escape code in a line shows.
         g = repr(got[i]) if i < len(got) else 'no such line'
@@ -2808,7 +2842,7 @@ print(f'ok   {label}: the log holds the {len(EXPECTED)} composed-entry '
       f'reports of the list, each naming its index, and no other')
 PY
 python3 "$WORK/m122-named-reports.py" "$WORK/conflict-named-pdf.log" "M122-AC1" \
-  || fail "M122-AC1: the composed-entry reports over examples/xref-conflict-named.qmd are not the hand-stated list (the report is above)"
+  || fail "M122-AC1: the composed-entry check over examples/xref-conflict-named.qmd failed (its own FAIL line is above)"
 # The four reports are the only warnings this extension prints for the
 # fixture: every target names a term marked in its own index.
 check_extension_warning_count "$WORK/conflict-named-pdf.log" 4 "M122-AC1 (examples/xref-conflict-named.qmd)"
@@ -2867,13 +2901,23 @@ if [ "${1:-}" = "--self-test" ]; then
       || { printf '%s\n' "$out" >&2; fail "$label: the check passed a render with the plant in place, so its green says nothing"; }
     printf '%s' "$out" | grep -qF -- "FAIL: $label:" \
       || { printf '%s\n' "$out" >&2; fail "$label: the check failed, but without its own FAIL header"; }
-    printf '%s' "$out" | grep -qF -- "$want" \
-      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the plant, but not with <<$want>>"; }
-    pass "$label: the check is red on <<$want>>"
+    # The expected substring may be several, one per line, each required.
+    local one
+    while IFS= read -r one; do
+      [ -n "$one" ] || continue
+      printf '%s' "$out" | grep -qF -- "$one" \
+        || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the plant, but not with <<$one>>"; }
+    done <<< "$want"
+    pass "$label: the check is red on each of <<${want//$'\n'/>>, <<}>>"
   }
+  # All four one-namespace forms, so each of the four `document` literals is
+  # shown to pick its stray line out, not only the first.
   m122_plant document-scope \
     'M122 T2 self-test: scope_phrase answering with the outer word in a document that declares two indexes' \
-    "line 1: got <<'(W) index entry Alder carries both a plain locator and a cross-reference;" \
+    "line 1: got <<'(W) index entry Alder carries both a plain locator and a cross-reference;
+line 2: got <<'(W) index entry Cedar carries a plain locator and 2 different cross-references;
+line 3: got <<'(W) index entry Hazel carries two different cross-references;
+line 4: got <<'(W) index entry Oak carries 3 different cross-references;" \
     's{if name == nil or not declared or #order < 2 then}{if true then}' \
     modules/indexes.lua
   m122_plant no-named-many \
@@ -2883,12 +2927,14 @@ if [ "${1:-}" = "--self-test" ]; then
     index.lua
 
   # Plants over the control's log rather than the extension (M122 review):
-  # each line is held whole, so text after a report, text before it, and text
-  # after a bare carriage return must each be red on the line it touches; and
-  # a log that is not a file, or holds no report at all, must be refused by
-  # name rather than read as a list come up short. Each plant is held to its
-  # own line of the report and to the check's FAIL header, so the red is the
-  # check's and names this plant's defect.
+  # each line is held whole, so text after a report, text before it at the
+  # line's start or after the prefix, a missing prefix, a trailing space, and
+  # text after a bare carriage return must each be red on the line it
+  # touches; colour codes, which the check removes, must leave it green; and
+  # a log that is missing, a directory, unreadable, not UTF-8 or empty, or a
+  # copied literal the source no longer holds, must be refused in its own
+  # words rather than read as a list come up short. Each red plant is held to
+  # the check's FAIL header and to the part of the report its defect prints.
   m122_log_plant() {   # <slug> <log> <expected substring>
     local slug="$1" log="$2" want="$3" label="M122 review self-test ($1)" out rc
     out=$(python3 "$WORK/m122-named-reports.py" "$log" "$label" 2>&1) && rc=0 || rc=$?
@@ -2908,15 +2954,51 @@ if [ "${1:-}" = "--self-test" ]; then
   }
   m122_splice_log trailing 's/(index entry Oak .*meant)$/$1 (and more text)/'
   m122_log_plant trailing "$M122W/trailing.log" "meant (and more text)'>> where the list holds"
-  m122_splice_log leading 's/^\(W\) (index entry Alder )/(W) JUNK $1/'
-  m122_log_plant leading "$M122W/leading.log" "line 1: got <<'(W) JUNK index entry Alder"
+  m122_splice_log leading 's/^\(W\) (index entry Alder )/JUNK (W) $1/'
+  m122_log_plant leading "$M122W/leading.log" "line 1: got <<'JUNK (W) index entry Alder"
+  m122_splice_log after-prefix 's/^\(W\) (index entry Alder )/(W) JUNK $1/'
+  m122_log_plant after-prefix "$M122W/after-prefix.log" "line 1: got <<'(W) JUNK index entry Alder"
+  m122_splice_log no-prefix 's/^\(W\) (index entry Cedar )/$1/'
+  m122_log_plant no-prefix "$M122W/no-prefix.log" "line 2: got <<'index entry Cedar"
+  m122_splice_log trailing-space 's/(index entry Hazel .*meant)$/$1 /'
+  m122_log_plant trailing-space "$M122W/trailing-space.log" "meant '>> where the list holds"
   m122_splice_log carriage-return 's/(index entry Hazel .*meant)$/$1\r(and more text)/'
   m122_log_plant carriage-return "$M122W/carriage-return.log" 'meant\r(and more text)'"'>> where the list holds"
-  m122_log_plant missing "$M122W/no-such.log" "the log $M122W/no-such.log is not a file"
+
+  # The one plant that must stay GREEN: colour codes at a report line's head
+  # and around its term, the shape M094 recorded, are not text.
+  m122_splice_log colour 's/^\(W\) index entry Oak /\e[33m(W) index entry \e[1mOak\e[0m /'
+  python3 "$WORK/m122-named-reports.py" "$M122W/colour.log" 'M122 review self-test (colour)' \
+    || fail "M122 review self-test (colour): the check is red on colour codes around a report, which are not text the author reads (its own FAIL line is above)"
+
+  m122_log_plant missing "$M122W/no-such.log" "the log $M122W/no-such.log does not exist"
   mkdir -p "$M122W/a-directory"
   m122_log_plant directory "$M122W/a-directory" "the log $M122W/a-directory is not a file"
+  cp "$WORK/m122-clean.log" "$M122W/unreadable.log"
+  chmod 000 "$M122W/unreadable.log"
+  if [ -r "$M122W/unreadable.log" ]; then
+    pass "M122 review self-test (unreadable): skipped, since this user can read a file with no read permission"
+  else
+    m122_log_plant unreadable "$M122W/unreadable.log" "the log $M122W/unreadable.log cannot be read"
+  fi
+  chmod 644 "$M122W/unreadable.log"
+  printf '(W) index entry \377 in index "plants"\n' > "$M122W/not-utf8.log"
+  m122_log_plant not-utf8 "$M122W/not-utf8.log" "the log $M122W/not-utf8.log is not UTF-8"
   : > "$M122W/empty.log"
   m122_log_plant empty "$M122W/empty.log" "holds no line with any of the eight composed-entry literals"
+
+  # A copied literal the source no longer holds: one word of one literal
+  # changed in a copy of index.lua, the check run from that copy's root.
+  mkdir -p "$M122W/stale/_extensions/index"
+  perl -pe 's/carries two different cross-references; they are printed as one entry carrying both targets/carries two distinct cross-references; they are printed as one entry carrying both targets/' \
+    _extensions/index/index.lua > "$M122W/stale/_extensions/index/index.lua"
+  cmp -s _extensions/index/index.lua "$M122W/stale/_extensions/index/index.lua" \
+    && fail "M122 review self-test (stale): the rewording matched nothing in index.lua"
+  m122_stale_out=$( cd "$M122W/stale" && python3 "$OLDPWD/$WORK/m122-named-reports.py" "$OLDPWD/$WORK/m122-clean.log" 'M122 review self-test (stale)' 2>&1 ) \
+    && { printf '%s\n' "$m122_stale_out" >&2; fail "M122 review self-test (stale): the check passed with a literal the source no longer holds"; }
+  printf '%s' "$m122_stale_out" | grep -qF 'FAIL: M122 review self-test (stale): 2 of the 8 literals copied here are not in _extensions/index/index.lua' \
+    || { printf '%s\n' "$m122_stale_out" >&2; fail "M122 review self-test (stale): the check failed, but not by naming the stale literals"; }
+  pass "M122 review self-test (stale): the check is red on a literal the source no longer holds, naming the count"
 fi
 
 # ---------------------------------------------------------------------------

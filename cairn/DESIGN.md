@@ -1025,34 +1025,16 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   against a browser here, so the size of this gap is unconfirmed. — M080
   review round 2, F5
 
-- **KI263.** The id census ends a `<![CDATA[…]]>` at its first `>` wherever it
-  is written, including inside `svg` or `math`. In HTML content that is what a
-  browser does — the construct is a bogus comment there — but in foreign
-  content a browser ends it at `]]>`, so an `id=` written between the first
-  `>` and the `]]>` is counted here and carries nothing on the page: the mark
-  written with that name yields it and the author's own link points at
-  nothing. `<svg><![CDATA[a > <p id="mine">]]></svg>` is the shape. Not a
-  regression — the walk counted the whole construct before M081 — and not
-  confirmable without a browser this repo does not run, which is why M081
-  scoped foreign content out. The gap is now two artifacts wide and its HTML
-  half is fenced on both, by separate cases: M084 gave `tests/htmlindex.py`
-  the same first-`>` reading, held by a hand-written case in the M080-AC2
-  reader leg, and `examples/id-collision.qmd` writes an HTML-content `id=`
-  between the two closes that the M079-AC1 leg holds against the census. The
-  fixture does not reach the reader's branch — Quarto rewrites the raw block,
-  so the rendered page carries `<!--[CDATA[ok-->` and no CDATA construct at
-  all. Nothing exercises the foreign-content half on either side.
-  — M081 review F3, extended M084
-
-- **KI265.** `tests/htmlindex.py`'s first-`>` reading of a `<![CDATA[…]]>` is
-  applied to XHTML as well. `parse_text` is the reader `tests/epubindex.py`
-  uses for an EPUB XHTML member, and in XHTML the construct IS a marked
-  section whose content is character data — so on that side the override is
-  wrong where the stock reading was right, and an `id=` written between the
-  construct's first `>` and its `]]>` would be read as an element the member
-  does not carry. No captured EPUB member carries a literal `<![CDATA[`, so
-  nothing is red today; separating the two readings would take a builder that
-  knows which of the two it is parsing. — M084 review F3
+- **KI263.** The id census ends a `<![CDATA[…]]>` at its first `>` wherever
+  it is written. In HTML content a browser does the same, but inside `svg` or
+  `math` a browser ends it at `]]>`, so an `id=` written between the two
+  closes is counted here though the page carries no such element: a mark
+  written with that name yields it, and the author's own link points at
+  nothing (`<svg><![CDATA[a > <p id="mine">]]></svg>`). Not a regression, and
+  not confirmable without a browser, which is why M081 scoped foreign content
+  out. Cases in the M080-AC2 reader leg and `examples/id-collision.qmd` hold
+  the HTML-content half; nothing exercises the foreign-content half. — M081
+  review F3, extended M084
 
 ### The Typst back-end
 
@@ -1087,10 +1069,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   figures, tables and code listings whose content is one such block, and that
   two laid-out figures and a code-cell figure keep their layout. — M098 T3,
   narrowed M115
-- **KI291.** `tests/typstindex.py` reads links from PDF link annotations written
-  as plain dictionaries, which Typst 0.15.1 writes. A PDF whose annotations sit
-  in a compressed object stream reads as having no page tree and fails the
-  check. — M098 T4, T5; split 2026-10-18
 - **KI310.** `tests/typstcheck.py` folds a combining cluster read twice running,
   because pdftotext reads each glyph of such a cluster as the whole cluster. A
   back-end that doubled such a cluster reads as correct there. — M098 T4, T5;
@@ -1120,11 +1098,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   chapter exists and is not known. Producing that state takes metadata Quarto
   does not emit, which is the private-structure modelling M12's gate refused.
   — M29 plan Scope
-- **KI84.** `tests/m29book.py` matches a chapter clause as ` of \S+`, so a
-  chapter whose filename holds a space would put a genuine marker report in
-  neither partition and fail the check for a reason that is not a defect.
-  `examples/book-order/` already ships such a filename; the book fixture the
-  partition reads does not. — M29 review F8
 - **KI85.** Only `book-html.log` carries a total extension-warning count. The
   partition requires exactly one of each marker report, but a repeated one of
   the fixture's other known warnings in `book-pdf.log` or the three
@@ -1150,137 +1123,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The acceptance suite: what it reads and what it holds
 
-- **KI27.** The suite hard-depends on git and deletes any ignored file parked
-  under `examples/`; neither is recorded as a precondition. — M24 review D14/D15
-- **KI28.** `git clean -X` removes and reports only ignored files, so an
-  artifact under `examples/` matching no ignore rule escapes both the pre-render
-  clean and M24's AC2 assertion. Latent. — M24 review R1
-- **KI29.** Nothing asserts which capture a read belongs to, and two captures
-  can hold one stem (three `marker.tex`), so a read naming the wrong slug reads
-  another render's output. — M24 review D2
-- **KI30.** M24's AC2 clean assertion sits outside `run_all_checks`, reaching
-  neither the check count nor the run log. — M24 review D3
-- **KI31.** The read check exempts any line matching `quarto render` and the
-  pairing check treats that phrase in prose as a render, so a comment can
-  silence either. — M24 review D5/D11
-- **KI32.** Five book captures copy a whole `_book` tree an earlier render
-  mostly wrote. — M24 review D7
-- **KI34.** `capture` copies every extension for the render's stem rather than
-  what the render produced. — M24 review D9
-- **KI35.** The emission sweep's domain includes `.tex` from deliberately-broken
-  filters and scratch parity fixtures, and its `ALLOWED` is a written-down slug
-  map. — M24 review R2
-- **KI36.** `capture` runs inside a command substitution in `m23_render`, where
-  its `fail` ends only the subshell. — M24 review R4
-- **KI37.** The parity comparison hardcodes the `demo-html` slug. — M24 review R5
-- **KI38.** The read check's helper exemption is never exercised. — M24 review R6
-- **KI39.** `check_reads` ignores backslash continuations, which `check_pairs`
-  follows. — M24 review R7
-- **KI40.** Each residue sweep prints two `ok` lines, double-counting in
-  `CHECK_COUNT`. — M24 review R8
-- **KI41.** The HTML residue plants target the first `<body` textually. — M24
-  review R9
-- **KI42.** `CAPTURE_CALL` matches the helper's own definition line. — M24
-  review R10
-- **KI43.** `tests/run-tests.sh` calls `warn-distinct.py --patterns` directly,
-  not through `run_scan`, which its header calls the one place saying how each
-  scan is invoked. — M25 review F9; citation corrected 2026-09-10
-- **KI44.** A criterion enumerating scans by `re.search`/`re.match`/`re.findall`
-  reaches neither `re.finditer` nor `.count(`/`.split(`, so a scan reading the
-  source set through one of those falls outside it. — M25 review F7
-- **KI81.** `tests/m28pos.py` matches only the fixture manifest's *reported*
-  position against the render; the *author* position it states is held to
-  nothing but being a different number, so a manifest naming the wrong author
-  position passes. Counting the host file's own top-level blocks is
-  mechanically checkable and is not done. — M28 review F2
-- **KI82.** The block-position naming clause is written out four times in the
-  suite (`run-tests.sh` twice, `tests/m28pos.py` once, `tests/m29book.py` once)
-  against one shared string in the filter, so a reword takes four coordinated
-  suite edits where the filter takes one. Drift fails loudly in all four, so
-  this is cost, not a hole; it is the price of not reading the expectation out
-  of the filter's source (D-011). — M28 review F10, count corrected M29
-
-- **KI94.** `epubindex.section_rows` is reached by no check and its docstring
-  claims a row form manifest 10 does not use. — M52 review F9
-- **KI97.** `epubindex.read` raises rather than reporting on a member it cannot
-  decode or address. — M52 review F12
-- **KI103.** `editorfixture.check_split` reads its titles from the snippet YAML
-  while the row files come from a call site naming the headings separately, so
-  nothing ties a row file to the title a failure message names and the plants
-  pass row files positionally. — M49 review F7
-- **KI104.** `namedpdf.check_reports` splits manifest rows on tab and re-joins
-  them, so a row with trailing whitespace fails as "stated, not drawn" rather
-  than as a malformed manifest. — M49 review F9
-- **KI108.** The marker-less plants read the render's working copy rather than
-  the captured artifact, so M24's capture rule is met in letter and not in
-  intent. — M32 review R2-F9
-- **KI117.** The `stopped` reading depends on TeX's fatal-error line ending the
-  engine log; no capture whose rejection is the log's last `! ` line exists to
-  exercise it. — M36
-- **KI120.** `%2F%2Fevil.com` is one path segment in the linking page's own
-  directory under RFC 3986, so `htmlindex.leaves_publication` keeps it in the
-  publication correctly and `resolve_href` joins it to that directory
-  (corrected 2026-09-13: this entry called it a protocol-relative reference).
-  What remains is `tests/sitecheck.py links`, which decodes the path before it
-  picks a branch (M46) and so reports the link as naming no file while looking
-  for `evil.com` at the capture root rather than beside the linking page. The
-  verdict is right and the path it names is not. — M46 review, M083 review,
-  M085, D-059
-- **KI266.** A root-relative href (`/ch1.xhtml#frag`) stays in the publication
-  by the one test all four link readers now share (M085), and three of them
-  join it to the linking page's or member's directory, where the leading slash
-  discards that directory and leaves a path no page map and no manifest lists;
-  only `tests/sitecheck.py links` resolves it, against the capture root. No
-  fixture writes one, and D-059 declines resolving it. — M085 plan gate, D-059
-- **KI127.** Both sides of the version matrix's fixture-set comparison are
-  sets, so two render targets written to one extraction name read as agreement
-  while one extraction is silently overwritten. — M48 review
-- **KI131.** `DECLARED_EVENTS` in `tests/versioncheck.py` copies the workflow's
-  `on:` block by hand and nothing reads the workflow to check it; its refusal
-  fires inside `plan`, so a trigger added to the workflow fails `plan` and
-  skips `render` and `compare` — the HTML matrix stopping over a PDF-gating
-  question. — M51 review F2
-- **KI132.** `actions/download-artifact` from v5 on unpacks to the download
-  path itself whenever exactly one artifact matches the `pattern`, so a run
-  with one leg red lands that leg's files flat in `legs/` and `legs_under`
-  finds no `index-<leg>` directory — still red, never a false green, but
-  reporting no leg unpacked rather than naming the survivor, and the reader's
-  docstring holds only for two or more surviving legs. D-033 and the M53 scope
-  block omit this among the bumps' behavior changes. — M53 review F1-F2
-- **KI134.** The section-end regex matches one character into a `####`
-  heading. — M37 review
-- **KI135.** Mutation anchors are matched anywhere in the file. — M37 review
-- **KI222.** `m061_mutant` fails a substitution that matched nothing and never
-  one that matched more than once, so an anchor gone ambiguous splices every
-  match into the filter and passes. The counts file already carries the
-  number. The loop is `spliced_copy` since M067, so `m067_mutant`'s copies of
-  the test modules inherit the gap. — M066 review F7, M067 review F11
-- **KI140.** The gallery's AC4 extracts with plain `pdftotext` where the
-  suite's own module documents column interleaving. — M41 review
-- **KI144.** The gallery entry comparison discards level and which named index
-  printed the entry. — M41 review
-- **KI145.** The structural `pending` sweep no longer sees the attribute in a
-  comment or in script data. — M41 review
-- **KI147.** `.gallery-build/` is left populated. — M41 review
-- **KI148.** The gallery's frame and PDF targets are never confined to the
-  captured site. — M41 review
-- **KI149.** The coupling between `shown:` and the marker sweep's kept-marker
-  map is undocumented. — M41 review
-- **KI150.** The gallery's shortcode escape is unanchored. — M41 review
-- **KI151.** The gallery build carries a dead `has_pdf` parameter. — M41 review
-- **KI156.** `text=True` decodes a non-UTF-8 tracked path strictly. — M46
-  review F21
-- **KI303.** `tests/sitecheck.py links` matches a link against the walked
-  file set byte for byte. A difference in case or Unicode form that the macOS
-  file system accepts is reported. A case-sensitive web host fails such a
-  link too. — M103 review O4, H5
-- **KI304.** The link check's walk passes over a directory it cannot read
-  with no report. A link into that directory then reads as naming no file,
-  not as a link into an unreadable directory. — M103 review O14, H7
-- **KI305.** The `claims`, `prose`, `headings` and `readme` modes of
-  `tests/sitecheck.py`, and the row-list reader the sweeps share, still raise
-  a traceback on a file that does not decode as UTF-8. M103 fixed only the
-  two sweep modes. — M103 review H3
 - **KI241.** Three checks sweep what the whole run has accumulated rather than
   a domain they declare: M13's AC5 report scan globs every warning log under
   `$WORK`, M15's untouched-artifact comparison holds the whole capture root to
@@ -1309,25 +1151,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   and M38-AC6's read of the ledger come after both invocations, so nothing is
   lost; a call added before either would be erased with nothing reporting it.
   Latent. — M075 plan
-- **KI246.** The fifteen-slowest profile the driver prints sits outside
-  `run_all_checks`, after the check count has been taken, so it reaches
-  neither `run.log` nor that count and no check reads it — the same shape
-  KI30 records for M24's clean assertion. A reader working from the run log
-  alone sees no profile. Accepted. — M075 review F3
-- **KI247.** The 155 `section '<heading>'` calls put banner heading text into
-  executable source, which `tests/suitescan.py`'s read and pairing checks both
-  sweep, so a heading naming an artifact under the fixture directory or
-  carrying the render command would make those checks report a violation
-  against a comment. None of the 155 headings today does. Extends KI31.
-  — M075 review F7
-- **KI248.** A section's heading is its banner's FIRST comment line, so a
-  banner whose sentence wraps names its section by a truncated fragment in the
-  timing file and in the profile the run prints. — M075 review F11
-- **KI250.** The seconds in `tests/.work/timing.tsv`, and the run total and
-  fifteen-slowest figures the driver prints from them, are read by no check:
-  M077 removed the clause holding them to the run's own clock (D-054), and
-  what remains reads headings only. A row carrying a wrong figure prints as a
-  wrong figure with nothing to report it. Accepted. — M077
 - **KI251.** A whole run of `tests/run-tests.sh` is not reliably reproducible
   in one attempt on the development machine: Quarto's Deno binary exits 139 on
   a `Segmentation fault: 11` in a render, in a different render each time and
@@ -1338,31 +1161,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing changed. The suite reports the crash as a render failure, so a red
   run whose ONLY failure is a segfault is toolchain noise and is re-run rather
   than investigated. CI has not shown it. Accepted. — M078 review
-- **KI270.** The M24 residue probe's page-name guard stops the `--self-test`
-  run on any two page names containing a space that begin with the same word —
-  `a/later chapter.html` beside `a/later x.html` — although neither can be read
-  inside the other in the sweep's output. The 2026-09-10 capture root holds no
-  such pair. — M086 review O4
-- **KI311.** Three counts in `tests/run-tests.sh` grep a log inline rather
-  than through `check_warning_count`, with `|| true` swallowing grep's exit 2
-  on a missing file, so each reads a log that is not there as 0 occurrences:
-  `nomarker_named`, the M068 T5 inverted-test count over `m068-inverted.log`,
-  and the M062-AC1 count naming `five.qmd`. None passes on that today: both
-  `nomarker_named` calls expect 2, the M068 count fails on 0, and the M062-AC1
-  count follows a `check_warning_count` over the same log, which refuses a
-  missing one. Latent. — M111 review
-- **KI314.** `tests/typstindex.py`'s bounded `read` exempts from its
-  stranded-line refusal every line within `SAME_ROW_PT` of a stop line's
-  row, whatever it prints, not only a running header's page number. An
-  index line that shares a row with a stop line on the page left out is
-  dropped with no message. No capture has such a line (2026-10-19 run).
-  — M113 review
-- **KI315.** The PDF checks that count whole printed lines (M02-AC2, M02-AC3,
-  AC6, M05-AC5) read a row as missing when its printed line carries more
-  than the row: a wrapped continuation, or a locator-only line
-  `tests/pdfindex.py` folds into it. The failure is red, but its message
-  says the row did not typeset or is missing from the index. No row is
-  affected today (2026-10-19 run). — M113 review
 - **KI316.** Two PDF index checks still test presence over flattened text,
   so a term printed twice passes: M04-AC2's term check in
   `tests/run-tests.sh` and `tests/gallerycheck.py`'s pdf mode (M41-AC4).
@@ -1372,50 +1170,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 - **KI45.** The `\index` scanner is not brace-aware — no longer benign now that
   unbalanced braces are probed. — M01 review R14
-- **KI46.** BSD-sed portability is unpinned. — M01 review N12/N13/N14
-- **KI47.** A `]{.index` substring undercount. — M04 review F9/F10/F13
 - **KI48.** The `include_text` guard is unchecked. — M04 review F9/F10/F13
 - **KI49.** There is no structural residue check on LaTeX misuse output. — M04
   review F9/F10/F13
-- **KI50.** The check-count baseline is not mechanized. — M01 review, plus a
-  clean-clone failure hit at M04 review
-- **KI51.** `tests/htmlindex.py`'s `index_section` takes the first heading whose
-  text is `Index`, so a fixture carrying its own would silently locate the wrong
-  element. — M08 review F10
 - **KI52.** Deleting `tests/byte-diff.sh` left no merge-base output comparison
   at all, so a change that moves rendered output outside the roughly 100 checks
   now passes unseen — D-004's own residual risk. D-011 records the second:
   a source-shape regression no render probes. — D-004, D-011
-- **KI53.** `tests/pdfindex.py`'s footer heuristic takes the bottom-most
-  locator-only line with no check that it sits in the folio band, so a page with
-  the folio suppressed loses a genuine continuation's locators. The orphan case
-  is now on stderr. — M15 review F4
-- **KI54.** Two independent joined-`warn()`-message readers — the M02-AC5
-  counter and M15-AC5's — can drift apart. — M15 review
-- **KI55.** The moved-definition probe's planted defect exercises only
-  `warn-distinct`'s count clause, leaving its single-literal, duplicate and
-  prefix clauses unproven against the moving case; and the probe still writes
-  every relocated definition into one `modules/moved.lua`, so "a definition
-  moved into a module" is a nine-member family the probe exercises one member
-  of. — M16 review F7, M17
-- **KI56.** M17's AC3 install-parity probe has no planted-defect proof in the
-  run: it was shown discriminating out of band at M17 T9, not by a check. — M17
-- **KI57.** No check in the suite guards the rule M17-AC1 states, one
-  definition per entry point (`one-definition-per-entry-point`), so a later
-  hotfix that puts a helper back into `index.lua` leaves
-  the run green while the milestone's premise silently reverts.
-  `tests/filtersrc.py`'s `lines()` exists for exactly this question and has no
-  consumer but the AC3 require-position check. — M17 review F-A
-- **KI58.** `tests/scans/warn-distinct.py` cuts each message expression at
-  `:format(`, so it reads neither the numbers a message names nor the text built
-  there: `depth_phrase`'s two clauses and the extra-sort report's `against`
-  clause are built outside the `warn()` call it reads, so they sit outside both
-  its pinned literal count and its single-literal needles, held only by the M13
-  and M19 rendered-log pins. A report shipping an unlabelled count is therefore
-  caught only at its own review. — M19 plan gate, M19 review F3
-- **KI59.** The gfm span reader stops at the first `</span>`, so a mark whose
-  visible text carried a nested span would be truncated and mismatch rather than
-  enumerate. — M20 review round 2 R2-F10
 - **KI60.** `book.lua`'s `role` field is written, validated and read with no
   book fixture exercising the round trip. — M20 review round 1 F5, round 2
   R2-F12
@@ -1427,44 +1188,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI62.** The pairing-report scope word a merged PDF book prints ("book") has
   no fixture exercising it: every book fixture's PDF render pairs its ranges and
   warns nothing. — M21 review round 5
-- **KI64.** The two range fixtures' opening marks fall on page 1 because the
-  prose above them fits one page rather than by an explicit pagebreak, so a
-  longer preamble in either silently moves the printed width the readers pin.
-  — M23 review round 3 F5
-- **KI65.** M24's AC1 read check reaches only a token ending in a literal
-  extension, so a read written `examples/<stem>.$var` passes it unseen (five
-  such, all repaired in M24), and it matches the fixture directory only where
-  that is spelled literally, so a read reaching it through a shell variable
-  (`$BOOK_OUT` among them) passes it unseen too (14 such, all repaired in M24).
-  — M24, M24 review
-- **KI66.** The planted-defect self-test mutates only the `.tex` fixture; no
-  HTML index check has a planted-defect proof. — M03 review F14
-- **KI67.** Demo manifests have no independent count, so coverage can shrink
-  silently. — M01 review P10
-- **KI68.** The demo's own makeindex acceptance is never asserted. — M01 review
-  P11
-- **KI70.** Bare (unquoted) `entry=`, `see=` and `see-also=` values escape both
-  the no-leak sweep and the probe-coverage pin; for no-leak this is a false
-  pass, not a false failure. The suite's `sort=` extraction is double-quote-only
-  too, with no false pass today since every fixture quotes its values. — M01
-  review N9, M02 review, M06 review F-b
 - **KI71.** The escaping probe covers characters singly; combinations remain an
   untested axis. — M01 review, and M01's own milestone Decisions entry
-- **KI89.** `recipe_font_files` reads the recipe's front matter with two fixed
-  regexes, so a quoted or multi-word `mainfont:`, a flow-style
-  `mainfontoptions:`, or an options block naming no `Extension=` is a mis-parse
-  rather than a parse error. Deliberately not widened (checker-regress on an
-  input class nobody writes): such a fixture surfaces at `require_recipe_fonts`
-  as a `kpsewhich` miss on the filename the guard assembled, and that report
-  names the mis-spelled-face reading beside the missing-package one because the
-  guard cannot tell the two apart. — M37 F3 disposition
 
-- **KI88.** Two clauses of `tests/unicodeprint.py` have no planted defect and
-  are guarded rather than proved: `entries` and `absent` refusing a PDF whose
-  index heading printed but whose entry list is empty, and `levelled` refusing
-  a printed index one of whose columns holds no top-level entry. Nothing in the
-  suite builds an artifact of either shape, so the self-test's pass line claims
-  nothing about them and names them as unplanted. — M36 T5
 - **KI87.** In a compiled PDF index the entry for `,` prints as one DOUBLE LOW-9
   QUOTATION MARK followed by the page number, so a reader sees `„1` where every
   other entry's shape would give `,, 1` and a reader would want `, 1`:
@@ -1483,79 +1209,22 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   both directions. The plan gate chose this over a scan of the Lua source
   (M50 work log). Found at M50 T1.
 
-- **KI91.** M52-AC2's `<file>`-part arm is not shown to run over a non-empty
-  domain, `epubindex.links` falling back to the link's own document, which the
-  manifest holds by construction. — M52 review F3
-- **KI92.** `epubcheck.cmd_same`'s third comparison cannot fail, both sides
-  having been compared equal to the manifest. — M52 review F7
-- **KI95.** `cmd_absent`'s two allowed-string guards have never executed, every
-  call site passing an empty list. — M52 review F10
-- **KI96.** `RENAMED_HEADINGS` is substituted unconditionally, so nothing
-  checks the old heading is absent or the new one on the same page, and no
-  plant covers a heading actually deleted. — M52 review F11
-- **KI99.** `editorfixture.py generate`'s seven refusal clauses have no plant
-  at all. — M50 review
-- **KI100.** About ten `editormeta.py` clauses have no plant either: the
-  empty-object and non-dict snippet files, `prefix`/`body` empty as distinct
-  from `description`, a YAML parse failure, a non-mapping top level, a missing
-  `classes:`/`attributes:` section, the `attributes:`-side class mismatch, an
-  empty per-class attribute block, a missing `enum:`, and `check_bodies`'
-  no-attribute guard. — M50 review
 - **KI101.** Nothing holds `_extensions/index/_schema.yml` against the Quarto
   Wizard schema it declares, which is the property deciding whether an editor
   reads the file at all — the file conforms today, verified at M50 review
   against the published v1 schema. Distinct from KI90, which is about the
   attribute set the filter accepts. — M50 review
-- **KI109.** The HTML-cost check reads "the fixture carries no
-  `#quarto-appendix` at all" rather than the bibliography's own wrapper, so a
-  fixture that later grows a footnote or a Citation block would turn it red
-  while README stays true. — M32 review R2-F14
 - **KI111.** M43 compares HTML indexes only, because the M30 and M33 lessons
   put engine and font differences in a PDF's text layer. — M43 Scope Out
 - **KI118.** Documentation prose is pinned only where a check names its own
   page (D-027, narrowed by D-028), and three of the dropped sets banned a
   sentence rather than required one, so a page may also re-acquire a sentence
   false about today's behavior. — M46
-- **KI119.** Three link-check shapes stay unsettled: a bare `/` under a base
-  path, percent-decoding of `%3F`/`%23` and of a non-UTF-8 escape, and a
-  blockquote stripper that strips a leading `>` from any line, fenced code
-  included. — M46 review
 - **KI123.** README and `site/index.qmd` promise a description on every class
   where `check_schema` requires one only under `attributes:`. — M50 review
-- **KI223.** `form_table` holds `site/syntax.qmd`'s form table to the count
-  that page's own sentence states, so a row added together with the sentence
-  edited passes; only `check_schema`'s `enum:` comparison remains to notice a
-  new row, and it is blind to one on `entry=`, `see=` or `sort=`. — M067
-  review F1
 - **KI126.** `minted_carried` is an existence test, so a page whose only
   locator points at an anchor it does not carry dumps at exit 0 and a partial
   rename passes. — M48 review
-- **KI128.** The version-matrix comparison report's count assertion is derived
-  from the same list that produced the files it counts, where it was an
-  independent literal. — M48 review
-- **KI129.** The anchor clause couples each fixture's dump to that fixture
-  carrying a mark, so removing the book's one mark would redden the matrix with
-  a false reason. — M48 review
-- **KI130.** The M43 plant helper checks exit status, message substring and
-  absence of a traceback, but not that the message sits on a `FAIL: ` line.
-  — M48 review
-- **KI133.** A bound assertion recomputes its bound with the builder's own
-  regex. — M37 review
-- **KI136.** The loud-failure fixture is hand-written rather than derived.
-  — M37 review
-- **KI139.** `ran_clean` has one unplanted failure clause. — M38 Scope Out
-- **KI141.** The gallery's AC5 comparison and several named clauses have no
-  plant. — M41 review
-- **KI142.** A gallery PDF plant substitutes a whole different document.
-  — M41 review
-- **KI143.** `rstrip` widens the gallery's AC2 trailing-newline clause. — M41
-  review
-- **KI146.** A gallery plant helper discards its mutation's exit status. — M41
-  review
-- **KI155.** `DOMAIN_FLOOR = 11` in `tests/sitecheck.py` stands below the
-  live domain, pinned by nothing. M096 kept it rather than invent a drift
-  threshold (corrected M096: the constant was `FLOOR`, the domain 21). — M46
-  review F20
 - **KI160.** The published URL is derived from the remote by convention, so a
   custom domain would leave README and the site's entry page naming a URL the
   deploy job does not publish to with the suite green. — M42 review
@@ -1574,14 +1243,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   back, so a claim rewritten rather than added carries no row and a reword back
   to the old wording is green. The sentence M073 review F1 failed on
   (`site/books.qmd:171`) is such a claim. — M074 review N4
-- **KI264.** `tests/epubcheck.py unique` reads one generated index section per
-  document — the first `htmlindex.index_section` matches — so a second such
-  section in one document has its links resolved by nothing. The ids inside it
-  are still swept, the repeated-id clause reading whole documents, and the
-  verdict names the section it read. KI51 records the neighbouring risk that
-  the first heading matched may not be a generated section at all. No EPUB
-  the extension writes carries two such sections in one document, and D-064
-  declines the change. — M079 review F9, M083 T2, D-064
 - **KI267.** `tests/epubcheck.py links` cannot be run over `id-collision.epub`
   at all. It finds index sections by the minted id prefix, and that fixture
   plants an element claiming the prefixed name with no heading inside it, on
@@ -1589,16 +1250,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   its sections by heading and reads the publication fine. So the one fixture
   built to carry contested ids is out of reach of the one check that resolves
   every link inside an index section. — M085 implement
-- **KI268.** No tool in the suite names WHICH index href left the publication.
-  `epubindex.unresolved` skips a leaving row, so the hand tool prints no line
-  for it, and `tests/epubcheck.py links` prints only a count; an author who
-  writes an `https:` locator by accident is told one link was skipped and has
-  no way to find it. Decided by D-057 rather than wrong. — M085 review F9
-- **KI272.** `m085_epub_plant` in `tests/run-tests.sh` holds the `links`
-  skipped count and the `unique` leaving count to one expected number, and
-  every plant keeps its locator's fragment, so no plant shows `unique` leaving
-  uncounted a fragment-less leaving link that `links` skips (corrected M088).
-  — M087 review O3
 - **KI274.** The M079-AC1 leg in `tests/run-tests.sh` groups the minted
   anchors on the spans printing each contested cross-reference term written
   outside a heading and requires exactly one per group, a clause no rendered
@@ -1618,17 +1269,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The repo and its packaging
 
-- **KI75.** `examples/.gitignore` duplicates the root ignore's
-  `examples/.quarto/` and adds an unrelated `**/*.quarto_ipynb` rule. — M13
-  review F16
-- **KI76.** The `qi_` prefixes added at M17 took lines over 80 columns from 14
-  at that milestone's merge base to 62, of which 47 are code lines whose
-  rewrapping risks the single-literal warning messages `warn-distinct` pins.
-  — M17 review J
-- **KI77.** Every module exports its entire top-level surface — 106 names, with
-  `html.lua` exporting 23 where four are reached from outside — so no module
-  boundary carries any information about what is API and what is internal.
-  — M17 review I
 - **KI78.** Windows checkouts without symlink support break
   `examples/_extensions`, and `site/_extensions` since M40. — M01 review R18,
   extended M40; routed from candidates 2026-09-11, the row added 2026-08-16
@@ -1704,27 +1344,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   `examples/book-nomarker/` with a marker added to `two.qmd`.
   — M062 review F1
 - **KI216.** A book chapter that declares `output-file:` in its own front
-  matter drops out of the book's index entirely and indexes itself alone.
-  `quarto.doc.output_file` for such a chapter is `<project>/<name>.html`
-  rather than a path under the project's output directory, so
-  `book_context`'s `strip_prefix(output, out)` returns nil, the chapter takes
-  the no-metadata fallback, and it writes no record — its terms reach no
-  section of the book. Recovery read only a record that was opened and refused
-  when this was written; since M069 it also reads one no render has written, so
-  a chapter that prints an index section does read such a chapter's source
-  (corrected M073 — where that recovered locator points, the chapter's declared
-  `output-file:` or the href the book expects, is unverified).
-  Observed 2026-08-30 on a scratch copy of `examples/book-placement/` with
-  `output-file: custom-four.html` in `four.qmd` and `output-file: bare-two` in
-  `two.qmd`: both pages landed in `_book/` under the names their front matter
-  asked for, while the filter was told `<project>/custom-four.html` and
-  `<project>/bare-two.html`; both chapters drew the looks-like-a-book warning
-  and neither wrote a store record. Where a leftover record makes the branch
-  reachable, a declared name whose stem carries a dot loses its extension:
-  `chapter_href`'s already-has-an-extension test is
-  `name:match("[^/]%.[^%./]+$")`, which reads `v1.2` as extensioned, so the
-  recovered locator is `v1.2` while Quarto writes `v1.2.html`. Derived by
-  reading `book.lua:126`, not observed. — M064 T2 probe, extended M064
+  matter drops out of the book's index and indexes itself alone: Quarto hands
+  the filter `<project>/<name>.html` rather than a path under the output
+  directory, so `book_context` takes the no-metadata fallback and the chapter
+  writes no record. Since M069 a chapter that prints an index section recovers
+  such a chapter from its source; where that recovered locator points is
+  unverified (corrected M073). A declared stem carrying a dot (`v1.2`) reads
+  as already extensioned to `chapter_href`, so the recovered locator lacks
+  `.html`; derived from `book.lua:126`, not observed. Observed 2026-08-30 on a
+  scratch copy of `examples/book-placement/`. — M064 T2 probe, extended M064
   review round 2 R2-F6
 - **KI217.** A `STORE_VERSION` bump makes every record in the store unusable at
   once, and every unusable record now costs a re-read and a `pandoc.read` of
@@ -1786,23 +1414,15 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   direction D-044 accepts for the record-file mirror of this case (KI224).
   Carries forward the remainder of KI221, which M068 otherwise fixed.
   — M068 review F5
-- **KI226.** Where the store directory does not exist AND `.quarto` itself
+- **KI226.** Where the store directory does not exist and `.quarto` itself
   cannot be listed, `store_probe` reads every record path as written, so a
   first render into such a tree would recover every chapter from its source
-  and report each one. The `lost` answer a directory takes from its parent
-  says only that some ancestor is out of reach; it does not distinguish a
-  directory that is missing from one that is there and unreachable, and the
-  walk goes above the store as far as the first listable ancestor. Observed
-  2026-09-02 by running `store_probe` under `pandoc lua` on a scratch tree:
-  with no `.quarto/quarto-index` at all and `.quarto` either a regular file or
-  at `a-r`, it answers "written" for records flat, one level down and three
-  levels down, where the pre-M068 probe answered "never written". No render
-  reaches the state — `quarto render` aborts with `PermissionDenied` on the
-  unlistable shape and `Failed to ensure directory exists: expected 'dir', got
-  'file'` on the other, both before the extension loads — so the prose in
-  `site/books.qmd`, `CHANGELOG.md` and D-044 saying an absent record never
-  fires is true of every tree a render can reach and false of the probe read
-  alone. Accepted at the M068 merge gate rather than fixed. — M068 review G1, G2
+  and report each one. No render reaches that state: `quarto render` aborts on
+  both shapes before the extension loads. So the statement in
+  `site/books.qmd`, `CHANGELOG.md` and D-044 that an absent record never fires
+  holds for every tree a render can reach, and not for the probe run alone.
+  Observed 2026-09-02 under `pandoc lua` on a scratch tree. Accepted at the
+  M068 merge gate rather than fixed. — M068 review G1, G2
 - **KI228.** An ordinary first whole-book render of a book whose placement
   marker sits before its last chapter now reports on itself: every marker
   chapter runs before the chapters behind it, meets their absent records,
@@ -1858,18 +1478,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   says nothing about any of them. KI229 and D-053 name the last-chapter shape
   alone, and the `m074-quiet` leg renders that one. The parse it pays is
   KI227's, as KI229's is. — M074 review F6
-- **KI278.** `derive_labels_twin` compares front matter as PyYAML parses it,
-  which reads YAML 1.1 and keeps the last of two duplicate keys. So a twin
-  writing `yes` where the fixture writes `true` passes as the same document,
-  and so does a fixture whose `index-labels:` map sets `separator` twice. The
-  plan recorded the blind spot for quoting, comments and key order only.
-  — M092 review R4
-- **KI279.** The M093 locale probe in `tests/run-tests.sh` calls
-  `os.setlocale("fr_FR.ISO8859-1")` and fails the whole run when that call
-  returns nil. By the plan's choice it never skips. The name is the macOS
-  spelling. A machine that lacks the locale or names it another way, as a
-  Linux system can, gets a red run from a probe of letters, not of the index.
-  — M093 review F1
 - **KI280.** `store_write` in `_extensions/index/modules/book.lua` ignores the
   value `fh:close()` returns. A write that fails only when the buffer is
   flushed, as on a full disk, draws no write-failure report and can leave a
@@ -1880,27 +1488,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   read, no `ERROR` line is printed now. M064-AC5 breaks its source with a
   byte that is not UTF-8, so `pandoc.read` fails first and neither read
   branch runs. — M094 review F3
-- **KI282.** `m094_check_cause` in `tests/run-tests.sh` matches the English
-  system text `Is a directory`. On a machine whose locale or platform words
-  that open failure another way, the check goes red with the filter correct.
-  — M094 review F5
-- **KI283.** The M094 T2 plant's cause probe prints one message whether the
-  mutant drew no write-failure report or drew one with the wrong cause. Its
-  ERROR probe counts one `ERROR (` line and does not check that the line is
-  four.qmd's. — M094 review F6
-- **KI288.** The retired-sentence sweep compares case-sensitively, where its
-  sibling `phrase-absent` over the same domain folds case. A retired sentence
-  restored with a different opening capital is caught by one of the two sweeps
-  and not by the other. — M096
-- **KI306.** The cell guard (`tests/stateprobe.py --check-cells`) compares
-  each reset line's text. A second copy of a line it allows passes it. The
-  probes' `plant()` stops on a second copy of a `CELLS` statement, but it
-  never reads the kept lines of `indexes.lua`. A second copy of a kept line
-  passes both. — M105 review R5, V4
-- **KI307.** A `CELLS` row whose statement no longer sits in its module's
-  reset passes the cell guard, which reads from the reset to the table and
-  not back. Only the hand-run probe's `plant()` stops on it. — M105 plan
-  Out, review R17
 - **KI308.** The cell guard reads every module `CELLS` names, and fails
   naming one whose reset it cannot find. A new module is read only when the
   guard's own lexer finds one `local function reset(` line that closes its
@@ -1909,8 +1496,3 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   the next line), when it is hidden from that lexer by a `\z` string or a `#!`
   first line, when its file name starts with `..`, or when it sits in a
   linked directory. — M105 review R6, run 3 W1, W2, W5, W10
-- **KI309.** `htmlindex.index_section` finds a section only by a heading whose
-  text is exactly `Index`. So `tests/epubcheck.py unique` reads no index
-  section with another title, such as `Index of Authors` or a translated
-  heading, and resolves none of its links. No publication `unique` reads today
-  carries one. KI51 records the opposite risk. — 2026-10-01 plan gate

@@ -50,8 +50,8 @@ acceptance-suite backlog".
 
 ## Coverage
 
-- AC1 → T1, T2, T5
-- AC2 → T1, T2, T3, T4, T5
+- AC1 → T1, T2, T5, T6
+- AC2 → T1, T2, T3, T4, T5, T6
 
 ## Tasks
 
@@ -77,6 +77,13 @@ acceptance-suite backlog".
       the end of the log line, so text after a report leaves the line
       unread, and refuse a missing log by name. Add `--self-test` plants
       for both, and run the suite with `--self-test` green.
+- [ ] T6: Review return 2. Hold each log line that holds one of the eight
+      literals whole, Quarto's `(W) ` prefix included, against the list:
+      split the log on `\n` alone, strip nothing inside a line, and refuse a
+      log that is not a file or holds no report. Add `--self-test` plants for
+      text before a report, a carriage return, a directory and an empty log,
+      each held to the check's FAIL header, and apply the pass-2 fixes the
+      Review section lists. Run the suite with `--self-test` green.
 
 ## Work log
 
@@ -108,6 +115,8 @@ acceptance-suite backlog".
 - 2026-10-20: review pass 2: AC1 failed a second time by a new mechanism of the same shape. Return 1 left text after a report unheld; pass 2 shows text before "index entry" and after a bare `\r` unheld. The check holds a span of each line, not the line. Repeated review-failure stop; the plan gate recorded no alternative for the check's approach, so the escalation offer stands beside the recommendation.
 - 2026-10-20: user chose "Hold whole lines" at the stop (escalation and pause declined).
 - 2026-10-20: review return 2: AC1 — the check holds the span from "index entry" to the line's end, so text before a report, or after a bare `\r`, passes; repair: hold each whole line, `(W) ` prefix included, the log split on `\n` only, no ANSI strip, with the pass-2 fixes listed in the Review section.
+- 2026-10-20: resumed for review return 2; added T6 (minor amendment, Coverage updated). Choice: `repr` in the got/want lines, so a `\r` or an escape code shows.
+- 2026-10-20: T6 plants against the check before (run 7's copy) and after, over run 7's control log: control green both; trailing text red both (the d5612b7 check passed it, per pass 2); text before a report and a `\r` then text green before, red after; directory, missing and empty logs red both, the directory before as "does not exist" and the empty log before as four "no such line" rows, after by name.
 
 ## Decisions
 

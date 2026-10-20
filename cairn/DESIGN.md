@@ -1200,9 +1200,9 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   now passes unseen — D-004's own residual risk. D-011 records the second:
   a source-shape regression no render probes. — D-004, D-011
 - **KI60.** `book.lua` refuses a chapter record whose `role` is not a string,
-  and no check writes such a record. The round trip of a string `role` is
-  held: M21-AC5 goes red when `build_record` stops writing it (narrowed
-  M122). — M20 review round 1 F5, round 2 R2-F12
+  and no check writes such a record. M21-AC5 goes red when `build_record`
+  stops writing a string `role`, which M122 observed by removing that line.
+  — M20 review round 1 F5, round 2 R2-F12, narrowed M122
 - **KI61.** The docs' `\newcommand*` redefinition recipe (in README before M40,
   on the LaTeX and PDF page since) is exercised in one
   header ordering only, where `\providecommand*` would be correct in both and
@@ -1274,10 +1274,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   derive. M098-AC8 compares the Typst index of the same fixture in both
   directions and with levels. — M120 review diff-bug #6
 - **KI327.** `site/examples.qmd` says "The whole corpus is described below",
-  and README says that page lists what each fixture exercises, but the page
-  describes a small part of `examples/`: `xref-conflict.qmd` and
-  `xref-conflict-named.qmd` are among the fixtures it leaves out. — M122 review
-  ripple #2, #3
+  README says that page lists what each fixture exercises, and the gallery
+  index `site/build_gallery.py` writes says the rest of the corpus is
+  described there. The page describes a small part of `examples/`:
+  `xref-conflict.qmd` and `xref-conflict-named.qmd` are among the fixtures it
+  leaves out. — M122 review ripple #2, #3, pass 2 ripple #2
 
 ### The repo and its packaging
 

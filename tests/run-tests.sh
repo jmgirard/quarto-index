@@ -32958,7 +32958,7 @@ M115SPLICEPY
   m115_tree cells typst-caption-layout.qmd
   m115_splice "$M115P/cells/_extensions/index/modules/typst.lua" \
     $'    if #content ~= 1 then\n      return nil\n    end\n    content = content[1]\n' \
-    $'    content = pandoc.Div(content)\n' \
+    $'    if #content ~= 1 then\n      local rest, moved = caption_moves(float.caption_long)\n      float.caption_long = rest\n      float.content = pandoc.Div({ pandoc.Div(content), pandoc.Plain(moved) })\n      return float\n    end\n    content = content[1]\n' \
     || fail "M115 self-test (cells): the plant could not be written (its own message is above)"
   m115_render cells typst-caption-layout.qmd
   m115_red cells "does not print its two cells on one line" \

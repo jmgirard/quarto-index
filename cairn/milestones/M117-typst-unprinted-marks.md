@@ -125,6 +125,8 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: re-audit: AC1 (full) — nothing; the reader found the amended text reachable on 1.10.19, binding the deliverable, with no D-065/D-067 conflict (the check is about the extension's output), and noted KI321-KI323 named the wrong Quarto.
 - 2026-10-20: amendment return: AC1 — "On Quarto 1.10.19, whose Typst template does not print `description:`," (was "On the pinned Quarto, ..."); the rest of AC1 is unchanged.
 - 2026-10-20: correction: every render this milestone made ran on Quarto 1.10.19, not 1.10.18. That holds for the "render check before planning" line above and for KI321-KI323, which are corrected in place in DESIGN.md.
+- 2026-10-20: review pass 2 found 10 more items over the pass-1 fixes (7 fixed in ef36856, 1 to a new parked row, 2 rejected); suite green at ef36856, 1834 checks.
+- 2026-10-20: step-7 approval: m117-typst-unprinted-marks approved for merge
 
 ## Decisions
 

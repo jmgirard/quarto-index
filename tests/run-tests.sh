@@ -31420,7 +31420,7 @@ python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" 
   || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
 
 # M117-AC1: an entry no page carries is left out. examples/typst-unprinted.qmd
-# writes eight marks into `description:`, which Quarto's Typst template does
+# writes eleven marks into `description:`, which Quarto's Typst template does
 # not print, and the rest into its body; tests/typst-unprinted.tsv states,
 # by hand, which entries and letter groups print. The check first requires
 # that the description's sentence does not print before the index, since
@@ -31450,11 +31450,15 @@ M117FIELDPY
   # and its term does not.
   local text
   text=$(pdftotext "$1" -) || return 1
+  # pdftotext opens each page after the first with a form feed.
+  text=${text//$'\f'/$'\n'}
   case $'\n'"$text"$'\n' in
     *$'\nSpare Index\n'*) ;;
     *) echo "FAIL: $2: the second index prints no heading" >&2; return 1 ;;
   esac
-  case "$text" in
+  # The fixture's prose names Thole too, so only the text after the heading
+  # is read.
+  case "${text#*$'\n'Spare Index$'\n'}" in
     *Thole*) echo "FAIL: $2: the second index prints the term Thole" >&2; return 1 ;;
   esac
 }
@@ -31494,9 +31498,9 @@ if [ "${1:-}" = "--self-test" ]; then
   }
   # Each <want> is the first row the plant prints where the manifest has
   # another, as `typstindex.py` reports it: the row that part of the rule
-  # leaves out, or the row printed where the left-out one belongs.
-  # Every entry prints, as before M117.
-  m117_plant allentries 's{if found\.len\(\) > 0 or }{if true or }' "got 'entry\t0\tHalyard"
+  # keeps out, or the row printed where the left-out one belongs.
+  # Every entry prints, as before M117, so Horn prints under Cleat.
+  m117_plant allentries 's{if found\.len\(\) > 0 or }{if true or }' "-> 5: got 'entry\t1\tHorn"
   # Every letter-group heading prints, as before M117.
   m117_plant allgroups 's{if live == nil then}{if true then}' "got 'group\tH'"
   # Only an entry's direct sub-entries are read, so Fender, whose only

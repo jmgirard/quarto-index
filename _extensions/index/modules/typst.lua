@@ -40,8 +40,8 @@ local M = {}
 -- `(opening label, closing label or none, principal)` triple per locator the
 -- tree recorded. Each label is looked up while the document is typeset, and
 -- a label no element carries adds no locator rather than failing the render
--- (IP2). Such a label is a mark no page prints, as one in a front-matter field
--- the template leaves out is. `below` is `true` where a sub-entry at any depth
+-- (IP2). A mark in a front-matter field the template does not print has such
+-- a label. `below` is `true` where a sub-entry at any depth
 -- has a cross-reference, and otherwise the opening labels of every sub-entry
 -- at any depth. An entry none of whose labels names an element, with no
 -- cross-reference, and none of whose `below` labels names one prints nothing

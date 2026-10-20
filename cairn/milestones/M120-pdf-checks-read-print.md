@@ -126,7 +126,43 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: T5 done: KI164 and KI316 struck; no other comment in `tests/` called these four checks presence tests (grep for `presence`, `KI164`, `KI316`, `compile-and-accept`). `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green, 1868 checks, 2026-10-20 12:58-13:12, every M120 check and plant line present.
 - 2026-10-20: claim audit: not owed — internal tier.
 - 2026-10-20: status review; handing off to /milestone-review.
+- 2026-10-20: review: default branch unmoved since the cut (origin/main d76e66f); Copilot round off. Review suite run at 1e13b9e green, 1868 checks.
+- 2026-10-20: review fix-now work committed as eafcef2 (19 findings): hand statement for the 255 derived lines, duplicate-line refusal, stricter T1 plants, non-ASCII missing plant, AC3 bound to the heading's page only, NFC in the M04-AC2 and gallery reads, UTF-8 decode in `pdfindex._pages`, wording. KI326 filed for the follow-up.
 
 ## Decisions
 
 ## Review
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+- diff-bug #1: the T1 self-test pattern accepted the row named anywhere, so a "printed twice" plant passed on a missing report — fix now, fixed eafcef2
+- diff-bug #2: a derived line written more than once would read as printed twice on a correct index — fix now (the derivation now refuses a repeated line, shown red on a planted `P!x05` mark), fixed eafcef2
+- diff-bug #3: the non-ASCII missing plant rewrote the target to ASCII — fix now (now `Straßen`), fixed eafcef2
+- diff-bug #4: the gallery read runs past the marker fixture's index into its body text — reject, planned change: AC4 as audited reads from the `Index` heading, and a body line equal to a term turns the check red, never green
+- diff-bug #5: AC3's code also kept lines on earlier pages, wider than the criterion — fix now (keeps the heading's page above it only), fixed eafcef2
+- diff-bug #6: the derived rows ignore a line's level and never flag a cross-reference line the source does not derive — follow-up, KI326 under the "Older acceptance-suite backlog" row
+- diff-bug #7: a derived line carries no locators, so an entry with both page marks and a cross-reference would fail — reject, false: no entry of the fixture's derived domain has both, and all 255 lines print as derived
+- diff-bug #8: the M41 pass and fail lines still described a presence test — fix now, fixed eafcef2
+- diff-bug #9: the T1 pass line called the source-entry plant a target change — fix now, fixed eafcef2
+- diff-bug #10: "under two parents" misdescribes `von Neumann` (once at top level, once under `mathematicians`) — fix now, fixed eafcef2
+- diff-bug #11: the gallery count compares without NFC — fix now, fixed eafcef2
+- diff-bug #12: the refusal comment claimed any ligature input where the tuple lists eight — fix now, fixed eafcef2
+- diff-bug #13: the candidate row still cites struck KI164 and KI316 — reject, planned change: post-merge hygiene removes the row this milestone graduates
+- diff-bug #14: the `von Neumann` grep relied on a literal tab byte — fix now (`$'\t'`), fixed eafcef2
+- diff-bug #15: the gallery path lost M41's pinned UTF-8 decode — fix now (in `pdfindex._pages`), fixed eafcef2
+- blame-history #1: the 255 derived rows came from a program, against the suite's ORACLE RULE; M098-AC8's hand statement holds the derivation's terms but not its references — fix now (a hand-stated construction rule now holds every derived line, with a plant), fixed eafcef2
+- blame-history #2: an entry broken across two printed lines now counts zero in the gallery check — reject, planned change: AC4 counts whole read lines, and such a break turns the check red, never green
+- blame-history #3: the M41 UTF-8 decode fix is lost — fix now, fixed eafcef2 (same fix as diff-bug #15)
+- blame-history #4: the gallery read is unbounded — reject, planned change (as diff-bug #4)
+- blame-history #5: the gallery check skips NFC — fix now, fixed eafcef2 (as diff-bug #11)
+- blame-history #6: M04-AC2's bound changed mechanism, no defect found — reject, false: reports no defect
+- prior-review #1: the gallery path lost the UTF-8 decode the M41 review fixed — fix now, fixed eafcef2 (as diff-bug #15)
+- prior-review #2: the marker, sort-key and gallery counts skip NFC — fix now for the marker and gallery reads, fixed eafcef2; the sort-key part rejected, false: its domain is ASCII `term-xx` by the fixture's own regex
+- prior-review #3: M04-AC2 keeps lines by position only, so a right-column line below the heading drops — reject, false: the heading is full width and set below both columns, so a line below it on that page is body text
+- prior-review #4: the gallery read has no `stop` or `from_page` — reject, planned change (as diff-bug #4); none of the five fixtures prints a contents page
+- prior-review #5: `!!` and `fi` ligatures are not modelled — reject, false: `!!` to `‼` is Typst's mapping (M30 lesson), and an unmodelled glyph fails loudly
+- ripple #1: the M41 self-test pass line names an extraction — fix now, fixed eafcef2
+- ripple #2: the M41-AC4 fail line names presence only — fix now, fixed eafcef2
+- ripple #3: the M06-AC3 header's "three formats" — reject, false: the PDF read sits inside the LaTeX leg, so the legs are still LaTeX, HTML and gfm
+- ripple #4: the M04-AC2 header comment says "slice" — fix now, fixed eafcef2
+- ripple #5: `pdfindex.read`'s docstring says each index gets a page of its own — reject, false: that rule governs `stop`-bounded reads, and M04-AC2 uses none and says why

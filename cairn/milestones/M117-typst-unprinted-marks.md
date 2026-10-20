@@ -38,7 +38,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 
 ## Acceptance criteria
 
-- [ ] AC1: On Quarto 1.10.19, whose Typst template does not print
+- [x] AC1: On Quarto 1.10.19, whose Typst template does not print
       `description:`, a Typst render of a new fixture,
       `examples/typst-unprinted.qmd`, whose `description:` holds marks, is held
       by `tests/typstindex.py` to a manifest derived by hand from the fixture
@@ -160,3 +160,7 @@ Evidence, pass 1, at 635f9cc (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-tes
 - AC1: not met as written. The M117-AC1 check passed (23 manifest lines; five plants red on their rows), but the run was on Quarto 1.10.19, and the criterion names the pinned Quarto, which `tests/pagescheck.py version .github/workflows/pages.yml` reads as 1.10.18. No 1.10.18 install is here and CI runs no suite. Routed as an amendment return.
 - AC2: `site/typst.qmd` "A mark Typst never prints" and the Unreleased Typst bullet of `CHANGELOG.md` each state the left-out rule with both conditions; the page names the three Out limits; `grep -n "Its term is still in the index" site/typst.qmd` printed nothing (exit 1). The suite's claims rows (M098-AC7 page and changelog) and the retired-phrase sweep passed in the same run.
 - AC3: `tests/run-tests.sh --self-test` exited 0 at 635f9cc, 1833 checks.
+
+Review pass 2, 2026-10-20, after the AC1 amendment (8e6b19c). `git diff 635f9cc..HEAD -- . ':!cairn/'` is empty, so the pass-1 run is the run of this code; main unmoved.
+
+- AC1 (amended): `quarto --version` prints 1.10.19. In the 635f9cc run, M117-AC1 passed: `examples/typst-unprinted.qmd` rendered to Typst with no extension warning, its description's sentence absent before the index, and `tests/typstindex.py` matched all 23 lines of `tests/typst-unprinted.tsv`, which holds each shape AC1 names (no Halyard, Hawser or `H` group; `Bitt 2@2`; `Cleat 1@1` and no Horn; Davit over `Arm 2@2`; Fender over Rope over `Eye 2@2`; Gaff over `Jaw, see Bitt`; `Kedge, see Bitt`). Its five plants were red on their own rows.

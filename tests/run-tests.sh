@@ -33071,7 +33071,7 @@ fi
 #            in the twin; page numbers before cross-references.
 #   Typst    as HTML, with a fixed `; `.
 # ---------------------------------------------------------------------------
-section 'M116-AC1..AC5 — a term with two targets of one kind prints the word once.'
+section 'M116 — a term with two or more cross-reference targets of one kind prints'
 M116_BODY=examples/xref-joined.qmd
 M116_BREAKS=$( { grep -cxF '{{< pagebreak >}}' "$M116_BODY" || true; } | tr -d ' ')
 [ "$M116_BREAKS" = "4" ] \

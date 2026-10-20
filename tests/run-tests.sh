@@ -14944,7 +14944,7 @@ done <<< "$DANGLING_CORPUS"
 # them and the report names it; examples/book-order declares none, has one
 # namespace, and keeps the wording it has always drawn (D-021).
 [ "$BOOK_EXPECTED_TOTAL" = "3" ] \
-  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but three of the five book fixtures report one each and examples/book-lang and examples/book-xref report none"
+  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but three of the five book fixtures on the roster report one each and examples/book-lang and examples/book-xref report none"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING_INDEX" 1 "M14/M55-AC4 (corpus, examples/book)"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 0 "M14/M55-AC4 (corpus, examples/book, not the one-namespace shape)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"

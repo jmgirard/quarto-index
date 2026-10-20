@@ -33325,9 +33325,10 @@ pass "M119-AC2/AC3: in the Typst render of $M119_SRC each label of a metadata el
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M119 self-test: each check above shown red on the defect it names. Each
-  # code plant is one substitution in a fresh copy, and the plants that test
-  # AC2 take the links out of the copy so that it builds. The floor plants
-  # hand the reader a written input instead.
+  # plant on a copy is one substitution in a fresh copy of the extension or
+  # the fixture, and the plants that test AC2 take the links out of the copy
+  # so that it builds. The floor plants and the table plant hand the reader a
+  # written input instead.
   #   altid     the alt-text id move removed: the render stops, as it did
   #             before M119, on elm's id
   #   capid     `caption_moves` blind to the moved id elements: the list of

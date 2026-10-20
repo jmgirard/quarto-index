@@ -1,6 +1,6 @@
 # M119: A Typst cross-reference mark keeps one label wherever it sits
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -126,7 +126,7 @@ backlog", in part.
       `site/typst.qmd` sentence per AC4 from a render. Bring the Typst
       paragraph of `DESIGN.md`'s architecture in line on alt text. Strike
       KI325.
-- [ ] T5: Run `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` once, in
+- [x] T5: Run `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` once, in
       the background, and read its result.
 
 ## Work log
@@ -147,3 +147,5 @@ backlog", in part.
 - 2026-10-20: T4: the Typst entry in `CHANGELOG.md` and a Locators bullet in `site/typst.qmd` state the alt-text id, from the T1 render (12 links to their pages, the alt-text ids on page 6); `DESIGN.md`'s Typst architecture paragraph names the id move and the comment; KI325 struck.
 - 2026-10-20: T5 run 1 (`--self-test`): red on M24-AC3 alone, 887 ok lines before it: `m119_query` rendered without the capture helper. It now captures each copy under `m119-<dir>`.
 - 2026-10-20: claim audit: 51 claims read, 6 corrected — CHANGELOG.md (a link stopped the render unless the image sat in a float's caption), site/typst.qmd (Typst does not print alt text; Pandoc writes it as a plain string), examples/typst-xref-places.qmd (Pandoc drops a label, the links sit on the page before the index), tests/run-tests.sh (floor plants take a written input; the heading plant's label is replaced on its element).
+- 2026-10-20: claim audit re-read of the 6 corrected claims: all true; one comment widened at its note to name the link and table plants (comment only, after run 2).
+- 2026-10-20: T5 run 2 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at ec8c8c8): exit 0, "All checks passed (1859 checks)", 18 M119 ok lines. Status set to review.

@@ -15015,7 +15015,8 @@ pass "M15-AC1: the fixture that could not build now renders to PDF, with neither
 #              uncontested twin below rather than under `Cedar` alone.
 #   Maple, …   that twin: the same depth and the same shape of sort key, with
 #              no cross-reference to contest the key. One plain mark: 1.
-#   upsilon    two DIFFERENT see= targets, no plain mark, as lambda: 0.
+#   upsilon    two DIFFERENT see= targets, no plain mark, as lambda: 0. One
+#              kind, so `see` prints once in front of both (M116).
 #   Afar, …    the twelve entries the fixture's last section marks with no
 #              visible text, one per distinct target the marks above name
 #              other than `sigma`'s and `rho`'s. Each is one plain mark on one
@@ -15054,7 +15055,7 @@ read -r -d '' CONFLICT_PDF_INDEX <<'MANIFEST' || true
 1	Branch	0
 2	Cedar, Dogwood, see Afar	1
 2	Maple, Holly	1
-0	upsilon, see One Way; see Another Way	0
+0	upsilon, see One Way; Another Way	0
 MANIFEST
 
 printf '%s\n' "$CONFLICT_PDF_INDEX" > "$WORK/conflict-index.txt"
@@ -33011,6 +33012,310 @@ M115SPLICEPY
     python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-empty.tsv" "M115 self-test (lists-empty)"
 
   pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, the cells check on laid-out content wrapped in one Div, the images check on the labels joined to an image cell, the center check on a code cell's output wrapped, and the AC2 reader on a caption no list holds, a title no page prints, a caption under the wrong list and an empty manifest"
+fi
+
+# ---------------------------------------------------------------------------
+# M116 — a term with two or more cross-reference targets of one kind prints
+# that kind's word once, in front of all of them, in every back-end.
+#
+# examples/xref-joined.qmd and its twin share examples/_xref-joined-body.qmd,
+# and the twin adds only an `index-labels:` block setting `xref-separator`.
+# Every row below is derived BY HAND from that body, under the ORACLE RULE at
+# the head of this file, and never copied from a render.
+#
+# Pages, from the body's four explicit breaks: the title, the opening and
+# Quince are on page 1, Rowan on page 2, Sorrel on page 3, Tansy on page 4,
+# and the ten targets on page 5. Only Tansy has a plain mark among the four
+# subject terms, so it is the only one with a page number: 4. Every target
+# is one plain mark on page 5.
+#
+#   Quince   see Zinnia, see Aster, in that order
+#   Rowan    see also Yarrow, see also Bramble
+#   Sorrel   see also Moss, see Zed, see also Fern, see Ash: see before see
+#            also, and inside a kind the order of the marks
+#   Tansy    a plain mark, see Wort, see Clover
+#
+# Inside each kind the written order is the reverse of alphabetical order, so
+# an index that sorted the targets prints another line than the rows below,
+# and Sorrel's first mark is a see-also, so an index that put the kind of the
+# first mark first does too. The words and their punctuation:
+#   LaTeX    `\see`/`\seealso` print `see`/`see also`, and the targets of one
+#            kind are joined by `; `. A contested entry prints its
+#            cross-references before its page numbers (Tansy).
+#   HTML     the word in front of the first target of a kind only; between
+#   EPUB     two cross-references `xref-separator`, `;` by default and U+061B
+#            in the twin; page numbers before cross-references.
+#   Typst    as HTML, with a fixed `; `.
+# ---------------------------------------------------------------------------
+section 'M116-AC1..AC5 — a term with two targets of one kind prints the word once.'
+M116_BODY=examples/_xref-joined-body.qmd
+M116_BREAKS=$( { grep -cxF '{{< pagebreak >}}' "$M116_BODY" || true; } | tr -d ' ')
+[ "$M116_BREAKS" = "4" ] \
+  || fail "M116-AC1: $M116_BODY carries $M116_BREAKS page breaks, not the four its rows number pages by"
+for needle in '[Quince]{.index see="Zinnia"} and' '[Quince]{.index see="Aster"}.' \
+    '[Rowan]{.index see-also="Yarrow"} and' '[Rowan]{.index see-also="Bramble"}.' \
+    '[Sorrel]{.index see-also="Moss"}, [Sorrel]{.index see="Zed"},' \
+    '[Sorrel]{.index see-also="Fern"} and [Sorrel]{.index see="Ash"}.' \
+    'A term marked plainly, [Tansy]{.index}, and pointing two places:' \
+    '[Tansy]{.index see="Wort"} and [Tansy]{.index see="Clover"}.'; do
+  grep -qF -- "$needle" "$M116_BODY" \
+    || fail "M116-AC1: $M116_BODY no longer carries <<$needle>>, so the case the rows below state is no longer rendered"
+done
+for f in examples/xref-joined.qmd examples/xref-joined-separator.qmd; do
+  grep -qxF '{{< include _xref-joined-body.qmd >}}' "$f" \
+    || fail "M116-AC1: $f does not include $M116_BODY, so the rows below do not describe it"
+done
+derive_labels_twin examples/xref-joined-separator.qmd examples/xref-joined.qmd \
+  1 "M116-AC3 (derivation)" "xref-separator" \
+  || fail "M116-AC3: examples/xref-joined.qmd is not examples/xref-joined-separator.qmd with its \`index-labels:\` block removed (its own FAIL line is above)"
+
+for fmt in pdf html epub typst; do
+  quarto render examples/xref-joined.qmd --to $fmt > "$WORK/xref-joined-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/xref-joined-$fmt.log" >&2; fail "M116: examples/xref-joined.qmd failed to render to $fmt"; }
+  capture examples/xref-joined.qmd $fmt "xref-joined-$fmt"
+done
+for fmt in html epub; do
+  quarto render examples/xref-joined-separator.qmd --to $fmt \
+      > "$WORK/xref-joined-separator-$fmt.log" 2>&1 \
+    || { tail -20 "$WORK/xref-joined-separator-$fmt.log" >&2; fail "M116: examples/xref-joined-separator.qmd failed to render to $fmt"; }
+  capture examples/xref-joined-separator.qmd $fmt "xref-joined-separator-$fmt"
+done
+
+# AC1. Each printed line whole, in printed order. The fixture writes no
+# sub-entry, so a line `tests/pdfindex.py` reads below the top level is the
+# rest of the line above it, which a two-column index wraps; it is joined
+# back with one space, and a row naming a deeper level would be a defect
+# here, which the comparison then reports.
+read -r -d '' M116_PDF <<'MANIFEST' || true
+Ash, 5
+Aster, 5
+Bramble, 5
+Clover, 5
+Fern, 5
+Moss, 5
+Quince, see Zinnia; Aster
+Rowan, see also Yarrow; Bramble
+Sorrel, see Zed; Ash; see also Moss; Fern
+Tansy, see Wort; Clover, 4
+Wort, 5
+Yarrow, 5
+Zed, 5
+Zinnia, 5
+MANIFEST
+printf '%s\n' "$M116_PDF" > "$WORK/m116-pdf.txt"
+m116_pdf_check() {   # <pdf> <manifest> <label>
+  python3 - "$1" "$2" "$3" <<'M116PDFPY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, manifest_path, label = sys.argv[1:4]
+want = [l.rstrip('\n') for l in open(manifest_path, encoding='utf-8')
+        if l.strip()]
+if not want:
+    print(f'FAIL: {label}: the manifest {manifest_path} has no rows',
+          file=sys.stderr)
+    sys.exit(1)
+got = []
+for entry in pdfindex.read(pdf_path):
+    if entry.level > 0 and got:
+        got[-1] += ' ' + entry.text
+    else:
+        got.append(entry.text)
+if got != want:
+    print(f'FAIL: {label}: the printed index does not match the manifest',
+          file=sys.stderr)
+    for i in range(max(len(got), len(want))):
+        g = got[i] if i < len(got) else '<no such line printed>'
+        w = want[i] if i < len(want) else '<not in the manifest>'
+        if g != w:
+            print(f'  line {i + 1}:\n    expected <<{w}>>\n    got      <<{g}>>',
+                  file=sys.stderr)
+    sys.exit(1)
+print(f'ok   {label}: the printed index matches all {len(want)} lines, in order')
+M116PDFPY
+}
+m116_pdf_check "$CAPTURE_ROOT/xref-joined-pdf/xref-joined.pdf" "$WORK/m116-pdf.txt" \
+    "M116-AC1 (PDF)" \
+  || fail "M116-AC1: the PDF index of examples/xref-joined.qmd does not print each kind's word once (the report is above)"
+
+# AC2. Each contested term draws one report, whose count is that term's:
+# Quince and Rowan carry two different cross-references and no plain mark,
+# Sorrel four and no plain mark, and Tansy a plain mark and two. Each message
+# is pinned whole, so a count, a "both" or an "a cross-reference" that does
+# not hold for its term is a mismatch here.
+M116_TAIL='so check that is the entry you meant'
+M116_LOG="$WORK/xref-joined-pdf.log"
+check_extension_warning_count "$M116_LOG" 4 "M116-AC2 (examples/xref-joined.qmd: one report per contested term)"
+check_warning_count "$M116_LOG" "$M116_TAIL" 4 "M116-AC2"
+for m116_term in Quince Rowan; do
+  check_warning_count "$M116_LOG" "index entry $m116_term carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, $M116_TAIL" 1 "M116-AC2 ($m116_term)"
+done
+check_warning_count "$M116_LOG" "index entry Sorrel carries 4 different cross-references; they are printed as one entry carrying all 4 targets and, since no mark contributes one, no page numbers at all, $M116_TAIL" 1 "M116-AC2 (Sorrel)"
+check_warning_count "$M116_LOG" "index entry Tansy carries a plain locator and 2 different cross-references; they are printed as one entry with its page numbers and its cross-references together, $M116_TAIL" 1 "M116-AC2 (Tansy)"
+pass "M116-AC2: the LaTeX render reports each of the four contested terms once, each report counting that term's own cross-references"
+
+# AC3. The HTML index, each cross-reference's word in its field: the word a
+# kind's first target carries, and none on a later target of that kind.
+read -r -d '' M116_HTML <<'MANIFEST' || true
+letter	A
+0	Ash	1
+0	Aster	1
+letter	B
+0	Bramble	1
+letter	C
+0	Clover	1
+letter	F
+0	Fern	1
+letter	M
+0	Moss	1
+letter	Q
+0	Quince	0	see-link see Zinnia	see-link Aster
+letter	R
+0	Rowan	0	also-link see also Yarrow	also-link Bramble
+letter	S
+0	Sorrel	0	see-link see Zed	see-link Ash	also-link see also Moss	also-link Fern
+letter	T
+0	Tansy	1	see-link see Wort	see-link Clover
+letter	W
+0	Wort	1
+letter	Y
+0	Yarrow	1
+letter	Z
+0	Zed	1
+0	Zinnia	1
+MANIFEST
+check_html_index_manifest "$CAPTURE_ROOT/xref-joined-html/xref-joined.html" \
+  "$M116_HTML" "M116-AC3 (HTML)" count labels
+{ printf 'section\t%s\th1\tIndex\n' "$HTML_SECTION_ID"
+  printf '%s\n' "$M116_HTML"; } > "$WORK/m116-epub.txt"
+python3 tests/epubcheck.py sections "$CAPTURE_ROOT/xref-joined-epub/xref-joined.epub" \
+    "$HTML_SECTION_ID" "$WORK/m116-epub.txt" "$HTML_SECTION_ID" --labels \
+  || fail "M116-AC3: the EPUB index of examples/xref-joined.qmd does not print each kind's word once (its own FAIL line is above)"
+python3 tests/epubcheck.py links "$CAPTURE_ROOT/xref-joined-epub/xref-joined.epub" \
+    "$HTML_SECTION_ID" \
+  || fail "M116-AC3: a link inside the EPUB index of examples/xref-joined.qmd names nothing in the publication (its own FAIL line is above)"
+
+# The punctuation between two targets of one kind is the punctuation between
+# two cross-references (S5): `;` in the fixture, U+061B in the twin, with the
+# term's own comma (S1, S3, S4) the same in both.
+m116_separators() {   # <S5 code point>
+  printf 'section\t%s\n' "$HTML_SECTION_ID"
+  for t in Ash Aster Bramble Clover Fern Moss; do printf '0\t%s\tS1=U+002C\n' "$t"; done
+  printf '0\tQuince\tS4=U+002C\tS5=%s\n' "$1"
+  printf '0\tRowan\tS4=U+002C\tS5=%s\n' "$1"
+  printf '0\tSorrel\tS4=U+002C\tS5=%s\tS5=%s\tS5=%s\n' "$1" "$1" "$1"
+  printf '0\tTansy\tS1=U+002C\tS3=U+002C\tS5=%s\n' "$1"
+  for t in Wort Yarrow Zed Zinnia; do printf '0\t%s\tS1=U+002C\n' "$t"; done
+}
+m116_separators U+003B > "$WORK/m116-sep-default.txt"
+m116_separators U+061B > "$WORK/m116-sep-set.txt"
+python3 tests/sepcheck.py html "$CAPTURE_ROOT/xref-joined-html/xref-joined.html" \
+    "$HTML_SECTION_ID" "$WORK/m116-sep-default.txt" "M116-AC3 (HTML, default)" \
+  || fail "M116-AC3: the HTML index of examples/xref-joined.qmd does not put a semicolon between two targets of one kind (the report is above)"
+python3 tests/sepcheck.py html \
+    "$CAPTURE_ROOT/xref-joined-separator-html/xref-joined-separator.html" \
+    "$HTML_SECTION_ID" "$WORK/m116-sep-set.txt" "M116-AC3 (HTML, xref-separator set)" \
+  || fail "M116-AC3: the HTML index of examples/xref-joined-separator.qmd does not put the declared mark between two targets of one kind (the report is above)"
+python3 tests/sepcheck.py epub \
+    "$CAPTURE_ROOT/xref-joined-separator-epub/xref-joined-separator.epub" \
+    "$HTML_SECTION_ID" "$WORK/m116-sep-set.txt" "M116-AC3 (EPUB, xref-separator set)" \
+  || fail "M116-AC3: the EPUB index of examples/xref-joined-separator.qmd does not put the declared mark between two targets of one kind (the report is above)"
+
+# eta in examples/html-index.qmd: two `see` targets that print alike, only the
+# first naming an entry, so only the first is a link. The rendering is the one
+# M03-AC4 above captured.
+HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$CAPTURE_ROOT/html-index/html-index.html" <<'M116ETAPY' \
+  || fail "M116-AC3: eta in examples/html-index.qmd does not print see once in front of its two targets (the report is above)"
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+doc = H.parse(sys.argv[1])
+rows = [H.row(r, labels=True) for r in H.index_entries(H.find_id(doc, os.environ['HTML_SECTION_ID']))
+        if r['kind'] == 'entry' and r['term'] == 'eta']
+want = ['0\teta\t0\tsee-link see A: B\tsee-plain A: B']
+if rows != want:
+    print(f'FAIL: M116-AC3 (eta): expected {want!r}, got {rows!r}', file=sys.stderr)
+    sys.exit(1)
+print('ok   M116-AC3 (eta): see once, a linked target then a plain one')
+M116ETAPY
+pass "M116-AC3: the HTML and EPUB indexes print each kind's word once, see before see also, a link per target, and the cross-reference punctuation between two targets of one kind"
+
+# AC4. examples/book-xref: Hazel points at Yew in the first chapter and at
+# Alder in the second, which holds the marker, so the book index is in the
+# second chapter's page. Each target is one mark in its own chapter. The anchor
+# counter counts every minted anchor down one chapter in document order, the
+# cross-reference mark included, so in each chapter Hazel's mark mints
+# `qi-mark-1` and the target's mark `qi-mark-2`.
+BOOK_XREF_DIR="examples/book-xref"
+rm -rf "$BOOK_XREF_DIR/_book" "$BOOK_XREF_DIR/.quarto"
+( cd "$BOOK_XREF_DIR" && quarto render --to html ) > "$WORK/book-xref.log" 2>&1 \
+  || { tail -30 "$WORK/book-xref.log" >&2; fail "M116-AC4: examples/book-xref failed to render to HTML"; }
+capture --project "$BOOK_XREF_DIR" html "book-xref"
+read -r -d '' M116_BOOK <<'MANIFEST' || true
+letter	A
+0	Alder	two.html#qi-mark-2
+letter	H
+0	Hazel		see-link see Yew	see-link Alder
+letter	Y
+0	Yew	index.html#qi-mark-2
+MANIFEST
+check_html_index_manifest "$CAPTURE_ROOT/book-xref/_book/two.html" \
+  "$M116_BOOK" "M116-AC4 (HTML book)" hrefs labels
+pass "M116-AC4: an HTML book whose two chapters each give a term a see target prints see once, the earlier chapter's target first"
+
+# AC5. The Typst index, read with its face and links (`typstindex.py`'s own
+# row shape: a reference is word|target, and the targets after the first of a
+# kind are joined to it by `; `).
+printf '%s\n' $'group\tA' $'entry\t0\tAsh\t5@5' $'entry\t0\tAster\t5@5' \
+  $'group\tB' $'entry\t0\tBramble\t5@5' $'group\tC' $'entry\t0\tClover\t5@5' \
+  $'group\tF' $'entry\t0\tFern\t5@5' $'group\tM' $'entry\t0\tMoss\t5@5' \
+  $'group\tQ' $'entry\t0\tQuince\t\tsee|Zinnia; Aster' \
+  $'group\tR' $'entry\t0\tRowan\t\tsee also|Yarrow; Bramble' \
+  $'group\tS' $'entry\t0\tSorrel\t\tsee|Zed; Ash; see also|Moss; Fern' \
+  $'group\tT' $'entry\t0\tTansy\t4@4\tsee|Wort; Clover' \
+  $'group\tW' $'entry\t0\tWort\t5@5' $'group\tY' $'entry\t0\tYarrow\t5@5' \
+  $'group\tZ' $'entry\t0\tZed\t5@5' $'entry\t0\tZinnia\t5@5' > "$WORK/m116-typst.tsv"
+python3 tests/typstindex.py "$CAPTURE_ROOT/xref-joined-typst/xref-joined.pdf" \
+    "$WORK/m116-typst.tsv" "M116-AC5 (Typst)" "Index" \
+  || fail "M116-AC5: the Typst index of examples/xref-joined.qmd does not print each kind's word once (the report is above)"
+python3 tests/typstindex.py pages "$CAPTURE_ROOT/xref-joined-typst/xref-joined.pdf" \
+    "$WORK/m116-typst.tsv" "M116-AC5 (Typst, the version matrix's reading)" "Index" \
+  || fail "M116-AC5: pdfindex's reading of the Typst index of examples/xref-joined.qmd does not match the manifest (the report is above)"
+pass "M116-AC1/AC5: the PDF and Typst indexes print each kind's word once, see before see also, the targets of a kind in the order of their marks"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # The HTML reader refuses a kind's first target with no word and a later
+  # target of that kind with one, so a back-end that dropped every word, or
+  # repeated it, is red at the parse rather than green under a manifest that
+  # does not state the words.
+  M116W="$WORK/m116-selftest"
+  rm -rf "$M116W"; mkdir -p "$M116W"
+  M116_SRC="$CAPTURE_ROOT/xref-joined-html/xref-joined.html"
+  perl -0pe 's{(<span class="qi-xref qi-see">)<em>see</em>\s*}{$1}' "$M116_SRC" > "$M116W/noword.html"
+  perl -0pe 's{(<span class="qi-xref qi-see">)(<span class="qi-target")}{$1<em>see</em> $2}' "$M116_SRC" > "$M116W/twoword.html"
+  for planted in noword twoword; do
+    cmp -s "$M116_SRC" "$M116W/$planted.html" \
+      && fail "M116 self-test ($planted): the plant left the page unchanged"
+    out=$(HTML_SECTION_ID="$HTML_SECTION_ID" python3 - "$M116W/$planted.html" <<'M116PLANTPY' 2>&1
+import os, sys
+sys.path.insert(0, 'tests')
+import htmlindex as H
+H.index_entries(H.find_id(H.parse(sys.argv[1]), os.environ['HTML_SECTION_ID']))
+M116PLANTPY
+) && fail "M116 self-test ($planted): the HTML reader read a page whose cross-reference words are planted wrong"
+    case "$out" in
+      *"label word"*) ;;
+      *) fail "M116 self-test ($planted): the HTML reader failed on the plant, but not on its label word: <<$out>>" ;;
+    esac
+  done
+  # The wrapped-line join in m116_pdf_check: a manifest stating Sorrel's line
+  # in another order is red against the same PDF.
+  sed 's/^Sorrel, .*/Sorrel, see Ash; Zed; see also Fern; Moss/' "$WORK/m116-pdf.txt" > "$M116W/pdf-sorted.txt"
+  if m116_pdf_check "$CAPTURE_ROOT/xref-joined-pdf/xref-joined.pdf" "$M116W/pdf-sorted.txt" \
+      "M116 self-test (pdf-sorted)" 2>/dev/null; then
+    fail "M116 self-test (pdf-sorted): the PDF check passed a manifest with Sorrel's targets sorted"
+  fi
+  pass "M116 self-test: the HTML reader refuses a kind's first target with no word and a later target with one, and the PDF check is red on Sorrel's targets sorted"
 fi
 
 # ---------------------------------------------------------------------------

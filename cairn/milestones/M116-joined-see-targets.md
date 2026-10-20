@@ -1,13 +1,13 @@
 # M116: One see-word for each kind of cross-reference
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP1, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — the text each back-end prints for an index entry's cross-references
-- **Branch/PR:** —
+- **Branch/PR:** m116-joined-see-targets
 
 ## Goal
 
@@ -63,7 +63,7 @@ holds a floor run of the whole suite.
 
 ## Tasks
 
-- [ ] T1: Write `examples/xref-joined.qmd` with the terms of AC1, one subject term per page so each page number is known, every target marked as an entry, and its manifests for the PDF, HTML, EPUB and Typst readers, each row derived from the typesetting fact and not from a render. Add the `xref-separator` render AC3 names, by a twin document or by metadata. Add the cross-chapter `see` pair to a book fixture whose other rows it leaves alone, or to a new small book. Add the suite sections and change the `upsilon` and `eta` rows (`tests/run-tests.sh:15057`, `:2779`, `:2842`). See each new row red on today's code, each failure named.
+- [x] T1: Write `examples/xref-joined.qmd` with the terms of AC1, one subject term per page so each page number is known, every target marked as an entry, and its manifests for the PDF, HTML, EPUB and Typst readers, each row derived from the typesetting fact and not from a render. Add the `xref-separator` render AC3 names, by a twin document or by metadata. Add the cross-chapter `see` pair to a book fixture whose other rows it leaves alone, or to a new small book. Add the suite sections and change the `upsilon` and `eta` rows (`tests/run-tests.sh:15057`, `:2779`, `:2842`). See each new row red on today's code, each failure named.
 - [ ] T2: LaTeX: in `fold_xrefs`, put a kind's targets inside one `\see{...}{}` or `\seealso{...}{}` joined by `; `, which covers the contested key with a plain mark (printed text) and without one (`quartoindexxrefs`). Leave `mark_encap` and the `quartoindexseeboth` definition alone. Reword the two contested-key warnings (`_extensions/index/index.lua:315`, `:320`) so their count holds for the fixture's terms, pin each whole in the suite, and re-read every comment and message that names the target list (`core.lua:57-67`, `latex.lua`). Update the exact pins this changes and say which in the work log.
 - [ ] T3: HTML and EPUB: group the targets by kind before the line is built, and write the kind's `Emph` word only in the first `qi-xref` span of each kind, with `xref-separator` between targets. The HTML book path reaches the same builder through `book_marks` (`book.lua:1349`); check that the chapter order holds there. `tests/htmlindex.py` raises on a `qi-xref` span without one word (`htmlindex.py:728-732`): accept a word-less span only after a span of the same kind, and assert one word on each kind's first span. Make the rows for the new terms read the word, which `row()` skips unless `labels` is on.
 - [ ] T4: Typst: one item per kind in `entry_lines`, the kind's word once and its targets joined by `; `; the `typstindex.py` manifest row then reads `see|Zed; Ash; see also|Moss; Fern`. If the new fixture joins the `tests/typstcheck.py source` sweep, which derives one reference per target (`typstcheck.py:319-322`), derive one reference per kind with its targets joined by `; `; otherwise leave it out.
@@ -83,6 +83,8 @@ holds a floor run of the whole suite.
 - 2026-10-19: lessons harvested: M38 (re-read messages naming the set), M073 (no edit to `tests/run-tests.sh` mid-run), check-design M10 and M11 (quantify over every entry, keep untouched shapes in the fixture), M30 (fill an expected extraction from the typesetting fact).
 - 2026-10-19: criteria audit (full mode, fresh Opus reader) returned 11 findings, all fixed: targets named against alphabetical order (AC1, AC4) and the order plants in T6; a term whose first mark is a `see-also` (AC1, AC3); AC2 rewritten to bound both contested-key warnings' counts; the `htmlindex.py` word-less span (T3); the `xref-separator` render given a task (T1); every target marked as an entry (AC1); `eta`'s new output stated (AC3); Typst page-number position stated (AC5); T4 aimed at `typstcheck.py source`'s per-target derivation; AC6 bound to the base commit's rows. Its finding that suite-green is an instrument promise was answered by keeping it as AC7, the template's verify-slot criterion, split from AC6.
 - 2026-10-19: eight criteria, one over the split tripwire's seven; kept as one milestone because AC7 is the template's verify gate and the four back-ends share one fixture and one change.
+- 2026-10-19: implement started on branch m116-joined-see-targets.
+- 2026-10-19: T1: fixture `examples/xref-joined.qmd` and twin `examples/xref-joined-separator.qmd` share `examples/_xref-joined-body.qmd` (terms Quince, Rowan, Sorrel, Tansy; the twin is checked by `derive_labels_twin`); new book `examples/book-xref/` (Hazel: Yew in chapter 1, Alder in chapter 2); suite section M116 before M075 with PDF, HTML, EPUB, separator, book and Typst rows and a self-test; `upsilon` PDF row now `see One Way; Another Way`. Implementation choice: the PDF check joins a line read below the top level to the line above, since the fixture writes no sub-entry and the two-column index wraps long lines. Red on today's code, checked in scratch: the PDF check fails on Quince, Rowan, Sorrel and Tansy printing the word once per target, and today's Typst rows read `see|Zinnia; see|Aster`. The `eta` HTML row with labels off is unchanged in text.
 
 ## Decisions
 

@@ -1,0 +1,42 @@
+Every subject term below is marked only where its own section says, and each
+section is a page of its own, so the one page number this fixture prints for a
+subject term is the page its plain mark is on. Inside each kind of
+cross-reference the targets are written in the reverse of alphabetical order,
+so an index that sorted them would print them in another order than the one
+written here.
+
+## Two see targets
+
+A term that points two places: [Quince]{.index see="Zinnia"} and
+[Quince]{.index see="Aster"}.
+
+{{< pagebreak >}}
+
+## Two see-also targets
+
+A term with two further places to look: [Rowan]{.index see-also="Yarrow"} and
+[Rowan]{.index see-also="Bramble"}.
+
+{{< pagebreak >}}
+
+## Four targets of two kinds
+
+A term whose first mark is a see-also, and whose two kinds alternate:
+[Sorrel]{.index see-also="Moss"}, [Sorrel]{.index see="Zed"},
+[Sorrel]{.index see-also="Fern"} and [Sorrel]{.index see="Ash"}.
+
+{{< pagebreak >}}
+
+## A plain mark and two see targets
+
+A term marked plainly, [Tansy]{.index}, and pointing two places:
+[Tansy]{.index see="Wort"} and [Tansy]{.index see="Clover"}.
+
+{{< pagebreak >}}
+
+## The targets
+
+Every target above is a term of its own, marked here so each cross-reference
+names an entry the index prints: [Zinnia]{.index}, [Aster]{.index},
+[Yarrow]{.index}, [Bramble]{.index}, [Moss]{.index}, [Zed]{.index},
+[Fern]{.index}, [Ash]{.index}, [Wort]{.index} and [Clover]{.index}.

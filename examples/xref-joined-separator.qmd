@@ -1,0 +1,14 @@
+---
+title: "Two targets of one kind"
+index-labels:
+  xref-separator: "؛"
+filters:
+  - index
+---
+
+A term with two or more cross-reference targets of one kind prints that kind's
+word once, in front of all of them. This document and its twin,
+`xref-joined-separator.qmd`, share one body and differ only in whether the
+metadata declares the punctuation between two cross-references.
+
+{{< include _xref-joined-body.qmd >}}

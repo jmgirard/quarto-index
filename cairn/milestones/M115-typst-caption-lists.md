@@ -115,6 +115,7 @@ float caption marks".
 - 2026-10-19: T9: `examples/typst-caption-layout.qmd` gained a second laid-out figure, two image cells at `width=80%`, marking linden on page 2 (manifest `linden 2@2`); on the T8 code its images printed at 0.274 and 72 ppi. `float_labels` now returns early for content of several blocks, so it keeps its caption labels; the images print at 72 ppi each and the cells still share a line. A one-cell layout float and a plain figure with widths printed at one size with a mark or without (probe).
 - 2026-10-19: T9 suite: `m115_images_check` reads page 2's image resolutions with `pdfimages -list`; the `cells` plant now wraps several blocks in one Div, a new `images` plant restores T8's join, and four `lists-*` plants run `tests/typstlists.py` on a planted manifest (a caption no list holds, a title no page prints, a caption under the wrong list, no rows); each was red by hand on its named message. Docs: `site/typst.qmd` and `CHANGELOG.md` say a float whose content is several blocks still files the list's page; DESIGN.md's Typst paragraph and KI290 rewritten; the stage comments name tables and listings. Pass-3 dispositions settled without a change: blame-history #5, the layout check on the pin, stays on every Quarto, since its subject is the extension leaving Quarto's layout alone, which the fixture's two-version comparison does not need; ripple #3, the no-id figure case, is named on the Typst page and in KI290, not in the changelog, since Markdown does not make it.
 - 2026-10-19: T9 done: dispatched `versions.yml` run 39344727546 at 7aceb61 green on every job (caption-lists render and index reading on all three legs, lists reading on the pinned leg); suite run 7 at 7aceb61 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1806, 10 skip lines, M115-AC2 among them; the eleven M115 self-test plants each red on its named failure. Status review.
+- 2026-10-19: review return 4: diff-bug #1 (pass 4) — the Div wrapper around a float whose one block is a computation cell's output Div (knitr `kable`, Jupyter's labelled figure shape) stops Quarto unwrapping the cell, and the float prints flush left instead of centered, index right. The thrash rule's trigger (a) still holds, and (b) again: the fourth change to a float's content that changed Quarto's layout. No retry queued; the disposition is the user's, at the chip. Every probed one-block float other than cell output (images with widths, tables with column widths, listings, callouts, column and margin divs, cross-references) printed pixel-identical to main.
 
 ## Decisions
 
@@ -234,3 +235,27 @@ Pass 4, after review return 3 and the narrowing. Evidence base: HEAD 1ae0eca, tr
 - AC6 (pass 4): `site/typst.qmd` keeps the caption sentences and the `List of Figures` call, and its exceptions now name a float whose content is several blocks and a figure with no id whose content does not start with text or an image; suite run 7 `ok M115-AC6`, plant `lof` red; `CHANGELOG.md` ends the bullet "A mark in the caption of a float laid out in cells, such as a grid of subfigures, still files the list's page."
 - Consistency gate (pass 4): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
 - spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1 (pass 4): a float whose one block is a computation cell's output Div (a knitr `kable` with `tbl-cap`, and the Div shape Jupyter writes for a labelled figure) is wrapped, and Quarto then no longer unwraps the cell, so the float prints flush left instead of centered (caption x 245 to 91 pt), index right — floor (IP2, silent layout change): review return 4; disposition at the user's chip
+- diff-bug #2 (pass 4): the wrapper comment and DESIGN.md say it leaves the page as it was — fix in the next round
+- diff-bug #3 (pass 4): no fixture holds a computation cell's output — fix in the next round
+- diff-bug #4 (pass 4): `m115_images_check` compares the two images only with each other, so a change to both stays green — fix in the next round (hold each to the 72 ppi main prints)
+- diff-bug #5 (pass 4): a 1x1 image tells a dropped width from a kept one, not two kept widths — reject, false as a defect for what the check claims: it claims Quarto's drop of a cell image's width is kept
+- blame-history #1 (pass 4): an author's id in a several-block float's caption is not moved, so a link to it still fails to compile under a list, while `site/typst.qmd` says such a link builds — fix in the next round (docs and KI290; the id cannot move without touching that content)
+- blame-history #2 (pass 4): the CHANGELOG names only floats laid out in cells — fix in the next round
+- blame-history #3 (pass 4): KI318 and the breakable sentences are unscoped — fix in the next round
+- blame-history #4 (pass 4): AC6's wording against several-block figure divs — reject, false: AC6 names the shapes the fixture holds, each one block, and says "when the float does not break"; the exceptions are documented beside it
+- blame-history #5 (pass 4): no fixture shows the several-block list case red — reject, planned: it is the known issue KI290 records, and the layout fixture holds its layout
+- blame-history #6 (pass 4): `pdfimages` has no presence guard — fix in the next round (name the missing tool)
+- blame-history #7 (pass 4): an image-only Para gains the labels — reject, false: diff-bug pass 4 printed one-image figures with and without width, height and alignment pixel-identical to main
+- blame-history #8 (pass 4): a broken reflow in the stage's header comment — fix in the next round
+- prior-review #1 (pass 4): KI318 and its sentences unscoped — same as blame-history #3
+- prior-review #2 (pass 4): the CHANGELOG exception — same as blame-history #2
+- prior-review #3 (pass 4): DESIGN.md's reason covers only laid-out cells — fix in the next round
+- prior-review #4 (pass 4): the `lists-*` plants run off the pin — reject, false as a defect: they test the reader, not Quarto's kinds, and the reader runs on any Quarto
+- ripple #1, #3, #4, #9 (pass 4): unscoped statements of the move (KI318, `versions.yml`, `site/typst.qmd`, DESIGN.md, `index.lua`) — fix in the next round
+- ripple #2 (pass 4): `versions.yml` comments — same as ripple #1
+- ripple #5 (pass 4): the open candidate row's wording — reject, planned: it graduates at hygiene
+- ripple #6 (pass 4): "which Markdown does not make" against "which no fixture holds" — reject, false: both are true and not in conflict
+- ripple #7 (pass 4): the candidate row equates several blocks with layout cells — fix in the next round
+- ripple #8 (pass 4): CHANGELOG against "several blocks" — same as blame-history #2
+- ripple #10 (pass 4): reflow and a long line — fix in the next round

@@ -1,6 +1,6 @@
 # M122: Merged-entry reports are checked where they name their index
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -106,6 +106,8 @@ acceptance-suite backlog".
 - 2026-10-20: resumed for review return 1; added T5 for it (minor amendment, Coverage updated). Its code landed in 1fff89b; T5 waits on run 7.
 - 2026-10-20: run 7 (alone, on 1fff89b; later commits touch only `cairn/` milestone and ROADMAP files) passed `--self-test`: exit 0, "All checks passed (1884 checks)", no FAIL line; the new trailing-text and missing-log plants red as expected. T5 done; status review.
 - 2026-10-20: review pass 2: AC1 failed a second time by a new mechanism of the same shape. Return 1 left text after a report unheld; pass 2 shows text before "index entry" and after a bare `\r` unheld. The check holds a span of each line, not the line. Repeated review-failure stop; the plan gate recorded no alternative for the check's approach, so the escalation offer stands beside the recommendation.
+- 2026-10-20: user chose "Hold whole lines" at the stop (escalation and pause declined).
+- 2026-10-20: review return 2: AC1 — the check holds the span from "index entry" to the line's end, so text before a report, or after a bare `\r`, passes; repair: hold each whole line, `(W) ` prefix included, the log split on `\n` only, no ANSI strip, with the pass-2 fixes listed in the Review section.
 
 ## Decisions
 

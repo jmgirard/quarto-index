@@ -4222,10 +4222,12 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Sixty-seven marks are hand-derived here from examples/id-collision.qmd,
+# Sixty-nine marks are hand-derived here from examples/id-collision.qmd,
 # never read back out of the render: an expectation taken from the artifact is
 # blind in the dimension it is taken from. Twenty-two are M079's, twenty
-# M080's, twelve M081's, twelve M082's and one M084's.
+# M080's, twelve M081's, twelve M082's, one M084's and two M121's. M121's two
+# are cross-reference marks printing one term, `iota`, each written with a name
+# a div also carries, so both yield and the term's spans carry two anchors.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4329,8 +4331,13 @@ KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
 # and a locator mark written with one name. The locator mark keeps it whichever
 # is written first — here the cross-reference is first and yields anyway — so
 # `chi` is in KEPT below and the order is not what settles this pair.
-CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading',
-                  'phi': 'twin-xref'}
+# Each term maps to the ids its marks were written with, one per mark, so the
+# length of the list is the number of minted anchors the term's spans must
+# carry. `iota` is printed by two marks, each written with a name a div of the
+# author's also carries, so both yield and the term has two (M121 T1).
+CONTESTED_XREF = {'rho': ('xref-dup',), 'sigma': ('xref-raw',),
+                  'tau': ('xref-heading',), 'phi': ('twin-xref',),
+                  'iota': ('xref-pair-one', 'xref-pair-two')}
 KEPT_XREF = {'upsilon': 'xref-solo'}
 # The four shapes the census used to read a raw HTML string wrongly (M080).
 # Seven elements' text content is text and not markup — `script`, `style`,
@@ -4422,8 +4429,15 @@ UNTAGGED = {'untagged-in-heading'}
 # span rather than off the mark's own, which is what the criterion promises for
 # this shape — checked below rather than exempted (M079 T14).
 RELOCATED = {'tau', 'after-textarea'}
-REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW,
-               **CONTESTED_COMMENT, **CONTESTED_UNRENDERED)
+# The marks that file a locator, term to the one id each gave up, and then
+# every yield as a (term, id) pair: one per mark, so a term two marks print is
+# two yields and two reports.
+REFUSED_LOCATOR = dict(CONTESTED, **CONTESTED_RAW, **CONTESTED_COMMENT,
+                       **CONTESTED_UNRENDERED)
+YIELDS = sorted(list(REFUSED_LOCATOR.items())
+                + [(term, wrote) for term, ids in CONTESTED_XREF.items()
+                   for wrote in ids])
+REFUSED = {term for term, _ in YIELDS}
 KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT,
                 **KEPT_UNRENDERED)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
@@ -4432,10 +4446,10 @@ NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
 # is stated as well as swept — a reader that found no id at all would report no
 # duplicate exactly as a correct page does.
 ids = H.all_ids(doc)
-if len(ids) < len(REFUSED) + len(KEPT_ALL):
+if len(ids) < len(YIELDS) + len(KEPT_ALL):
     errs.append('the page carries %d id(s) in all, fewer than the %d this '
                 'fixture writes by hand, so this sweep read something other '
-                'than the rendered probe' % (len(ids), len(REFUSED) + len(KEPT_ALL)))
+                'than the rendered probe' % (len(ids), len(YIELDS) + len(KEPT_ALL)))
 dupes = sorted({name for name in ids if ids.count(name) > 1})
 if dupes:
     errs.append('ids carried by more than one element: %s' % ', '.join(dupes))
@@ -4444,7 +4458,8 @@ if dupes:
 # and each uncontested one on its own mark. Counted at one either way: a name
 # gone from the page altogether would be a link to nowhere, and is no more
 # acceptable than a name on two elements.
-for name in sorted(set(REFUSED.values()) | set(KEPT_ALL.values()) | UNTAGGED):
+for name in sorted({wrote for _, wrote in YIELDS} | set(KEPT_ALL.values())
+                   | UNTAGGED):
     n = H.count_id(doc, name)
     if n != 1:
         errs.append('the author-written id %r is on %d element(s), want 1'
@@ -4478,7 +4493,7 @@ else:
     seen = {}
     for record in H.entry_records(section):
         seen[record['term']] = record['locators']
-    for term in sorted(set(REFUSED) | set(KEPT_ALL)):
+    for term in sorted(REFUSED | set(KEPT_ALL)):
         hrefs = seen.get(term)
         if hrefs is None:
             errs.append('the index has no entry for the term %r' % term)
@@ -4507,7 +4522,7 @@ else:
                 errs.append('the locator for %r names %r; its author wrote '
                             '%r and nothing contests it' % (term, got, KEPT_ALL[term]))
             continue
-        if got == REFUSED[term]:
+        if got == REFUSED_LOCATOR[term]:
             errs.append('the locator for %r still names %r, the contested id'
                         % (term, got))
         elif not got.startswith(prefix):
@@ -4546,23 +4561,25 @@ else:
 # printing one string are two entries here and not one. Grouped by the printed
 # string, and the group read whole — a term whose marks carry two minted
 # anchors is two destinations for one name, which a first-wins map reported as
-# one and this counts as the two it is (M084 T1). No rendered case reaches a
-# group of two: on the fixture the group for each term read here holds one
-# anchor, so no plant holds this clause either (KI274; M090 T5).
+# one and this counts as the two it is (M084 T1). Each group is held to the
+# number of marks CONTESTED_XREF lists for its term: one for most, and two for
+# `iota`, the group a first-wins map would read as one (M121 T1).
 minted = {}
 for printed, name in H.minted_anchors(doc, prefix):
     minted.setdefault(printed, []).append(name)
-for term, wrote in sorted(CONTESTED_XREF.items()):
-    landed = H.find_id(doc, wrote)
-    if landed is not None and H.text(landed).strip() == term:
-        errs.append('the contested id %r is still on the span printing %r'
-                    % (wrote, term))
+for term, wrote_all in sorted(CONTESTED_XREF.items()):
+    for wrote in wrote_all:
+        landed = H.find_id(doc, wrote)
+        if landed is not None and H.text(landed).strip() == term:
+            errs.append('the contested id %r is still on the span printing %r'
+                        % (wrote, term))
     if term not in RELOCATED:
         got = minted.get(term, [])
-        if len(got) != 1:
+        if len(got) != len(wrote_all):
             errs.append('%d minted anchor(s) are on the span(s) printing %r, '
-                        'which gave up %r; want exactly 1 (%s)'
-                        % (len(got), term, wrote, ', '.join(got) or 'none'))
+                        'whose marks gave up %s; want exactly %d (%s)'
+                        % (len(got), term, ', '.join(map(repr, wrote_all)),
+                           len(wrote_all), ', '.join(got) or 'none'))
 # And where a refused mark is written inside a heading, the minted anchor is on
 # the empty span the extension emits after that heading, with nothing left on
 # the mark's own span for the table of contents to copy.
@@ -4625,7 +4642,7 @@ lines = [line for line in open(log, encoding='utf-8').read().splitlines()
          if 'carries the id' in line and 'which another element of this page' in line]
 reported = set()
 for line in lines:
-    for term, wrote in REFUSED.items():
+    for term in sorted(REFUSED):
         if ('term "%s"' % term) not in line:
             continue
         # The wording is read on every report naming the term, whatever id it
@@ -4639,19 +4656,22 @@ for line in lines:
         if other in line:
             errs.append('the refusal report naming %r carries <<%s>>'
                         % (term, other))
-        if ('"%s"' % wrote) in line:
-            reported.add(term)
+    # A yield is reported once its term and the id its mark gave up are both
+    # on one line, so each of a term's two marks needs a report of its own.
+    for term, wrote in YIELDS:
+        if ('term "%s"' % term) in line and ('"%s"' % wrote) in line:
+            reported.add((term, wrote))
     for term, wrote in KEPT_ALL.items():
         if ('term "%s"' % term) in line:
             errs.append('a refusal report names %r, whose author id nothing '
                         'contests: %s' % (term, line))
-if len(lines) != len(REFUSED):
+if len(lines) != len(YIELDS):
     errs.append('%d refusal report(s) in the render log, want %d'
-                % (len(lines), len(REFUSED)))
-missing = sorted(set(REFUSED) - reported)
+                % (len(lines), len(YIELDS)))
+missing = sorted(set(YIELDS) - reported)
 if missing:
     errs.append('no refusal report names both the term and the id given up '
-                'for: %s' % ', '.join(missing))
+                'for: %s' % ', '.join('%s (%s)' % pair for pair in missing))
 
 if errs:
     print('FAIL: M079-AC1: ' + '; '.join(errs), file=sys.stderr)
@@ -4662,7 +4682,8 @@ print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
       'are still their mark\'s anchor, and each yield is reported once by term '
       'and id in the wording for its kind of mark; the %d cross-reference '
       'mark(s) among them file no locator'
-      % (len(ids), len(REFUSED), len(KEPT_ALL), len(NO_LOCATOR)))
+      % (len(ids), len(YIELDS), len(KEPT_ALL),
+         sum(len(w) for w in CONTESTED_XREF.values()) + len(KEPT_XREF)))
 PY
 python3 "$WORK/id-collision-ids.py" \
   "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
@@ -4855,6 +4876,47 @@ if [ "${1:-}" = "--self-test" ]; then
     'M111 T4 self-test: a yielding cross-reference mark reported in the locator wording' \
     "the refusal report naming 'rho' lacks <<$M111_XREF_CLAUSE>>" \
     's{if record and record\.anchorless then}{if false and record and record.anchorless then}'
+
+  # M121 T1. The check holds the spans printing `iota` to the two minted
+  # anchors its two marks were written for. Two plants over a copy of the
+  # unmutated copy's page, one substitution each: one drops the minted id from
+  # the first `iota` span, which is the page a first-wins reading of the
+  # anchors would describe, and one writes a third `iota` span with a minted id
+  # of its own, which a check weakened to at-least-two would pass. Each is
+  # held to the count it leaves, read off the check's own line.
+  m121_iota_plant() {   # <slug> <label> <expected substring> <perl substitution>
+    local slug="$1" label="$2" want="$3" sub="$4"
+    local dir="$M081W/m121-$slug"
+    mkdir -p "$dir"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$sub" < "$CAPTURE_ROOT/m081-clean/id-collision.html" > "$dir/id-collision.html" \
+      || fail "$label: the substitution could not be applied to the page (its own message is above)"
+    if cmp -s "$CAPTURE_ROOT/m081-clean/id-collision.html" "$dir/id-collision.html"; then
+      fail "$label: the substitution reported a match and the page is unchanged"
+    fi
+    local out rc
+    out=$(python3 "$WORK/id-collision-ids.py" "$dir/id-collision.html" \
+      "$HTML_ANCHOR_PREFIX" "$WORK/m081-clean.log" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check passed the planted page"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the planted page, but not with <<$want>>"; }
+    pass "$label: the check is red on <<$want>>"
+  }
+  m121_iota_plant one-anchor \
+    'M121 T1 self-test: one of the two marks printing `iota` left with no minted anchor' \
+    "1 minted anchor(s) are on the span(s) printing 'iota'" \
+    's{<span id="qi-mark-\d+" (class="index" data-see="mu">iota</span>)}{<span $1}'
+  m121_iota_plant three-anchors \
+    'M121 T1 self-test: a third span printing `iota` with a minted anchor of its own' \
+    "3 minted anchor(s) are on the span(s) printing 'iota'" \
+    's{(<span id="qi-mark-\d+" class="index" data-see="mu">iota</span>)}{$1<span id="qi-mark-990" class="index" data-see="mu">iota</span>}'
 fi
 
 # ---------------------------------------------------------------------------

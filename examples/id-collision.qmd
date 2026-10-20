@@ -464,3 +464,19 @@ read as. One mark yields to a `style` element's own name:
 The links an author writes to the marks that keep their names still resolve:
 [to inside-template](#buried-template) and
 [to after-first-script-close](#buried-after-first-close).
+
+# Two cross-reference marks printing one term
+
+Two marks can print one term and point at one entry. Each is written with a
+name of its own, and something else on the page claims each name, so both
+marks yield and each span printing the term carries a minted anchor of its
+own: [iota]{#xref-pair-one .index see="mu"}, and again
+[iota]{#xref-pair-two .index see="mu"}.
+
+::: {#xref-pair-one}
+A div claiming the name the first iota mark was written with.
+:::
+
+::: {#xref-pair-two}
+A div claiming the name the second iota mark was written with.
+:::

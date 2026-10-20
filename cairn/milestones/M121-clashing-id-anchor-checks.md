@@ -1,13 +1,13 @@
 # M121: Three anchor checks read clashing ids
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it changes acceptance-suite checks and one test fixture, which no external consumer of the repo relies on
-- **Branch/PR:** —
+- **Branch/PR:** m121-clashing-id-anchor-checks
 
 ## Goal
 
@@ -109,6 +109,9 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 - 2026-10-20: criteria audit (reduced, internal tier): fresh Opus reader returned 3 findings here. AC1 narrowed to the terms `CONTESTED_XREF` names; AC2's no-link clause matched to `cmd_links`' two conditions; AC3 narrowed to the sections `htmlindex.index_sections` returns.
 - 2026-10-20: plan gate chose passing the author's prefixed ids to `links` over finding sections by heading as `unique` does, because `links` also reads books and named indexes whose headings differ, and over dropping the raise, which guards a section that lost its heading; falsified by a generated section that a hand-stated id list cannot tell from an author's element.
 - 2026-10-20: lessons surfaced: M079 (cases in one unit), M117 (plants resting on old output), M118 (apply plant substitutions by script), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`), M116 (fixture registration).
+- 2026-10-20: implement started on branch m121-clashing-id-anchor-checks.
+- 2026-10-20: T1 written: two `iota` marks appended to `examples/id-collision.qmd`, so no earlier minted number moves; `CONTESTED_XREF` maps each term to its marks' ids, and the leg counts yields per mark. A scratch render showed the extension right (both marks yield, `qi-mark-42` and `qi-mark-43`); the leg passes on it and is red on both plants and on a first-wins read. `DANGLING_CORPUS` stays 0 and the gallery does not show the fixture.
+- 2026-10-20: implement choice: the verify slot runs once over T1 to T3 together, since bash reads `tests/run-tests.sh` lazily and no task can be edited while a run is in flight (the M073 lesson).
 
 ## Decisions
 

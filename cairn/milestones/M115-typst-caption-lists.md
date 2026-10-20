@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -67,7 +67,7 @@ caption marks".
 - [x] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
 - [x] T8: Review return 2 (work log): a laid-out float keeps its cells, the labels joining a paragraph cell or staying in the caption, with a fixture red on the current code first; the Review section's pass-2 fix-now items, the plants committed to the self-test; then the suite, a dispatched matrix run, and the review hand-back.
 - [x] T9: The narrowing chosen at the thrash stop (work log): `float_labels` leaves a float whose content is several blocks untouched, with a laid-out image case whose two images must print at one size, red on the current code first; the pass-3 fix-now items (docs and KI290 exceptions, comments, the CHANGELOG wording, the layout fixture's wording, plants per clause for `tests/typstlists.py`); the candidate row "Laid-out float caption marks"; then the suite, a dispatched matrix run, and the review hand-back.
-- [ ] T10: The second narrowing (work log): `float_labels` wraps only a table or a code block and leaves any other single block alone, with a code-cell-output figure that must stay centered, red on the current code first; the pass-4 fix-now items (scoped docs, KI290 and KI318, the author-id limit, the images check held to 72 ppi, a `pdfimages` presence check, comment reflows); then the suite, a dispatched matrix run, and the review hand-back.
+- [x] T10: The second narrowing (work log): `float_labels` wraps only a table or a code block and leaves any other single block alone, with a code-cell-output figure that must stay centered, red on the current code first; the pass-4 fix-now items (scoped docs, KI290 and KI318, the author-id limit, the images check held to 72 ppi, a `pdfimages` presence check, comment reflows); then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -125,6 +125,7 @@ caption marks".
 - 2026-10-19: T10: `examples/typst-caption-layout.qmd` gained a code-cell-shaped figure (`.cell` Div with `fig-cap` around a `.cell-output-display` Div), hornbeam on page 3; on the T9 code its caption printed at x 91, the margin. `float_labels` now wraps only a Table or CodeBlock and returns early for any other single block; the caption prints at x 154 again, and the lists fixture still reads green. Each check got an unmarked twin instead of a fixed number: page 2 holds the image figure and its unmarked twin (four images, one ppi), page 3 the code-cell figure and its twin (both captions at one x), so the checks hold the extension against Quarto's own output rather than against a value Quarto picks.
 - 2026-10-19: T10 suite: `m115_images_check` now wants four images at one ppi, a new `m115_center_check` reads page 3's caption x with `pdftotext -bbox-layout`, `pdfimages` presence is checked by name, and a `center` plant restores the wrapper around any one block; by hand the `center` plant read "x 90.968000 153.556500" and the `images` plant "0.274 72 72 72", each red on its own check only. Docs: `site/typst.qmd` scopes the rule to content of one image or paragraph, table or code block and states the rest, the author-id limit included; `CHANGELOG.md` names other floats with two examples; KI318, KI290, DESIGN.md's pass count and Typst paragraph scoped; `index.lua`, `typst.lua` and `versions.yml` comments scoped and reflowed.
 - 2026-10-19: T10: dispatched `versions.yml` run 39347509457 at fabbc2b green on every job. Suite run 8 at fabbc2b stopped at "M115 self-test (cells): the check passed the plant": the plant's Div now takes the new early return, so nothing was wrapped. The plant now writes the first fix's wrapper itself in one splice; by hand its cells printed on two lines. Only `tests/run-tests.sh` changed, which no CI job runs.
+- 2026-10-19: T10 done: suite run 9 at 9248aa9 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1807, 10 skip lines, M115-AC2 among them; the twelve M115 self-test plants each red on its named failure. Matrix evidence: run 39347509457 at fabbc2b, whose tree outside `tests/run-tests.sh` and `cairn/` equals 9248aa9's. Status review.
 
 ## Decisions
 

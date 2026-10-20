@@ -1,13 +1,13 @@
 # M120: Four PDF index checks read what the index prints
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it changes acceptance-suite checks, which no external consumer of the repo relies on
-- **Branch/PR:** —
+- **Branch/PR:** m120-pdf-checks-read-print
 
 ## Goal
 
@@ -77,7 +77,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 
 ## Tasks
 
-- [ ] T1: In `tests/run-tests.sh` near `xref_typeset_check`
+- [x] T1: In `tests/run-tests.sh` near `xref_typeset_check`
       (`tests/run-tests.sh:7299`), derive the cross-reference lines from
       `typstcheck.derived_entries`, apply the two quotation-mark facts, and
       count them in the M02-AC3 read beside `XREF_PROBE_TEXT`. Refuse a
@@ -118,6 +118,8 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: plan gate chose a count with no order for AC2 over an order check, because the LaTeX order follows the escaped key and has no independent oracle; falsified by a documented ordering rule for escaped sort keys that a check could state apart from makeindex.
 - 2026-10-20: plan gate chose a position bound on the heading's page for AC3 over moving the index to a page of its own in `examples/marker.qmd`, because the fixture is shown in the gallery and read by other checks; falsified by the bound reading a body line as an index line.
 - 2026-10-20: lessons surfaced: M30 (typesetting facts, NFC), M117 (plants resting on old output), M118 (apply plant substitutions by script), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`).
+- 2026-10-20: implement started on branch m120-pdf-checks-read-print.
+- 2026-10-20: T1 done: `xref_derived_rows` writes 255 rows from `typstcheck.derived_entries`, refusing a row with an unmodelled ligature input (shown red on a planted `a--b`); `xref_typeset_check` now compares in NFC; self-test plants six cases. Checked alone against the last run's capture; the full suite runs at T5. No M112/M113 want string moved: the hand manifest call is unchanged.
 
 ## Decisions
 

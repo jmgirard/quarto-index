@@ -7299,11 +7299,16 @@ grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escapin
 xref_typeset_check() {   # <label> <pdf> <manifest> <missing sentence> <ok sentence> [<planted lines file>]
   python3 - "$@" <<'PY'
 import sys
+import unicodedata
 sys.path.insert(0, 'tests')
 import pdfindex
 label, pdf_path, rows_path, missing_said, ok_said = sys.argv[1:6]
 plant = sys.argv[6] if len(sys.argv) > 6 else ''
-rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
+# Rows and printed lines are compared in NFC (the M30 lesson): a text layer
+# can hand back a precomposed character decomposed, or the other way round.
+nfc = lambda text: unicodedata.normalize('NFC', text)
+rows = [nfc(l.rstrip('\n')) for l in open(rows_path, encoding='utf-8')
+        if l.strip()]
 if not rows:
     print(f'FAIL: {label}: the manifest {rows_path} has no rows, so there is '
           f'nothing to count', file=sys.stderr)
@@ -7316,6 +7321,8 @@ except LookupError as error:
 if plant:
     entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
                 for l in open(plant, encoding='utf-8') if l.strip()]
+for entry in entries:
+    entry.text = nfc(entry.text)
 counts = pdfindex.line_counts(entries, rows)
 missing = [r for r in rows if counts[r] == 0]
 repeated = [r for r in rows if counts[r] > 1]
@@ -7347,6 +7354,95 @@ M02_AC3_OK='exact cross-reference strings typeset once each in the probe index'
 M02_AC3_PDF="$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf"
 xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$WORK/xrefprobe.txt" \
   "$M02_AC3_MISSING" "$M02_AC3_OK" || exit 1
+
+# M120 T1: the rest of the probe's cross-references, held to the same print.
+# The hand-written rows above name the special-handling set; every other
+# entry the fixture gives a cross-reference (the multi-level targets, the
+# source-entry marks, the non-ASCII targets) is derived from the source by
+# `typstcheck.derived_entries`, the derivation M098-AC8 holds the Typst index
+# of this fixture to. A derived line is `<term>, see <targets>; see also
+# <targets>`, the order site/cross-references.qmd documents. Two typesetting
+# facts, not read back from this PDF (the M30 lesson), change what prints:
+# under TeX ligatures the text font sets `'` and `` ` `` as the right and left
+# single quotation marks. A derived line holding any other ligature input is
+# refused rather than guessed at. The first argument is the source to derive
+# from, so the self-test can hand it a changed copy.
+xref_derived_rows() {   # <qmd> <rows file to write>
+  python3 - "$@" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import typstcheck
+qmd, out = sys.argv[1:3]
+QUOTES = {"'": '’', '`': '‘'}
+UNMODELLED = ('--', ',,', '<<', '>>', "''", '``', '!`', '?`')
+rows = []
+for (_level, term, refs), count in sorted(typstcheck.derived_entries(qmd).items()):
+    if not refs:
+        continue
+    line = term + ', ' + '; '.join(f'{word} {targets}' for word, targets in refs)
+    hit = [seq for seq in UNMODELLED if seq in line]
+    if hit:
+        print(f'FAIL: M02-AC3: the derived line <<{line}>> holds {hit}, a '
+              f'ligature input whose printed form this check does not state',
+              file=sys.stderr)
+        sys.exit(1)
+    rows += [''.join(QUOTES.get(c, c) for c in line)] * count
+with open(out, 'w', encoding='utf-8') as handle:
+    handle.write(''.join(row + '\n' for row in rows))
+PY
+}
+M02_AC3_DERIVED_MISSING='derived cross-reference(s) did not typeset as their source states'
+M02_AC3_DERIVED_OK='cross-reference lines the source derives typeset once each in the probe index'
+xref_derived_rows examples/xref-escaping.qmd "$WORK/xrefderived.txt" || exit 1
+xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$WORK/xrefderived.txt" \
+  "$M02_AC3_DERIVED_MISSING" "$M02_AC3_DERIVED_OK" || exit 1
+
+# M120 T1 self-test: one row of each derived form is red printed twice and red
+# when the source states a target the PDF does not print. The second kind
+# changes a copy of the fixture, so the derived row moves and the print does
+# not.
+if [ "${1:-}" = "--self-test" ]; then
+  M120X="$WORK/m120-xref"
+  rm -rf "$M120X"; mkdir -p "$M120X"
+  m120_xref_red() {   # <form> <row> <rows file> [<planted lines file>]
+    local out how='missing from the print'
+    [ -z "${4:-}" ] || how='printed twice'
+    if out=$(xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$3" \
+        "$M02_AC3_DERIVED_MISSING" "$M02_AC3_DERIVED_OK" ${4:+"$4"} 2>&1); then
+      fail "M120 T1 self-test: M02-AC3 passed with the $1 row <<$2>> $how"
+    fi
+    case "$out" in
+      *"<<$2>>"*) ;;
+      *) printf '%s\n' "$out" >&2; fail "M120 T1 self-test: M02-AC3 was red on the $1 plant, but not naming <<$2>>" ;;
+    esac
+  }
+  for m120_form in 'multi-level:x05, see ' 'source-entry:A_B, see ' 'non-ASCII:Xu00, see '; do
+    m120_name=${m120_form%%:*}
+    m120_row=$(grep -m1 -F "${m120_form#*:}" "$WORK/xrefderived.txt") \
+      || fail "M120 T1 self-test: no derived row opens <<${m120_form#*:}>>"
+    printf '%s\n' "$m120_row" > "$M120X/twice.txt"
+    m120_xref_red "$m120_name" "$m120_row" "$WORK/xrefderived.txt" "$M120X/twice.txt"
+  done
+  python3 - examples/xref-escaping.qmd "$M120X/changed.qmd" <<'PY' \
+    || fail "M120 T1 self-test: the changed copy of the fixture was not written"
+import sys
+text = open(sys.argv[1], encoding='utf-8').read()
+for old, new in (('[x05]{.index see="L1!L2!&"}', '[x05]{.index see="L1!L2!Q"}'),
+                 ('entry="A_B" see="Tgt"', 'entry="A_C" see="Tgt"'),
+                 ('see="Grüße!Straße"', 'see="Grusse!Strasse"')):
+    if text.count(old) != 1:
+        sys.exit(f'FAIL: M120 T1 self-test: {old!r} occurs {text.count(old)} '
+                 f'times in the fixture, not once')
+    text = text.replace(old, new)
+open(sys.argv[2], 'w', encoding='utf-8').write(text)
+PY
+  xref_derived_rows "$M120X/changed.qmd" "$M120X/changed.txt" \
+    || fail "M120 T1 self-test: the changed copy did not derive"
+  m120_xref_red multi-level 'x05, see L1: L2: Q' "$M120X/changed.txt"
+  m120_xref_red source-entry 'A_C, see Tgt' "$M120X/changed.txt"
+  m120_xref_red non-ASCII 'Xu00, see Grusse: Strasse' "$M120X/changed.txt"
+  pass "M120 T1 self-test: M02-AC3's derived rows are red naming the row on a multi-level, a source-entry and a non-ASCII cross-reference printed twice, and on each when the source states a target the PDF does not print"
+fi
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }

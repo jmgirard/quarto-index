@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M120 | Four PDF index checks read what the index prints | planned | — | normal | milestones/M120-pdf-checks-read-print.md |
+| M120 | Four PDF index checks read what the index prints | in-progress | — | normal | milestones/M120-pdf-checks-read-print.md |
 | M119 | A Typst cross-reference mark keeps one label wherever it sits | done | — | normal | milestones/archive/M119-typst-xref-places.md |
 | M118 | A Typst index leaves out what no page backs | done | — | normal | milestones/archive/M118-typst-dead-xrefs.md |
 | M117 | A Typst index leaves out a term no page carries | done | — | normal | milestones/archive/M117-typst-unprinted-marks.md |

@@ -15,10 +15,10 @@ filters:
 
 # A heading that marks [ash]{#id-ash .index see="Oak"}
 
-The fixture for cross-reference marks in the places where Typst copies or
-drops a label (M119). Each mark gets a label of its own, and a label that a
-table of contents or a list copies names two elements. Every mark carries an
-author's id, and the last page links to each one. The term every
+The fixture for cross-reference marks in the places where Typst copies a
+label or Pandoc drops one (M119). Each mark gets a label of its own, and a
+label that a table of contents or a list copies names two elements. Every mark
+carries an author's id, and the page before the index links to each one. The term every
 cross-reference names is marked here: [Oak]{#id-oak .index}.
 
 Every case ends in an explicit page break, so the page each mark sits on is a

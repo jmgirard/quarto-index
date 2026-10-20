@@ -33303,6 +33303,7 @@ m119_query() {
   ( cd "$1" && quarto render "$2" --to typst -M keep-typ:true ) \
       > "$1/render.log" 2>&1 \
     || { tail -20 "$1/render.log" >&2; echo "FAIL: M119-AC2: the copy in $1 failed to render to Typst" >&2; return 1; }
+  capture "$1/$2" typst "m119-$(basename "$1")"
   ( cd "$1" && quarto typst query "${2%.qmd}.typ" metadata ) \
       > "$1/query.out" 2> "$1/query.txt" \
     || { cat "$1/query.txt" >&2; echo "FAIL: M119-AC2: quarto typst query failed in $1" >&2; return 1; }
@@ -33324,8 +33325,9 @@ pass "M119-AC2/AC3: in the Typst render of $M119_SRC each label of a metadata el
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
   # M119 self-test: each check above shown red on the defect it names. Each
-  # plant is one substitution in a fresh copy, and the plants that test AC2
-  # take the links out of the copy so that it builds.
+  # code plant is one substitution in a fresh copy, and the plants that test
+  # AC2 take the links out of the copy so that it builds. The floor plants
+  # hand the reader a written input instead.
   #   altid     the alt-text id move removed: the render stops, as it did
   #             before M119, on elm's id
   #   capid     `caption_moves` blind to the moved id elements: the list of
@@ -33333,11 +33335,13 @@ if [ "${1:-}" = "--self-test" ]; then
   #   capspan   `caption_moves` leaving the span's id: beech's id is in the
   #             copied caption and the render stops
   #   heading   the heading relocation skipped: ash's label element ends the
-  #             heading's line, where the heading's own label takes its
-  #             place, and AC2 finds 11 qi-mark labels for 12 marks
+  #             heading's line, the heading's own label, written next,
+  #             replaces qi-mark-1 on that element, and AC2 finds 11 qi-mark
+  #             labels for 12 marks
   #   float     `float_labels` returning before its move: AC2 finds the labels
   #             of beech, cork and lark and lark's moved id twice each
   #   figure    `figure_labels` returning before its move: AC2 finds date's
+  #             label twice
   #   link      ash's link pointed at kelp's id: AC3 reads page 10 first
   #   noquery   no JSON in the query's output: the AC2 floor
   #   nomarks   a JSON array with no qi-mark label: the AC2 mark floor

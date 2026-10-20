@@ -31225,7 +31225,7 @@ author	Quarto's Typst book template does not compile a book whose `book:` metada
 floor book	Quarto 1.5.52 does not render a Typst book.
 floor warning	It prints the warning `The typst format is not supported by book projects` and writes no PDF.
 unprinted field	so it adds no page number.
-unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
+unprinted entry	and no cross-reference or sub-entry of it prints, the Typst index leaves it out.
 unprinted group	A letter group none of whose entries prints has no heading.
 unprinted see mark	A `see=` or `see-also=` mark in such a field adds no cross-reference.
 unprinted writers	A cross-reference prints where one of the marks that write it is on a page.
@@ -31323,7 +31323,7 @@ locators	A principal mention's page number is set in bold, a range prints its fi
 words	The see and see-also words follow `lang:` and `index-labels:`.
 books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
 unprinted field	`description:`, adds no page number.
-unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
+unprinted entry	and no cross-reference or sub-entry of it prints, the Typst index leaves it out.
 unprinted group	It also leaves out a letter group with no entry left.
 unprinted see mark	A cross-reference mark in such a field adds no cross-reference.
 unprinted target	A cross-reference whose target term is left out is not printed, and nothing reports it.
@@ -31515,12 +31515,18 @@ m118_twin "$WORK/m118twin" \
 capture "$WORK/m118twin/typst-unprinted.qmd" typst "m118-twin"
 pdftotext "$CAPTURE_ROOT/typst-unprinted/typst-unprinted.pdf" "$WORK/m118-fixture.txt"
 pdftotext "$CAPTURE_ROOT/m118-twin/typst-unprinted.pdf" "$WORK/m118-twin.txt"
+# The comparison says the second index has no line in the table of contents
+# only where the fixture prints one, with a line for the first index.
+grep -qx 'Table of contents' "$WORK/m118-fixture.txt" \
+  || fail "M118-AC3: the fixture's Typst render prints no table of contents, so its having no line for the second index shows nothing"
+grep -q '^Index \. \. \.' "$WORK/m118-fixture.txt" \
+  || fail "M118-AC3: the fixture's table of contents has no line for the first index, so its having none for the second shows nothing"
 diff -u "$WORK/m118-twin.txt" "$WORK/m118-fixture.txt" >&2 \
   || fail "M118-AC3: the fixture's Typst render does not print what its twin with no mark in the second index prints (+ is the fixture)"
 if grep -q '^Spare Index' "$WORK/m118-twin.txt"; then
   fail "M118-AC3: the twin, whose second index no mark files in, prints a line opening with that index's title"
 fi
-pass "M117-AC1, M118-AC1, M118-AC2, M118-AC3: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference prints where a mark writing it is on a page and its target prints, two terms pointing at each other print, and a target no mark files prints and is reported; an index left with no entry prints what an index no mark files in prints"
+pass "M117-AC1, M118-AC1, M118-AC2, M118-AC3: a Typst index leaves out an entry whose marks no page prints, with no cross-reference or sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference prints where a mark writing it is on a page and its target prints, two terms pointing at each other print, and a target no mark files prints and is reported; an index left with no entry prints what an index no mark files in prints"
 
 if [ "${1:-}" = "--self-test" ]; then
   # M117 T2 and M118 T5 self-test: each part of the rule planted on its own
@@ -31583,6 +31589,19 @@ if [ "${1:-}" = "--self-test" ]; then
   # M118: the index's heading and page are written whether an entry prints
   # or not, so the second index prints its heading.
   m117_plant noindexcond 's{"if qi-p\.any\(p => p\) \["}{"if true ["}' "-> 30: got 'group\tSpare Index'"
+  # M118-AC3's own comparison is red on that render too: the twin's text is
+  # not what an index that prints its heading over no entry prints.
+  if diff -q "$WORK/m118-twin.txt" \
+      <(pdftotext "$CAPTURE_ROOT/m117-noindexcond/typst-unprinted.pdf" -) > /dev/null; then
+    fail "M118 self-test (noindexcond): the twin's text equals the render whose second index prints its heading, so the AC3 comparison cannot see it"
+  fi
+  pass "M118 self-test (noindexcond): the AC3 twin comparison is red on a second index that prints its heading"
+  # M118 review: a cross-reference prints whatever its marks' labels say, so
+  # Paddle prints the see-also its description mark alone writes.
+  m117_plant xrefunbacked 's{local prints = \("qi-b\.at\(%d\)\.at\(%d\)"\):format\(node\.typst_node, j - 1\)}{local prints = "true"}' "-> 22: got 'entry\t0\tPaddle\t1@1\tsee also|Cleat'"
+  # M118 review: a cross-reference that prints does not keep its entry, so
+  # Clew, kept by its see to Paddle alone, is left out with the rest of them.
+  m117_plant noxref 's{keep = keep or \(backed\.at\(i\)}{keep = keep or (false and backed.at(i)}' "-> 4: got 'group\tD'"
 fi
 
 # A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text

@@ -25,8 +25,8 @@
   laid out in cells and a figure inside a code cell's output div. A mark in
   a front-matter field the Typst template does not print, such as
   `description:`, adds no page number. If all the page-number marks of an
-  entry are such marks, and it has no cross-reference and no sub-entry that
-  prints, the Typst index leaves it out. It also leaves out a letter group
+  entry are such marks, and no cross-reference or sub-entry of it prints,
+  the Typst index leaves it out. It also leaves out a letter group
   with no entry left. A cross-reference mark in such a field adds no
   cross-reference. A cross-reference whose target term is left out is not
   printed, and nothing reports it. An entry left with nothing that prints is

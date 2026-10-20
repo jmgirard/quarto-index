@@ -50,7 +50,11 @@ local M = {}
 -- and its target prints, or names no entry of the index (M118). It starts
 -- from every entry printing and drops an entry none of whose reasons holds
 -- until nothing changes, so two entries whose cross-references point at
--- each other, from marks on a page, both print. A range whose closing label
+-- each other, from marks on a page, both print. Each sweep that changes
+-- something drops an entry, so one more sweep than there are entries is
+-- enough; it is a `for` loop because Typst stops a `while` loop after
+-- 10,000 iterations as one that seems infinite (observed on Typst 0.15.1,
+-- M118 review). A range whose closing label
 -- alone names one adds no locator and keeps its entry. `qi-index-live` says
 -- whether any label of a list names an element.
 -- The locators are ordered by the class and value of their opening
@@ -71,8 +75,8 @@ local M = {}
 -- marks on consecutive pages print three locators: only an author's range
 -- prints as a range (the M098 question gate). The separators are the ones
 -- the LaTeX back-end's makeindex prints, a comma before each locator and
--- before the first cross-reference, and a semicolon between two
--- cross-references, two targets of one kind included.
+-- before the first cross-reference that prints, and a semicolon between two
+-- cross-references that print, two targets of one kind included.
 local TYPST_HELPERS = [[
 #let qi-index-symbols(pattern) = pattern.clusters().filter(c => numbering(c + "1", 2) != c + "2")
 #let qi-index-counters(pattern) = qi-index-symbols(pattern).len()
@@ -102,9 +106,8 @@ local TYPST_HELPERS = [[
   let own = nodes.map(n => qi-index-live(n.own))
   let backed = nodes.map(n => n.xrefs.map(x => x.at(0) == true or qi-index-live(x.at(0))))
   let prints = nodes.map(n => true)
-  let changed = true
-  while changed {
-    changed = false
+  for sweep in range(nodes.len() + 1) {
+    let changed = false
     for i in range(nodes.len()) {
       if prints.at(i) {
         let node = nodes.at(i)
@@ -122,6 +125,7 @@ local TYPST_HELPERS = [[
         }
       }
     }
+    if not changed { break }
   }
   (prints, backed)
 }

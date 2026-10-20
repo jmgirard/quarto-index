@@ -153,3 +153,37 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 - 2026-10-20: first full `--self-test` run stopped at M098's `xreflink` plant, whose substitution aimed at the Lua format string M118 moved into `qi-index-entry`; rewritten for the new site and seen red on `see|Bee@` by hand. Every other plant substitution in the suite that names Typst code was applied to the new `typst.lua` by a script; all matched.
 - 2026-10-20: claim audit: 39 claims read, 2 corrected — examples/typst-unprinted.qmd ("Five" description cross-reference marks, four), tests/run-tests.sh (the M14 comment calling `lookup_entry` the HTML back-end's own and the tree one format's only); the `allentries` plant comment reworded (loose "as before M117").
 - 2026-10-20: T7: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0 at 5fa7cd6, 1838 checks; the ten M117/M118 plants each red on their row. T2-T7 ticked; status review.
+
+## Decisions
+
+## Review
+
+Pass 1, 2026-10-20. Branch synced: `main` unmoved since the cut (`git rev-list --count HEAD..origin/main` 0). Copilot round off (no `# Copilot review:` line in `cairn/PROFILE.md`).
+
+- spawned: diff-bug, blame-history, prior-review, ripple, over `git diff main..eb7c552`.
+- diff-bug #1: no fixture entry prints for another reason while carrying a cross-reference written only in `description:`, so dropping the writer-label condition from `entry_lines` stays green — fix now (`Paddle` gains a description-only `see-also="Cleat"` mark and the `xrefunbacked` plant).
+- diff-bug #2: `qi-index-prints` loops with `while`, which Typst stops after 10,000 iterations as infinite, so a forward chain of more than 10,000 dropped cross-references fails the compile (IP2) — fix now (a `for` loop over `nodes.len() + 1` sweeps with an early exit; quadratic time on such chains stays, measured by the reviewer at 17.5 s for 3000 links, 8.0 s against 7.65 s on main for a 3000-entry index).
+- diff-bug #3: the M14 dangling-count corpus row for `examples/typst-unprinted.qmd` stays 0 though the fixture draws one report — reject, false: that count reads the one-namespace wording by design, the fixture's report takes the index-naming wording, and the M118 check pins it (work log, T1 line).
+- diff-bug #4: the AC3 twin comparison was never shown red, and nothing checked that the fixture prints a table of contents — fix now (a check for the `Table of contents` line and the first index's outline line, and a self-test leg that diffs the twin against the `noindexcond` render).
+- diff-bug #5: the new Typst constructs (`for`, destructuring `let`, heading and page break inside `context`) are unverified on the floor Quarto 1.5.52 — follow-up: the parked row "Floor-Quarto CI suite job"; the weekly version matrix renders `examples/typst-index.qmd` on the floor, which runs every construct this adds.
+- diff-bug #6: comments in `passes.lua` (the `anchorless` field, the tagging block) and `html.lua` (`relocate_heading_anchors`) still say only locator marks and id-carrying cross-reference marks are tagged — fix now.
+- diff-bug #7: a two-term cycle prints with no locator anywhere; a cross-reference mark in a heading now leaves a label element after the heading — reject, planned change (the plan gate chose that a cycle prints where its marks print) and false (a page-number mark in a heading already leaves the same element; the reviewer measured no spacing change).
+- blame-history #1: a body-marked term (`Block`, `Jib`) disappears from the Typst index — reject, planned change (question set: drop that target).
+- blame-history #2: `Keel, see Rudder` warns while `Block, see Sheave` is silent — reject, planned change (question set: no report, since the filter cannot see which page prints).
+- blame-history #3: resolving targets against what Typst prints contradicts D-005 — reject, false: D-005 governs which paths the dangling-target report resolves against, and M118 leaves that report unchanged.
+- blame-history #4: removing the `anchorless` skip from `assign_labels` moves M079's invariant to `typst_locator`'s `#mark.xrefs > 0` guard — reject, false as a defect: the guard holds, and its comment states it.
+- blame-history #5: no plant disables the clause that keeps an entry by its own cross-reference — fix now (the `noxref` plant).
+- blame-history #6: the fixed point keeps a mutual pair and drops one-way links to left-out targets — reject, planned change (plan-gate choice in the work log).
+- blame-history #7: the three index blocks merged into one `#context` block — reject, false: M098-AC7's outline check passed in the 5fa7cd6 run.
+- blame-history #8: one unlabelled writer makes a cross-reference print whatever its labelled writers say — reject, planned change (the IP2 fallback `writer_labels` documents).
+- prior-review #1: the report M117 blame-history #2 wanted for a cross-reference to a left-out term is declined — reject, planned change (question set; the absorbed row read "report or drop").
+- prior-review #2: no fixture puts a now-labelled cross-reference mark in a heading, caption, alt text or KI290 float — follow-up: `DESIGN.md` KI325 (the diff-bug reviewer rendered each place clean).
+- prior-review #3: the `noclosebelow` plant is gone and `noclose` strips every closing label — reject, false: `noclose` is red on the `M` group, which `Mast` holds only through `Step`'s closing label.
+- prior-review #4: more Typst unchecked on the floor — follow-up, as diff-bug #5.
+- ripple #1: `DESIGN.md`'s Typst paragraph places the index after a separate page break and heading — fix now.
+- ripple #2: ROADMAP's "Finish leaving out unprinted Typst marks" row still lists the work — reject, planned change: post-merge hygiene graduates it.
+- ripple #3: `CHANGELOG.md` and `site/typst.qmd` say an entry is left out when "it has no cross-reference and no sub-entry that prints", which `Block` now contradicts — fix now ("no cross-reference or sub-entry of it prints", with both claims rows).
+- ripple #4: `passes.lua`'s "a cross-reference mark ... has no anchor of its own" beside the new `labelled_xref` condition — fix now, as diff-bug #6.
+- ripple #5: `DESIGN.md` says `assign_labels` labels each locator mark — fix now.
+- ripple #6: the corpus row, as diff-bug #3 — reject, false.
+- ripple #7: `typst.lua`'s separator comment says a comma goes before the first cross-reference — fix now ("that prints").

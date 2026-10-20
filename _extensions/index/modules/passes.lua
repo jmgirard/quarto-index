@@ -640,8 +640,9 @@ local function Span(span)
                      -- locator: a cross-reference mark contributes none, and
                      -- a front-matter mark of an HTML book chapter contributes
                      -- the chapter's page. Only the first of those reaches the
-                     -- Pandoc pass, and only carrying an id of the author's,
-                     -- so this is what tells that pass not to anchor it.
+                     -- Pandoc pass, carrying an id of the author's or, in
+                     -- Typst, as every cross-reference mark (M118), so this is
+                     -- what tells that pass not to anchor it.
                      anchorless = (not anchoring) or nil,
                      -- Likewise resolved rather than raw: a range's role is
                      -- the RANGE's, so an opening whose closing declared it
@@ -663,7 +664,9 @@ local function Span(span)
       --
       -- A cross-reference mark carrying an id of the author's is tagged too:
       -- untagged, it kept a contested name in silence and left the page with
-      -- that name on two elements (see `contestable_xref` above).
+      -- that name on two elements (see `contestable_xref` above). In Typst
+      -- every cross-reference mark is tagged, for its label, though it still
+      -- adds no locator (`labelled_xref` above).
       span.attributes[qi_core.HTML_PENDING_ATTR] = tostring(#qi_marks.html_marks)
     end
     return span

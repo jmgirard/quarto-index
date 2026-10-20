@@ -467,7 +467,8 @@ Three back-ends ship:
 - **Typst** (`FORMAT` containing `typst`, added M098): `builds_ast_index`
   routes it through the per-mark record, and the Pandoc pass takes the
   anchor path's heading relocation, then labels each locator mark instead of
-  anchoring it. `typst.assign_labels` mints a `qi-mark-<n>` label past every
+  anchoring it, and each cross-reference mark too (M118), which adds no
+  locator. `typst.assign_labels` mints a `qi-mark-<n>` label past every
   id the document takes and writes `#[#metadata(none)<label>]` after the mark's
   span, not inside it: Pandoc writes an author's id as a label straight after
   the span's content, and a label element there would carry both. A label
@@ -490,8 +491,9 @@ Three back-ends ship:
   LaTeX back-ends move an alt-text mark's target the same way, and the version
   matrix reads `examples/figure-marks.qmd`, which holds such a label, on every
   leg (M101). The index is one raw Typst block per
-  declared index that some mark files in, placed by `place_index` after a weak
-  page break and a raw, unnumbered Typst `heading`. The heading is raw because
+  declared index that some mark files in, placed by `place_index`, which
+  holds a weak page break, a raw, unnumbered Typst `heading` and the entries,
+  all written only where an entry prints (M118). The heading is raw because
   Quarto moves every Pandoc header up a level for Typst in a document whose
   headings start at `##`, which turned a level-one header into a paragraph
   the outline did not list (M098 claim audit). Its helper functions query each label's location
@@ -1290,6 +1292,13 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   either wording ships with the suite green. M116's review probe rendered both
   correctly. The older index-naming forms of that report are unpinned too.
   — M116 review diff-bug #4
+- **KI325.** Since M118 every Typst cross-reference mark carries a label, and
+  no fixture puts one in a heading, a float caption, image alt text, a
+  footnote or a callout, the places where a moved or copied label once named
+  two elements (M098, M115). A label naming two elements there would break the
+  render or its link with the suite green. M118's review renders of each
+  place labelled the mark once with no render error. — M118 review
+  prior-review #2
 
 ### The repo and its packaging
 

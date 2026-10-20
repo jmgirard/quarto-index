@@ -522,7 +522,8 @@ local function relocate_heading_anchors(doc)
               -- filter still has anchor duty for: one that contributes a
               -- locator, and a cross-reference mark carrying an id of the
               -- author's, whose id duplicates into the table of contents
-              -- exactly as a locator anchor would. But an id of the author's
+              -- exactly as a locator anchor would, and in Typst every
+              -- cross-reference mark, for its label (M118). But an id of the author's
               -- on a mark this filter left ALONE duplicates there too, and
               -- such a mark carries no tag: a mark whose entry cannot be
               -- derived is returned unchanged by the Span pass, `.index` class

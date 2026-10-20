@@ -11,6 +11,8 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M121 | Three anchor checks read clashing ids | planned | — | normal | milestones/M121-clashing-id-anchor-checks.md |
+| M122 | Merged-entry reports are checked where they name their index | planned | — | normal | milestones/M122-named-merged-entry-reports.md |
 | M120 | Four PDF index checks read what the index prints | done | — | normal | milestones/archive/M120-pdf-checks-read-print.md |
 | M119 | A Typst cross-reference mark keeps one label wherever it sits | done | — | normal | milestones/archive/M119-typst-xref-places.md |
 | M118 | A Typst index leaves out what no page backs | done | — | normal | milestones/archive/M118-typst-dead-xrefs.md |
@@ -21,8 +23,8 @@ _Released 0.4.0 2026-09-11._
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Older acceptance-suite backlog: The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31, narrowed 2026-10-20 by M119 — M35-M50
-- Cover clashing ids in anchor checks: give the M079-AC1 leg a case where one contested term has two anchors outside a heading, with a plant; let `epubcheck.py links` read `id-collision.epub`; make `minted_carried` fail on a locator whose anchor its page does not carry — added 2026-10-20 — promoted from the acceptance-suite backlog — KI274, KI267, KI126
-- Exercise two paths no fixture reaches: a fixture that draws the index-naming forms of the composed-entry reports, and a book fixture that round-trips `book.lua`'s `role` field through a chapter record — added 2026-10-20 — promoted from the acceptance-suite backlog — KI320, KI60
+- Cover clashing ids in anchor checks: give the M079-AC1 leg a case where one contested term has two anchors outside a heading, with a plant; let `epubcheck.py links` read `id-collision.epub`; make `minted_carried` fail on a locator whose anchor its page does not carry — added 2026-10-20 — promoted from the acceptance-suite backlog — KI274, KI267, KI126 — started M121
+- Exercise two paths no fixture reaches: a fixture that draws the index-naming forms of the composed-entry reports, and a book fixture that round-trips `book.lua`'s `role` field through a chapter record — added 2026-10-20 — promoted from the acceptance-suite backlog — KI320, KI60 — started M122
 - [parked] Run the suite in parts: independent sections in parallel, or a named subset once the three whole-run accumulator sweeps declare their own domains. Promote on a section growing past a couple of minutes — added 2026-09-03 — M075 plan gate, split 2026-10-01 — KI238, KI241, KI242, KI243, KI244, KI245
 - [parked] Per-render suite timing: Time the suite per render rather than per section. Promote on M075's section profile proving too coarse — added 2026-09-03 — M075 plan gate, split 2026-10-01
 - [parked] Automated action updates: Automated dependency updates for the workflows' actions (Dependabot or equivalent), so a bump arrives as its own pull request rather than a hand edit; the config file and the stream of small PRs are the cost. Promote on a second catch-up round, or a deprecation warning going unnoticed long enough to break a run — added 2026-08-28 — M53 plan gate

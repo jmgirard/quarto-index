@@ -1,0 +1,92 @@
+# M122: Merged-entry reports are checked where they name their index
+
+- **Status:** planned
+- **Priority:** normal
+- **Depends on:** —
+- **Driving RR:** —
+- **Principles touched:** GP6
+- **Resolves:** —
+- **Surface tier:** internal — it adds an acceptance-suite check and one test fixture, which no external consumer of the repo relies on
+- **Branch/PR:** —
+
+## Goal
+
+The suite checks each of the four reports about an index entry that merges
+different marks in the form that names its index.
+
+## Scope
+
+**In:** The candidate row "Exercise two paths no fixture reaches", from
+KI320 and KI60. `index.lua` writes each of the four merged-entry wordings in
+two forms: `document`, and `index "<name>"` in a document that declares two
+or more indexes (`_extensions/index/index.lua:318-340`). The suite pins the
+four document forms on `examples/xref-conflict.qmd` and
+`examples/xref-joined.qmd`. No render reaches a named form. The LaTeX path
+alone records these reports, so the new fixture renders to PDF. KI60 says no
+book fixture round-trips the chapter record's `role` field. M21-AC5 and the
+M065-AC4 control both read a `principal` locator that a chapter record
+carries, so this milestone confirms the gap is closed by one probe and
+strikes KI60. If a new case shows the extension itself is wrong, this
+milestone fixes it when the fix fits one sitting, with a changelog entry.
+
+**Out:** The three anchor checks, which M121 takes. The rest of the
+acceptance-suite backlog stays under the candidate row "Older
+acceptance-suite backlog".
+
+## Acceptance criteria
+
+- [ ] AC1: `examples/xref-conflict-named.qmd` declares two indexes. In one
+      of them, it marks a term for each of the four merged-entry shapes. Two
+      shapes are a plain mark beside one cross-reference, or beside two or
+      more different ones. The other two are two different cross-references
+      with no plain mark, or three or more with none. It also marks one term
+      in both indexes that clashes in neither. The suite renders the fixture
+      to PDF. It reads each line of that render's log that matches any of
+      the eight literals of the four wordings, in both scope forms. It holds
+      those lines to a hand-stated list, line for line. The list holds one
+      line per shape, each naming its term and `index "<name>"`. It holds no
+      line for the term marked in both indexes.
+- [ ] AC2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
+
+## Coverage
+
+- AC1 → T1, T2
+- AC2 → T1, T2, T3, T4
+
+## Tasks
+
+- [ ] T1: Write `examples/xref-conflict-named.qmd` with an `indexes:` list
+      of two, the four shapes in one index, and the term marked in both.
+      Add it to `site/gallery.yml` under `not-shown:` and give it a
+      `DANGLING_CORPUS` row with a hand-derived count
+      (`tests/run-tests.sh:15163`). Render it to PDF beside M02-AC5
+      (`tests/run-tests.sh:2680`) and capture it. No new `warn()` literal is
+      added, so `tests/scans/warn-distinct.py`'s `EXPECTED` stays 90.
+- [ ] T2: Hold the render log's lines to the hand-stated list of AC1,
+      matching on all eight literals so that a stray `document` form shows.
+      Add `--self-test` plants: `scope_phrase` returning `document`, and one
+      shape's report removed.
+- [ ] T3: Commit first, then remove `role = mark.role` from `build_record`
+      (`_extensions/index/modules/book.lua:281`) and run the suite. Record
+      the first failing check in the work log, restore the line, and strike
+      KI60 in `cairn/DESIGN.md` citing that check. If the suite stays green,
+      add a book check that fails on it instead, and record that.
+- [ ] T4: Strike KI320 in `cairn/DESIGN.md`. Run
+      `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
+
+## Work log
+
+- 2026-10-20: created by /milestone-plan.
+- 2026-10-20: tier check: not run — work named at the question set.
+- 2026-10-20: question set: which ready work to plan — both candidate rows, as two milestones, M121 first.
+- 2026-10-20: question set: what to do if a new case shows the extension is wrong — fix it in the milestone if it fits one sitting, with a changelog entry; a larger fix stops the run.
+- 2026-10-20: promoted the candidate row "Exercise two paths no fixture reaches" (KI320, KI60) in full.
+- 2026-10-20: collision check: M116 added the count forms and pinned their document scope; M21 and M065 read the `principal` role through a chapter record. No D-entry rejects the work. No open issue or PR on GitHub.
+- 2026-10-20: checker-regress shape considered and not taken: the check reads the extension's render log, not repo-internal tracking files.
+- 2026-10-20: criteria audit (reduced, internal tier): fresh Opus reader returned 2 findings here. AC1 now matches all eight literals. The `role` criterion was dropped: the removal stops the suite at M21-AC5 before the M065-AC4 control, and the work is outside the goal, so it moved to T3 as a probe and a strike.
+- 2026-10-20: plan gate chose a new fixture over rendering `examples/index-labels-misuse.qmd` or `examples/index-separators-scoped.qmd` to PDF, because neither holds all four shapes and a silent case; falsified by one of them reaching all four named forms with no edit.
+- 2026-10-20: lessons surfaced: M116 (fixture registration and `warn-distinct.py`'s count), M117 (plants resting on old output), M13 (the multi-index metadata key), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`).
+
+## Decisions
+
+## Review

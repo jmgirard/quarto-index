@@ -33270,6 +33270,7 @@ for needle in 'toc: true' \
     ': A table with an id, whose caption marks [cork]{#id-cork .index see-also="Oak"}. {#tbl-cork}' \
     '![A picture with no id, whose caption marks [date]{#id-date .index see="Oak"}.](dot.png)' \
     '![alt text that marks [elm]{#id-elm .index see="Oak"} and [gum]{#id-gum .index}](dot.png){width=1cm}.' \
+    '![outer alt text ![inner alt text that marks [nut]{#id-nut .index}](dot.png){width=5mm}](dot.png){width=1cm}.' \
     '[^hazel]: The footnote marks [hazel]{#id-hazel .index see="Oak"}.' \
     "::: {.callout-note title='A callout title that marks [ivy]{#id-ivy .index see=\"Oak\"}'}" \
     '## A callout heading that marks [jade]{#id-jade .index see="Oak"}' \
@@ -33320,7 +33321,7 @@ python3 tests/typstlabels.py labels "$M119W/clean/query.txt" "$M119_SRC" "M119-A
 python3 tests/typstlabels.py links "$M119_PDF" "$M119_SRC" \
     tests/typst-xref-places-links.tsv 12 "M119-AC3" \
   || fail "M119-AC3: a link to an author's id in $M119_SRC does not go to its mark's page (the report is above)"
-pass "M119-AC2/AC3: in the Typst render of $M119_SRC each label of a metadata element is on one element, and a link to each mark's author's id, two in an image's alt text and one in the alt text of an image in a listed caption among them, goes to that mark's page"
+pass "M119-AC2/AC3: in the Typst render of $M119_SRC each label of a metadata element is on one element, and a link to each mark's author's id, two in an image's alt text, one in the alt text of an image in another image's alt text and one in the alt text of an image in a listed caption among them, goes to that mark's page"
 
 if [ "${1:-}" = "--self-test" ]; then
   # -------------------------------------------------------------------------
@@ -33331,6 +33332,8 @@ if [ "${1:-}" = "--self-test" ]; then
   # written input instead.
   #   altid     the alt-text id move removed: the render stops, as it did
   #             before M119, on elm's id
+  #   nestid    the alt-text walk blind to the id elements an image in that
+  #             alt text wrote: the render stops on nut's id
   #   capid     `caption_moves` blind to the moved id elements: the list of
   #             figures copies lark's id and the render stops
   #   capspan   `caption_moves` leaving the span's id: beech's id is in the
@@ -33345,6 +33348,8 @@ if [ "${1:-}" = "--self-test" ]; then
   #             label twice
   #   link      ash's link pointed at kelp's id: AC3 reads page 10 first
   #   noquery   no JSON in the query's output: the AC2 floor
+  #   badjson   a line opening `[` that is not one JSON array: a FAIL line,
+  #             not a traceback
   #   nomarks   a JSON array with no qi-mark label: the AC2 mark floor
   #   noids     the fixture's ids taken out: the AC3 id scan floor
   #   table     a row for an id the fixture does not write: AC3
@@ -33372,7 +33377,7 @@ M119SPLICEPY
     cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
   }
 
-  # The three lines of links, taken out so that a copy whose ids name two
+  # The four lines of links, taken out so that a copy whose ids name two
   # elements still builds and AC2 can read it.
   m119_unlink() {   # <slug>
     python3 - "$M119P/$1/typst-xref-places.qmd" <<'M119UNLINKPY'
@@ -33380,8 +33385,8 @@ import sys
 path = sys.argv[1]
 lines = open(path, encoding='utf-8').read().split('\n')
 kept = [line for line in lines if '](#id-' not in line]
-if len(lines) - len(kept) != 3:
-    sys.exit(f'M119 self-test: {path} held {len(lines) - len(kept)} link line(s), not three')
+if len(lines) - len(kept) != 4:
+    sys.exit(f'M119 self-test: {path} held {len(lines) - len(kept)} link line(s), not four')
 open(path, 'w', encoding='utf-8').write('\n'.join(kept))
 M119UNLINKPY
   }
@@ -33408,6 +33413,13 @@ M119UNLINKPY
     || fail "M119 self-test (altid): the plant could not be written (its own message is above)"
   m119_red altid 'label `<id-elm>` does not exist in the document' \
     m119_query "$M119P/altid" typst-xref-places.qmd
+
+  m119_tree nestid
+  m119_splice "$M119P/nestid/$M119_TYPST_LUA" \
+    $'\n                or raw.text:find(ID_INLINE_OPEN, 1, true) == 1)' ')' \
+    || fail "M119 self-test (nestid): the plant could not be written (its own message is above)"
+  m119_red nestid 'label `<id-nut>` does not exist in the document' \
+    m119_query "$M119P/nestid" typst-xref-places.qmd
 
   m119_tree capid
   m119_splice "$M119P/capid/$M119_TYPST_LUA" \
@@ -33438,11 +33450,11 @@ M119UNLINKPY
   }
   m119_ac2_red heading _extensions/index/index.lua \
     $'      doc = qi_html.relocate_heading_anchors(doc)\n' '' \
-    'the query lists 11 qi-mark label(s), fewer than the 12 marks'
+    'the query lists 12 qi-mark label(s), fewer than the 13 marks'
   m119_ac2_red float "$M119_TYPST_LUA" \
     $'  local rest, moved = caption_moves(float.caption_long)\n' \
     $'  do return nil end\n  local rest, moved = caption_moves(float.caption_long)\n' \
-    'the label(s) <id-lark>, <qi-mark-12>, <qi-mark-3>, <qi-mark-4> are each on more than one metadata element'
+    'the label(s) <id-lark>, <qi-mark-13>, <qi-mark-3>, <qi-mark-4> are each on more than one metadata element'
   m119_ac2_red figure "$M119_TYPST_LUA" \
     $'  local rest, moved = caption_moves(figure.caption.long)\n' \
     $'  do return nil end\n  local rest, moved = caption_moves(figure.caption.long)\n' \
@@ -33460,8 +33472,11 @@ M119UNLINKPY
   grep -v '^\[' "$M119W/clean/query.txt" > "$M119P/noquery.txt" || true
   m119_red noquery "holds 0 line(s) opening \`[\`" \
     python3 tests/typstlabels.py labels "$M119P/noquery.txt" "$M119_SRC" "M119 self-test (noquery)"
+  printf '[{"func":"metadata",\n' > "$M119P/badjson.txt"
+  m119_red badjson 'is not one JSON array' \
+    python3 tests/typstlabels.py labels "$M119P/badjson.txt" "$M119_SRC" "M119 self-test (badjson)"
   printf '[{"func":"metadata","value":null,"label":"<id-beech>"}]\n' > "$M119P/nomarks.txt"
-  m119_red nomarks 'the query lists 0 qi-mark label(s), fewer than the 12 marks' \
+  m119_red nomarks 'the query lists 0 qi-mark label(s), fewer than the 13 marks' \
     python3 tests/typstlabels.py labels "$M119P/nomarks.txt" "$M119_SRC" "M119 self-test (nomarks)"
 
   sed -E 's/\{#id-[a-z]+ /{/g' "$M119_SRC" > "$M119P/noids.qmd"
@@ -33475,7 +33490,7 @@ M119UNLINKPY
     python3 tests/typstlabels.py links "$M119_PDF" "$M119_SRC" \
       "$M119P/table.tsv" 12 "M119 self-test (table)"
 
-  pass "M119 self-test: the render is red on an id left in an image's alt text, a moved id left in a caption and a span's id left in a caption; the AC2 check on a label lost in a heading and on labels left in a float's caption and a figure's caption; the AC3 check on a link to another mark; and each floor on an empty domain"
+  pass "M119 self-test: the render is red on an id left in an image's alt text, an id left in the alt text an inner image wrote it to, a moved id left in a caption and a span's id left in a caption; the AC2 check on a label lost in a heading and on labels left in a float's caption and a figure's caption; the AC3 check on a link to another mark; and each floor on an empty domain"
 fi
 
 # ---------------------------------------------------------------------------

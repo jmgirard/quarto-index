@@ -46,6 +46,8 @@ starts the next page. No term holds the letters `f` and `i`, `f` and `l`, two
 
 An image that is not a figure, whose alt text marks two terms:
 ![alt text that marks [elm]{#id-elm .index see="Oak"} and [gum]{#id-gum .index}](dot.png){width=1cm}.
+An image whose alt text holds an image:
+![outer alt text ![inner alt text that marks [nut]{#id-nut .index}](dot.png){width=5mm}](dot.png){width=1cm}.
 
 {{< pagebreak >}}
 
@@ -82,4 +84,5 @@ A callout body that marks [kelp]{#id-kelp .index see="Oak"}.
 A link to each mark's id:
 [ash](#id-ash), [Oak](#id-oak), [beech](#id-beech), [cork](#id-cork),
 [date](#id-date), [elm](#id-elm), [gum](#id-gum), [hazel](#id-hazel),
-[ivy](#id-ivy), [jade](#id-jade), [kelp](#id-kelp), [lark](#id-lark).
+[ivy](#id-ivy), [jade](#id-jade), [kelp](#id-kelp), [lark](#id-lark),
+[nut](#id-nut).

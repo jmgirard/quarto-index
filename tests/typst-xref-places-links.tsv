@@ -17,6 +17,7 @@
 #   id-jade   the callout title written as its first heading, page 9
 #   id-kelp   the callout body, page 10
 #   id-lark   the alt text of the image in the caption on page 11
+#   id-nut    the alt text of the image in another image's alt text, page 6
 id-ash	2
 id-oak	2
 id-beech	3
@@ -29,3 +30,4 @@ id-ivy	8
 id-jade	9
 id-kelp	10
 id-lark	11
+id-nut	6

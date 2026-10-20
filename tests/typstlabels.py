@@ -54,7 +54,11 @@ def labels(query_path, fixture, name):
     if len(lines) != 1:
         fail(name, f'{query_path} holds {len(lines)} line(s) opening `[`, '
                    f'not the one JSON array the query writes')
-    elements = json.loads(lines[0])
+    try:
+        elements = json.loads(lines[0])
+    except json.JSONDecodeError as error:
+        fail(name, f'the line opening `[` in {query_path} is not one JSON '
+                   f'array ({error})')
     seen = {}
     for element in elements:
         label = element.get('label')

@@ -456,7 +456,8 @@ local function assign_labels(doc, taken)
     -- above has already written them. An author's id on a mark there is
     -- dropped the same way, so a link to it would name no label and stop the
     -- compile: each such id moves after the image too, as an element of its
-    -- own (M119).
+    -- own (M119). An image in this alt text has already moved its own labels
+    -- and ids next to it, still inside this alt text, so they move again.
     Image = function(image)
       local moved = {}
       image.caption = image.caption:walk({
@@ -471,7 +472,8 @@ local function assign_labels(doc, taken)
         end,
         RawInline = function(raw)
           if raw.format == "typst"
-              and raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true) then
+              and (raw.text:find("<" .. qi_core.TYPST_LABEL_PREFIX, 1, true)
+                or raw.text:find(ID_INLINE_OPEN, 1, true) == 1) then
             moved[#moved + 1] = raw
             return {}
           end

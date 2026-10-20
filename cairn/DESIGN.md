@@ -1083,7 +1083,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   subfigures, images or tables, a callout beside a code block, a code cell's
   output Div), and a figure with no id whose first block is not a Plain or
   Para, which no fixture holds. The candidate row "Laid-out float caption
-  marks" holds the first. A code listing with a `filename` is of the first
+  marks" holds the first. Since M119 the same holds for a mark in the alt
+  text of an image in such a caption: its id moves out of the alt text but
+  stays in the caption, and a link to it fails with "occurs multiple times"
+  under a list (M119 review diff-bug #2). A code listing with a `filename` is of the first
   kind: Quarto hands the stage a Div for it (M115 review pass 5). A
   subfigure's or subtable's own caption labels move into its content, which
   the M115 review rendered with an unchanged layout and no fixture holds. A

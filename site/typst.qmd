@@ -84,7 +84,10 @@ page.
   text to Typst as a plain string, which Typst does not print, so the
   extension writes the mark's label, and an id you give the mark, just after
   the image. A link to that id builds and goes to the
-  image's page.
+  image's page. Where the image sits in the caption of a float that keeps its
+  labels in its caption, a list copies the id, and a link to it fails, as for
+  a caption mark. See [Lists of figures, tables and
+  listings](#lists-of-figures-tables-and-listings) for which floats.
 
 ## Cross-references
 

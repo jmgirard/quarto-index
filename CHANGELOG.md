@@ -25,8 +25,10 @@
   laid out in cells and a figure inside a code cell's output div. A mark in
   an image's alt text files the image's page, and an id you give that mark is
   written just after the image, so a link to the id builds. Before this
-  change, a link to such an id stopped the render, unless the image sat in a
-  float's caption. A mark in
+  change, a link to such an id stopped the render, unless the image sat in
+  the caption of a float of the kind above. In the caption of other floats,
+  such as a grid of images, a list of those floats copies the id with the
+  caption, and a link to it still fails. A mark in
   a front-matter field the Typst template does not print, such as
   `description:`, adds no page number. If all the page-number marks of an
   entry are such marks, and no cross-reference or sub-entry of it prints,

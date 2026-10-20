@@ -144,7 +144,14 @@ A letter group none of whose entries prints has no heading. Such an entry
 that is kept for a sub-entry that prints shows no page number of its own, and
 so does an entry whose range opens in such a field and closes on a page.
 
-Three limits remain. A `see=` or `see-also=` mark in such a field still
-prints its cross-reference. A cross-reference whose target is left out still
-prints, and nothing reports it. An index whose every entry is left out still
-prints its heading, where an index that no mark files in prints nothing.
+A `see=` or `see-also=` mark in such a field adds no cross-reference. A
+cross-reference prints where one of the marks that write it is on a page.
+A cross-reference whose target term is left out is not printed, and nothing
+reports it. Where the target was the first of its kind, the word `see` or
+`see also` goes in front of the next target of that kind that prints. An
+entry left with nothing that prints is left out. Two terms whose
+cross-references point at each other both print, if a mark of each is on a
+page. A target that no mark files still prints, and the dangling-target
+report names it. An index whose every entry is left out prints nothing: no
+heading, no line in the table of contents and no page, as an index that no
+mark files in prints nothing.

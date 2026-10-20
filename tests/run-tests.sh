@@ -14572,7 +14572,7 @@ done
 pass "M14-AC2: a fixture whose every target resolves — an exact single-level match, a full multi-level path, and a level that exists only as a parent — draws no report in any of the three formats"
 
 # The milestone-local decision on what makes a target resolve says the report
-# and the HTML back-end's own walk (`lookup_entry`) must agree, and that they
+# and the HTML back-end's own walk (`qi_entries.lookup_entry`) must agree, and that they
 # cannot share code: the entry tree exists in one format only. The agreement
 # is asserted here instead. In the HTML index a target is a link exactly when
 # the walk found its entry, so the set of unlinked targets must be exactly the
@@ -31227,10 +31227,15 @@ floor warning	It prints the warning `The typst format is not supported by book p
 unprinted field	so it adds no page number.
 unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
 unprinted group	A letter group none of whose entries prints has no heading.
-unprinted see mark	A `see=` or `see-also=` mark in such a field still prints its cross-reference.
-unprinted target	A cross-reference whose target is left out still prints, and nothing reports it.
+unprinted see mark	A `see=` or `see-also=` mark in such a field adds no cross-reference.
+unprinted writers	A cross-reference prints where one of the marks that write it is on a page.
+unprinted target	A cross-reference whose target term is left out is not printed, and nothing reports it.
+unprinted word	Where the target was the first of its kind, the word `see` or `see also` goes in front of the next target of that kind that prints.
+unprinted emptied	An entry left with nothing that prints is left out.
+unprinted cycle	Two terms whose cross-references point at each other both print, if a mark of each is on a page.
+unprinted dangling	A target that no mark files still prints, and the dangling-target report names it.
 unprinted kept	Such an entry that is kept for a sub-entry that prints shows no page number of its own, and so does an entry whose range opens in such a field and closes on a page.
-unprinted heading	An index whose every entry is left out still prints its heading, where an index that no mark files in prints nothing.
+unprinted heading	An index whose every entry is left out prints nothing: no heading, no line in the table of contents and no page, as an index that no mark files in prints nothing.
 M098PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \
   || fail "M098-AC7: site/typst.qmd no longer states what a Typst render prints (its own FAIL line is above)"
@@ -31285,13 +31290,16 @@ python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
   || fail "M098-AC7 and M110-AC1: site/books.qmd no longer states that a Typst book is merged, the Quarto it was tested on, or that Quarto 1.5.52 renders none (its own FAIL line is above)"
 # The Typst page states no exit status for Quarto 1.5.52, because M109 saw the
 # two test books exit differently. Its retired clause is held off every page,
-# and so is the Typst page's sentence M117 retired.
+# and so are the Typst page's sentences M117 and M118 retired.
 cat > "$WORK/m110-retired.txt" <<'M110RETIRED'
 floor exit	exits without an error
 unprinted term kept	Its term is still in the index
+unprinted limits	Three limits remain
+unprinted see mark	still prints its cross-reference
+unprinted heading	still prints its heading
 M110RETIRED
 python3 tests/sitecheck.py phrase-absent "$WORK/m110-retired.txt" \
-  || fail "M110-AC3 and M117: a page a reader meets still carries a retired phrase, <<exits without an error>> or <<Its term is still in the index>> (its own FAIL line is above)"
+  || fail "M110-AC3, M117 and M118: a page a reader meets still carries a retired phrase, such as <<exits without an error>>, <<Its term is still in the index>> or <<Three limits remain>> (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
 matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS
@@ -31309,7 +31317,7 @@ python3 tests/sitecheck.py claims site/tests.qmd "$WORK/m106-tests-claims.txt" \
   || fail "M106: site/tests.qmd no longer states the version matrix's Typst render, two-index PDF reading or book EPUB reading (its own FAIL line is above)"
 cat > "$WORK/m098-changelog-claims.txt" <<'M098CHANGE'
 new back-end	A new back-end for Typst.
-what it prints	prints each declared index that holds at least one mark, with page locators, in two columns, and needs no Typst package
+what it prints	prints each declared index that has an entry to print, with page locators, in two columns, and needs no Typst package
 ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep as they are written.
 locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
 words	The see and see-also words follow `lang:` and `index-labels:`.
@@ -31317,6 +31325,9 @@ books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template ne
 unprinted field	`description:`, adds no page number.
 unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
 unprinted group	It also leaves out a letter group with no entry left.
+unprinted see mark	A cross-reference mark in such a field adds no cross-reference.
+unprinted target	A cross-reference whose target term is left out is not printed, and nothing reports it.
+unprinted emptied	An entry left with nothing that prints is left out, and an index whose every entry is left out prints nothing: no heading, no line in the table of contents and no page.
 M098CHANGE
 python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m098-changelog-claims.txt" \
   || fail "M098-AC7: CHANGELOG.md no longer states the Typst back-end (its own FAIL line is above)"
@@ -31512,8 +31523,9 @@ fi
 pass "M117-AC1, M118-AC1, M118-AC2, M118-AC3: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference prints where a mark writing it is on a page and its target prints, two terms pointing at each other print, and a target no mark files prints and is reported; an index left with no entry prints what an index no mark files in prints"
 
 if [ "${1:-}" = "--self-test" ]; then
-  # M117 T2 self-test: each part of the rule planted on its own in a copy of
-  # the extension, and the check shown red on the row that part keeps.
+  # M117 T2 and M118 T5 self-test: each part of the rule planted on its own
+  # in a copy of the extension, and the check shown red on the row that part
+  # keeps.
   M117W="$WORK/m117plant"
   rm -rf "$M117W"
   m117_plant() {   # <slug> <perl substitution on typst.lua> <want>
@@ -31537,23 +31549,39 @@ if [ "${1:-}" = "--self-test" ]; then
   }
   # Each <want> is the first row the plant prints where the manifest has
   # another, as `typstindex.py` reports it: the row that part of the rule
-  # keeps out, or the row printed where the left-out one belongs.
-  # Every entry prints, as before M117, so Horn prints under Cleat.
-  m117_plant allentries 's{if labelled or }{if true or }' "-> 5: got 'entry\t1\tHorn"
+  # keeps out, or the row printed where the left-out one belongs. The plants
+  # are M117's and M118's together, since M118 rewrote the rule M117's were
+  # written against.
+  # Every entry prints, as before M117, so Block prints with no
+  # cross-reference.
+  m117_plant allentries 's{  if prints \{}{  if true \{}' "-> 2: got 'entry\t0\tBlock\t\t'"
   # Every letter-group heading prints, as before M117.
-  m117_plant allgroups 's{if live == nil then}{if true then}' "got 'group\tH'"
-  # Only an entry's direct sub-entries are read, so Fender, whose only
-  # printing sub-entry is two levels down, is left out with its group.
-  m117_plant onedepth 's{for _, key in ipairs\(entry\.sorted\) do}{for _, key in ipairs({}) do}' "-> 8: got 'entry\t1\tRope"
-  # A sub-entry's cross-reference does not keep its parent, so Gaff is left
-  # out with its group.
-  m117_plant noxref 's{if #entry\.xrefs > 0 then}{if false then}' "-> 12: got 'entry\t1\tJaw"
-  # Only an entry's opening labels are read, so Mast!Step and Rig, whose
-  # ranges open in the description and close on page 2, are left out.
-  m117_plant noclose 's{ \+ items\.map\(item => item\.at\(1\)\)\.filter\(l => l != none\)}{}' "-> 19: want 'entry\t1\tStep"
-  # Only sub-entries' opening labels are read, so Mast, kept by its
-  # sub-entry's closing mark alone, is left out with its group.
-  m117_plant noclosebelow 's{      if locator\.close ~= nil then\n        labels\[#labels \+ 1\] = "<" \.\. locator\.close \.\. ">,"\n      end\n}{}' "-> 17: got 'entry\t1\tStep"
+  m117_plant allgroups 's{\.any\(n => qi-p\.at\(n\)\)}{.any(n => true)}' "-> 15: got 'group\tH'"
+  # A sub-entry that prints does not keep its parent, so Davit is left out
+  # with its group and Arm prints under none.
+  m117_plant nokids 's{for k in node\.kids \{}{for k in () \{}' "-> 5: got 'entry\t1\tArm"
+  # Only an entry's opening labels are read, so Rig and Mast!Step, whose
+  # ranges open in the description and close on page 2, are left out, and
+  # Mast with them.
+  m117_plant noclose 's{      if locator\.close ~= nil then\n        own\[#own \+ 1\] = "<" \.\. locator\.close \.\. ">,"\n      end\n}{}' "-> 18: got 'group\tP'"
+  # M118: a cross-reference mark's label is not read, as before M118, so
+  # Boom!Vang, written in the description alone, prints and keeps Boom.
+  m117_plant nolabel 's{    if mark\.label == nil then\n      return "true"}{    if true then\n      return "true"}' "-> 2: got 'entry\t0\tBoom\t\t'"
+  # M118: only the first mark writing a cross-reference is read, so Thwart,
+  # whose first mark is in the description, is left out.
+  m117_plant firstwriter 's{for _, mark in ipairs\(xref\.writers\) do}{for _, mark in ipairs({ xref.writers[1] }) do}' "-> 27: got 'group\tY'"
+  # M118: an entry keeps a cross-reference whose target is left out, so
+  # Block prints, with nothing after it.
+  m117_plant deadkept 's{\(target == none or prints\.at\(target\)\)}{true}' "-> 2: got 'entry\t0\tBlock\t\t'"
+  # M118: a cross-reference prints whether its target prints or not, so
+  # Clew prints Sheave.
+  m117_plant deadshown 's{"\(%s and qi-p\.at\(%d\)\)"}{"(%s or qi-p.at(%d))"}' "-> 4: got 'entry\t0\tClew\t\tsee|Sheave; Paddle'"
+  # M118: a target prints only where its own labels name an element, so
+  # Tack and Yawl, which point at each other, are left out.
+  m117_plant owntarget 's{prints\.at\(target\)\)\)}{own.at(target)))}' "-> 26: want 'entry\t0\tTack\t\tsee|Yawl'"
+  # M118: the index's heading and page are written whether an entry prints
+  # or not, so the second index prints its heading.
+  m117_plant noindexcond 's{"if qi-p\.any\(p => p\) \["}{"if true ["}' "-> 30: got 'group\tSpare Index'"
 fi
 
 # A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text

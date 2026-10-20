@@ -87,24 +87,9 @@ local function html_locator(node, mark)
   end
 end
 
--- Find the entry a cross-reference target names, matching on the parsed level
--- list rather than on the rendered string: a single level that happens to
--- contain the level join reads identically to a two-level target and must not
--- resolve to it.
-local function lookup_entry(root, levels)
-  local node = root
-  for _, level in ipairs(levels) do
-    node = node.children[level]
-    if not node then
-      return nil
-    end
-  end
-  return node
-end
-
 local function target_span(root, xref)
   local inlines = qi_entries.literal_inlines(qi_entries.target_text(xref.levels))
-  local entry = lookup_entry(root, xref.levels)
+  local entry = qi_entries.lookup_entry(root, xref.levels)
   if entry then
     inlines = pandoc.List({ pandoc.Link(inlines, "#" .. entry.id) })
   end
@@ -780,7 +765,6 @@ end
 -- `NAME =` line left behind here would then mask it (M16 review F3).
 M["mark_target"] = mark_target
 M["html_locator"] = html_locator
-M["lookup_entry"] = lookup_entry
 M["target_span"] = target_span
 M["entry_inlines"] = entry_inlines
 M["entry_list"] = entry_list

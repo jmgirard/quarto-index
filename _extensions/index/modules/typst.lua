@@ -41,13 +41,18 @@ local M = {}
 -- tree recorded. Each label is looked up while the document is typeset, and
 -- a label no element carries adds no locator rather than failing the render
 -- (IP2). A mark in a front-matter field the template does not print has such
--- a label. `below` is `true` where a sub-entry at any depth
--- has a cross-reference, and otherwise the opening and closing labels of
--- every sub-entry at any depth. An entry none of whose opening or closing
--- labels names an element, with no cross-reference, and none of whose `below`
--- labels names one prints nothing (M117). A range whose closing label alone
--- names one adds no locator and keeps its entry. `qi-index-live` says whether
--- any label of a list names an element.
+-- a label. `prints` says whether the entry prints at all, and `xrefs` holds
+-- one `(kind, word, target, prints)` per cross-reference.
+-- `qi-index-prints` decides, for every entry of an index at once, whether it
+-- prints: where one of its own opening or closing labels names an element
+-- (M117), where a sub-entry prints, or where a cross-reference prints. A
+-- cross-reference prints where a label of a mark writing it names an element
+-- and its target prints, or names no entry of the index (M118). It starts
+-- from every entry printing and drops an entry none of whose reasons holds
+-- until nothing changes, so two entries whose cross-references point at
+-- each other, from marks on a page, both print. A range whose closing label
+-- alone names one adds no locator and keeps its entry. `qi-index-live` says
+-- whether any label of a list names an element.
 -- The locators are ordered by the class and value of their opening
 -- page, then by opening and closing physical page, a single mark before a
 -- range, one stable sort per field, least significant first (M100). A range whose two ends print the same text
@@ -93,7 +98,34 @@ local TYPST_HELPERS = [[
   }
 }
 #let qi-index-live(labels) = labels.any(l => query(l).len() > 0)
-#let qi-index-entry(depth, term, items, xrefs, below) = context {
+#let qi-index-prints(nodes) = {
+  let own = nodes.map(n => qi-index-live(n.own))
+  let backed = nodes.map(n => n.xrefs.map(x => x.at(0) == true or qi-index-live(x.at(0))))
+  let prints = nodes.map(n => true)
+  let changed = true
+  while changed {
+    changed = false
+    for i in range(nodes.len()) {
+      if prints.at(i) {
+        let node = nodes.at(i)
+        let keep = own.at(i)
+        for k in node.kids {
+          keep = keep or prints.at(k)
+        }
+        for j in range(node.xrefs.len()) {
+          let target = node.xrefs.at(j).at(1)
+          keep = keep or (backed.at(i).at(j) and (target == none or prints.at(target)))
+        }
+        if not keep {
+          prints.at(i) = false
+          changed = true
+        }
+      }
+    }
+  }
+  (prints, backed)
+}
+#let qi-index-entry(depth, term, items, xrefs, prints) = context {
   let found = ()
   for item in items {
     let opened = query(item.at(0))
@@ -113,7 +145,6 @@ local TYPST_HELPERS = [[
       found.push((start: start, stop: stop, shown: shown, bold: item.at(2), class: class, value: value, high: high, single: single, spans: not single and high-class == class and high > value))
     }
   }
-  let labelled = qi-index-live(items.map(item => item.at(0)) + items.map(item => item.at(1)).filter(l => l != none))
   found = found.sorted(key: f => if f.single { 0 } else { 1 })
   found = found.sorted(key: f => f.stop.page())
   found = found.sorted(key: f => f.start.page())
@@ -133,13 +164,18 @@ local TYPST_HELPERS = [[
       merged.at(at) = kept
     }
   }
-  if labelled or xrefs.len() > 0 or below == true or qi-index-live(below) {
+  if prints {
     let line = [#term]
     for f in merged {
       line = line + [, ] + link(f.start.position(), if f.bold { strong(f.shown) } else { f.shown })
     }
-    for (i, xref) in xrefs.enumerate() {
-      line = line + (if i == 0 { [, ] } else { [; ] }) + xref
+    let kind = none
+    let lead = true
+    for xref in xrefs.filter(x => x.at(3)) {
+      let part = if xref.at(0) != kind [#emph(xref.at(1)) #(xref.at(2))] else [#(xref.at(2))]
+      line = line + (if lead { [, ] } else { [; ] }) + part
+      kind = xref.at(0)
+      lead = false
     }
     block(above: 0.45em, below: 0.45em, inset: (left: depth * 1.2em), par(hanging-indent: 2.4em, justify: false, line))
   }
@@ -170,7 +206,9 @@ end
 -- Marks reach this in document order, so the opening a closing belongs to is
 -- the one this node still holds open.
 local function typst_locator(node, mark)
-  if mark.label == nil then
+  -- A cross-reference mark's label says only whether its cross-reference
+  -- prints, so it adds no locator.
+  if mark.label == nil or #mark.xrefs > 0 then
     return
   end
   if mark.paired == "close" then
@@ -187,125 +225,139 @@ local function typst_locator(node, mark)
   end
 end
 
--- What `qi-index-entry` reads as `below` for the sub-entries of `node`, at any
--- depth: `true` where one has a cross-reference, which prints whatever page
--- its marks are on, and otherwise a Typst array of their opening and closing
--- labels. `self` adds `node`'s own, for a letter group, whose heading prints
--- where any of its entries does. Sub-entries are read in their printed order,
--- `sorted`, which `number_entries` has set, so the Typst written is the same
--- on every render.
-local function labels_below(node, self)
+-- Number every entry of the tree from 0, depth first in printed order, which
+-- `number_entries` has set, so the Typst written is the same on every render.
+-- The number is the entry's place in the array `qi-index-prints` reads.
+local function number_nodes(root)
+  local nodes = {}
+  local function walk(node)
+    for _, key in ipairs(node.sorted) do
+      local child = node.children[key]
+      child.typst_node = #nodes
+      nodes[#nodes + 1] = child
+      walk(child)
+    end
+  end
+  walk(root)
+  return nodes
+end
+
+-- The labels of the marks that write a cross-reference, as a Typst array, or
+-- `true` where one of them has no label: such a mark was never given a place
+-- in the document to look up, so its cross-reference prints, as it did before
+-- M118, rather than being lost (IP2).
+local function writer_labels(xref)
   local labels = {}
-  local function add(entry)
-    for _, locator in ipairs(entry.locators) do
-      labels[#labels + 1] = "<" .. locator.label .. ">,"
-      if locator.close ~= nil then
-        labels[#labels + 1] = "<" .. locator.close .. ">,"
-      end
-    end
-  end
-  local function walk(entry)
-    if #entry.xrefs > 0 then
-      return true
-    end
-    add(entry)
-    for _, key in ipairs(entry.sorted) do
-      if walk(entry.children[key]) then
-        return true
-      end
-    end
-    return false
-  end
-  if self then
-    if #node.xrefs > 0 then
+  for _, mark in ipairs(xref.writers) do
+    if mark.label == nil then
       return "true"
     end
-    add(node)
-  end
-  for _, key in ipairs(node.sorted) do
-    if walk(node.children[key]) then
-      return "true"
-    end
+    labels[#labels + 1] = "<" .. mark.label .. ">,"
   end
   return "(" .. table.concat(labels, " ") .. ")"
 end
 
+-- The array `qi-index-prints` reads: for each entry, its own opening and
+-- closing labels, the numbers of its sub-entries, and for each of its
+-- cross-references the labels of the marks writing it and the number of the
+-- entry its target names, or `none` where this index files no such entry.
+local function nodes_array(root, nodes)
+  local out = {}
+  for _, node in ipairs(nodes) do
+    local own = {}
+    for _, locator in ipairs(node.locators) do
+      own[#own + 1] = "<" .. locator.label .. ">,"
+      if locator.close ~= nil then
+        own[#own + 1] = "<" .. locator.close .. ">,"
+      end
+    end
+    local kids = {}
+    for _, key in ipairs(node.sorted) do
+      kids[#kids + 1] = node.children[key].typst_node .. ","
+    end
+    local xrefs = {}
+    for _, xref in ipairs(node.xrefs) do
+      local target = qi_entries.lookup_entry(root, xref.levels)
+      xrefs[#xrefs + 1] = ("(%s, %s),"):format(writer_labels(xref),
+        target and tostring(target.typst_node) or "none")
+    end
+    out[#out + 1] = ("(own: (%s), kids: (%s), xrefs: (%s)),"):format(
+      table.concat(own, " "), table.concat(kids, " "), table.concat(xrefs, " "))
+  end
+  return "(" .. table.concat(out, "\n") .. ")"
+end
+
 -- One entry's call to `qi-index-entry`, then its sub-entries', depth first.
-local function entry_lines(node, depth, name, out)
+-- `qi-p` and `qi-b` are what `qi-index-prints` returned for the index.
+local function entry_lines(root, node, depth, name, out)
   local items = {}
   for _, locator in ipairs(node.locators) do
     local close = locator.close and ("<" .. locator.close .. ">") or "none"
     items[#items + 1] = ("(<%s>, %s, %s),"):format(locator.label, close,
       tostring(locator.role == "principal"))
   end
-  -- `node.xrefs` holds each kind's targets together, `see` first, so the
-  -- kind's word goes in front of its first target only, and `qi-index-entry`
-  -- joins the items with `; `: `see A; B` (M116).
+  -- `node.xrefs` holds each kind's targets together, `see` first. Each is
+  -- `(kind, word, target, prints)`, and `qi-index-entry` puts the kind's word
+  -- in front of the first target of that kind that prints, and joins them
+  -- with `; `: `see A; B` (M116). A cross-reference prints where a mark
+  -- writing it is on a page and its target prints, or names no entry here.
   local xrefs = {}
-  local previous_kind = nil
-  for _, xref in ipairs(node.xrefs) do
-    local target = typst_string(qi_entries.target_text(xref.levels))
-    if xref.kind.attr ~= previous_kind then
-      xrefs[#xrefs + 1] = ("[#emph(%s) #(%s)],"):format(
-        typst_string(qi_indexes.label(name, xref.kind.label_key, xref.kind.label)),
-        target)
-    else
-      xrefs[#xrefs + 1] = ("[#(%s)],"):format(target)
+  for j, xref in ipairs(node.xrefs) do
+    local target = qi_entries.lookup_entry(root, xref.levels)
+    local prints = ("qi-b.at(%d).at(%d)"):format(node.typst_node, j - 1)
+    if target ~= nil then
+      prints = ("(%s and qi-p.at(%d))"):format(prints, target.typst_node)
     end
-    previous_kind = xref.kind.attr
+    xrefs[#xrefs + 1] = ("(%s, %s, %s, %s),"):format(typst_string(xref.kind.attr),
+      typst_string(qi_indexes.label(name, xref.kind.label_key, xref.kind.label)),
+      typst_string(qi_entries.target_text(xref.levels)), prints)
   end
-  out[#out + 1] = ("#qi-index-entry(%d, %s, (%s), (%s), %s)"):format(depth,
+  out[#out + 1] = ("#qi-index-entry(%d, %s, (%s), (%s), qi-p.at(%d))"):format(depth,
     typst_string(node.key), table.concat(items, " "), table.concat(xrefs, " "),
-    labels_below(node, false))
+    node.typst_node)
   for _, key in ipairs(node.sorted) do
-    entry_lines(node.children[key], depth + 1, name, out)
+    entry_lines(root, node.children[key], depth + 1, name, out)
   end
 end
 
--- One index's blocks: a page break, the heading, then one raw Typst block
--- holding the letter groups in two columns and a page break after them. The
--- heading is Typst's own level-one `heading`, unnumbered, so Typst lists it in
--- the outline as the PDF back-end's `intoc` does. It is raw Typst rather than
--- a Pandoc header: in a document whose headings start at `##`, Quarto moves
+-- One index's block of raw Typst: a page break, the heading, the letter
+-- groups in two columns, and a page break after them, all written only where
+-- one of the index's entries prints, so an index whose every entry is left out
+-- prints nothing, as an index no mark files in does (M118). The heading is
+-- Typst's own level-one `heading`, unnumbered, so Typst lists it in the
+-- outline as the PDF back-end's `intoc` does. It is raw Typst rather than a
+-- Pandoc header: in a document whose headings start at `##`, Quarto moves
 -- every Pandoc header up a level for Typst, and a level-one header then prints
 -- as a plain paragraph the outline does not list (observed on Quarto 1.10.18
--- with examples/typst-index.qmd, M098 claim audit). The page breaks are weak, so
--- they add no blank page, and they give each index a page of its own as
+-- with examples/typst-index.qmd, M098 claim audit). The page breaks are weak,
+-- so they add no blank page, and they give each index a page of its own as
 -- LaTeX's two-column index does.
 local function index_blocks(root, name)
-  local out = { "#[", TYPST_HELPERS, "#columns(2, gutter: 2em)[" }
+  local nodes = number_nodes(root)
+  local out = { "#[", TYPST_HELPERS, "#let qi-nodes = " .. nodes_array(root, nodes),
+    "#context {", "let (qi-p, qi-b) = qi-index-prints(qi-nodes)",
+    "if qi-p.any(p => p) [", "#pagebreak(weak: true)",
+    ("#heading(level: 1, numbering: none)[#(%s)]"):format(
+      typst_string(qi_indexes.title(name))),
+    "#columns(2, gutter: 2em)[" }
   for _, group in ipairs(qi_entries.letter_groups(root, name)) do
     -- A group's heading prints where one of its entries prints (M117).
-    local live = {}
+    local numbers = {}
     for _, key in ipairs(group.keys) do
-      local below = labels_below(root.children[key], true)
-      if below == "true" then
-        live = nil
-        break
-      end
-      live[#live + 1] = below:sub(2, -2)
+      numbers[#numbers + 1] = root.children[key].typst_node .. ","
     end
-    local heading = ("block(above: 1.1em, below: 0.6em)[#strong(%s)]"):format(
-      typst_string(group.heading))
-    if live == nil then
-      out[#out + 1] = "#" .. heading
-    else
-      out[#out + 1] = ("#context if qi-index-live((%s)) { %s }"):format(
-        table.concat(live, " "), heading)
-    end
+    out[#out + 1] = ("#if (%s).any(n => qi-p.at(n)) { block(above: 1.1em, below: 0.6em)[#strong(%s)] }")
+      :format(table.concat(numbers, " "), typst_string(group.heading))
     for _, key in ipairs(group.keys) do
-      entry_lines(root.children[key], 0, name, out)
+      entry_lines(root, root.children[key], 0, name, out)
     end
   end
   out[#out + 1] = "]"
-  out[#out + 1] = "]"
   out[#out + 1] = "#pagebreak(weak: true)"
-  return pandoc.Blocks({
-    pandoc.RawBlock("typst", "#pagebreak(weak: true)"),
-    pandoc.RawBlock("typst", ("#heading(level: 1, numbering: none)[#(%s)]")
-      :format(typst_string(qi_indexes.title(name)))),
-    pandoc.RawBlock("typst", table.concat(out, "\n")),
-  })
+  out[#out + 1] = "]"
+  out[#out + 1] = "}"
+  out[#out + 1] = "]"
+  return pandoc.Blocks({ pandoc.RawBlock("typst", table.concat(out, "\n")) })
 end
 
 -- A map from index name to that index's blocks, holding an entry only for an
@@ -358,9 +410,10 @@ local function assign_labels(doc, taken)
       end
       span.attributes[qi_core.HTML_PENDING_ATTR] = nil
       local record = qi_marks.html_marks[tonumber(pending)]
-      -- A cross-reference mark is tagged only for the HTML id contest, and it
-      -- contributes no locator, so it gets no label.
-      if record == nil or record.anchorless then
+      -- A cross-reference mark contributes no locator, and it gets a label
+      -- all the same: its cross-reference prints where one of the marks
+      -- writing it is on a page (M118).
+      if record == nil then
         return span
       end
       repeat

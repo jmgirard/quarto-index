@@ -514,11 +514,18 @@ Three back-ends ship:
   location, since M099 review R1: a link to a location fails to compile
   under a two-argument numbering function). A label no element carries adds
   no locator, so a mark Quarto's template never prints cannot fail the render
-  (IP2). Each entry call also carries its sub-entries' opening and closing
-  labels at any depth, or `true` where one has a cross-reference, and an
-  entry none of whose opening or closing labels is found, with no
-  cross-reference and no such sub-entry, prints nothing; a letter-group
-  heading prints where an entry of its group does (M117). Every term, word and heading is a Typst string literal, so no
+  (IP2). The index block lists every entry's opening and closing labels,
+  its sub-entries, and each cross-reference's writing marks' labels and
+  target entry, and `qi-index-prints` decides once for the index which
+  entries print: one whose own label is found (M117), one with a sub-entry
+  that prints, or one with a cross-reference that prints, which needs a
+  writing mark's label found and a target that prints or that the index
+  does not file (M118). It starts from every entry printing and drops
+  entries until nothing changes, so a cycle of cross-references from marks
+  on a page prints. A cross-reference mark is labelled for this and adds no
+  locator; one with no label prints as before. A letter-group heading prints
+  where an entry of its group does, and the index's page break, heading and
+  columns are written only where an entry prints. Every term, word and heading is a Typst string literal, so no
   character is read as markup. No Typst package is imported (GP3). As for
   EPUB, `is_html` stays the sole gate on the sidecar store: Quarto renders a
   Typst book in one Pandoc process.
@@ -1053,21 +1060,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The Typst back-end
 
-- **KI321.** A cross-reference mark (`see=`, `see-also=`) in a front-matter
-  field Quarto's Typst template does not print has no label, so the Typst
-  index still prints its cross-reference, where M117 leaves out an entry
-  whose page-number marks are all in such a field. Observed on Quarto 1.10.19
-  (corrected M117) with `examples/typst-unprinted.qmd` (`Oar, see Paddle`). —
-  M117 plan audit
-- **KI322.** A cross-reference whose target term the Typst index leaves out
-  (M117) still prints, and no dangling-target report fires, because the
-  filter counts the target as marked. Observed on Quarto 1.10.19 (corrected
-  M117) with `examples/typst-unprinted.qmd` (`Block, see Sheave`). — M117
-  plan audit
-- **KI323.** A Typst index whose every entry is left out (M117) still prints
-  its heading over an empty page, where an index no mark files in prints
-  nothing. Observed on Quarto 1.10.19 (corrected M117) with
-  `examples/typst-unprinted.qmd` (`Spare Index`). — M117 plan
 - **KI318.** A mark in the caption of a float whose content is one paragraph,
   table or code block has its label at the end of that content, or just after
   the table or code block in a wrapper (M115), so

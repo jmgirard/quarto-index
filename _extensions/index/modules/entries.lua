@@ -165,18 +165,23 @@ local function build_entry_tree(marks, add_locator)
       -- cross-reference, not two — printing it twice would report how the
       -- author spread the marks rather than anything a reader wants. This is
       -- also what the LaTeX index tool does with a repeated cross-reference.
-      local already = false
+      -- `writers` holds every mark that writes it, in document order: the
+      -- Typst back-end prints it where one of them is on a page (M118).
+      local already = nil
       for _, existing in ipairs(node.xrefs) do
         if existing.kind.attr == xref.kind.attr
            and same_levels(existing.levels, xref.levels) then
-          already = true
+          already = existing
         end
       end
       -- Kept grouped by kind, `see` before `see also`, and in arrival order
       -- inside a kind, so a back-end prints each kind's word once in front of
       -- that kind's targets, as the LaTeX back-end does (M116). A target goes
-      -- after the last one whose kind ranks at or before its own.
-      if not already then
+      -- after the last one whose kind ranks at or before its own. The tree
+      -- holds a copy, so the mark's own record is not changed.
+      if already then
+        already.writers[#already.writers + 1] = mark
+      else
         local rank = XREF_KIND_RANK[xref.kind.attr]
         local at = 1
         for i, existing in ipairs(node.xrefs) do
@@ -184,11 +189,30 @@ local function build_entry_tree(marks, add_locator)
             at = i + 1
           end
         end
-        table.insert(node.xrefs, at, xref)
+        local copy = { writers = { mark } }
+        for field, value in pairs(xref) do
+          copy[field] = value
+        end
+        table.insert(node.xrefs, at, copy)
       end
     end
   end
   return root
+end
+
+-- Find the entry a cross-reference target names, matching on the parsed level
+-- list rather than on the rendered string: a single level that happens to
+-- contain the level join reads identically to a two-level target and must not
+-- resolve to it.
+local function lookup_entry(root, levels)
+  local node = root
+  for _, level in ipairs(levels) do
+    node = node.children[level]
+    if not node then
+      return nil
+    end
+  end
+  return node
 end
 
 -- Sort every node's children and give each entry its id, depth-first in the
@@ -343,6 +367,7 @@ M["literal_inlines"] = literal_inlines
 M["same_levels"] = same_levels
 M["new_entry"] = new_entry
 M["build_entry_tree"] = build_entry_tree
+M["lookup_entry"] = lookup_entry
 M["number_entries"] = number_entries
 M["letter_groups"] = letter_groups
 M["marks_by_index"] = marks_by_index

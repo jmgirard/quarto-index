@@ -629,6 +629,10 @@ local function Span(span)
     -- same reason.
     local contestable_xref = #xrefs > 0 and not page_only
       and span.identifier ~= ""
+    -- In Typst every cross-reference mark is tagged, so the label pass gives
+    -- it a label: its cross-reference prints where one of the marks writing
+    -- it is on a page (M118).
+    local labelled_xref = #xrefs > 0 and qi_core.is_typst()
     local record = { levels = levels, sort = sort, xrefs = xrefs,
                      context = context, index = index_name,
                      page_locator = (page_only and #xrefs == 0) or nil,
@@ -650,7 +654,7 @@ local function Span(span)
                        and span.attributes[qi_core.RANGE_ATTR] or nil,
                      paired = range ~= nil and range.ending or nil }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
-    if anchoring or contestable_xref then
+    if anchoring or contestable_xref or labelled_xref then
       -- Only a locator-contributing mark needs somewhere to link back to; a
       -- cross-reference mark takes the place of the locator and so has no
       -- anchor of its own. WHICH id anchors it — the author's own, or a

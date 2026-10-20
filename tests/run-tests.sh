@@ -31501,7 +31501,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # another, as `typstindex.py` reports it: the row that part of the rule
   # keeps out, or the row printed where the left-out one belongs.
   # Every entry prints, as before M117, so Horn prints under Cleat.
-  m117_plant allentries 's{if found\.len\(\) > 0 or }{if true or }' "-> 5: got 'entry\t1\tHorn"
+  m117_plant allentries 's{if labelled or }{if true or }' "-> 5: got 'entry\t1\tHorn"
   # Every letter-group heading prints, as before M117.
   m117_plant allgroups 's{if live == nil then}{if true then}' "got 'group\tH'"
   # Only an entry's direct sub-entries are read, so Fender, whose only

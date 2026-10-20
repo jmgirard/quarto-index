@@ -116,6 +116,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: claim audit: 46 claims read, 4 corrected — tests/run-tests.sh (the Thole check read the fixture's own prose, so it searches only after the `Spare Index` line; "eight marks" became eleven; the allentries plant's want is its first mismatch, Horn), _extensions/index/modules/typst.lua (a comment called a label a mark).
 - 2026-10-20: the heading check also missed `Spare Index` because pdftotext opens each later page with a form feed; it now turns form feeds into newlines. Checked on the clean scratch render (green) and on a planted render that prints Thole (red, naming Thole).
 - 2026-10-20: the first suite run stopped at the PyYAML check: `/usr/local/bin/python3` (3.14.6, installed 2026-10-01) has no PyYAML, and `/usr/bin/python3` (3.9.6) does. The suite runs with `PATH=/usr/bin:$PATH`; nothing was installed. A second run was stopped for the audit fix above before any M117 check.
+- 2026-10-20: suite run 3 failed at M24-AC3 (the plant renders were not captured), fixed in fa45783; run 4 failed at the M099 dropranges self-test, because `qi-index-entry` tested `found` after the span drop, which that plant empties. It now tests whether any label names an element before that drop (`labelled`), as its comment says; checked by hand on that plant (`dune` prints) and on the M117 fixture (green).
 - 2026-10-20: DESIGN.md: KI289 struck; KI321-KI323 added for the three Out limits and named on the candidate row; the Typst architecture paragraph updated.
 
 ## Decisions

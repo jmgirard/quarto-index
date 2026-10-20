@@ -111,6 +111,7 @@ local TYPST_HELPERS = [[
       found.push((start: start, stop: stop, shown: shown, bold: item.at(2), class: class, value: value, high: high, single: single, spans: not single and high-class == class and high > value))
     }
   }
+  let labelled = found.len() > 0
   found = found.sorted(key: f => if f.single { 0 } else { 1 })
   found = found.sorted(key: f => f.stop.page())
   found = found.sorted(key: f => f.start.page())
@@ -130,7 +131,7 @@ local TYPST_HELPERS = [[
       merged.at(at) = kept
     }
   }
-  if found.len() > 0 or xrefs.len() > 0 or below == true or qi-index-live(below) {
+  if labelled or xrefs.len() > 0 or below == true or qi-index-live(below) {
     let line = [#term]
     for f in merged {
       line = line + [, ] + link(f.start.position(), if f.bold { strong(f.shown) } else { f.shown })

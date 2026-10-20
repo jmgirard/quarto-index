@@ -1,6 +1,6 @@
 # M122: Merged-entry reports are checked where they name their index
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -71,7 +71,7 @@ acceptance-suite backlog".
       the first failing check in the work log, restore the line, and strike
       KI60 in `cairn/DESIGN.md` citing that check. If the suite stays green,
       add a book check that fails on it instead, and record that.
-- [ ] T4: Strike KI320 in `cairn/DESIGN.md`. Run
+- [x] T4: Strike KI320 in `cairn/DESIGN.md`. Run
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
 
 ## Work log
@@ -94,6 +94,9 @@ acceptance-suite backlog".
 - 2026-10-20: T3 probe: with `role = mark.role` removed from `build_record`, the suite's first and only FAIL was M21-AC5, which read `"Ranged Term"`'s `sub/two.html` locator without `qi-principal` and `strong`, so a chapter record's `role` is exercised. Line restored; KI60 struck citing M21-AC5. A chat-written notice had named a different M21-AC5 message; the run log shows the one above.
 - 2026-10-20: T4 (checkpoint): KI320 struck; the full `--self-test` run follows, alone.
 - 2026-10-20: run 4 (alone) exited 1 on M24 and M24-AC3: the plant helper's render had no `capture` call. M122-AC1, the control and both plants printed ok in it. Added the capture; run 5 follows.
+- 2026-10-20: run 5 (alone) passed `--self-test`: exit 0, "All checks passed (1883 checks)", no FAIL line, read from its log. T4 done.
+- 2026-10-20: claim audit: not owed — internal tier.
+- 2026-10-20: implementation complete, status review.
 
 ## Decisions
 

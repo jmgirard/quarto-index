@@ -1,13 +1,13 @@
 # M118: A Typst index leaves out what no page backs
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes what a Typst index prints
-- **Branch/PR:** —
+- **Branch/PR:** m118-typst-dead-xrefs
 
 ## Goal
 
@@ -40,7 +40,7 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 
 ## Acceptance criteria
 
-- [ ] AC1: On Quarto 1.10.19, whose Typst template does not print
+- [x] AC1: On Quarto 1.10.19, whose Typst template does not print
       `description:`, a Typst render of `examples/typst-unprinted.qmd` is held
       by `tests/typstindex.py` to the manifest `tests/typst-unprinted.tsv`,
       and the suite passes that comparison. In that manifest: a term whose
@@ -52,7 +52,7 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       sub-entry whose only mark is a `see=` mark in `description:`, has no
       row, and neither has the sub-entry; and a term marked in the body with a
       `see=` target the index prints, and no locator, keeps its row.
-- [ ] AC2: In the same manifest, for terms with no page-number mark and no
+- [x] AC2: In the same manifest, for terms with no page-number mark and no
       sub-entry: a term whose only cross-reference names a term the index
       files and leaves out has no row; a term with two `see=` targets, the
       first of which in the order the index prints them is left out, prints
@@ -63,14 +63,14 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       both rows; and a term with a `see=` target that no mark files keeps that
       cross-reference, and the render's log carries exactly one extension
       warning, the dangling-target report naming that target.
-- [ ] AC3: On Quarto 1.10.19, the fixture prints a table of contents, and its
+- [x] AC3: On Quarto 1.10.19, the fixture prints a table of contents, and its
       second index holds two marks: a term marked only in `description:`, and
       a body mark whose only content is a `see=` to that term. The
       `pdftotext` output of its Typst render equals that of a twin render in
       which no mark files in the second index, each body mark's text kept, and
       neither output carries a line beginning `Spare Index`; the suite makes
       this comparison and passes it.
-- [ ] AC4: In `site/typst.qmd`, the section "A mark Typst never prints", and
+- [x] AC4: In `site/typst.qmd`, the section "A mark Typst never prints", and
       in `CHANGELOG.md`, the Unreleased entry for the Typst back-end, each say
       that a cross-reference mark in a field no page prints adds no
       cross-reference, that a cross-reference whose target term is left out is
@@ -79,7 +79,7 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       prints nothing. `grep -n "Three limits remain" site/typst.qmd` prints
       nothing, and neither that `CHANGELOG.md` entry nor `site/books.qmd`
       says that a Typst index prints because it holds a mark.
-- [ ] AC5: The active profile's `verify` slot passes:
+- [x] AC5: The active profile's `verify` slot passes:
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
@@ -92,7 +92,7 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 
 ## Tasks
 
-- [ ] T1: Tests first. Add the AC1-AC3 cases to
+- [x] T1: Tests first. Add the AC1-AC3 cases to
       `examples/typst-unprinted.qmd` (`toc: true` among them), re-derive
       `tests/typst-unprinted.tsv` by hand under the suite's oracle rule, add
       the AC3 twin comparison to the M117-AC1 section (`tests/run-tests.sh`
@@ -102,13 +102,13 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       corpus and its extension-warning count to one. Before the first run,
       grep the self-tests for want strings resting on today's output (the
       M117 lesson). Run the section and see the new rows fail.
-- [ ] T2: Label cross-reference marks. `assign_labels`
+- [x] T2: Label cross-reference marks. `assign_labels`
       (`typst.lua` near line 362) gives a Typst cross-reference mark a label;
       `typst_locator` adds no locator for a mark with cross-references; and
       `build_entry_tree` (`entries.lua` near line 163) keeps on each
       cross-reference the labels of every mark that writes it, the duplicate
       branch included.
-- [ ] T3: The print rule. For each entry, write once the Typst condition under
+- [x] T3: The print rule. For each entry, write once the Typst condition under
       which it prints: one of its own labels names an element, one of its
       cross-references prints, or one of its sub-entries prints. A
       cross-reference prints where a label of a mark writing it names an
@@ -118,22 +118,22 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
       near line 96) gets each cross-reference with its condition and puts the
       kind's word before the first printed target of each kind; the
       letter-group heading in `index_blocks` reads the same conditions.
-- [ ] T4: The empty index. `index_blocks` (`typst.lua` near line 295) writes
+- [x] T4: The empty index. `index_blocks` (`typst.lua` near line 295) writes
       the heading and the body of an index under the condition that one of
       its top-level entries prints, so the heading, its outline line and its
       page go together.
-- [ ] T5: Plants, each seen red before its fix is trusted: a cross-reference
+- [x] T5: Plants, each seen red before its fix is trusted: a cross-reference
       mark with no label (the AC1 rows return), a dead target kept (the AC2
       rows return), the path guard removed (the AC2 cycle rows), and the
       heading written unconditionally (the AC3 twin differs).
-- [ ] T6: Docs and records. The `site/typst.qmd` section and the
+- [x] T6: Docs and records. The `site/typst.qmd` section and the
       `CHANGELOG.md` entry per AC4, written from a render, with that entry's
       "holds at least one mark" sentence and `site/books.qmd` near line 250
       brought in line; the comment above
       `TYPST_HELPERS` (`typst.lua` lines 39-50); the M117-AC1 pass line; and
       in `DESIGN.md`, KI321-KI323 struck and the Typst architecture lines
       that name them brought in line.
-- [ ] T7: Run `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` once, in
+- [x] T7: Run `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` once, in
       the background, and read its result.
 
 ## Work log
@@ -148,3 +148,52 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 - 2026-10-20: plan gate chose a twin render's text as AC3's oracle over a scan for blank pages, because a page that carries only a page number is not blank to a text scan; falsified by the twin itself printing a heading for an index no mark files in.
 - 2026-10-20: criteria audit (full, fresh Opus reader): 10 findings, all disposed toward the narrower promise. Fixed: AC2 scoped to terms with no page-number mark or sub-entry (1) and "first in the order the index prints them" (2); AC3 adds "no line beginning `Spare Index`" (3), "On Quarto 1.10.19" (4), and a cross-reference route into the second index with a twin that drops every mark of it (5); AC1 adds a `see-also=` row (6); AC4 adds the CHANGELOG "holds at least one mark" sentence and `site/books.qmd` (7) and the left-out entry (8); "derived by hand" moved from AC1 to T1 (9, an instrument property); T1 drops the `"Spare Index"` stop (10). Clean: row format, dangling report on Typst, `toc: true` against M117's `Index` line, twin equality, AC5.
 - 2026-10-20: plan gate chose one cross-reference route into the emptied second index (AC3) over a route through a sub-entry too, because the sub-entry condition is the one M117's letter-group heading already reads and its fixture holds; falsified by a plant reading only top-level own labels at index level staying green.
+- 2026-10-20: T1: fixture gains `toc: true`, four description marks (Winch, Thwart, Boom, Boom!Vang) and nine body marks (Thwart, Jib, Clew twice, Tack, Yawl, Keel, Pin); manifest re-derived by hand, 30 rows; M117-AC1 section drops the `"Spare Index"` stop, checks no line opens `Spare Index`, holds the one warning to Rudder's report, and adds the M118-AC3 twin (derived in `$WORK` by two once-only substitutions, not a second fixture file, so no gallery or corpus row is owed). The pre-fix render fails the manifest from row 2. Minor amendment: the dangling-count corpus row stays 0, because the fixture declares indexes and its report takes the index-naming wording, which that count does not read.
+- 2026-10-20: T2-T4, T6 written (checkpoint, suite not yet run): `build_entry_tree` keeps a copy of each cross-reference with `writers`; `lookup_entry` moved from `html.lua` to `entries.lua` so both back-ends read one definition; `passes.lua` tags every Typst cross-reference mark so `assign_labels` labels it (first render showed none were tagged: only xref marks with an author id were); `typst_locator` adds no locator for them. Chose one `qi-index-prints` pass per index, a greatest fixed point that starts every entry printing and drops entries until stable, over per-entry inline conditions, because inline conditions grow with every path through cross-references and the fixed point evaluates each label once; falsified by a document whose index compile time grows past the render's. The index's page break, heading and columns sit in one `#context` block under `qi-p.any`. A writer with no label returns `true`, keeping the cross-reference (IP2). Fixture renders match all 30 manifest rows; the twin's text equals the fixture's; ten plants each red on their row by hand (M117's six rewritten for the new code, four new).
+- 2026-10-20: first full `--self-test` run stopped at M098's `xreflink` plant, whose substitution aimed at the Lua format string M118 moved into `qi-index-entry`; rewritten for the new site and seen red on `see|Bee@` by hand. Every other plant substitution in the suite that names Typst code was applied to the new `typst.lua` by a script; all matched.
+- 2026-10-20: claim audit: 39 claims read, 2 corrected — examples/typst-unprinted.qmd ("Five" description cross-reference marks, four), tests/run-tests.sh (the M14 comment calling `lookup_entry` the HTML back-end's own and the tree one format's only); the `allentries` plant comment reworded (loose "as before M117").
+- 2026-10-20: T7: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0 at 5fa7cd6, 1838 checks; the ten M117/M118 plants each red on their row. T2-T7 ticked; status review.
+- 2026-10-20: step-7 approval: m118-typst-dead-xrefs approved for merge
+
+## Decisions
+
+## Review
+
+Pass 1, 2026-10-20. Branch synced: `main` unmoved since the cut (`git rev-list --count HEAD..origin/main` 0). Copilot round off (no `# Copilot review:` line in `cairn/PROFILE.md`).
+
+- spawned: diff-bug, blame-history, prior-review, ripple, over `git diff main..eb7c552`.
+- diff-bug #1: no fixture entry prints for another reason while carrying a cross-reference written only in `description:`, so dropping the writer-label condition from `entry_lines` stays green — fix now, fixed dc4f5d9 (`Paddle` gains a description-only `see-also="Cleat"` mark and the `xrefunbacked` plant).
+- diff-bug #2: `qi-index-prints` loops with `while`, which Typst stops after 10,000 iterations as infinite, so a forward chain of more than 10,000 dropped cross-references fails the compile (IP2) — fix now, fixed dc4f5d9 (a `for` loop over `nodes.len() + 1` sweeps with an early exit; quadratic time on such chains stays, measured by the reviewer at 17.5 s for 3000 links, 8.0 s against 7.65 s on main for a 3000-entry index).
+- diff-bug #3: the M14 dangling-count corpus row for `examples/typst-unprinted.qmd` stays 0 though the fixture draws one report — reject, false: that count reads the one-namespace wording by design, the fixture's report takes the index-naming wording, and the M118 check pins it (work log, T1 line).
+- diff-bug #4: the AC3 twin comparison was never shown red, and nothing checked that the fixture prints a table of contents — fix now, fixed dc4f5d9 (a check for the `Table of contents` line and the first index's outline line, and a self-test leg that diffs the twin against the `noindexcond` render).
+- diff-bug #5: the new Typst constructs (`for`, destructuring `let`, heading and page break inside `context`) are unverified on the floor Quarto 1.5.52 — follow-up: the parked row "Floor-Quarto CI suite job"; the weekly version matrix renders `examples/typst-index.qmd` on the floor, which runs every construct this adds.
+- diff-bug #6: comments in `passes.lua` (the `anchorless` field, the tagging block) and `html.lua` (`relocate_heading_anchors`) still say only locator marks and id-carrying cross-reference marks are tagged — fix now, fixed dc4f5d9.
+- diff-bug #7: a two-term cycle prints with no locator anywhere; a cross-reference mark in a heading now leaves a label element after the heading — reject, planned change (the plan gate chose that a cycle prints where its marks print) and false (a page-number mark in a heading already leaves the same element; the reviewer measured no spacing change).
+- blame-history #1: a body-marked term (`Block`, `Jib`) disappears from the Typst index — reject, planned change (question set: drop that target).
+- blame-history #2: `Keel, see Rudder` warns while `Block, see Sheave` is silent — reject, planned change (question set: no report, since the filter cannot see which page prints).
+- blame-history #3: resolving targets against what Typst prints contradicts D-005 — reject, false: D-005 governs which paths the dangling-target report resolves against, and M118 leaves that report unchanged.
+- blame-history #4: removing the `anchorless` skip from `assign_labels` moves M079's invariant to `typst_locator`'s `#mark.xrefs > 0` guard — reject, false as a defect: the guard holds, and its comment states it.
+- blame-history #5: no plant disables the clause that keeps an entry by its own cross-reference — fix now, fixed dc4f5d9 (the `noxref` plant).
+- blame-history #6: the fixed point keeps a mutual pair and drops one-way links to left-out targets — reject, planned change (plan-gate choice in the work log).
+- blame-history #7: the three index blocks merged into one `#context` block — reject, false: M098-AC7's outline check passed in the 5fa7cd6 run.
+- blame-history #8: one unlabelled writer makes a cross-reference print whatever its labelled writers say — reject, planned change (the IP2 fallback `writer_labels` documents).
+- prior-review #1: the report M117 blame-history #2 wanted for a cross-reference to a left-out term is declined — reject, planned change (question set; the absorbed row read "report or drop").
+- prior-review #2: no fixture puts a now-labelled cross-reference mark in a heading, caption, alt text or KI290 float — follow-up: `DESIGN.md` KI325 (the diff-bug reviewer rendered each place clean).
+- prior-review #3: the `noclosebelow` plant is gone and `noclose` strips every closing label — reject, false: `noclose` is red on the `M` group, which `Mast` holds only through `Step`'s closing label.
+- prior-review #4: more Typst unchecked on the floor — follow-up, as diff-bug #5.
+- ripple #1: `DESIGN.md`'s Typst paragraph places the index after a separate page break and heading — fix now, fixed dc4f5d9.
+- ripple #2: ROADMAP's "Finish leaving out unprinted Typst marks" row still lists the work — reject, planned change: post-merge hygiene graduates it.
+- ripple #3: `CHANGELOG.md` and `site/typst.qmd` say an entry is left out when "it has no cross-reference and no sub-entry that prints", which `Block` now contradicts — fix now, fixed dc4f5d9 ("no cross-reference or sub-entry of it prints", with both claims rows).
+- ripple #4: `passes.lua`'s "a cross-reference mark ... has no anchor of its own" beside the new `labelled_xref` condition — fix now, fixed dc4f5d9, as diff-bug #6.
+- ripple #5: `DESIGN.md` says `assign_labels` labels each locator mark — fix now, fixed dc4f5d9.
+- ripple #6: the corpus row, as diff-bug #3 — reject, false.
+- ripple #7: `typst.lua`'s separator comment says a comma goes before the first cross-reference — fix now, fixed dc4f5d9 ("that prints").
+
+Evidence, at dc4f5d9 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, 1841 checks; `quarto --version` 1.10.19):
+
+- AC1: M117-AC1 passed: `tests/typstindex.py` matched all 30 lines of `tests/typst-unprinted.tsv` against the Typst render of `examples/typst-unprinted.qmd`. The manifest has no row for `Oar` (see mark in `description:` alone) or `Winch` (see-also mark there alone); `Thwart	see|Paddle` (written in `description:` and the body); no row for `Boom` or its sub-entry `Vang`; `Kedge	see|Bitt` with no locator. Plants red on their rows: `nolabel` (Boom), `firstwriter` (Thwart), `xrefunbacked` (Paddle's description-only see-also).
+- AC2: in the same matched manifest, for terms with no page-number mark and no sub-entry: no row for `Block` (its one see names `Sheave`, filed in `description:` alone); `Clew	see|Paddle` (its see to `Sheave` comes first and is left out, and `see` moved to `Paddle`); no row for `Jib` (its one see names `Block`); `Tack	see|Yawl` and `Yawl	see|Tack`; `Keel	see|Rudder`. `check_extension_warning_count` read exactly 1 extension warning in the render's log, and the grep for `see= on entry="Keel" points at "Rudder"` matched. Plants red: `deadkept` (Block), `deadshown` (Clew prints Sheave), `owntarget` (Tack), `noxref` (Clew's group).
+- AC3: on Quarto 1.10.19 the fixture sets `toc: true`, and the run found its `Table of contents` line and the first index's outline line `Index . . .`. Its second index holds `Thole` in `description:` alone and the body mark `Pin, see Thole`. `m118_twin` derived the twin by two once-only substitutions (no mark of `spare` left, `thole pin` kept as text); `diff -u` of the twin's and the fixture's `pdftotext` output was empty; neither carried a line opening `Spare Index` (the `m117_unprinted` check on the fixture, the grep on the twin). The `noindexcond` plant was red through both `m117_unprinted` and the twin diff.
+- AC4: `site/typst.qmd` "A mark Typst never prints" says a `see=` or `see-also=` mark in such a field "adds no cross-reference", a cross-reference whose target term is left out "is not printed, and nothing reports it", "An entry left with nothing that prints is left out", and an index whose every entry is left out "prints nothing"; the Unreleased Typst entry of `CHANGELOG.md` says each of the four. The run's claims checks passed on both (site/typst.qmd 13 rows, CHANGELOG.md 12 rows). `grep -n "Three limits remain" site/typst.qmd` printed nothing (exit 1); `grep -n 'at least one mark' CHANGELOG.md site/books.qmd` printed nothing (exit 1); `CHANGELOG.md` line 8 and `site/books.qmd` line 250 now read "has an entry to print".
+- AC5: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0 at dc4f5d9, "All checks passed (1841 checks)".
+- Gate: `cairn_validate.py` all checks passed; no principle changed, so `cairn_impact` was skipped; the generic profile names no toolchain checks.

@@ -5,7 +5,7 @@
 ### Output
 
 - A new back-end for Typst. A document or a book rendered to Typst prints
-  each declared index that holds at least one mark, with page locators, in two
+  each declared index that has an entry to print, with page locators, in two
   columns, and needs no Typst package. Entries are ordered and grouped by letter as in HTML, and
   nest as deep as they are written. A principal mention's page number is set
   in bold, a range prints its first and last pages, and each page number
@@ -25,9 +25,13 @@
   laid out in cells and a figure inside a code cell's output div. A mark in
   a front-matter field the Typst template does not print, such as
   `description:`, adds no page number. If all the page-number marks of an
-  entry are such marks, and it has no cross-reference and no sub-entry that
-  prints, the Typst index leaves it out. It also leaves out a letter group
-  with no entry left.
+  entry are such marks, and no cross-reference or sub-entry of it prints,
+  the Typst index leaves it out. It also leaves out a letter group
+  with no entry left. A cross-reference mark in such a field adds no
+  cross-reference. A cross-reference whose target term is left out is not
+  printed, and nothing reports it. An entry left with nothing that prints is
+  left out, and an index whose every entry is left out prints nothing: no
+  heading, no line in the table of contents and no page.
 - A Typst index orders an entry's page numbers as the PDF index does: lower
   roman numbers first, then upper roman numbers, arabic numbers, lowercase
   letters, uppercase letters, and any other numbering, and inside each kind by

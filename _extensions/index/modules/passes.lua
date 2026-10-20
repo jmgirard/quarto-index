@@ -629,6 +629,10 @@ local function Span(span)
     -- same reason.
     local contestable_xref = #xrefs > 0 and not page_only
       and span.identifier ~= ""
+    -- In Typst every cross-reference mark is tagged, so the label pass gives
+    -- it a label: its cross-reference prints where one of the marks writing
+    -- it is on a page (M118).
+    local labelled_xref = #xrefs > 0 and qi_core.is_typst()
     local record = { levels = levels, sort = sort, xrefs = xrefs,
                      context = context, index = index_name,
                      page_locator = (page_only and #xrefs == 0) or nil,
@@ -636,8 +640,9 @@ local function Span(span)
                      -- locator: a cross-reference mark contributes none, and
                      -- a front-matter mark of an HTML book chapter contributes
                      -- the chapter's page. Only the first of those reaches the
-                     -- Pandoc pass, and only carrying an id of the author's,
-                     -- so this is what tells that pass not to anchor it.
+                     -- Pandoc pass, carrying an id of the author's or, in
+                     -- Typst, as every cross-reference mark (M118), so this is
+                     -- what tells that pass not to anchor it.
                      anchorless = (not anchoring) or nil,
                      -- Likewise resolved rather than raw: a range's role is
                      -- the RANGE's, so an opening whose closing declared it
@@ -650,7 +655,7 @@ local function Span(span)
                        and span.attributes[qi_core.RANGE_ATTR] or nil,
                      paired = range ~= nil and range.ending or nil }
     qi_marks.html_marks[#qi_marks.html_marks + 1] = record
-    if anchoring or contestable_xref then
+    if anchoring or contestable_xref or labelled_xref then
       -- Only a locator-contributing mark needs somewhere to link back to; a
       -- cross-reference mark takes the place of the locator and so has no
       -- anchor of its own. WHICH id anchors it — the author's own, or a
@@ -659,7 +664,9 @@ local function Span(span)
       --
       -- A cross-reference mark carrying an id of the author's is tagged too:
       -- untagged, it kept a contested name in silence and left the page with
-      -- that name on two elements (see `contestable_xref` above).
+      -- that name on two elements (see `contestable_xref` above). In Typst
+      -- every cross-reference mark is tagged, for its label, though it still
+      -- adds no locator (`labelled_xref` above).
       span.attributes[qi_core.HTML_PENDING_ATTR] = tostring(#qi_marks.html_marks)
     end
     return span

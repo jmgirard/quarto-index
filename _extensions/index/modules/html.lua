@@ -87,24 +87,9 @@ local function html_locator(node, mark)
   end
 end
 
--- Find the entry a cross-reference target names, matching on the parsed level
--- list rather than on the rendered string: a single level that happens to
--- contain the level join reads identically to a two-level target and must not
--- resolve to it.
-local function lookup_entry(root, levels)
-  local node = root
-  for _, level in ipairs(levels) do
-    node = node.children[level]
-    if not node then
-      return nil
-    end
-  end
-  return node
-end
-
 local function target_span(root, xref)
   local inlines = qi_entries.literal_inlines(qi_entries.target_text(xref.levels))
-  local entry = lookup_entry(root, xref.levels)
+  local entry = qi_entries.lookup_entry(root, xref.levels)
   if entry then
     inlines = pandoc.List({ pandoc.Link(inlines, "#" .. entry.id) })
   end
@@ -537,7 +522,8 @@ local function relocate_heading_anchors(doc)
               -- filter still has anchor duty for: one that contributes a
               -- locator, and a cross-reference mark carrying an id of the
               -- author's, whose id duplicates into the table of contents
-              -- exactly as a locator anchor would. But an id of the author's
+              -- exactly as a locator anchor would, and in Typst every
+              -- cross-reference mark, for its label (M118). But an id of the author's
               -- on a mark this filter left ALONE duplicates there too, and
               -- such a mark carries no tag: a mark whose entry cannot be
               -- derived is returned unchanged by the Span pass, `.index` class
@@ -780,7 +766,6 @@ end
 -- `NAME =` line left behind here would then mask it (M16 review F3).
 M["mark_target"] = mark_target
 M["html_locator"] = html_locator
-M["lookup_entry"] = lookup_entry
 M["target_span"] = target_span
 M["entry_inlines"] = entry_inlines
 M["entry_list"] = entry_list

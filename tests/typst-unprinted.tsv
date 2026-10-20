@@ -1,28 +1,40 @@
-# The index examples/typst-unprinted.qmd prints in a Typst render (M117).
+# The index examples/typst-unprinted.qmd prints in a Typst render (M117, M118).
 #
 # Derived BY HAND from that source, under the ORACLE RULE at the head of
 # tests/run-tests.sh, and never copied from a render. The row shape is the one
-# tests/typst-index-main.tsv states. Page 1 runs to the source's one page
-# break, and page 2 follows it. Quarto's Typst template does not print
-# `description:`, so no mark written there adds a locator.
+# tests/typst-index-main.tsv states. Page 1 holds the title, the table of
+# contents and the text up to the source's one page break, and page 2 follows
+# it. Quarto's Typst template does not print `description:`, so no mark
+# written there adds a locator or makes a cross-reference print.
 #   Bitt     in the description and on page 2: page 2 alone
+#   Block    page 2, its one see to Sheave, which the description alone marks:
+#            no row
+#   Boom     the description alone, as is Vang under it, whose see is written
+#            there: neither row
 #   Cleat    page 1; its sub-entry Horn is in the description alone: no row
+#   Clew     page 2, a see to Sheave and then one to Paddle: Paddle alone
 #   Davit    the description alone, above Arm on page 2: no locator
 #   Fender   the description alone, as is Rope under it, above Eye on page 2
 #   Gaff     the description alone, above Jaw, which has a see and no page
 #   Halyard  the description alone, as is Hawser: neither row, no H group
+#   Jib      page 2, its one see to Block, left out above: no row, no J group
 #   Kedge    page 2, a see and no page
-#   Block    page 2, a see to Sheave, which the description alone marks
-#   Oar      a see mark in the description: it has no label and still prints
-#   Paddle   page 1
-#   Rig      a range opened in the description, closed on page 2: no locator
+#   Keel     page 2, a see to Rudder, which no mark files: kept, and reported
 #   Mast     no mark of its own, above Step, a range like Rig's: no locators
-# Thole, the description's mark in the second index, is not in this one.
+#   Oar      a see mark in the description alone: no row, no O group
+#   Paddle   page 1, and a see-also mark in the description alone: no
+#            cross-reference
+#   Rig      a range opened in the description, closed on page 2: no locator
+#   Tack     page 2, a see to Yawl, which sees Tack from page 2: kept
+#   Thwart   a see to Paddle in the description and on page 2: kept
+#   Winch    a see-also mark in the description alone: no row, no W group
+#   Yawl     page 2, a see to Tack: kept
+# Thole and Pin, the second index's marks, are not in this one.
 group	B
 entry	0	Bitt	2@2
-entry	0	Block		see|Sheave
 group	C
 entry	0	Cleat	1@1
+entry	0	Clew		see|Paddle
 group	D
 entry	0	Davit
 entry	1	Arm	2@2
@@ -35,12 +47,16 @@ entry	0	Gaff
 entry	1	Jaw		see|Bitt
 group	K
 entry	0	Kedge		see|Bitt
+entry	0	Keel		see|Rudder
 group	M
 entry	0	Mast
 entry	1	Step
-group	O
-entry	0	Oar		see|Paddle
 group	P
 entry	0	Paddle	1@1
 group	R
 entry	0	Rig
+group	T
+entry	0	Tack		see|Yawl
+entry	0	Thwart		see|Paddle
+group	Y
+entry	0	Yawl		see|Tack

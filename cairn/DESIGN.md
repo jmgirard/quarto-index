@@ -1049,16 +1049,18 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 - **KI321.** A cross-reference mark (`see=`, `see-also=`) in a front-matter
   field Quarto's Typst template does not print has no label, so the Typst
   index still prints its cross-reference, where M117 leaves out an entry
-  whose page-number marks are all in such a field. Observed on Quarto 1.10.18
-  with `examples/typst-unprinted.qmd` (`Oar, see Paddle`). — M117 plan audit
+  whose page-number marks are all in such a field. Observed on Quarto 1.10.19
+  (corrected M117) with `examples/typst-unprinted.qmd` (`Oar, see Paddle`). —
+  M117 plan audit
 - **KI322.** A cross-reference whose target term the Typst index leaves out
   (M117) still prints, and no dangling-target report fires, because the
-  filter counts the target as marked. Observed on Quarto 1.10.18 with
-  `examples/typst-unprinted.qmd` (`Block, see Sheave`). — M117 plan audit
+  filter counts the target as marked. Observed on Quarto 1.10.19 (corrected
+  M117) with `examples/typst-unprinted.qmd` (`Block, see Sheave`). — M117
+  plan audit
 - **KI323.** A Typst index whose every entry is left out (M117) still prints
   its heading over an empty page, where an index no mark files in prints
-  nothing. Observed on Quarto 1.10.18 with `examples/typst-unprinted.qmd`
-  (`Spare Index`). — M117 plan
+  nothing. Observed on Quarto 1.10.19 (corrected M117) with
+  `examples/typst-unprinted.qmd` (`Spare Index`). — M117 plan
 - **KI318.** A mark in the caption of a float whose content is one paragraph,
   table or code block has its label at the end of that content, or just after
   the table or code block in a wrapper (M115), so

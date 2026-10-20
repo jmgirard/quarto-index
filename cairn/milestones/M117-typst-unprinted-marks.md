@@ -1,6 +1,6 @@
 # M117: A Typst index leaves out a term no page carries
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -38,7 +38,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 
 ## Acceptance criteria
 
-- [ ] AC1: On the pinned Quarto, whose Typst template does not print
+- [ ] AC1: On Quarto 1.10.19, whose Typst template does not print
       `description:`, a Typst render of a new fixture,
       `examples/typst-unprinted.qmd`, whose `description:` holds marks, is held
       by `tests/typstindex.py` to a manifest derived by hand from the fixture
@@ -122,6 +122,9 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: DESIGN.md: KI289 struck; KI321-KI323 added for the three Out limits and named on the candidate row; the Typst architecture paragraph updated.
 - 2026-10-20: record note: the six lines from "claim audit" to "T5" above were written after the "DESIGN.md: KI289 struck" line and inserted above it by mistake; their commits (e4c4c07 to 49d6735) give the true order.
 - 2026-10-20: amendment routed: AC1 — the criterion names the pinned Quarto (1.10.18), which this machine does not run and CI never runs the suite on; the check passed on 1.10.19 at 635f9cc, and the deliverable is unchanged.
+- 2026-10-20: re-audit: AC1 (full) — nothing; the reader found the amended text reachable on 1.10.19, binding the deliverable, with no D-065/D-067 conflict (the check is about the extension's output), and noted KI321-KI323 named the wrong Quarto.
+- 2026-10-20: amendment return: AC1 — "On Quarto 1.10.19, whose Typst template does not print `description:`," (was "On the pinned Quarto, ..."); the rest of AC1 is unchanged.
+- 2026-10-20: correction: every render this milestone made ran on Quarto 1.10.19, not 1.10.18. That holds for the "render check before planning" line above and for KI321-KI323, which are corrected in place in DESIGN.md.
 
 ## Decisions
 

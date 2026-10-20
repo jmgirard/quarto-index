@@ -31489,7 +31489,8 @@ if [ "${1:-}" = "--self-test" ]; then
     ( cd "$dir" && quarto render typst-unprinted.qmd --to typst ) \
       > "$WORK/m117-$1.log" 2>&1 \
       || { tail -20 "$WORK/m117-$1.log" >&2; fail "M117 self-test ($1): the fixture failed to render through the planted copy"; }
-    out=$(m117_unprinted "$dir/typst-unprinted.pdf" "M117 plant $1" 2>&1) && rc=0 || rc=$?
+    capture "$dir/typst-unprinted.qmd" typst "m117-$1"
+    out=$(m117_unprinted "$CAPTURE_ROOT/m117-$1/typst-unprinted.pdf" "M117 plant $1" 2>&1) && rc=0 || rc=$?
     [ "$rc" -ne 0 ] \
       || { printf '%s\n' "$out" >&2; fail "M117 self-test ($1): the check passed the planted render"; }
     printf '%s' "$out" | grep -qF -- "$3" \

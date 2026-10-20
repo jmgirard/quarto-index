@@ -22,7 +22,12 @@
   Quarto's default. In a document that makes floats breakable, such a mark
   files the page where the float's content ends. A mark in the caption of
   other floats still files the list's page. Examples are a grid of images
-  laid out in cells and a figure inside a code cell's output div.
+  laid out in cells and a figure inside a code cell's output div. A mark in
+  a front-matter field the Typst template does not print, such as
+  `description:`, adds no page number. If all the page-number marks of an
+  entry are such marks, and it has no cross-reference and no sub-entry that
+  prints, the Typst index leaves it out. It also leaves out a letter group
+  with no entry left.
 - A Typst index orders an entry's page numbers as the PDF index does: lower
   roman numbers first, then upper roman numbers, arabic numbers, lowercase
   letters, uppercase letters, and any other numbering, and inside each kind by

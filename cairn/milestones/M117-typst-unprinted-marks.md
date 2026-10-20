@@ -1,13 +1,13 @@
 # M117: A Typst index leaves out a term no page carries
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes what a Typst index prints
-- **Branch/PR:** —
+- **Branch/PR:** m117-typst-unprinted-marks
 
 ## Goal
 
@@ -38,7 +38,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 
 ## Acceptance criteria
 
-- [ ] AC1: On the pinned Quarto, whose Typst template does not print
+- [x] AC1: On Quarto 1.10.19, whose Typst template does not print
       `description:`, a Typst render of a new fixture,
       `examples/typst-unprinted.qmd`, whose `description:` holds marks, is held
       by `tests/typstindex.py` to a manifest derived by hand from the fixture
@@ -54,14 +54,14 @@ section "A mark Typst never prints", the Unreleased Typst entry in
       whose every term is marked only in `description:` has no heading row;
       and a term marked in the body with a `see=` target the index prints, and
       no locator, keeps its row.
-- [ ] AC2: In `site/typst.qmd`, the section "A mark Typst never prints", and
+- [x] AC2: In `site/typst.qmd`, the section "A mark Typst never prints", and
       in `CHANGELOG.md`, the Unreleased entry for the Typst back-end, each say
       that an entry whose page-number marks all sit in a field no page prints
       is left out of the Typst index when it has no cross-reference and no
       sub-entry that prints. The `site/typst.qmd` section also names the three
       limits the Out list names. `grep -n "Its term is still in the index"
       site/typst.qmd` prints nothing.
-- [ ] AC3: The active profile's `verify` slot passes: `tests/run-tests.sh
+- [x] AC3: The active profile's `verify` slot passes: `tests/run-tests.sh
       --self-test` exits 0.
 
 ## Coverage
@@ -72,7 +72,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 
 ## Tasks
 
-- [ ] T1: In `typst.lua`, pass each entry's own labels, and whether any
+- [x] T1: In `typst.lua`, pass each entry's own labels, and whether any
       sub-entry at any depth has a label or a cross-reference, from
       `entry_lines` (typst.lua:179) to `qi-index-entry` (typst.lua:87), and
       have it print nothing where no label names an element, the entry has no
@@ -80,7 +80,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
       Make the letter-group heading in `index_blocks` (typst.lua:222) print
       only where an entry of its group prints. Update the comments above
       `TYPST_HELPERS` and `entry_lines` to say so.
-- [ ] T2: Write `examples/typst-unprinted.qmd` with the shapes AC1 names,
+- [x] T2: Write `examples/typst-unprinted.qmd` with the shapes AC1 names,
       each parent chain in one column, its hand-derived manifest under
       `tests/`, and a suite section that renders it to Typst, fails naming the
       field if the description's sentence prints before the index, and runs
@@ -88,15 +88,15 @@ section "A mark Typst never prints", the Unreleased Typst entry in
       `site/gallery.yml` (`not-shown:`) and, as it writes `see=`, in M14's
       dangling-count corpus (the M116 lesson). Plant the pre-T1 entry code and
       show the new check red on it before trusting its green.
-- [ ] T3: In `tests/run-tests.sh`, `m098_field_rows` (run-tests.sh:31396)
+- [x] T3: In `tests/run-tests.sh`, `m098_field_rows` (run-tests.sh:31396)
       writes no row and no letter group for a term whose field the render does
       not print, in place of today's row with no locator.
-- [ ] T4: Rewrite the `site/typst.qmd` section "A mark Typst never prints" and
+- [x] T4: Rewrite the `site/typst.qmd` section "A mark Typst never prints" and
       add the sentence to the Unreleased Typst entry in `CHANGELOG.md`, each
       written against T2's observed render (the derived-claims rule). In
       `cairn/DESIGN.md`, strike the known issue that records today's behavior
       and add one entry for each of the three limits the Out list names.
-- [ ] T5: Run `tests/run-tests.sh --self-test` and record the result.
+- [x] T5: Run `tests/run-tests.sh --self-test` and record the result.
 
 ## Work log
 
@@ -109,7 +109,79 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: lessons harvested: M116 (fixture registration in gallery.yml and the dangling-count corpus), M30 (compare extracted PDF text in NFC from a hand-derived table).
 - 2026-10-20: render check before planning: on Quarto 1.10.18, examples/front-matter.qmd's Typst index printed `Halyard` with no page, and its LaTeX output wrote no `\index{Halyard}`.
 - 2026-10-20: criteria audit (full mode, fresh Opus reader) returned 6 findings, all fixed: Goal and AC2 narrowed to entries with no cross-reference and no printing sub-entry; AC2's grep narrowed to the old sentence; AC1 gained a two-level chain and a see-only sub-entry, and its see= row names a printed target; the left-out-target cross-reference joined Out; the description-prints guard moved from AC1 to T2; AC2 requires the docs to name the three Out limits. AC3 passed.
+- 2026-10-20: implement started on branch m117-typst-unprinted-marks, cut from main at 21391ae.
+- 2026-10-20: T1-T4 written, suite not yet run: `labels_below` passes sub-entry labels (or `true` for a cross-reference) to `qi-index-entry`, which prints nothing without a found label; letter headings print under `qi-index-live`. Chose a Lua-side label list over a Typst-side tree walk, since the tree is known before typesetting.
+- 2026-10-20: added to the fixture the three Out limits (`Oar`, `Block, see Sheave`, `Spare Index`), each observed in a scratch render first, so each claim the docs page now makes has a check (What gets a test); the M117-AC1 check also counts zero extension warnings.
+- 2026-10-20: four plants rendered by hand before writing their want strings (all-entries, all-groups, one-depth, no-xref), each red on its own row; the one-depth plant first broke the one-level case too, so `labels_below` was restructured to keep depth in its recursion alone.
+- 2026-10-20: claim audit: 46 claims read, 4 corrected — tests/run-tests.sh (the Thole check read the fixture's own prose, so it searches only after the `Spare Index` line; "eight marks" became eleven; the allentries plant's want is its first mismatch, Horn), _extensions/index/modules/typst.lua (a comment called a label a mark).
+- 2026-10-20: the heading check also missed `Spare Index` because pdftotext opens each later page with a form feed; it now turns form feeds into newlines. Checked on the clean scratch render (green) and on a planted render that prints Thole (red, naming Thole).
+- 2026-10-20: the first suite run stopped at the PyYAML check: `/usr/local/bin/python3` (3.14.6, installed 2026-10-01) has no PyYAML, and `/usr/bin/python3` (3.9.6) does. The suite runs with `PATH=/usr/bin:$PATH`; nothing was installed. A second run was stopped for the audit fix above before any M117 check.
+- 2026-10-20: suite run 3 failed at M24-AC3 (the plant renders were not captured), fixed in fa45783; run 4 failed at the M099 dropranges self-test, because `qi-index-entry` tested `found` after the span drop, which that plant empties. It now tests whether any label names an element before that drop (`labelled`), as its comment says; checked by hand on that plant (`dune` prints) and on the M117 fixture (green).
+- 2026-10-20: suite run 5 failed at the M098 T11 alt-kept self-test: its plant loses the alt-text labels, and since M117 those entries are left out rather than printed with no locator, so its want is now imgterm's missing row (cc612ed).
+- 2026-10-20: T5: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, "All checks passed (1832 checks)", at cc612ed; M117-AC1 and its four plants green. T1-T5 ticked; status review.
+- 2026-10-20: DESIGN.md: KI289 struck; KI321-KI323 added for the three Out limits and named on the candidate row; the Typst architecture paragraph updated.
+- 2026-10-20: record note: the six lines from "claim audit" to "T5" above were written after the "DESIGN.md: KI289 struck" line and inserted above it by mistake; their commits (e4c4c07 to 49d6735) give the true order.
+- 2026-10-20: amendment routed: AC1 — the criterion names the pinned Quarto (1.10.18), which this machine does not run and CI never runs the suite on; the check passed on 1.10.19 at 635f9cc, and the deliverable is unchanged.
+- 2026-10-20: re-audit: AC1 (full) — nothing; the reader found the amended text reachable on 1.10.19, binding the deliverable, with no D-065/D-067 conflict (the check is about the extension's output), and noted KI321-KI323 named the wrong Quarto.
+- 2026-10-20: amendment return: AC1 — "On Quarto 1.10.19, whose Typst template does not print `description:`," (was "On the pinned Quarto, ..."); the rest of AC1 is unchanged.
+- 2026-10-20: correction: every render this milestone made ran on Quarto 1.10.19, not 1.10.18. That holds for the "render check before planning" line above and for KI321-KI323, which are corrected in place in DESIGN.md.
+- 2026-10-20: review pass 2 found 10 more items over the pass-1 fixes (7 fixed in ef36856, 1 to a new parked row, 2 rejected); suite green at ef36856, 1834 checks.
+- 2026-10-20: step-7 approval: m117-typst-unprinted-marks approved for merge
 
 ## Decisions
 
 ## Review
+
+Review pass 1, 2026-10-20, branch at 49d6735 (main unmoved at 21391ae; no PR; Copilot round off).
+
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: an entry whose range opens in an unprinted field and closes on a printed page was left out, where main printed it with no locator — fix now, fixed 635f9cc (closing labels count; `Rig` shape and `noclose` plant added).
+- diff-bug #2: any non-cross-reference mark with no label now leaves its entry out, wider than the docs' front-matter case — reject, false for reachable shapes: the reviewer found only cross-reference marks and absent records without a label, and the Goal covers any mark no page prints.
+- diff-bug #3: `labels_below` walked `pairs()`, so the `.typ` label order could vary between renders — fix now, fixed 635f9cc (walks `sorted`; two renders compared byte-identical).
+- diff-bug #4: the new Typst helpers are unchecked on the floor Quarto — follow-up, held by the row "Floor-Quarto CI suite job"; the weekly version matrix also renders `examples/typst-index.qmd` there.
+- diff-bug #5: heading and entry calls repeat descendant labels, so the `.typ` grows linearly — reject, planned change (T1's label lists); no defect.
+- diff-bug #6: the Thole check reads only text after the first `Spare Index` line — reject, false: the heading check before it requires that line.
+- diff-bug #7: the changelog sentence sits at the end of the long Typst bullet — reject, style.
+- blame-history #1: a body mark whose label is lost (the alt-text plant) now vanishes — reject, false for reachable shapes (as diff-bug #2).
+- blame-history #2: a cross-reference to a left-out term draws no report, against D-005's spirit — follow-up, the row "Finish leaving out unprinted Typst marks" (KI322).
+- blame-history #3: no D-entry records reversing M098's limit — reject, planned change: a Typst-only choice, recorded in this work log; no cross-cutting rule.
+- blame-history #4: an index left with no entry prints its heading — follow-up, the row "Finish leaving out unprinted Typst marks" (KI323).
+- blame-history #5: `m098_field_rows`' "both kinds of row" wording is stale — reject, false: it still compares a printed field's row with an unprinted field's absent row.
+- blame-history #6: an over-long line in DESIGN.md's Typst paragraph — reject, style.
+- prior-review #1: the retired docs sentence had no phrase-absent guard (M110 precedent) — fix now, fixed 635f9cc.
+- prior-review #2: the new changelog and docs sentences were unpinned (M073 F1) — fix now, fixed 635f9cc (claims rows added).
+- prior-review #3: the M098 alt-kept plant no longer shows a label-lost row kept — reject, planned change: that row no longer exists, and the plant is still red when M098's move is undone.
+- prior-review #4: an entry whose only page a span drops prints bare — reject, false: the span drop removes a single mark inside a range of the same entry, and the range stays.
+- ripple #1: `site/typst.qmd` says an index no mark files in prints nothing, beside the new heading limit — fix now, fixed 635f9cc (the limit sentence names the difference).
+- ripple #2: "one group per letter" is unqualified — reject, false: it holds for every letter with a printed entry, and the same page states the exception.
+- ripple #3: `site/letter-groups.qmd`'s group list — reject, false: that page is about HTML.
+- ripple #4: the changelog does not name the three limits — reject, false: AC2 asks the site page alone to name them.
+
+Evidence, pass 1, at 635f9cc (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, exit 0, "All checks passed (1833 checks)", Quarto 1.10.19):
+
+- AC1: not met as written. The M117-AC1 check passed (23 manifest lines; five plants red on their rows), but the run was on Quarto 1.10.19, and the criterion names the pinned Quarto, which `tests/pagescheck.py version .github/workflows/pages.yml` reads as 1.10.18. No 1.10.18 install is here and CI runs no suite. Routed as an amendment return.
+- AC2: `site/typst.qmd` "A mark Typst never prints" and the Unreleased Typst bullet of `CHANGELOG.md` each state the left-out rule with both conditions; the page names the three Out limits; `grep -n "Its term is still in the index" site/typst.qmd` printed nothing (exit 1). The suite's claims rows (M098-AC7 page and changelog) and the retired-phrase sweep passed in the same run.
+- AC3: `tests/run-tests.sh --self-test` exited 0 at 635f9cc, 1833 checks.
+
+Review pass 2, 2026-10-20, after the AC1 amendment (8e6b19c). `git diff 635f9cc..HEAD -- . ':!cairn/'` is empty, so the pass-1 run is the run of this code; main unmoved.
+
+- AC1 (amended): `quarto --version` prints 1.10.19. In the 635f9cc run, M117-AC1 passed: `examples/typst-unprinted.qmd` rendered to Typst with no extension warning, its description's sentence absent before the index, and `tests/typstindex.py` matched all 23 lines of `tests/typst-unprinted.tsv`, which holds each shape AC1 names (no Halyard, Hawser or `H` group; `Bitt 2@2`; `Cleat 1@1` and no Horn; Davit over `Arm 2@2`; Fender over Rope over `Eye 2@2`; Gaff over `Jaw, see Bitt`; `Kedge, see Bitt`). Its five plants were red on their own rows.
+- spawned: diff-bug, blame-history, prior-review, ripple (blame-history, prior-review and ripple in one Haiku reader), over `git diff 49d6735..635f9cc`.
+- diff-bug #1: no fixture shape or plant covers a parent kept only by a sub-entry's range closing on a page, so dropping closing labels from `labels_below` stays green — fix now (`Mast!Step` shape and `noclosebelow` plant), fixed ef36856.
+- diff-bug #2: the M117-AC1 comment says eleven description marks; there are twelve — fix now (now thirteen, with `Mast!Step`), fixed ef36856.
+- diff-bug #3: an entry kept by a closing label alone prints no page number — reject, planned change: the docs state it, and main printed such an entry the same way.
+- diff-bug #4: a range opened in the body and closed in front matter never pairs, because front-matter marks are read first — follow-up, the new row "Pair a range closed in front matter" (KI324); not from this diff.
+- diff-bug #5: the M117-AC1 pass line does not name the range case — fix now, fixed ef36856.
+- blame-history: no finding.
+- prior-review #1: the M38 lesson (re-read every message naming a changed set) was missed in two places, ripple #1 and #2 — fixed with them.
+- ripple #1: DESIGN.md's Typst paragraph names opening labels only — fix now, fixed ef36856.
+- ripple #2: the same stale count as diff-bug #2 — fix now, fixed ef36856.
+- ripple #3: the M110 retired-phrase comment names one clause — fix now, fixed ef36856.
+- ripple #4: the changelog does not name the closing-label case — reject, false: its rule turns on page-number marks in the field, and a closing mark on a page keeps the entry under it.
+
+Evidence, pass 2, at ef36856 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, exit 0, "All checks passed (1834 checks)", Quarto 1.10.19):
+
+- AC1 (amended): M117-AC1 passed. The render of `examples/typst-unprinted.qmd` wrote no extension warning, its description's sentence did not print before the index, and `tests/typstindex.py` matched all 26 lines of `tests/typst-unprinted.tsv`. The manifest holds each shape AC1 names, as listed in pass 2 above, plus `Rig` and `Mast` over `Step` with no locator. Its six plants were red on their own rows.
+- AC2: unchanged since pass 1 (`git diff 635f9cc..ef36856 -- site CHANGELOG.md` is empty); the page and changelog claims rows and the retired-phrase sweep passed in this run.
+- AC3: `tests/run-tests.sh --self-test` exited 0 at ef36856, 1834 checks.
+- Gate: `cairn_validate.py` all checks passed; no principle changed, so `cairn_impact` was skipped; the generic profile names no toolchain checks.

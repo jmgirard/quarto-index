@@ -101,6 +101,7 @@ not-shown:
   - examples/typst-index.qmd
   - examples/typst-numbering.qmd
   - examples/typst-order.qmd
+  - examples/typst-unprinted.qmd
   - examples/unicode.qmd
   - examples/xref-escaping.qmd
   - examples/xref-joined-separator.qmd

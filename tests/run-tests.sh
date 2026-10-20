@@ -14888,6 +14888,7 @@ examples/self-xref.qmd	3
 examples/state-reuse-indexes.qmd	0
 examples/state-reuse.qmd	1
 examples/typst-index.qmd	0
+examples/typst-unprinted.qmd	0
 examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
 examples/xref-joined-separator.qmd	0
@@ -31223,7 +31224,13 @@ books tested	Books were tested on Quarto 1.10.18.
 author	Quarto's Typst book template does not compile a book whose `book:` metadata has no `author:`
 floor book	Quarto 1.5.52 does not render a Typst book.
 floor warning	It prints the warning `The typst format is not supported by book projects` and writes no PDF.
-unprinted field	Its term is still in the index, with no page number.
+unprinted field	so it adds no page number.
+unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
+unprinted group	A letter group none of whose entries prints has no heading.
+unprinted see mark	A `see=` or `see-also=` mark in such a field still prints its cross-reference.
+unprinted target	A cross-reference whose target is left out still prints, and nothing reports it.
+unprinted kept	Such an entry that is kept for a sub-entry that prints shows no page number of its own, and so does an entry whose range opens in such a field and closes on a page.
+unprinted heading	An index whose every entry is left out still prints its heading, where an index that no mark files in prints nothing.
 M098PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \
   || fail "M098-AC7: site/typst.qmd no longer states what a Typst render prints (its own FAIL line is above)"
@@ -31277,12 +31284,14 @@ M098OTHER
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
   || fail "M098-AC7 and M110-AC1: site/books.qmd no longer states that a Typst book is merged, the Quarto it was tested on, or that Quarto 1.5.52 renders none (its own FAIL line is above)"
 # The Typst page states no exit status for Quarto 1.5.52, because M109 saw the
-# two test books exit differently. Its retired clause is held off every page.
+# two test books exit differently. Its retired clause is held off every page,
+# and so is the Typst page's sentence M117 retired.
 cat > "$WORK/m110-retired.txt" <<'M110RETIRED'
 floor exit	exits without an error
+unprinted term kept	Its term is still in the index
 M110RETIRED
 python3 tests/sitecheck.py phrase-absent "$WORK/m110-retired.txt" \
-  || fail "M110-AC3: a page a reader meets still carries the phrase <<exits without an error>> (its own FAIL line is above)"
+  || fail "M110-AC3 and M117: a page a reader meets still carries a retired phrase, <<exits without an error>> or <<Its term is still in the index>> (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
 matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS
@@ -31305,6 +31314,9 @@ ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep 
 locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
 words	The see and see-also words follow `lang:` and `index-labels:`.
 books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
+unprinted field	`description:`, adds no page number.
+unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
+unprinted group	It also leaves out a letter group with no entry left.
 M098CHANGE
 python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m098-changelog-claims.txt" \
   || fail "M098-AC7: CHANGELOG.md no longer states the Typst back-end (its own FAIL line is above)"
@@ -31393,9 +31405,12 @@ if pinned and printed != {'abstract', 'subtitle'}:
     print(f'FAIL: M098-AC7: the pinned Quarto prints the front-matter field(s) '
           f'{sorted(printed)}, not the abstract and the subtitle', file=sys.stderr)
     sys.exit(1)
+# A term whose field does not print has no row, and as each term is the only
+# one of its letter, no letter group either (M117).
 rows = {'Capstan': 'entry\t0\tCapstan\t1@1'}
 for f, (term, _s) in fields.items():
-    rows[term] = f'entry\t0\t{term}' + ('\t1@1' if f in printed else '')
+    if f in printed:
+        rows[term] = f'entry\t0\t{term}\t1@1'
 with open(out, 'w', encoding='utf-8') as handle:
     for term in sorted(rows):
         handle.write(f'group\t{term[0]}\n{rows[term]}\n')
@@ -31409,6 +31424,105 @@ m098_field_rows "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" "$M098_FM_PI
 python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" \
   "$WORK/m098-front-matter.tsv" "M098-AC7 (a field Typst never prints)" "Index" \
   || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
+
+# M117-AC1: an entry no page carries is left out. examples/typst-unprinted.qmd
+# writes thirteen marks into `description:`, which Quarto's Typst template does
+# not print, and the rest into its body; tests/typst-unprinted.tsv states,
+# by hand, which entries and letter groups print. The check first requires
+# that the description's sentence does not print before the index, since
+# every row of the manifest rests on that.
+m117_unprinted() {   # <pdf> <label>
+  python3 - "$1" "$2" <<'M117FIELDPY' || return 1
+import subprocess, sys
+sys.path.insert(0, 'tests')
+from typstindex import nfkc
+pdf, label = sys.argv[1], sys.argv[2]
+text = nfkc(subprocess.run(['pdftotext', pdf, '-'], check=True,
+                           capture_output=True, text=True).stdout)
+lines = [l.strip() for l in text.split('\n')]
+if 'Index' not in lines:
+    print(f'FAIL: {label}: no line "Index" in {pdf}', file=sys.stderr)
+    sys.exit(1)
+before = ' '.join(' '.join(lines[:lines.index('Index')]).split())
+if 'Marks no page prints' in before:
+    print(f'FAIL: {label}: the render prints the field description: before '
+          f'the index, so its marks are on a page and the manifest does not '
+          f'hold', file=sys.stderr)
+    sys.exit(1)
+M117FIELDPY
+  python3 tests/typstindex.py "$1" tests/typst-unprinted.tsv "$2" "Index" "Spare Index" \
+    || return 1
+  # The second index's one mark is in the description: its heading prints,
+  # and its term does not.
+  local text
+  text=$(pdftotext "$1" -) || return 1
+  # pdftotext opens each page after the first with a form feed.
+  text=${text//$'\f'/$'\n'}
+  case $'\n'"$text"$'\n' in
+    *$'\nSpare Index\n'*) ;;
+    *) echo "FAIL: $2: the second index prints no heading" >&2; return 1 ;;
+  esac
+  # The fixture's prose names Thole too, so only the text after the heading
+  # is read.
+  case "${text#*$'\n'Spare Index$'\n'}" in
+    *Thole*) echo "FAIL: $2: the second index prints the term Thole" >&2; return 1 ;;
+  esac
+}
+quarto render examples/typst-unprinted.qmd --to typst > "$WORK/typst-unprinted.log" 2>&1 \
+  || { tail -40 "$WORK/typst-unprinted.log" >&2; fail "M117-AC1: examples/typst-unprinted.qmd failed to render to Typst"; }
+capture examples/typst-unprinted.qmd typst "typst-unprinted"
+# `Block, see Sheave` points at a term the index leaves out, and nothing
+# reports it: the render writes no extension warning.
+check_extension_warning_count "$WORK/typst-unprinted.log" 0 \
+  "M117-AC1 (examples/typst-unprinted.qmd warned; its cross-reference to a left-out term is not reported)"
+m117_unprinted "$CAPTURE_ROOT/typst-unprinted/typst-unprinted.pdf" "M117-AC1" \
+  || fail "M117-AC1: the Typst index of examples/typst-unprinted.qmd is not the manifest's (the report is above)"
+pass "M117-AC1: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference mark there, a cross-reference to a left-out term, and the heading of an index left with no entry still print"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # M117 T2 self-test: each part of the rule planted on its own in a copy of
+  # the extension, and the check shown red on the row that part keeps.
+  M117W="$WORK/m117plant"
+  rm -rf "$M117W"
+  m117_plant() {   # <slug> <perl substitution on typst.lua> <want>
+    local dir="$M117W/$1" out rc
+    mkdir -p "$dir/_extensions"
+    cp examples/typst-unprinted.qmd "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+    local filter="$dir/_extensions/index/modules/typst.lua"
+    perl -0777 -pi -e "$2 or die 'the substitution matched nothing'" "$filter" \
+      || fail "M117 self-test ($1): the substitution could not be applied"
+    ( cd "$dir" && quarto render typst-unprinted.qmd --to typst ) \
+      > "$WORK/m117-$1.log" 2>&1 \
+      || { tail -20 "$WORK/m117-$1.log" >&2; fail "M117 self-test ($1): the fixture failed to render through the planted copy"; }
+    capture "$dir/typst-unprinted.qmd" typst "m117-$1"
+    out=$(m117_unprinted "$CAPTURE_ROOT/m117-$1/typst-unprinted.pdf" "M117 plant $1" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M117 self-test ($1): the check passed the planted render"; }
+    printf '%s' "$out" | grep -qF -- "$3" \
+      || { printf '%s\n' "$out" >&2; fail "M117 self-test ($1): the check failed, but not on <<$3>>"; }
+    pass "M117 self-test ($1): the check is red on <<$3>>"
+  }
+  # Each <want> is the first row the plant prints where the manifest has
+  # another, as `typstindex.py` reports it: the row that part of the rule
+  # keeps out, or the row printed where the left-out one belongs.
+  # Every entry prints, as before M117, so Horn prints under Cleat.
+  m117_plant allentries 's{if labelled or }{if true or }' "-> 5: got 'entry\t1\tHorn"
+  # Every letter-group heading prints, as before M117.
+  m117_plant allgroups 's{if live == nil then}{if true then}' "got 'group\tH'"
+  # Only an entry's direct sub-entries are read, so Fender, whose only
+  # printing sub-entry is two levels down, is left out with its group.
+  m117_plant onedepth 's{for _, key in ipairs\(entry\.sorted\) do}{for _, key in ipairs({}) do}' "-> 8: got 'entry\t1\tRope"
+  # A sub-entry's cross-reference does not keep its parent, so Gaff is left
+  # out with its group.
+  m117_plant noxref 's{if #entry\.xrefs > 0 then}{if false then}' "-> 12: got 'entry\t1\tJaw"
+  # Only an entry's opening labels are read, so Mast!Step and Rig, whose
+  # ranges open in the description and close on page 2, are left out.
+  m117_plant noclose 's{ \+ items\.map\(item => item\.at\(1\)\)\.filter\(l => l != none\)}{}' "-> 19: want 'entry\t1\tStep"
+  # Only sub-entries' opening labels are read, so Mast, kept by its
+  # sub-entry's closing mark alone, is left out with its group.
+  m117_plant noclosebelow 's{      if locator\.close ~= nil then\n        labels\[#labels \+ 1\] = "<" \.\. locator\.close \.\. ">,"\n      end\n}{}' "-> 17: got 'entry\t1\tStep"
+fi
 
 # A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text
 # as a string and drops the label written there, so the back-end moves each
@@ -31750,7 +31864,9 @@ M110PLANTPY
     > "$WORK/m098-alt-plant.log" 2>&1 \
     || { tail -20 "$WORK/m098-alt-plant.log" >&2; fail "M098 T11 self-test: the alt-text document failed to render through the planted copy"; }
   capture "$M098D/alt-plant/alt.qmd" typst "m098-alt-plant"
-  m098_red alt-kept "got 'entry\t0\timgterm\t\t'" \
+  # The lost labels name no element, so since M117 imgterm's entry and its
+  # letter group are left out rather than printed with no locator.
+  m098_red alt-kept "-> 3: want 'entry\t0\timgterm\t1@1\t'" \
     python3 tests/typstindex.py "$M098D/alt-plant/alt.pdf" "$WORK/m098-alt.tsv" \
     "M098 T11 plant alt-kept" "Index"
   pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, the Typst page's claims are red on a copy stating a folded range, and the outline check is red where the index heading is a paragraph"

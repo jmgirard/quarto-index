@@ -514,7 +514,11 @@ Three back-ends ship:
   location, since M099 review R1: a link to a location fails to compile
   under a two-argument numbering function). A label no element carries adds
   no locator, so a mark Quarto's template never prints cannot fail the render
-  (IP2). Every term, word and heading is a Typst string literal, so no
+  (IP2). Each entry call also carries its sub-entries' opening and closing
+  labels at any depth, or `true` where one has a cross-reference, and an
+  entry none of whose opening or closing labels is found, with no
+  cross-reference and no such sub-entry, prints nothing; a letter-group
+  heading prints where an entry of its group does (M117). Every term, word and heading is a Typst string literal, so no
   character is read as markup. No Typst package is imported (GP3). As for
   EPUB, `is_html` stays the sole gate on the sidecar store: Quarto renders a
   Typst book in one Pandoc process.
@@ -921,6 +925,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   on one term print `see Yak; Moa; Ant` in every back-end, where the word in
   front of each target used to mark the boundary. Observed in M116's review
   probe, 2026-10-19. — M116 review diff-bug #9
+- **KI324.** A range opened in the body and closed in a YAML front-matter
+  field never pairs: the filter reads front-matter marks before body marks,
+  so the closing mark comes first and is reported as closing a range the
+  index never opens, and the opening is reported as never closed. Each then
+  indexes as a page of its own. Observed on Quarto 1.10.19 in M117's review
+  probe, 2026-10-20. — M117 review pass 2 diff-bug #4
 
 ### The HTML back-end and books
 
@@ -1043,10 +1053,21 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
 
 ### The Typst back-end
 
-- **KI289.** A mark in a front-matter field Quarto's Typst template does not
-  print, such as `description:`, has no label element on any page. Its entry
-  prints the term with no locator, and nothing is reported. Observed on Quarto
-  1.10.18 with `examples/front-matter.qmd`. — M098 T3
+- **KI321.** A cross-reference mark (`see=`, `see-also=`) in a front-matter
+  field Quarto's Typst template does not print has no label, so the Typst
+  index still prints its cross-reference, where M117 leaves out an entry
+  whose page-number marks are all in such a field. Observed on Quarto 1.10.19
+  (corrected M117) with `examples/typst-unprinted.qmd` (`Oar, see Paddle`). —
+  M117 plan audit
+- **KI322.** A cross-reference whose target term the Typst index leaves out
+  (M117) still prints, and no dangling-target report fires, because the
+  filter counts the target as marked. Observed on Quarto 1.10.19 (corrected
+  M117) with `examples/typst-unprinted.qmd` (`Block, see Sheave`). — M117
+  plan audit
+- **KI323.** A Typst index whose every entry is left out (M117) still prints
+  its heading over an empty page, where an index no mark files in prints
+  nothing. Observed on Quarto 1.10.19 (corrected M117) with
+  `examples/typst-unprinted.qmd` (`Spare Index`). — M117 plan
 - **KI318.** A mark in the caption of a float whose content is one paragraph,
   table or code block has its label at the end of that content, or just after
   the table or code block in a wrapper (M115), so

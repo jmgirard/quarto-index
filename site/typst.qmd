@@ -80,6 +80,10 @@ page.
   `3, 4, 5`. Only a range you write prints as a range. A mark on the page just
   after a range prints its own locator, `2–3, 4`, where the PDF index prints
   `2–4`.
+- A mark in an image's alt text files the image's page. Typst prints alt text
+  as plain text, so the extension writes the mark's label, and an id you give
+  the mark, just after the image. A link to that id builds and goes to the
+  image's page.
 
 ## Cross-references
 

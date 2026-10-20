@@ -23,6 +23,9 @@
   files the page where the float's content ends. A mark in the caption of
   other floats still files the list's page. Examples are a grid of images
   laid out in cells and a figure inside a code cell's output div. A mark in
+  an image's alt text files the image's page, and an id you give that mark is
+  written just after the image, so a link to the id builds. Before this
+  change, a link to such an id stopped the render. A mark in
   a front-matter field the Typst template does not print, such as
   `description:`, adds no page number. If all the page-number marks of an
   entry are such marks, and no cross-reference or sub-entry of it prints,

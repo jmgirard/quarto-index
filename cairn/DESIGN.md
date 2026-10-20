@@ -487,7 +487,10 @@ Three back-ends ship:
   only the first block of a figure with no id, so there they join that block
   where it is a Plain or Para. A label written in an image's alt text
   moves to just after the image, because Pandoc's Typst writer prints alt
-  text as a string and drops raw Typst there (M098 review). The HTML, EPUB and
+  text as a string and drops raw Typst there (M098 review). An author's id on
+  a mark there moves with it, as an element of its own, and `caption_moves`
+  takes such an element out of a float's caption with the labels, telling it
+  from an author's raw Typst by its opening comment (M119). The HTML, EPUB and
   LaTeX back-ends move an alt-text mark's target the same way, and the version
   matrix reads `examples/figure-marks.qmd`, which holds such a label, on every
   leg (M101). The index is one raw Typst block per
@@ -1292,13 +1295,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   either wording ships with the suite green. M116's review probe rendered both
   correctly. The older index-naming forms of that report are unpinned too.
   — M116 review diff-bug #4
-- **KI325.** Since M118 every Typst cross-reference mark carries a label, and
-  no fixture puts one in a heading, a float caption, image alt text, a
-  footnote or a callout, the places where a moved or copied label once named
-  two elements (M098, M115). A label naming two elements there would break the
-  render or its link with the suite green. M118's review renders of each
-  place labelled the mark once with no render error. — M118 review
-  prior-review #2
 
 ### The repo and its packaging
 

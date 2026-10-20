@@ -122,7 +122,7 @@ backlog", in part.
       caption link fails with "occurs multiple times". Keep the heading
       mark's author id in the heading: its link fails the same way. Empty
       the query's output and the id scan: each floor fires.
-- [ ] T4: Docs and records. Write the `CHANGELOG.md` entry and the
+- [x] T4: Docs and records. Write the `CHANGELOG.md` entry and the
       `site/typst.qmd` sentence per AC4 from a render. Bring the Typst
       paragraph of `DESIGN.md`'s architecture in line on alt text. Strike
       KI325.
@@ -144,3 +144,4 @@ backlog", in part.
 - 2026-10-20: T1: fixture (12 marks, 11 page breaks, 12 linked ids), manifests `tests/typst-xref-places.tsv` and `tests/typst-xref-places-links.tsv` by hand, reader `tests/typstlabels.py` (labels and links modes), M119 suite section after M115's, corpus row and gallery line. Before T2 the render stopped on ``label `<id-elm>` does not exist`` and the same for `id-gum`; `id-lark` already resolved, since `caption_moves` reaches a span in a caption's alt text.
 - 2026-10-20: T2: `id_inline` moved above `assign_labels` and now opens with the comment `/* qi-id */` (`ID_INLINE_OPEN`), so `caption_moves` moves the filter's own id elements and never an author's raw Typst; chose the comment over matching `#[#metadata(none)`, which an author's raw Typst in a caption could also open with; falsified by Typst ever reading a comment there as content.
 - 2026-10-20: T3: ten plants red on the clause each names, run in a scratch harness that sources the section alone (full suite at T5). The audit's heading-id plant was dropped: an author's id left in a Typst heading stays on one element (`= … ash<id-ash>`, query lists one), so no plant can show AC3 red there. Skipping the heading relocation loses ash's label to the heading's own label rather than copying it, so that plant is red on AC2's mark floor (11 for 12), not on a label listed twice.
+- 2026-10-20: T4: the Typst entry in `CHANGELOG.md` and a Locators bullet in `site/typst.qmd` state the alt-text id, from the T1 render (12 links to their pages, the alt-text ids on page 6); `DESIGN.md`'s Typst architecture paragraph names the id move and the comment; KI325 struck.

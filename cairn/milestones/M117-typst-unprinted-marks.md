@@ -1,6 +1,6 @@
 # M117: A Typst index leaves out a term no page carries
 
-- **Status:** review
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -54,14 +54,14 @@ section "A mark Typst never prints", the Unreleased Typst entry in
       whose every term is marked only in `description:` has no heading row;
       and a term marked in the body with a `see=` target the index prints, and
       no locator, keeps its row.
-- [ ] AC2: In `site/typst.qmd`, the section "A mark Typst never prints", and
+- [x] AC2: In `site/typst.qmd`, the section "A mark Typst never prints", and
       in `CHANGELOG.md`, the Unreleased entry for the Typst back-end, each say
       that an entry whose page-number marks all sit in a field no page prints
       is left out of the Typst index when it has no cross-reference and no
       sub-entry that prints. The `site/typst.qmd` section also names the three
       limits the Out list names. `grep -n "Its term is still in the index"
       site/typst.qmd` prints nothing.
-- [ ] AC3: The active profile's `verify` slot passes: `tests/run-tests.sh
+- [x] AC3: The active profile's `verify` slot passes: `tests/run-tests.sh
       --self-test` exits 0.
 
 ## Coverage
@@ -120,6 +120,8 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: suite run 5 failed at the M098 T11 alt-kept self-test: its plant loses the alt-text labels, and since M117 those entries are left out rather than printed with no locator, so its want is now imgterm's missing row (cc612ed).
 - 2026-10-20: T5: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, "All checks passed (1832 checks)", at cc612ed; M117-AC1 and its four plants green. T1-T5 ticked; status review.
 - 2026-10-20: DESIGN.md: KI289 struck; KI321-KI323 added for the three Out limits and named on the candidate row; the Typst architecture paragraph updated.
+- 2026-10-20: record note: the six lines from "claim audit" to "T5" above were written after the "DESIGN.md: KI289 struck" line and inserted above it by mistake; their commits (e4c4c07 to 49d6735) give the true order.
+- 2026-10-20: amendment routed: AC1 — the criterion names the pinned Quarto (1.10.18), which this machine does not run and CI never runs the suite on; the check passed on 1.10.19 at 635f9cc, and the deliverable is unchanged.
 
 ## Decisions
 
@@ -149,3 +151,9 @@ Review pass 1, 2026-10-20, branch at 49d6735 (main unmoved at 21391ae; no PR; Co
 - ripple #2: "one group per letter" is unqualified — reject, false: it holds for every letter with a printed entry, and the same page states the exception.
 - ripple #3: `site/letter-groups.qmd`'s group list — reject, false: that page is about HTML.
 - ripple #4: the changelog does not name the three limits — reject, false: AC2 asks the site page alone to name them.
+
+Evidence, pass 1, at 635f9cc (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, exit 0, "All checks passed (1833 checks)", Quarto 1.10.19):
+
+- AC1: not met as written. The M117-AC1 check passed (23 manifest lines; five plants red on their rows), but the run was on Quarto 1.10.19, and the criterion names the pinned Quarto, which `tests/pagescheck.py version .github/workflows/pages.yml` reads as 1.10.18. No 1.10.18 install is here and CI runs no suite. Routed as an amendment return.
+- AC2: `site/typst.qmd` "A mark Typst never prints" and the Unreleased Typst bullet of `CHANGELOG.md` each state the left-out rule with both conditions; the page names the three Out limits; `grep -n "Its term is still in the index" site/typst.qmd` printed nothing (exit 1). The suite's claims rows (M098-AC7 page and changelog) and the retired-phrase sweep passed in the same run.
+- AC3: `tests/run-tests.sh --self-test` exited 0 at 635f9cc, 1833 checks.

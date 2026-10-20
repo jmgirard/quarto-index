@@ -103,3 +103,5 @@ not-shown:
   - examples/typst-order.qmd
   - examples/unicode.qmd
   - examples/xref-escaping.qmd
+  - examples/xref-joined-separator.qmd
+  - examples/xref-joined.qmd

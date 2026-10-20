@@ -118,6 +118,7 @@ acceptance-suite backlog".
 - 2026-10-20: resumed for review return 2; added T6 (minor amendment, Coverage updated). Choice: `repr` in the got/want lines, so a `\r` or an escape code shows.
 - 2026-10-20: T6 plants against the check before (run 7's copy) and after, over run 7's control log: control green both; trailing text red both (the d5612b7 check passed it, per pass 2); text before a report and a `\r` then text green before, red after; directory, missing and empty logs red both, the directory before as "does not exist" and the empty log before as four "no such line" rows, after by name.
 - 2026-10-20: run 8 (alone, on 56b52d0) passed `--self-test`: exit 0, "All checks passed (1889 checks)", no FAIL line; the six log plants and two extension plants each red on their own line under their FAIL header. T6 done; status review.
+- 2026-10-20: review pass 3 fixes in 96a97c3. Run 9 repeated the T3 probe alone: with `role = mark.role` removed, exit 1, its one FAIL line M21-AC5 reading `"Ranged Term"`'s `sub/two.html` locator without `qi-principal` and `strong`, the same line run 3 printed. Line restored; run 10 follows.
 
 ## Decisions
 

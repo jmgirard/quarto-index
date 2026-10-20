@@ -16,6 +16,7 @@
 #   Oar      a see mark in the description: it has no label and still prints
 #   Paddle   page 1
 #   Rig      a range opened in the description, closed on page 2: no locator
+#   Mast     no mark of its own, above Step, a range like Rig's: no locators
 # Thole, the description's mark in the second index, is not in this one.
 group	B
 entry	0	Bitt	2@2
@@ -34,6 +35,9 @@ entry	0	Gaff
 entry	1	Jaw		see|Bitt
 group	K
 entry	0	Kedge		see|Bitt
+group	M
+entry	0	Mast
+entry	1	Step
 group	O
 entry	0	Oar		see|Paddle
 group	P

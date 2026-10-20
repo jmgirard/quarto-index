@@ -31284,7 +31284,8 @@ M098OTHER
 python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
   || fail "M098-AC7 and M110-AC1: site/books.qmd no longer states that a Typst book is merged, the Quarto it was tested on, or that Quarto 1.5.52 renders none (its own FAIL line is above)"
 # The Typst page states no exit status for Quarto 1.5.52, because M109 saw the
-# two test books exit differently. Its retired clause is held off every page.
+# two test books exit differently. Its retired clause is held off every page,
+# and so is the Typst page's sentence M117 retired.
 cat > "$WORK/m110-retired.txt" <<'M110RETIRED'
 floor exit	exits without an error
 unprinted term kept	Its term is still in the index
@@ -31425,7 +31426,7 @@ python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" 
   || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
 
 # M117-AC1: an entry no page carries is left out. examples/typst-unprinted.qmd
-# writes eleven marks into `description:`, which Quarto's Typst template does
+# writes thirteen marks into `description:`, which Quarto's Typst template does
 # not print, and the rest into its body; tests/typst-unprinted.tsv states,
 # by hand, which entries and letter groups print. The check first requires
 # that the description's sentence does not print before the index, since
@@ -31476,7 +31477,7 @@ check_extension_warning_count "$WORK/typst-unprinted.log" 0 \
   "M117-AC1 (examples/typst-unprinted.qmd warned; its cross-reference to a left-out term is not reported)"
 m117_unprinted "$CAPTURE_ROOT/typst-unprinted/typst-unprinted.pdf" "M117-AC1" \
   || fail "M117-AC1: the Typst index of examples/typst-unprinted.qmd is not the manifest's (the report is above)"
-pass "M117-AC1: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; a cross-reference mark there, a cross-reference to a left-out term, and the heading of an index left with no entry still print"
+pass "M117-AC1: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference mark there, a cross-reference to a left-out term, and the heading of an index left with no entry still print"
 
 if [ "${1:-}" = "--self-test" ]; then
   # M117 T2 self-test: each part of the rule planted on its own in a copy of
@@ -31515,9 +31516,12 @@ if [ "${1:-}" = "--self-test" ]; then
   # A sub-entry's cross-reference does not keep its parent, so Gaff is left
   # out with its group.
   m117_plant noxref 's{if #entry\.xrefs > 0 then}{if false then}' "-> 12: got 'entry\t1\tJaw"
-  # Only opening labels are read, so Rig, whose range opens in the
-  # description and closes on page 2, is left out.
-  m117_plant noclose 's{ \+ items\.map\(item => item\.at\(1\)\)\.filter\(l => l != none\)}{}' "-> 22: want 'entry\t0\tRig"
+  # Only an entry's opening labels are read, so Mast!Step and Rig, whose
+  # ranges open in the description and close on page 2, are left out.
+  m117_plant noclose 's{ \+ items\.map\(item => item\.at\(1\)\)\.filter\(l => l != none\)}{}' "-> 19: want 'entry\t1\tStep"
+  # Only sub-entries' opening labels are read, so Mast, kept by its
+  # sub-entry's closing mark alone, is left out with its group.
+  m117_plant noclosebelow 's{      if locator\.close ~= nil then\n        labels\[#labels \+ 1\] = "<" \.\. locator\.close \.\. ">,"\n      end\n}{}' "-> 17: got 'entry\t1\tStep"
 fi
 
 # A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text

@@ -514,10 +514,11 @@ Three back-ends ship:
   location, since M099 review R1: a link to a location fails to compile
   under a two-argument numbering function). A label no element carries adds
   no locator, so a mark Quarto's template never prints cannot fail the render
-  (IP2). Each entry call also carries its sub-entries' opening labels at any
-  depth, or `true` where one has a cross-reference, and an entry with no
-  found label, no cross-reference and no such sub-entry prints nothing; a
-  letter-group heading prints where an entry of its group does (M117). Every term, word and heading is a Typst string literal, so no
+  (IP2). Each entry call also carries its sub-entries' opening and closing
+  labels at any depth, or `true` where one has a cross-reference, and an
+  entry none of whose opening or closing labels is found, with no
+  cross-reference and no such sub-entry, prints nothing; a letter-group
+  heading prints where an entry of its group does (M117). Every term, word and heading is a Typst string literal, so no
   character is read as markup. No Typst package is imported (GP3). As for
   EPUB, `is_html` stays the sole gate on the sidecar store: Quarto renders a
   Typst book in one Pandoc process.
@@ -924,6 +925,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   on one term print `see Yak; Moa; Ant` in every back-end, where the word in
   front of each target used to mark the boundary. Observed in M116's review
   probe, 2026-10-19. — M116 review diff-bug #9
+- **KI324.** A range opened in the body and closed in a YAML front-matter
+  field never pairs: the filter reads front-matter marks before body marks,
+  so the closing mark comes first and is reported as closing a range the
+  index never opens, and the opening is reported as never closed. Each then
+  indexes as a page of its own. Observed on Quarto 1.10.19 in M117's review
+  probe, 2026-10-20. — M117 review pass 2 diff-bug #4
 
 ### The HTML back-end and books
 

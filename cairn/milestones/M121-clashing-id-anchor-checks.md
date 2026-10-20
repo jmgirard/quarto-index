@@ -1,6 +1,6 @@
 # M121: Three anchor checks read clashing ids
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -68,7 +68,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 
 ## Tasks
 
-- [ ] T1: In `examples/id-collision.qmd`, add one new contested
+- [x] T1: In `examples/id-collision.qmd`, add one new contested
       cross-reference term after the existing marks, printed by two marks
       outside any heading. Give each mark an id that another element also
       carries. Change `CONTESTED_XREF` (`tests/run-tests.sh:4332`) and the
@@ -80,7 +80,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
       Before the first run, grep the self-tests for want strings that the
       new marks move (the M117 lesson). Add `--self-test` plants that leave
       the new term with one minted anchor and with three.
-- [ ] T2: Let `tests/epubcheck.py links` take the ids an author wrote with
+- [x] T2: Let `tests/epubcheck.py links` take the ids an author wrote with
       the section prefix, and pass them to the section finder so it skips
       those elements. Keep the raise for any other prefixed element with no
       heading (`tests/htmlindex.py:419-427`). Run it in the suite over the
@@ -88,13 +88,13 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
       count it prints. Rewrite the comment at `tests/run-tests.sh:25528-25532`.
       Add plants: a copy with one index link's target id removed, and a copy
       with the generated section's heading removed.
-- [ ] T3: In `dump_html` (`tests/indexdump.py:142-156`), check each
+- [x] T3: In `dump_html` (`tests/indexdump.py:142-156`), check each
       same-page link with a minted-prefix fragment against
       `htmlindex.count_id`. Keep or replace `minted_carried`
       (`tests/indexdump.py:116-139`) and update its docstring and the comment
       at `tests/indexdump.py:65-68`. Add plants that remove one
       `id="qi-mark-N"` from a captured page and that write one twice.
-- [ ] T4: Strike KI274, KI267 and KI126 in `cairn/DESIGN.md`. Run
+- [x] T4: Strike KI274, KI267 and KI126 in `cairn/DESIGN.md`. Run
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
 
 ## Work log
@@ -116,6 +116,9 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 - 2026-10-20: T3 written: `minted_links_land` in `tests/indexdump.py` holds each same-page index link with a minted-prefix fragment to one carrying element; `minted_carried` stays for the renamed-prefix case. Green on the last run's demo capture; red on both new plants (`qi-mark-1` gone, `qi-mark-1` carried twice).
 - 2026-10-20: T4 in part: KI274, KI267 and KI126 struck in `cairn/DESIGN.md`; the full `--self-test` run over T1 to T3 is in flight, and no task is ticked until it is green.
 - 2026-10-20: suite run 1 stopped at M58 on a Quarto segmentation fault rendering `index-separators-twin.qmd`, its only FAIL; every M121 check it reached passed. Re-run, per the DESIGN.md entry treating a segfault-only red as toolchain noise.
+- 2026-10-20: suite run 2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, 1877 checks, 0 FAIL; the M079-AC1 leg, M121-AC2 and the six M121 plants each printed ok. T1 to T4 ticked.
+- 2026-10-20: claim audit: not owed — internal tier.
+- 2026-10-20: implementation complete; status review.
 
 ## Decisions
 

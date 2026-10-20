@@ -31852,7 +31852,9 @@ M110PLANTPY
     > "$WORK/m098-alt-plant.log" 2>&1 \
     || { tail -20 "$WORK/m098-alt-plant.log" >&2; fail "M098 T11 self-test: the alt-text document failed to render through the planted copy"; }
   capture "$M098D/alt-plant/alt.qmd" typst "m098-alt-plant"
-  m098_red alt-kept "got 'entry\t0\timgterm\t\t'" \
+  # The lost labels name no element, so since M117 imgterm's entry and its
+  # letter group are left out rather than printed with no locator.
+  m098_red alt-kept "-> 3: want 'entry\t0\timgterm\t1@1\t'" \
     python3 tests/typstindex.py "$M098D/alt-plant/alt.pdf" "$WORK/m098-alt.tsv" \
     "M098 T11 plant alt-kept" "Index"
   pass "M098 T7 self-test: the count sweep is red on a page carrying the retired count, the Typst page's claims are red on a copy stating a folded range, and the outline check is red where the index heading is a paragraph"

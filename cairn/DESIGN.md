@@ -916,6 +916,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   is gone: M116 prints `see One Way; Another Way` in every back-end.) — M03
   gate, M15 review; routed from candidates 2026-10-01, the row added
   2026-08-16; narrowed M116
+- **KI319.** A cross-reference target written with `; ` in it reads as two
+  targets when it shares a kind with another: `see="Yak; Moa"` and `see="Ant"`
+  on one term print `see Yak; Moa; Ant` in every back-end, where the word in
+  front of each target used to mark the boundary. Observed in M116's review
+  probe, 2026-10-19. — M116 review diff-bug #9
 
 ### The HTML back-end and books
 
@@ -1266,6 +1271,12 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   happens or why. Since M106 the render job also renders the book to EPUB on
   every push. That is a second place the same flake can turn a push red.
   — M102 T6, widened M106 review R10
+- **KI320.** No fixture draws the index-naming forms of the two composed-entry
+  reports M116 added, a plain mark beside two or more cross-references and
+  three or more with none (`index entry %s in %s carries …`), so a defect in
+  either wording ships with the suite green. M116's review probe rendered both
+  correctly. The older index-naming forms of that report are unpinned too.
+  — M116 review diff-bug #4
 
 ### The repo and its packaging
 

@@ -101,3 +101,37 @@ holds a floor run of the whole suite.
 ## Decisions
 
 ## Review
+
+Pass 1 (2026-10-20). Default branch unmoved since the cut (origin/main ea9c159); no sync needed. Copilot round off.
+
+spawned: diff-bug, blame-history, prior-review, ripple
+
+Findings, by lens and rank:
+- diff-bug #1: AC6 lists `phi` and says the diff edits none of its rows, yet its warning-count and M15-AC5 rows changed — rejected (false): AC6's rows are the rows that state what those cases print ("print what the suite's rows for them state"); phi's printed PDF and HTML rows are unchanged, and its warning rows state a log line, which T2 planned to change and the work log records. Named at the merge question.
+- diff-bug #2: `tests/typstcheck.py source` still derives one reference per target, so a same-kind pair would read as a mismatch — fix now: the derivation joins a kind's targets by `; `, and the M116 section runs it on `xref-joined.qmd`.
+- diff-bug #3: the EPUB default render's `;` between targets of one kind is not checked — fix now: `sepcheck.py epub` over the default EPUB.
+- diff-bug #4: the index-naming forms of the two new reports are drawn by no fixture — follow-up: KI320 (an extension defect there would pass the suite, so D-068 records it).
+- diff-bug #5: after the LaTeX fold, the count names printed targets, not written values — rejected (false): the count is of the targets the entry prints, which the message's own clause describes ("printed as one entry carrying all N targets"), and the fold report names the merge.
+- diff-bug #6: `index.lua` comment says "Four literals" over eight — fix now.
+- diff-bug #7: `latex.lua` `record_contest` comment says targets are kept see-first; they are kept in arrival order — fix now.
+- diff-bug #8: `typstindex.printed_text` misreads a bare target holding `|` — rejected (false as a defect): no manifest holds one and the row format cannot tell such a target from a word; D-068 leaves it unrecorded.
+- diff-bug #9: a target holding `; ` reads as two targets in the joined form — follow-up: KI319 and parked row "Semicolon in a cross-reference target".
+- diff-bug #10: `site/back-end-differences.qmd` item 9 names the LaTeX join only on the encapsulation channel — fix now: names the join a contested term's marks get, between kinds and inside a kind.
+- diff-bug #11: `htmlindex.row` cannot tell an empty word from none — rejected (false): `indexes.lua` refuses an empty or blank label, so no page carries one.
+- diff-bug #12: the PDF check's join for wrapped lines is never taken — fix now: removed; a line read below the top level is reported with its level.
+- blame-history #1: the plural plain-mark wording conflicts with D-021/D-022 — rejected (false): those entries keep a one-namespace document's scope wording byte for byte; M116 changes the count clause, which neither entry covers.
+- blame-history #2: output changes for documents no decision covers — rejected (planned change).
+- blame-history #3: "Four literals" comment — fix now (as diff-bug #6).
+- blame-history #4: the `eta` row at `:2842` was left unchanged — rejected (false): the M116 section compares eta's words with labels on (`see-link see A: B`, `see-plain A: B`).
+- blame-history #5: `printed_text` accepts a word-less piece anywhere after the first — rejected (false as a defect): a dropped word still fails the text comparison.
+- blame-history #6: `site/cross-references.qmd` "the two marks the HTML and EPUB indexes only" is garbled — fix now.
+- blame-history #7: html.lua comment line break — rejected (style).
+- blame-history #8: `book-placement` is off the M14 roster — rejected (false as a new defect): pre-existing, and the comment now names the gap; D-068 leaves a suite-construction note unrecorded.
+- prior-review #1: the PDF join path is unexercised (M113's continuation lesson) — fix now (as diff-bug #12).
+- prior-review #2: word-less fields extend KI178's labels-row fold — rejected (false as a regression): the reader checks the word count structurally.
+- prior-review #3: back-end-differences "two places" wording — fix now (as diff-bug #10).
+- prior-review #4: M15-AC5's single plain wording split by count — rejected (planned change, T2).
+- ripple #1: `site/letter-groups.qmd` says the words reach HTML and EPUB only — fix now.
+- ripple #2: back-end-differences item 6 says the see-also limitation is the same in all back-ends — rejected (false): the item's subject is that a cross-reference carries no locator, which holds in all four.
+- ripple #3: `site/typst.qmd` describes one word per target — fix now.
+- ripple #4: back-end-differences item 9 says the words are set for HTML and EPUB — rejected (false): its next sentence states that Typst reads the three word keys.

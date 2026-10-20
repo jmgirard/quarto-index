@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (M116 review: archived M116, pruned the M113 row; added parked row "Semicolon in a cross-reference target", KI319, KI320 and one LESSONS line; caps and budgets within limits; validate green.)_
+_Last hygiene check: 2026-10-20 (M117 review: archived M117, pruned the M114 row; added parked rows "Finish leaving out unprinted Typst marks" and "Pair a range closed in front matter", KI321-KI324, one LESSONS line, the M082 line corrected; caps and budgets within limits; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M117 | A Typst index leaves out a term no page carries | review | — | normal | milestones/M117-typst-unprinted-marks.md |
+| M117 | A Typst index leaves out a term no page carries | done | — | normal | milestones/archive/M117-typst-unprinted-marks.md |
 | M116 | One see-word for each kind of cross-reference | done | — | normal | milestones/archive/M116-joined-see-targets.md |
 | M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |
-| M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

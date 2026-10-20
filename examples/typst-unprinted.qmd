@@ -30,7 +30,7 @@ its closing mark is on a page: `Rig` prints, with no page number.
 `Mast!Step` does the same as a sub-entry, so `Mast`, which has no mark of
 its own, prints above it.
 
-Five of the description's marks write a cross-reference. `Oar, see Paddle`
+Four of the description's marks write a cross-reference. `Oar, see Paddle`
 and `Winch, see also Bitt` are written there alone, so neither prints, and
 nor does an `O` or a `W` heading. `Boom` is marked there alone, above
 `Boom!Vang`, whose only mark there writes `see Bitt`, so neither prints.

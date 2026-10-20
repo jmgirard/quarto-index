@@ -14572,9 +14572,9 @@ done
 pass "M14-AC2: a fixture whose every target resolves — an exact single-level match, a full multi-level path, and a level that exists only as a parent — draws no report in any of the three formats"
 
 # The milestone-local decision on what makes a target resolve says the report
-# and the HTML back-end's own walk (`qi_entries.lookup_entry`) must agree, and that they
-# cannot share code: the entry tree exists in one format only. The agreement
-# is asserted here instead. In the HTML index a target is a link exactly when
+# and the walk the HTML back-end links targets by (`qi_entries.lookup_entry`,
+# which the Typst back-end also reads since M118) must agree. The report does
+# not call that walk, so the agreement is asserted here instead. In the HTML index a target is a link exactly when
 # the walk found its entry, so the set of unlinked targets must be exactly the
 # set of targets the report named.
 python3 - "$WORK/dangling-html.log" "$CAPTURE_ROOT/dangling-html/dangling-xref.html" \
@@ -30019,7 +30019,7 @@ if [ "${1:-}" = "--self-test" ]; then
   m098_terms closelink 'fern\t1–2@2'
 
   # A reference: given a link.
-  m098_tree xreflink typst.lua 's{"\[#emph\(%s\) #\(%s\)\],"}{"link(<qi-mark-1>)[#emph(%s) #(%s)],"}'
+  m098_tree xreflink typst.lua 's{ \[#emph\(xref\.at\(1\)\) #\(xref\.at\(2\)\)\] else}{ { link(<qi-mark-1>)[#emph(xref.at(1)) #(xref.at(2))] } else}'
   m098_render xreflink
   m098_terms xreflink 'see|Bee@'
 
@@ -31552,8 +31552,9 @@ if [ "${1:-}" = "--self-test" ]; then
   # keeps out, or the row printed where the left-out one belongs. The plants
   # are M117's and M118's together, since M118 rewrote the rule M117's were
   # written against.
-  # Every entry prints, as before M117, so Block prints with no
-  # cross-reference.
+  # Every entry prints whatever its labels say, so Block prints. Its
+  # cross-reference to Sheave is still left out, by its own condition, so
+  # Block prints bare.
   m117_plant allentries 's{  if prints \{}{  if true \{}' "-> 2: got 'entry\t0\tBlock\t\t'"
   # Every letter-group heading prints, as before M117.
   m117_plant allgroups 's{\.any\(n => qi-p\.at\(n\)\)}{.any(n => true)}' "-> 15: got 'group\tH'"

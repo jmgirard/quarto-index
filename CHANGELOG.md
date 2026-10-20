@@ -76,6 +76,16 @@
   Quarto 1.10.18, such a callout no longer carries Quarto's
   `callout-empty-content` class, so its title bar is drawn as on a titled
   callout with content.
+- A term with two or more cross-reference targets of one kind prints the
+  word once, in front of the first target. This holds in the PDF, HTML, EPUB
+  and Typst indexes. Such a term now prints `cats, see Felines; Pets`, not
+  `cats, see Felines; see Pets`. Every
+  `see` target comes before every `see also` target. Inside a kind, the
+  targets keep the order of their first marks. So the HTML, EPUB and Typst
+  indexes no longer print a `see also` target between two `see` targets. In
+  PDF, the warning for a term marked more than one way now gives the number
+  of its cross-references. It does this for a term with more than two, and
+  for a term with a plain mark and more than one.
 
 ### Project
 

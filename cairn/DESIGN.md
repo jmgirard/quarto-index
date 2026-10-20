@@ -912,10 +912,10 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   pass 2 F9; corrected 2026-08-28 at a plan gate
 - **KI9.** see-also entries keep their locators in both back-ends — M03's gate
   chose LaTeX-aligned no-locator semantics and M15 keeps that semantics for a
-  contested key — and the extension prints `see One Way; see Another Way` where
-  a printed index would write `see One Way; Another Way`, repeating `\seename`
-  per same-kind target. — M03 gate, M15 review; routed from candidates
-  2026-10-01, the row added 2026-08-16
+  contested key. (The repeated word per same-kind target this entry also named
+  is gone: M116 prints `see One Way; Another Way` in every back-end.) — M03
+  gate, M15 review; routed from candidates 2026-10-01, the row added
+  2026-08-16; narrowed M116
 
 ### The HTML back-end and books
 

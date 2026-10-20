@@ -24,11 +24,13 @@ printed index does anyway, since "see Felines" means the entries are over
 there.
 
 For `see-also=` it is a current limitation, not the intent: a printed index
-normally writes `cats, 12, 47, see also Felines`, and this extension cannot
-produce that yet. Marking the term plainly elsewhere gets you the page numbers
-and the cross-reference on one entry, but in this extension's order — `cats,
-see also Felines, 12, 47` — not the printed convention above. On its own, a
-`see-also=` entry carries its cross-reference and no page numbers.
+normally writes `cats, 12, 47, see also Felines`, and a `see-also=` mark alone
+cannot produce that. Marking the term plainly elsewhere gets you the page
+numbers and the cross-reference on one entry. The Typst index prints them in
+the printed order above, and the HTML and EPUB indexes in the same order with
+numbered links for page numbers; the PDF index prints the cross-reference
+first, `cats, see also Felines, 12, 47`. On its own, a `see-also=` entry
+carries its cross-reference and no page numbers.
 
 **The target uses the same level syntax as `entry=`.** A single `!` separates
 levels and `!!` is a literal `!`, so `see="Birds!Owls"` points at the sub-entry
@@ -57,8 +59,9 @@ dropped for that reason, and the other one is then the only one emitted.
 **One term marked two different ways prints as one entry.** If `cats` gets a
 plain mark in one place and a cross-reference in another, you get a single
 entry carrying its page numbers and its cross-reference together: `cats, see
-Felines, 3, 7`. The cross-reference mark contributes no page number of its own,
-exactly as it does not when it stands alone.
+Felines, 3, 7` in PDF, with the page numbers first in the other indexes. The
+cross-reference mark contributes no page number of its own, exactly as it does
+not when it stands alone.
 
 Two *different* cross-references on one term — a `see=` in one place and a
 `see-also=` in another — merge the same way, but into one entry carrying both
@@ -66,6 +69,22 @@ targets and no page numbers at all, since neither mark contributes one: `cats,
 see Felines; see also Dogs`. Either way you get a warning naming the entry and
 saying which of the two it drew, because two marks describing one term
 differently is more often a slip than a plan.
+
+**Two targets of one kind print the word once.** Two `see=` marks on one term
+naming different targets, or two `see-also=` marks, give one entry with the
+word in front of the first target only:
+
+```markdown
+[cats]{.index see="Felines"} … [cats]{.index see="Pets"}   → cats, see Felines; Pets
+```
+
+Every `see` target comes before every `see also` target, and inside a kind the
+targets keep the order of their first marks in the document, so a `see-also=`
+mark written first still prints last: `cats, see Felines; Pets; see also Dogs`.
+In an HTML book the order is the order of the chapters. Each target in an HTML
+or EPUB index is still a link of its own when it names an entry. The same
+holds in every back-end, and in PDF the warning above counts the entry's
+cross-references.
 
 This used to fail the PDF build outright, and in a document that had never
 been built to PDF it could sit unnoticed for a long time: `makeindex` rejects
@@ -107,7 +126,8 @@ heading over the entries that file under no letter. So is the punctuation an
 entry carries: the mark in front of an entry's locators and between one locator
 and the next — and in front of a cross-reference where no other mark has been
 printed yet, which is what an entry that is only a `see=` prints — and the mark
-between two cross-references. Set any of the five
+between two cross-references, two targets of one kind included. Set any of the
+five
 under `index-labels:`, whose keys are `symbols`, `see`, `see-also`, `separator`
 and `xref-separator`:
 
@@ -155,7 +175,8 @@ covered — so a `lang: fr` document prints `voir` and `voir aussi` with nothing
 written under `index-labels:` at all, and a language the extension does not
 cover keeps the English words.
 
-This reaches the HTML and EPUB indexes only: a LaTeX index gets the two words
-from babel, which sets them from your document's `lang:`, and takes its
+The words reach the HTML, EPUB and Typst indexes, and the two marks the HTML
+and EPUB indexes only, since a Typst index always prints a comma and a
+semicolon. A LaTeX index gets the two words from babel, which sets them from your document's `lang:`, and takes its
 punctuation from `makeindex` and from the LaTeX this extension emits around
 `\see` and `\seealso`, which neither separator key touches.

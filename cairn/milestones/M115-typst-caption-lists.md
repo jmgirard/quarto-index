@@ -1,6 +1,6 @@
 # M115: Typst caption marks and a list of figures
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** high
 - **Depends on:** —
 - **Driving RR:** —
@@ -64,7 +64,7 @@ float caption marks".
 - [x] T6: Run `tests/run-tests.sh` and `--self-test`. Revert T2's move and see AC1 red at a named manifest row before restoring it.
 - [x] T7: Review return 1 (work log): a moved author id gets an invisible element of its own, so it takes no other mark's label and adds no blank line; fixture cases with two marks in one caption and an author id on a float with an id, red on the current code first; the Review section's other fix-now items; then the suite, a dispatched matrix run, and the review hand-back.
 - [x] T8: Review return 2 (work log): a laid-out float keeps its cells, the labels joining a paragraph cell or staying in the caption, with a fixture red on the current code first; the Review section's pass-2 fix-now items, the plants committed to the self-test; then the suite, a dispatched matrix run, and the review hand-back.
-- [ ] T9: The narrowing chosen at the thrash stop (work log): `float_labels` leaves a float whose content is several blocks untouched, with a laid-out image case whose two images must print at one size, red on the current code first; the pass-3 fix-now items (docs and KI290 exceptions, comments, the CHANGELOG wording, the layout fixture's wording, plants per clause for `tests/typstlists.py`); the candidate row "Laid-out float caption marks"; then the suite, a dispatched matrix run, and the review hand-back.
+- [x] T9: The narrowing chosen at the thrash stop (work log): `float_labels` leaves a float whose content is several blocks untouched, with a laid-out image case whose two images must print at one size, red on the current code first; the pass-3 fix-now items (docs and KI290 exceptions, comments, the CHANGELOG wording, the layout fixture's wording, plants per clause for `tests/typstlists.py`); the candidate row "Laid-out float caption marks"; then the suite, a dispatched matrix run, and the review hand-back.
 
 ## Work log
 
@@ -114,6 +114,7 @@ float caption marks".
 - 2026-10-19: added task T9 for the narrowing and the pass-3 fix-now items; Coverage gives T9 to AC4 and AC6 (minor amendment). Status in-progress.
 - 2026-10-19: T9: `examples/typst-caption-layout.qmd` gained a second laid-out figure, two image cells at `width=80%`, marking linden on page 2 (manifest `linden 2@2`); on the T8 code its images printed at 0.274 and 72 ppi. `float_labels` now returns early for content of several blocks, so it keeps its caption labels; the images print at 72 ppi each and the cells still share a line. A one-cell layout float and a plain figure with widths printed at one size with a mark or without (probe).
 - 2026-10-19: T9 suite: `m115_images_check` reads page 2's image resolutions with `pdfimages -list`; the `cells` plant now wraps several blocks in one Div, a new `images` plant restores T8's join, and four `lists-*` plants run `tests/typstlists.py` on a planted manifest (a caption no list holds, a title no page prints, a caption under the wrong list, no rows); each was red by hand on its named message. Docs: `site/typst.qmd` and `CHANGELOG.md` say a float whose content is several blocks still files the list's page; DESIGN.md's Typst paragraph and KI290 rewritten; the stage comments name tables and listings. Pass-3 dispositions settled without a change: blame-history #5, the layout check on the pin, stays on every Quarto, since its subject is the extension leaving Quarto's layout alone, which the fixture's two-version comparison does not need; ripple #3, the no-id figure case, is named on the Typst page and in KI290, not in the changelog, since Markdown does not make it.
+- 2026-10-19: T9 done: dispatched `versions.yml` run 39344727546 at 7aceb61 green on every job (caption-lists render and index reading on all three legs, lists reading on the pinned leg); suite run 7 at 7aceb61 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, Quarto 1.10.19): all checks passed, 1806, 10 skip lines, M115-AC2 among them; the eleven M115 self-test plants each red on its named failure. Status review.
 
 ## Decisions
 

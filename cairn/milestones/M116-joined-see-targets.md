@@ -1,6 +1,6 @@
 # M116: One see-word for each kind of cross-reference
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -68,7 +68,7 @@ holds a floor run of the whole suite.
 - [x] T3: HTML and EPUB: group the targets by kind before the line is built, and write the kind's `Emph` word only in the first `qi-xref` span of each kind, with `xref-separator` between targets. The HTML book path reaches the same builder through `book_marks` (`book.lua:1349`); check that the chapter order holds there. `tests/htmlindex.py` raises on a `qi-xref` span without one word (`htmlindex.py:728-732`): accept a word-less span only after a span of the same kind, and assert one word on each kind's first span. Make the rows for the new terms read the word, which `row()` skips unless `labels` is on.
 - [x] T4: Typst: one item per kind in `entry_lines`, the kind's word once and its targets joined by `; `; the `typstindex.py` manifest row then reads `see|Zed; Ash; see also|Moss; Fern`. If the new fixture joins the `tests/typstcheck.py source` sweep, which derives one reference per target (`typstcheck.py:319-322`), derive one reference per kind with its targets joined by `; `; otherwise leave it out.
 - [x] T5: Docs: the joined form and its example in `site/cross-references.qmd`, `site/back-end-differences.qmd` where it describes the join, the `CHANGELOG.md` sentence, the gallery page for `xref-conflict` if it states `upsilon`'s output, and KI9 in `cairn/DESIGN.md` narrowed to its locator half.
-- [ ] T6: Run `tests/run-tests.sh`, then `--self-test`, never two at once and with no edit to the script during a run. Revert each back-end's join in turn and see its AC row red at a named manifest row before restoring it. Plant an alphabetical sort of the targets inside a kind, and a first-mark-kind-first grouping, in each back-end, and see AC1, AC3, AC4 and AC5 rows red on each before restoring.
+- [x] T6: Run `tests/run-tests.sh`, then `--self-test`, never two at once and with no edit to the script during a run. Revert each back-end's join in turn and see its AC row red at a named manifest row before restoring it. Plant an alphabetical sort of the targets inside a kind, and a first-mark-kind-first grouping, in each back-end, and see AC1, AC3, AC4 and AC5 rows red on each before restoring.
 
 ## Work log
 
@@ -96,6 +96,7 @@ holds a floor run of the whole suite.
 - 2026-10-19: self-test run 2: "All checks passed (1824 checks)", the M116 self-test among them.
 - 2026-10-19: claim audit: 58 claims read, 7 corrected — examples/xref-joined.qmd, examples/xref-joined-separator.qmd, tests/run-tests.sh, site/cross-references.qmd, _extensions/index/modules/html.lua (the twin sentence named the separator file as its own twin; "Five books carry targets" missed `book-placement`, whose attributes open a line the roster grep does not match; "no warning at all" is "no warning from this extension"; the PDF join and its self-test claimed a wrap no line of this index has; "the same holds in every back-end" read as links in every back-end; the html.lua comment sent same-kind targets through the dual-target command; S3 is the comma after the locators, not the term's). The reader's re-read found all seven holding and one leftover, the M14 book-count failure message, now "five book fixtures on the roster".
 - 2026-10-19: final runs on 601ef3e: `--self-test` "All checks passed (1824 checks)"; the plain run stopped on a third Quarto crash (`Segmentation fault: 11`, rendering `examples/principal.qmd` to gfm in M14's corpus loop), so the plain run was started again.
+- 2026-10-19: plain re-run on 601ef3e: "All checks passed (919 checks)". T6 done; all tasks checked; status review. Environment note for review: this shell's first `python3` lacks PyYAML (runs used a scratch link to `/usr/bin/python3`), and Quarto crashed with `Segmentation fault: 11` in three of nine runs, each time in a different older check that passes on other runs.
 
 ## Decisions
 

@@ -90,7 +90,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
       `$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf` and count each scanned
       mark on the line's term. Add `--self-test` plants for a mark printed
       twice and a mark missing.
-- [ ] T3: Replace M04-AC2's flattened-text read
+- [x] T3: Replace M04-AC2's flattened-text read
       (`tests/run-tests.sh:6881`) with the bounded `pdfindex` read of AC3.
       Add `--self-test` plants for a term printed twice, a term missing, and
       a read with no `After the marker` line.
@@ -121,6 +121,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: implement started on branch m120-pdf-checks-read-print.
 - 2026-10-20: T1 done: `xref_derived_rows` writes 255 rows from `typstcheck.derived_entries`, refusing a row with an unmodelled ligature input (shown red on a planted `a--b`); `xref_typeset_check` now compares in NFC; self-test plants six cases. Checked alone against the last run's capture; the full suite runs at T5. No M112/M113 want string moved: the hand manifest call is unchanged.
 - 2026-10-20: T2 done: `sortesc_pdf_check` counts the 94 scanned marks on the line's term in `sortesc-pdf/sort-escaping.pdf`; self-test plants a mark printed twice and a renamed mark the PDF does not print. Checked alone against the last run's capture. Per-task checks run each new block alone because editing `tests/run-tests.sh` mid-run corrupts the run (M073); one full `--self-test` run at T5 is the verify.
+- 2026-10-20: T3 done: `marker_pdf_check` reads `marker.pdf` unbounded and keeps lines on earlier pages or above the `After the marker` line on its page (here page 2, y 96-120 kept, heading at y 157); the dropped `pdftotext -layout` file had no other reader. Self-test plants a term printed twice, a term not printed, and an ending heading the PDF lacks. Checked alone against the last run's capture.
 
 ## Decisions
 

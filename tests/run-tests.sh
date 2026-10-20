@@ -6883,40 +6883,108 @@ quarto render examples/marker.qmd --to pdf > "$WORK/marker-pdf.log" 2>&1 \
   || { tail -40 "$WORK/marker-pdf.log" >&2; fail "M04-AC2: marker.qmd failed to render to PDF"; }
 capture examples/marker.qmd pdf "marker-pdf"
 [ -s "$CAPTURE_ROOT/marker-pdf/marker.pdf" ] || fail "M04-AC2: $CAPTURE_ROOT/marker-pdf/marker.pdf is empty"
-pdftotext -layout "$CAPTURE_ROOT/marker-pdf/marker.pdf" "$WORK/marker.txt"
 
 printf '%s\n' "$MARKER_PDF_TERMS" > "$WORK/markerterms.txt"
-python3 - "$WORK/marker.txt" "$WORK/markerterms.txt" <<'PY'
-import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-terms = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-
-m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: M04-AC2: no "Index" heading in pdftotext output',
+# The index is read line by line through tests/pdfindex.py (M120), and each
+# term must be EXACTLY one printed line, compared on the line's term: a
+# presence test over flattened text passed a term printed twice. The index and
+# the next section share a page, which `pdfindex.read`'s `stop` cannot bound
+# (it drops the whole page), and in reading order the right column comes after
+# the full-width heading and body text. So the read runs unbounded and keeps
+# the lines on pages before the heading's, and those on its page set above it.
+# The third argument is the heading that ends the index, so the self-test can
+# name one the PDF does not print; the optional fourth plants extra lines, kept
+# as lines of an earlier page.
+marker_pdf_check() {   # <pdf> <terms> <ending heading> [<planted lines file>]
+  python3 - "$@" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, terms_path, ending = sys.argv[1:4]
+plant = sys.argv[4] if len(sys.argv) > 4 else ''
+terms = [l.rstrip('\n') for l in open(terms_path, encoding='utf-8') if l.strip()]
+if not terms:
+    print(f'FAIL: M04-AC2: the manifest {terms_path} has no terms, so there '
+          f'is nothing to count', file=sys.stderr)
+    sys.exit(1)
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: M04-AC2: {error}', file=sys.stderr)
+    sys.exit(1)
+heading = next((e for e in entries if e.text == ending), None)
+if heading is None:
+    print(f'FAIL: M04-AC2: no {ending!r} line follows the index heading in '
+          f'the compiled PDF, so the index was not printed at the marker',
           file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
-after = text.find('After the marker', m.end())
-if after < 0:
-    print('FAIL: M04-AC2: the second section\'s heading does not follow the '
-          'index in the compiled PDF, so the index was not printed at the '
-          'marker', file=sys.stderr)
-    sys.exit(1)
-# Two-column index setting collapses to single spaces. A presence test over
-# that flattened text, where M113 made AC6, M02-AC2, M02-AC3 and M05-AC5
-# count whole printed lines: a term printed twice passes here.
-region = ' '.join(text[m.end():after].split())
-missing = [t for t in terms if ' '.join(t.split()) not in region]
+kept = [e for e in entries if e.page < heading.page
+        or (e.page == heading.page and e.y < heading.y)]
+if plant:
+    kept += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+             for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(kept, terms, field='term')
+missing = [t for t in terms if counts[t] == 0]
+repeated = [t for t in terms if counts[t] > 1]
 if missing:
-    print('FAIL: M04-AC2: term(s) missing from the PDF index printed at the '
+    print('FAIL: M04-AC2: term(s) on no line of the PDF index printed at the '
           'marker:', file=sys.stderr)
     for t in missing:
         print(f'  <<{t}>>', file=sys.stderr)
-    print(f'--- index slice ---\n{region[:800]}', file=sys.stderr)
+if repeated:
+    print('FAIL: M04-AC2: term(s) on more than one line of the PDF index '
+          'printed at the marker, where the fixture derives each once:',
+          file=sys.stderr)
+    for t in repeated:
+        print(f'  <<{t}>> x{counts[t]}', file=sys.stderr)
+if missing or repeated:
+    print(f'--- index lines kept ({len(kept)}) ---', file=sys.stderr)
+    for entry in kept:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
-print(f'ok   M04-AC2: the PDF index is printed at the marker and lists all '
-      f'{len(terms)} derived terms, the ones marked after it included')
+print(f'ok   M04-AC2: the PDF index is printed at the marker and prints each '
+      f'of the {len(terms)} derived terms on exactly one line, the ones '
+      f'marked after it included')
 PY
+}
+marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" "$WORK/markerterms.txt" \
+  'After the marker' || exit 1
+# M120 T3 self-test: a term given a second line, a term the manifest states
+# and the index does not print, and an ending heading the PDF does not print
+# are each red, naming what went wrong.
+if [ "${1:-}" = "--self-test" ]; then
+  M120M="$WORK/m120-marker"
+  rm -rf "$M120M"; mkdir -p "$M120M"
+  printf 'gamma, 9\n' > "$M120M/twice.txt"
+  if out=$(marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" \
+      "$WORK/markerterms.txt" 'After the marker' "$M120M/twice.txt" 2>&1); then
+    fail "M120 T3 self-test: M04-AC2 passed the marker PDF with <<gamma>> printed on a second line"
+  fi
+  case "$out" in
+    *"more than one line"*"<<gamma>> x2"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T3 self-test: M04-AC2 failed on a term printed twice, but not by naming it" ;;
+  esac
+  { cat "$WORK/markerterms.txt"; printf 'delta\n'; } > "$M120M/terms.txt"
+  if out=$(marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" \
+      "$M120M/terms.txt" 'After the marker' 2>&1); then
+    fail "M120 T3 self-test: M04-AC2 passed the marker PDF with <<delta>> stated and not printed"
+  fi
+  case "$out" in
+    *"on no line"*"<<delta>>"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T3 self-test: M04-AC2 failed on a term not printed, but not by naming it" ;;
+  esac
+  if out=$(marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" \
+      "$WORK/markerterms.txt" 'After the markers' 2>&1); then
+    fail "M120 T3 self-test: M04-AC2 passed with an ending heading the PDF does not print"
+  fi
+  case "$out" in
+    *"no 'After the markers' line follows"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T3 self-test: M04-AC2 failed on a missing ending heading, but not by saying so" ;;
+  esac
+  pass "M120 T3 self-test: M04-AC2 is red naming the term on one printed twice and one not printed, and red on an ending heading the PDF does not print"
+fi
 
 # The begin-document check is only worth emitting if it FIRES on the document
 # it names and stays silent on the one it does not. Both halves are compiled

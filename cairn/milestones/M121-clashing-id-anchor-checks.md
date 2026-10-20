@@ -120,6 +120,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 - 2026-10-20: claim audit: not owed — internal tier.
 - 2026-10-20: implementation complete; status review.
 - 2026-10-20: review started; default branch not moved since the cut, Copilot round off. M121 reverses the choice M090 made and M111 kept, to leave KI274 open; the plan promoted that row, so this is the record of the reversal.
+- 2026-10-20: step-7 approval: m121-clashing-id-anchor-checks approved for merge
 
 ## Decisions
 

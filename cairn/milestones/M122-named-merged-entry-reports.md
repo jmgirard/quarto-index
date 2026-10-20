@@ -50,8 +50,8 @@ acceptance-suite backlog".
 
 ## Coverage
 
-- AC1 → T1, T2
-- AC2 → T1, T2, T3, T4
+- AC1 → T1, T2, T5
+- AC2 → T1, T2, T3, T4, T5
 
 ## Tasks
 
@@ -73,6 +73,10 @@ acceptance-suite backlog".
       add a book check that fails on it instead, and record that.
 - [x] T4: Strike KI320 in `cairn/DESIGN.md`. Run
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
+- [ ] T5: Review return 1. Make each of the check's eight patterns run to
+      the end of the log line, so text after a report leaves the line
+      unread, and refuse a missing log by name. Add `--self-test` plants
+      for both, and run the suite with `--self-test` green.
 
 ## Work log
 
@@ -99,6 +103,7 @@ acceptance-suite backlog".
 - 2026-10-20: implementation complete, status review.
 - 2026-10-20: review: run 6 stopped by hand before the review fixes, since they change the suite. The T3 line's "first and only FAIL" is corrected: `fail()` exits at the first failure, so M21-AC5 was the first red check and no later check ran. KI60 narrowed rather than struck: the probe covers the write and read of a string `role`, not the refusal of a non-string one.
 - 2026-10-20: review return 1: AC1 — the check held only the span of each line from "index entry" to "meant", so a report with text after it passed; the fix (patterns anchored at the line's end, plus a plant) is in 1fff89b, and run 7 is in flight.
+- 2026-10-20: resumed for review return 1; added T5 for it (minor amendment, Coverage updated). Its code landed in 1fff89b; T5 waits on run 7.
 
 ## Decisions
 

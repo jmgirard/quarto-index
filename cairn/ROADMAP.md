@@ -11,6 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
+| M116 | One see-word for each kind of cross-reference | planned | — | normal | milestones/M116-joined-see-targets.md |
 | M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |
 | M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
 | M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |

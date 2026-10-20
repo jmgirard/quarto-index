@@ -1187,10 +1187,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   nothing changed. The suite reports the crash as a render failure, so a red
   run whose ONLY failure is a segfault is toolchain noise and is re-run rather
   than investigated. CI has not shown it. Accepted. — M078 review
-- **KI316.** Two PDF index checks still test presence over flattened text,
-  so a term printed twice passes: M04-AC2's term check in
-  `tests/run-tests.sh` and `tests/gallerycheck.py`'s pdf mode (M41-AC4).
-  — M113 review
 
 ### The acceptance suite: coverage gaps
 
@@ -1261,9 +1257,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   check, D-011 refusing the source-shape scan that would bind them and the
   probe runs being the evidence instead. — M42 review
 
-- **KI164.** M30's typeset print proof is not extended to the cross-reference
-  and sort-key probes, which still assert compile-and-accept only. — M30,
-  recovered by M54 T3
 - **KI249.** `sitecheck.py`'s claim ledger asks only whether a page STATES each
   pinned sentence, never whether a sentence the ledger no longer holds has come
   back, so a claim rewritten rather than added carries no row and a reword back
@@ -1298,6 +1291,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   either wording ships with the suite green. M116's review probe rendered both
   correctly. The older index-naming forms of that report are unpinned too.
   — M116 review diff-bug #4
+- **KI326.** M02-AC3's derived cross-reference rows are counted on each printed
+  line's text alone. So a cross-reference printed at the wrong level of the PDF
+  index passes, and so does a cross-reference line that the source does not
+  derive. M098-AC8 compares the Typst index of the same fixture in both
+  directions and with levels. — M120 review diff-bug #6
 
 ### The repo and its packaging
 

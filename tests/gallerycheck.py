@@ -30,7 +30,9 @@
   pdf <gallery.yml> <registry.tsv> <captured-site>
       Every shown fixture that has a hand-derived PDF index manifest links
       exactly one `.pdf`, it resolves inside the captured site, and its
-      `pdftotext` extraction contains every entry that manifest states.
+      index, read line by line through tests/pdfindex.py from the `Index`
+      heading, prints each entry that manifest states on as many lines,
+      compared on the line's term, as the manifest states it.
 
 Reading the CAPTURED site and not the live output directory is the M24 rule:
 a check that reads a render's working copy is reading something a later render
@@ -49,15 +51,18 @@ Usage:  python3 tests/gallerycheck.py <mode> <args...>
 Exits non-zero with a `FAIL:` line naming what it found.
 """
 
+import collections
 import os
 import re
 import subprocess
 import sys
+import unicodedata
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'site'))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import htmlindex as H  # noqa: E402
+import pdfindex  # noqa: E402
 from build_gallery import read_gallery, shown_fixtures  # noqa: E402
 
 # A fixture of the corpus this gallery declares over: a `.qmd` directly under
@@ -421,22 +426,6 @@ def pdf_link(root, page, captured):
     return target, None
 
 
-def extracted_text(pdf_path):
-    """`pdftotext` over one PDF, whitespace runs collapsed to one space.
-
-    The typeset index breaks lines where the column ends, so an entry that a
-    reader sees whole can reach the extraction split across two lines. The
-    collapse is stated here and nowhere else: every run of whitespace, in the
-    extraction and in the entry compared against it, becomes one space.
-    """
-    # encoding named rather than left to the locale: pdftotext emits UTF-8, and
-    # under LC_ALL=C Python would decode it as ASCII and raise on the first
-    # non-Latin-1 glyph a fixture's index prints.
-    out = subprocess.run(['pdftotext', pdf_path, '-'], check=True,
-                         capture_output=True, encoding='utf-8').stdout
-    return re.sub(r'\s+', ' ', out)
-
-
 def check_pdf(gallery, registry, captured):
     shown = [fixture_name(p) for p in shown_fixtures(gallery)]
     manifests = {(f, k): (fmt, var, path)
@@ -462,17 +451,29 @@ def check_pdf(gallery, registry, captured):
             wrong.append('%s: the manifest %s states no entry' % (name,
                                                                   variable))
             continue
-        got = extracted_text(target)
-        if not got.strip():
-            wrong.append('%s: pdftotext extracted nothing from %s'
-                         % (name, target))
+        # Read line by line from the `Index` heading (M120): each entry must
+        # print on as many lines, compared on the line's term, as the manifest
+        # states it. A manifest can state one term more than once, at two
+        # places in the index, so the count to match is the manifest's, never
+        # one. Both sides are compared in NFC (the M30 lesson): a text layer
+        # can hand back a precomposed character decomposed, or the other way.
+        try:
+            lines = pdfindex.read(target)
+        except LookupError as error:
+            wrong.append('%s: %s' % (name, error))
             continue
-        absent = [entry for entry in want
-                  if re.sub(r'\s+', ' ', entry) not in got]
-        if absent:
-            wrong.append('%s: the extraction of %s does not contain these '
-                         'manifest entries: %s'
-                         % (name, target, ', '.join(repr(a) for a in absent)))
+        for line in lines:
+            line.text = unicodedata.normalize('NFC', line.text)
+        stated = collections.Counter(unicodedata.normalize('NFC', entry)
+                                     for entry in want)
+        printed = pdfindex.line_counts(lines, list(stated), field='term')
+        off = ['%r stated %d time(s), printed on %d line(s)'
+               % (entry, stated[entry], printed[entry])
+               for entry in stated if printed[entry] != stated[entry]]
+        if off:
+            wrong.append('%s: the index in %s prints these manifest entries '
+                         'on a different number of lines than the manifest '
+                         'states them: %s' % (name, target, '; '.join(off)))
             continue
         checked += 1
         entries_seen += len(want)
@@ -485,8 +486,9 @@ def check_pdf(gallery, registry, captured):
                     'entries their manifests state:\n  %s'
                     % '\n  '.join(wrong))
     print('ok   M41-AC4: each of the %d shown fixture(s) with a hand-derived '
-          'PDF index manifest links a .pdf under %s whose pdftotext '
-          'extraction contains all %d entry(s) that manifest states'
+          'PDF index manifest links a .pdf under %s whose index prints each '
+          'of the %d entry(s) that manifest states on as many lines as the '
+          'manifest states it'
           % (checked, captured, entries_seen))
     return 0
 

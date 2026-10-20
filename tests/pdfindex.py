@@ -98,9 +98,12 @@ def _pages(pdf_path, footer_pattern=LOCATOR_ONLY):
     — the fold runs in read(), once the lines are in the order they are
     printed in. Nothing else may consume this function's output directly.
     """
+    # encoding named rather than left to the locale: pdftotext emits UTF-8,
+    # and under a non-UTF-8 locale Python would decode it as something else
+    # and raise on the first non-ASCII glyph an index prints (M41, M120).
     xml = subprocess.run(
         ['pdftotext', '-bbox-layout', pdf_path, '-'],
-        check=True, capture_output=True, text=True).stdout
+        check=True, capture_output=True, encoding='utf-8').stdout
     root = ET.fromstring(xml)
     for number, page in enumerate(root.iter(f'{{{NS["x"]}}}page'), start=1):
         raw = []

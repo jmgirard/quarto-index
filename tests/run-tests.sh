@@ -6872,9 +6872,9 @@ pass "M04-AC5: the marker fixture compiles clean in beamer, no index tokens, no 
 
 # ---------------------------------------------------------------------------
 # M04-AC2 — end to end: the compiled PDF's index sits at the marker, and it
-# carries the marks written on BOTH sides of it. The slice is bounded by the
-# heading of the section that follows the index, never by end-of-file: an
-# index printed mid-document has body text after it, and a slice running to
+# carries the marks written on BOTH sides of it. The lines read are bounded by
+# the heading of the section that follows the index, never by end-of-file: an
+# index printed mid-document has body text after it, and a read running to
 # the end would find the fixture's terms in that body text whatever the index
 # contained.
 # ---------------------------------------------------------------------------
@@ -6883,40 +6883,114 @@ quarto render examples/marker.qmd --to pdf > "$WORK/marker-pdf.log" 2>&1 \
   || { tail -40 "$WORK/marker-pdf.log" >&2; fail "M04-AC2: marker.qmd failed to render to PDF"; }
 capture examples/marker.qmd pdf "marker-pdf"
 [ -s "$CAPTURE_ROOT/marker-pdf/marker.pdf" ] || fail "M04-AC2: $CAPTURE_ROOT/marker-pdf/marker.pdf is empty"
-pdftotext -layout "$CAPTURE_ROOT/marker-pdf/marker.pdf" "$WORK/marker.txt"
 
 printf '%s\n' "$MARKER_PDF_TERMS" > "$WORK/markerterms.txt"
-python3 - "$WORK/marker.txt" "$WORK/markerterms.txt" <<'PY'
-import re, sys
-text = open(sys.argv[1], encoding='utf-8').read()
-terms = [l.rstrip('\n') for l in open(sys.argv[2], encoding='utf-8') if l.strip()]
-
-m = re.search(r'^\s*Index\s*$', text, re.MULTILINE)
-if not m:
-    print('FAIL: M04-AC2: no "Index" heading in pdftotext output',
+# The index is read line by line through tests/pdfindex.py (M120), and each
+# term must be EXACTLY one printed line, compared on the line's term: a
+# presence test over flattened text passed a term printed twice. The index and
+# the next section share a page, which `pdfindex.read`'s `stop` cannot bound
+# (it drops the whole page), and in reading order the right column comes after
+# the full-width heading and body text. So the read runs unbounded and keeps
+# the lines on the heading's page set above it: the fixture's index is that
+# short, and an index that ran onto a second page would leave its first
+# page's terms uncounted, which fails rather than passes. Terms and lines are
+# compared in NFC (the M30 lesson). The third argument is the heading that
+# ends the index, so the self-test can name one the PDF does not print; the
+# optional fourth plants extra lines, kept as lines of the index.
+marker_pdf_check() {   # <pdf> <terms> <ending heading> [<planted lines file>]
+  python3 - "$@" <<'PY'
+import sys
+import unicodedata
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, terms_path, ending = sys.argv[1:4]
+plant = sys.argv[4] if len(sys.argv) > 4 else ''
+nfc = lambda text: unicodedata.normalize('NFC', text)
+terms = [nfc(l.rstrip('\n')) for l in open(terms_path, encoding='utf-8')
+         if l.strip()]
+if not terms:
+    print(f'FAIL: M04-AC2: the manifest {terms_path} has no terms, so there '
+          f'is nothing to count', file=sys.stderr)
+    sys.exit(1)
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: M04-AC2: {error}', file=sys.stderr)
+    sys.exit(1)
+heading = next((e for e in entries if e.text == ending), None)
+if heading is None:
+    print(f'FAIL: M04-AC2: no {ending!r} line follows the index heading in '
+          f'the compiled PDF, so the index was not printed at the marker',
           file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
-after = text.find('After the marker', m.end())
-if after < 0:
-    print('FAIL: M04-AC2: the second section\'s heading does not follow the '
-          'index in the compiled PDF, so the index was not printed at the '
-          'marker', file=sys.stderr)
-    sys.exit(1)
-# Two-column index setting collapses to single spaces. A presence test over
-# that flattened text, where M113 made AC6, M02-AC2, M02-AC3 and M05-AC5
-# count whole printed lines: a term printed twice passes here.
-region = ' '.join(text[m.end():after].split())
-missing = [t for t in terms if ' '.join(t.split()) not in region]
+kept = [e for e in entries if e.page == heading.page and e.y < heading.y]
+if plant:
+    kept += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+             for l in open(plant, encoding='utf-8') if l.strip()]
+for entry in kept:
+    entry.text = nfc(entry.text)
+counts = pdfindex.line_counts(kept, terms, field='term')
+missing = [t for t in terms if counts[t] == 0]
+repeated = [t for t in terms if counts[t] > 1]
 if missing:
-    print('FAIL: M04-AC2: term(s) missing from the PDF index printed at the '
+    print('FAIL: M04-AC2: term(s) on no line of the PDF index printed at the '
           'marker:', file=sys.stderr)
     for t in missing:
         print(f'  <<{t}>>', file=sys.stderr)
-    print(f'--- index slice ---\n{region[:800]}', file=sys.stderr)
+if repeated:
+    print('FAIL: M04-AC2: term(s) on more than one line of the PDF index '
+          'printed at the marker, where the fixture derives each once:',
+          file=sys.stderr)
+    for t in repeated:
+        print(f'  <<{t}>> x{counts[t]}', file=sys.stderr)
+if missing or repeated:
+    print(f'--- index lines kept ({len(kept)}) ---', file=sys.stderr)
+    for entry in kept:
+        print(f'  {entry.text}', file=sys.stderr)
     sys.exit(1)
-print(f'ok   M04-AC2: the PDF index is printed at the marker and lists all '
-      f'{len(terms)} derived terms, the ones marked after it included')
+print(f'ok   M04-AC2: the PDF index is printed at the marker and prints each '
+      f'of the {len(terms)} derived terms on exactly one line, the ones '
+      f'marked after it included')
 PY
+}
+marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" "$WORK/markerterms.txt" \
+  'After the marker' || exit 1
+# M120 T3 self-test: a term given a second line, a term the manifest states
+# and the index does not print, and an ending heading the PDF does not print
+# are each red, naming what went wrong.
+if [ "${1:-}" = "--self-test" ]; then
+  M120M="$WORK/m120-marker"
+  rm -rf "$M120M"; mkdir -p "$M120M"
+  printf 'gamma, 9\n' > "$M120M/twice.txt"
+  if out=$(marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" \
+      "$WORK/markerterms.txt" 'After the marker' "$M120M/twice.txt" 2>&1); then
+    fail "M120 T3 self-test: M04-AC2 passed the marker PDF with <<gamma>> printed on a second line"
+  fi
+  case "$out" in
+    *"more than one line"*"<<gamma>> x2"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T3 self-test: M04-AC2 failed on a term printed twice, but not by naming it" ;;
+  esac
+  { cat "$WORK/markerterms.txt"; printf 'delta\n'; } > "$M120M/terms.txt"
+  if out=$(marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" \
+      "$M120M/terms.txt" 'After the marker' 2>&1); then
+    fail "M120 T3 self-test: M04-AC2 passed the marker PDF with <<delta>> stated and not printed"
+  fi
+  case "$out" in
+    *"on no line"*"<<delta>>"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T3 self-test: M04-AC2 failed on a term not printed, but not by naming it" ;;
+  esac
+  if out=$(marker_pdf_check "$CAPTURE_ROOT/marker-pdf/marker.pdf" \
+      "$WORK/markerterms.txt" 'After the markers' 2>&1); then
+    fail "M120 T3 self-test: M04-AC2 passed with an ending heading the PDF does not print"
+  fi
+  case "$out" in
+    *"no 'After the markers' line follows"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T3 self-test: M04-AC2 failed on a missing ending heading, but not by saying so" ;;
+  esac
+  pass "M120 T3 self-test: M04-AC2 is red naming the term on one printed twice and one not printed, and red on an ending heading the PDF does not print"
+fi
 
 # The begin-document check is only worth emitting if it FIRES on the document
 # it names and stays silent on the one it does not. Both halves are compiled
@@ -7299,11 +7373,16 @@ grep -qE "\($XREF_MARKS entries accepted, 0 rejected\)" "$WORK/xref/xref-escapin
 xref_typeset_check() {   # <label> <pdf> <manifest> <missing sentence> <ok sentence> [<planted lines file>]
   python3 - "$@" <<'PY'
 import sys
+import unicodedata
 sys.path.insert(0, 'tests')
 import pdfindex
 label, pdf_path, rows_path, missing_said, ok_said = sys.argv[1:6]
 plant = sys.argv[6] if len(sys.argv) > 6 else ''
-rows = [l.rstrip('\n') for l in open(rows_path, encoding='utf-8') if l.strip()]
+# Rows and printed lines are compared in NFC (the M30 lesson): a text layer
+# can hand back a precomposed character decomposed, or the other way round.
+nfc = lambda text: unicodedata.normalize('NFC', text)
+rows = [nfc(l.rstrip('\n')) for l in open(rows_path, encoding='utf-8')
+        if l.strip()]
 if not rows:
     print(f'FAIL: {label}: the manifest {rows_path} has no rows, so there is '
           f'nothing to count', file=sys.stderr)
@@ -7316,6 +7395,8 @@ except LookupError as error:
 if plant:
     entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
                 for l in open(plant, encoding='utf-8') if l.strip()]
+for entry in entries:
+    entry.text = nfc(entry.text)
 counts = pdfindex.line_counts(entries, rows)
 missing = [r for r in rows if counts[r] == 0]
 repeated = [r for r in rows if counts[r] > 1]
@@ -7347,6 +7428,163 @@ M02_AC3_OK='exact cross-reference strings typeset once each in the probe index'
 M02_AC3_PDF="$CAPTURE_ROOT/xref-pdf/xref-escaping.pdf"
 xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$WORK/xrefprobe.txt" \
   "$M02_AC3_MISSING" "$M02_AC3_OK" || exit 1
+
+# M120 T1: the rest of the probe's cross-references, held to the same print.
+# The hand-written rows above name the special-handling set; every other
+# entry the fixture gives a cross-reference (the multi-level targets, the
+# source-entry marks, the non-ASCII targets) is derived from the source by
+# `typstcheck.derived_entries`, the derivation M098-AC8 holds the Typst index
+# of this fixture to. A derived line is `<term>, see <targets>; see also
+# <targets>`, the order site/cross-references.qmd documents. Two typesetting
+# facts, not read back from this PDF (the M30 lesson), change what prints:
+# under TeX ligatures the text font sets `'` and `` ` `` as the right and left
+# single quotation marks. A derived line holding one of the other ligature
+# inputs listed in UNMODELLED is refused rather than guessed at, and so is a
+# line the derivation yields twice, which the count below could not tell from
+# a line printed twice. The first argument is the source to derive from, so
+# the self-test can hand it a changed copy; the lines as derived, before the
+# two typesetting facts, also go to `<rows file>.raw` for the hand statement.
+xref_derived_rows() {   # <qmd> <rows file to write>
+  python3 - "$@" <<'PY'
+import sys
+sys.path.insert(0, 'tests')
+import typstcheck
+qmd, out = sys.argv[1:3]
+QUOTES = {"'": '’', '`': '‘'}
+UNMODELLED = ('--', ',,', '<<', '>>', "''", '``', '!`', '?`')
+raw = []
+for (_level, term, refs), count in sorted(typstcheck.derived_entries(qmd).items()):
+    if not refs:
+        continue
+    line = term + ', ' + '; '.join(f'{word} {targets}' for word, targets in refs)
+    hit = [seq for seq in UNMODELLED if seq in line]
+    if hit:
+        print(f'FAIL: M02-AC3: the derived line <<{line}>> holds {hit}, a '
+              f'ligature input whose printed form this check does not state',
+              file=sys.stderr)
+        sys.exit(1)
+    if count != 1 or line in raw:
+        print(f'FAIL: M02-AC3: the derivation yields the line <<{line}>> more '
+              f'than once, so a count of its printed lines cannot be judged',
+              file=sys.stderr)
+        sys.exit(1)
+    raw.append(line)
+with open(out + '.raw', 'w', encoding='utf-8') as handle:
+    handle.write(''.join(line + '\n' for line in raw))
+with open(out, 'w', encoding='utf-8') as handle:
+    handle.write(''.join(''.join(QUOTES.get(c, c) for c in line) + '\n'
+                         for line in raw))
+PY
+}
+M02_AC3_DERIVED_MISSING='derived cross-reference(s) did not typeset as their source states'
+M02_AC3_DERIVED_OK='cross-reference lines the source derives typeset once each in the probe index'
+xref_derived_rows examples/xref-escaping.qmd "$WORK/xrefderived.txt" || exit 1
+
+# The derivation's lines are held to a statement made by hand (the ORACLE
+# RULE), as M098-AC8 holds its terms: the fixture's construction, a rule for
+# each block of marks, not a listing of the lines. Character n of the 94
+# printable ones sits at level position n mod 3 of `L1!L2!L3` under `x<n>`
+# (`see`) and at (n + 1) mod 3 under `a<n>` (`see also`), levels joined with
+# `: `. The level parse's own exception: `a00` writes `L1!!!!L3`, and a `!!`
+# read left to right is a literal `!` twice, so that target is the one level
+# `L1!!L3`. The 16 special characters sit alone under `Xs` (`see`), `Xt`
+# (`see also`) and `Xb` (`see` character i, `see also` character i + 1,
+# wrapping), and as the middle of `A<c>B`, which the `Xk` marks index with
+# `see="Tgt"`. Then the two non-ASCII targets and `Xe00`, whose empty last
+# level drops. `Xe01`'s empty target gives no cross-reference.
+xref_hand_check() {   # <raw derived lines file>
+  python3 - "$@" <<'PY'
+import sys
+from collections import Counter
+special = ['%', '&', '#', '_', '{', '}', '\\', '~', '^', '$', '@', '|', '!',
+           '"', '<', '>']
+stated = []
+for n in range(94):
+    for key, word, pos in (('x', 'see', n % 3), ('a', 'see also', (n + 1) % 3)):
+        levels = ['L1', 'L2', 'L3']
+        levels[pos] = chr(0x21 + n)
+        stated.append(f'{key}{n:02d}, {word} ' + ': '.join(levels))
+stated[stated.index('a00, see also L1: !: L3')] = 'a00, see also L1!!L3'
+for n, char in enumerate(special):
+    stated += [f'Xs{n:02d}, see {char}', f'Xt{n:02d}, see also {char}',
+               f'Xb{n:02d}, see {char}; see also {special[(n + 1) % 16]}',
+               f'A{char}B, see Tgt']
+stated += ['Xu00, see Grüße: Straße', 'Xu01, see also café naïve',
+           'Xe00, see A']
+derived = [l.rstrip('\n') for l in open(sys.argv[1], encoding='utf-8')]
+if Counter(derived) != Counter(stated):
+    print(f'FAIL: M02-AC3: derived only '
+          f'{sorted((Counter(derived) - Counter(stated)).elements())!r}, '
+          f'stated only '
+          f'{sorted((Counter(stated) - Counter(derived)).elements())!r}',
+          file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M02-AC3: the {len(stated)} cross-reference lines derived from '
+      f'examples/xref-escaping.qmd are the ones stated by hand')
+PY
+}
+xref_hand_check "$WORK/xrefderived.txt.raw" \
+  || fail "M02-AC3: the cross-reference lines derived from examples/xref-escaping.qmd are not the ones stated by hand (the report is above)"
+xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$WORK/xrefderived.txt" \
+  "$M02_AC3_DERIVED_MISSING" "$M02_AC3_DERIVED_OK" || exit 1
+
+# M120 T1 self-test: one row of each derived form is red printed twice and red
+# when the source states a cross-reference the PDF does not print. The second
+# kind changes a copy of the fixture, so the derived row moves and the print
+# does not.
+if [ "${1:-}" = "--self-test" ]; then
+  M120X="$WORK/m120-xref"
+  rm -rf "$M120X"; mkdir -p "$M120X"
+  m120_xref_red() {   # <form> <row> <rows file> [<planted lines file>]
+    local out how='missing from the print' named=no
+    [ -z "${4:-}" ] || how='printed twice'
+    if out=$(xref_typeset_check M02-AC3 "$M02_AC3_PDF" "$3" \
+        "$M02_AC3_DERIVED_MISSING" "$M02_AC3_DERIVED_OK" ${4:+"$4"} 2>&1); then
+      fail "M120 T1 self-test: M02-AC3 passed with the $1 row <<$2>> $how"
+    fi
+    if [ -n "${4:-}" ]; then
+      case "$out" in *"printed more than once"*"<<$2>> x2"*) named=yes ;; esac
+    else
+      case "$out" in *"$M02_AC3_DERIVED_MISSING:"*"<<$2>>"*) named=yes ;; esac
+    fi
+    [ "$named" = yes ] \
+      || { printf '%s\n' "$out" >&2; fail "M120 T1 self-test: M02-AC3 was red on the $1 row $how, but not reporting <<$2>> as $how"; }
+  }
+  for m120_form in 'multi-level:x05, see ' 'source-entry:A_B, see ' 'non-ASCII:Xu00, see '; do
+    m120_name=${m120_form%%:*}
+    m120_row=$(grep -m1 -F "${m120_form#*:}" "$WORK/xrefderived.txt") \
+      || fail "M120 T1 self-test: no derived row opens <<${m120_form#*:}>>"
+    printf '%s\n' "$m120_row" > "$M120X/twice.txt"
+    m120_xref_red "$m120_name" "$m120_row" "$WORK/xrefderived.txt" "$M120X/twice.txt"
+  done
+  python3 - examples/xref-escaping.qmd "$M120X/changed.qmd" <<'PY' \
+    || fail "M120 T1 self-test: the changed copy of the fixture was not written"
+import sys
+text = open(sys.argv[1], encoding='utf-8').read()
+for old, new in (('[x05]{.index see="L1!L2!&"}', '[x05]{.index see="L1!L2!Q"}'),
+                 ('entry="A_B" see="Tgt"', 'entry="A_C" see="Tgt"'),
+                 ('see="Grüße!Straße"', 'see="Grüße!Straßen"')):
+    if text.count(old) != 1:
+        sys.exit(f'FAIL: M120 T1 self-test: {old!r} occurs {text.count(old)} '
+                 f'times in the fixture, not once')
+    text = text.replace(old, new)
+open(sys.argv[2], 'w', encoding='utf-8').write(text)
+PY
+  xref_derived_rows "$M120X/changed.qmd" "$M120X/changed.txt" \
+    || fail "M120 T1 self-test: the changed copy did not derive"
+  m120_xref_red multi-level 'x05, see L1: L2: Q' "$M120X/changed.txt"
+  m120_xref_red source-entry 'A_C, see Tgt' "$M120X/changed.txt"
+  m120_xref_red non-ASCII 'Xu00, see Grüße: Straßen' "$M120X/changed.txt"
+  # The hand statement is red on a derivation that moved, naming the line.
+  if out=$(xref_hand_check "$M120X/changed.txt.raw" 2>&1); then
+    fail "M120 T1 self-test: the hand statement passed lines derived from a changed copy of the fixture"
+  fi
+  case "$out" in
+    *"derived only"*"x05, see L1: L2: Q"*"stated only"*"x05, see L1: L2: &"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T1 self-test: the hand statement was red on the changed copy, but not naming the moved x05 line both ways" ;;
+  esac
+  pass "M120 T1 self-test: M02-AC3's derived rows are red naming the row on a multi-level, a source-entry and a non-ASCII cross-reference printed twice, and on each when the source states a cross-reference the PDF does not print, and the hand statement is red on the moved derivation"
+fi
 
 quarto render examples/demo.qmd --to pdf > "$WORK/demo-pdf.log" 2>&1 \
   || { tail -40 "$WORK/demo-pdf.log" >&2; fail "AC6: demo.qmd failed to render to PDF"; }
@@ -13391,6 +13629,87 @@ print(f'ok   M06-AC3: all {len(terms)} entries carry a sort field split at '
       f'the separator the back-end writes, and the index tool printed every '
       f'one of them as its text alone')
 SORTFIELDPY
+
+# M120 T2 — the index Quarto's own PDF prints. The `.ind` above comes from a
+# second pdflatex and makeindex run over the captured `.tex`; the PDF an author
+# gets is Quarto's render, captured as sortesc-pdf. Each probe mark must print
+# as exactly one line whose term (the line with its locators removed) is the
+# mark's text. The order of the lines is not checked: the LaTeX back-end
+# orders by the escaped form it writes for each key (site/sorting.qmd), and no
+# source states that order apart from the index tool itself. The optional
+# last argument plants extra printed lines, as xref_typeset_check's does.
+sortesc_pdf_check() {   # <pdf> <qmd> [<planted lines file>]
+  python3 - "$@" <<'SORTESCPDFPY'
+import re, sys
+sys.path.insert(0, 'tests')
+import pdfindex
+pdf_path, qmd_path = sys.argv[1:3]
+plant = sys.argv[3] if len(sys.argv) > 3 else ''
+qmd = open(qmd_path, encoding='utf-8').read()
+terms = re.findall(r'\[(term-[0-9a-f]{2})\]\{\.index', qmd)
+if not terms:
+    print('FAIL: M06-AC3: no probe marks found in the fixture', file=sys.stderr)
+    sys.exit(1)
+try:
+    entries = pdfindex.read(pdf_path)
+except LookupError as error:
+    print(f'FAIL: M06-AC3: {error}', file=sys.stderr)
+    sys.exit(1)
+if plant:
+    entries += [pdfindex.Entry(l.rstrip('\n'), 0, 0, 0, 0.0, 0.0)
+                for l in open(plant, encoding='utf-8') if l.strip()]
+counts = pdfindex.line_counts(entries, terms, field='term')
+missing = [t for t in terms if counts[t] == 0]
+repeated = [t for t in terms if counts[t] > 1]
+if missing:
+    print('FAIL: M06-AC3: sort-keyed mark(s) printed on no line of the PDF '
+          'index:', file=sys.stderr)
+    for t in missing:
+        print(f'  <<{t}>>', file=sys.stderr)
+if repeated:
+    print('FAIL: M06-AC3: sort-keyed mark(s) printed on more than one line of '
+          'the PDF index, where the fixture marks each once:', file=sys.stderr)
+    for t in repeated:
+        print(f'  <<{t}>> x{counts[t]}', file=sys.stderr)
+if missing or repeated:
+    print(f'--- index lines read ({len(entries)}) ---', file=sys.stderr)
+    for entry in entries:
+        print(f'  {entry.text}', file=sys.stderr)
+    sys.exit(1)
+print(f'ok   M06-AC3: each of the {len(terms)} sort-keyed marks prints on '
+      f'exactly one line of the index in Quarto\'s own PDF')
+SORTESCPDFPY
+}
+sortesc_pdf_check "$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf" \
+  examples/sort-escaping.qmd || exit 1
+# M120 T2 self-test: a mark's line given once more is red naming the mark, and
+# a mark the source writes and the PDF does not print is red naming it.
+if [ "${1:-}" = "--self-test" ]; then
+  M120S="$WORK/m120-sortesc"
+  rm -rf "$M120S"; mkdir -p "$M120S"
+  printf 'term-40, 9\n' > "$M120S/twice.txt"
+  if out=$(sortesc_pdf_check "$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf" \
+      examples/sort-escaping.qmd "$M120S/twice.txt" 2>&1); then
+    fail "M120 T2 self-test: M06-AC3 passed the PDF with <<term-40>> printed on a second line"
+  fi
+  case "$out" in
+    *"more than one line"*"<<term-40>> x2"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T2 self-test: M06-AC3 failed on a mark printed twice, but not by naming it" ;;
+  esac
+  grep -c '^\[term-40\]{\.index sort="@"}$' examples/sort-escaping.qmd | grep -qx 1 \
+    || fail "M120 T2 self-test: the fixture does not write term-40's mark once in the shape this plant renames"
+  sed 's/^\[term-40\]{\.index sort="@"}$/[term-ff]{.index sort="@"}/' \
+    examples/sort-escaping.qmd > "$M120S/renamed.qmd"
+  if out=$(sortesc_pdf_check "$CAPTURE_ROOT/sortesc-pdf/sort-escaping.pdf" \
+      "$M120S/renamed.qmd" 2>&1); then
+    fail "M120 T2 self-test: M06-AC3 passed with <<term-ff>> marked in the source and printed nowhere"
+  fi
+  case "$out" in
+    *"printed on no line"*"<<term-ff>>"*) ;;
+    *) printf '%s\n' "$out" >&2; fail "M120 T2 self-test: M06-AC3 failed on a mark the PDF does not print, but not by naming it" ;;
+  esac
+  pass "M120 T2 self-test: M06-AC3's PDF read is red naming the mark on one printed twice and on one the PDF does not print"
+fi
 
 # Leg 2 — HTML: the same characters reach the generated section as entries.
 quarto render examples/sort-escaping.qmd --to html > "$WORK/sortesc-html.log" 2>&1 \
@@ -21230,7 +21549,7 @@ HTML_ENTRY_PREFIX="$HTML_ENTRY_PREFIX" \
 
 python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
   "$GALLERY_MANIFEST_INDEX" "$SITE_OUT" \
-  || fail "M41-AC4: a PDF the gallery links does not carry the index entries its manifest states (its own FAIL line is above)"
+  || fail "M41-AC4: a PDF the gallery links does not print each index entry its manifest states on as many lines as the manifest states it (its own FAIL line is above)"
 
 python3 tests/htmlsweep.py pending "$CAPTURE_ROOT" \
   || fail "M03-AC3/M071: a plumbing attribute (the pending tag, or the tagging pass's) reached rendered HTML"
@@ -21465,10 +21784,42 @@ NOFRAMEPY
   cmp -s "$M41_WRONGPDF/gallery/rendered/demo.pdf" \
          "$SITE_OUT/gallery/rendered/demo.pdf" \
     && fail "M41 self-test: substituting one PDF for another changed nothing, so the plant below would be about the right PDF"
-  m41_planted 'a PDF whose extraction drops the entries its fixture manifest states' \
-    'does not contain these manifest entries' \
+  m41_planted 'a PDF whose index drops the entries its fixture manifest states' \
+    "'pandoc' stated 1 time(s), printed on 0 line(s)" \
     python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
       "$GALLERY_MANIFEST_INDEX" "$M41_WRONGPDF"
+
+  # M120 T4: the count, both ways, against the real print. The sortkey PDF
+  # prints `von Neumann` on two lines, once at the top level and once under
+  # `mathematicians`, and its manifest
+  # states it twice; a manifest stating it once is a term printed twice. The
+  # demo PDF prints `pandoc` once; a manifest stating it twice is a term
+  # printed once too few. Each plant is a registry copy pointing one fixture
+  # at a changed manifest, so the PDFs and the site stay as captured.
+  M120G="$WORK/m120-gallery"
+  rm -rf "$M120G"; mkdir -p "$M120G"
+  m120_registry() {   # <fixture> <changed manifest> <registry to write>
+    awk -F'\t' -v OFS='\t' -v f="$1" -v p="$2" \
+      '$1 == f && $2 == "pdf" { $5 = p } { print }' "$GALLERY_MANIFEST_INDEX" > "$3"
+    grep -qF "$2" "$3" || fail "M120 T4 self-test: the registry copy does not point $1 at $2"
+  }
+  m120_sortkey=$(awk -F'\t' '$1 == "sortkey" && $2 == "pdf" { print $5 }' "$GALLERY_MANIFEST_INDEX")
+  [ "$(grep -c $'\t''von Neumann$' "$m120_sortkey")" = 2 ] \
+    || fail "M120 T4 self-test: the sortkey PDF manifest does not state von Neumann twice, so removing one says nothing"
+  awk -F'\t' '$2 == "von Neumann" && !done { done = 1; next } { print }' \
+    "$m120_sortkey" > "$M120G/sortkey-once.txt"
+  m120_registry sortkey "$M120G/sortkey-once.txt" "$M120G/once.tsv"
+  m41_planted 'a manifest stating once a term its PDF prints twice' \
+    "'von Neumann' stated 1 time(s), printed on 2 line(s)" \
+    python3 tests/gallerycheck.py pdf "$GALLERY_YML" "$M120G/once.tsv" "$SITE_OUT"
+  m120_demo=$(awk -F'\t' '$1 == "demo" && $2 == "pdf" { print $5 }' "$GALLERY_MANIFEST_INDEX")
+  grep -qx 'pandoc' "$m120_demo" \
+    || fail "M120 T4 self-test: the demo PDF manifest has no pandoc row to state twice"
+  { cat "$m120_demo"; printf 'pandoc\n'; } > "$M120G/demo-twice.txt"
+  m120_registry demo "$M120G/demo-twice.txt" "$M120G/twice.tsv"
+  m41_planted 'a manifest stating twice a term its PDF prints once' \
+    "'pandoc' stated 2 time(s), printed on 1 line(s)" \
+    python3 tests/gallerycheck.py pdf "$GALLERY_YML" "$M120G/twice.tsv" "$SITE_OUT"
 
   # --- the fixture directory being written into ----------------------------
   # The comparison AC5 makes, over a copy of the real fixture directory: a
@@ -21494,7 +21845,7 @@ NOFRAMEPY
     && fail "M41 self-test: a fixture's bytes changing left the listing unchanged, so AC5's comparison reads paths and not content"
   pass "self-test: the fixture-directory comparison moves both when a file is added beside a fixture and when a fixture's own bytes change, and stands still when neither happens"
 
-  pass "M41: each clause named above is planted on its own and shown red while the same check passes unplanted — the declaration check on a fixture in neither list, one in both, one named under a third key as well, and a listed path naming no fixture; the manifest check on a shown fixture with no hand-derived manifest and on a shown list under its floor; the source-block check on a block one character off, a block whose entity decodes to something else, and a page with no block at all; the embedded-index check on a manifest entry the framed page does not print, a page framing nothing, and a frame resolving to no file; and the PDF check on a link resolving to nothing and on a PDF whose extraction drops its manifest's entries"
+  pass "M41: each clause named above is planted on its own and shown red while the same check passes unplanted — the declaration check on a fixture in neither list, one in both, one named under a third key as well, and a listed path naming no fixture; the manifest check on a shown fixture with no hand-derived manifest and on a shown list under its floor; the source-block check on a block one character off, a block whose entity decodes to something else, and a page with no block at all; the embedded-index check on a manifest entry the framed page does not print, a page framing nothing, and a frame resolving to no file; and the PDF check on a link resolving to nothing, on a PDF whose index drops its manifest's entries, and on a manifest entry printed on more lines and on fewer lines than the manifest states it"
 fi
 
 if [ "${1:-}" = "--self-test" ]; then

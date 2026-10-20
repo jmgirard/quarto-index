@@ -80,6 +80,14 @@ page.
   `3, 4, 5`. Only a range you write prints as a range. A mark on the page just
   after a range prints its own locator, `2–3, 4`, where the PDF index prints
   `2–4`.
+- A mark in an image's alt text files the image's page. Pandoc writes alt
+  text to Typst as a plain string, which Typst does not print, so the
+  extension writes the mark's label, and an id you give the mark, just after
+  the image. A link to that id builds and goes to the
+  image's page. Where the image sits in the caption of a float that keeps its
+  labels in its caption, a list copies the id, and a link to it fails, as for
+  a caption mark. See [Lists of figures, tables and
+  listings](#lists-of-figures-tables-and-listings) for which floats.
 
 ## Cross-references
 

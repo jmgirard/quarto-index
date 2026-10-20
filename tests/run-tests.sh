@@ -14833,6 +14833,8 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  mark indexes, and `see-also="apple"`, naming a term the file
 #                  marks four times. Both in the first of its two indexes, where
 #                  both terms are marked. 0.
+#   typst-xref-places  9 attributes, each naming `Oak`, which the file marks
+#                  in its body. 0.
 #   xref-joined, xref-joined-separator   ten targets, each naming a term the
 #                  file's last section marks. 0.
 #   book-xref/index, book-xref/two   one target each, `Yew` and `Alder`, each
@@ -14889,6 +14891,7 @@ examples/state-reuse-indexes.qmd	0
 examples/state-reuse.qmd	1
 examples/typst-index.qmd	0
 examples/typst-unprinted.qmd	0
+examples/typst-xref-places.qmd	0
 examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
 examples/xref-joined-separator.qmd	0
@@ -33233,6 +33236,261 @@ M115SPLICEPY
     python3 tests/typstlists.py "$M115_TYPST" "$M115P/lists-empty.tsv" "M115 self-test (lists-empty)"
 
   pass "M115 self-test: the AC3 link check is red on a link to another caption, the AC6 check on a page without the list-of-figures call, the index on the extension without its Figure handler or without its FloatRefTarget handler, the cells check on laid-out content wrapped in one Div, the images check on the labels joined to an image cell, the center check on a code cell's output wrapped, and the AC2 reader on a caption no list holds, a title no page prints, a caption under the wrong list and an empty manifest"
+fi
+
+# ---------------------------------------------------------------------------
+# M119 — a Typst cross-reference mark keeps one label wherever it sits.
+#
+# Since M118 every Typst cross-reference mark carries a label. A table of
+# contents copies a heading, a list copies a caption, and Pandoc's Typst
+# writer drops raw Typst in an image's alt text, so a label or an author's id
+# in one of those places once named two elements or none (M098, M115).
+# examples/typst-xref-places.qmd puts a cross-reference mark in each such
+# place, and in a footnote and three parts of a callout, on a page of its
+# own. Three readings of one render:
+#   AC1  the index, held by tests/typstindex.py to tests/typst-xref-places.tsv
+#   AC2  each label of a `metadata` element is on one element, read by
+#        `quarto typst query` over a copy rendered with `keep-typ` under $WORK,
+#        so no .typ lands in examples/
+#   AC3  each link on page 12 goes to the page of the mark whose author's id it
+#        names, as tests/typst-xref-places-links.tsv gives it
+# Before M119 the render stopped on the two ids in an image's alt text:
+# ``label `<id-elm>` does not exist in the document``.
+# ---------------------------------------------------------------------------
+section 'M119 — a Typst cross-reference mark keeps one label wherever it sits.'
+M119_SRC=examples/typst-xref-places.qmd
+M119_BREAKS=$( { grep -cxF '{{< pagebreak >}}' "$M119_SRC" || true; } | tr -d ' ')
+[ "$M119_BREAKS" = "11" ] \
+  || fail "M119-AC1: $M119_SRC carries $M119_BREAKS page breaks, not the eleven its manifests number pages by"
+for needle in 'toc: true' \
+    '#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))' \
+    '#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))' \
+    '# A heading that marks [ash]{#id-ash .index see="Oak"}' \
+    '![A picture with an id, whose caption marks [beech]{#id-beech .index see="Oak"}.](dot.png){#fig-beech}' \
+    ': A table with an id, whose caption marks [cork]{#id-cork .index see-also="Oak"}. {#tbl-cork}' \
+    '![A picture with no id, whose caption marks [date]{#id-date .index see="Oak"}.](dot.png)' \
+    '![alt text that marks [elm]{#id-elm .index see="Oak"} and [gum]{#id-gum .index}](dot.png){width=1cm}.' \
+    '![outer alt text ![inner alt text that marks [nut]{#id-nut .index}](dot.png){width=5mm}](dot.png){width=1cm}.' \
+    '[^hazel]: The footnote marks [hazel]{#id-hazel .index see="Oak"}.' \
+    "::: {.callout-note title='A callout title that marks [ivy]{#id-ivy .index see=\"Oak\"}'}" \
+    '## A callout heading that marks [jade]{#id-jade .index see="Oak"}' \
+    'A callout body that marks [kelp]{#id-kelp .index see="Oak"}.' \
+    '![A picture with an id, whose caption holds an image ![alt text that marks [lark]{#id-lark .index}](dot.png){width=5mm} in its text.](dot.png){#fig-lark}'; do
+  grep -qxF -- "$needle" "$M119_SRC" \
+    || fail "M119-AC1: $M119_SRC no longer carries the line <<$needle>>, so the case the checks below state is no longer rendered"
+done
+pass "M119-AC1: $M119_SRC carries each place the checks below state, and eleven page breaks"
+
+quarto render "$M119_SRC" --to typst > "$WORK/typst-xref-places.log" 2>&1 \
+  || { tail -40 "$WORK/typst-xref-places.log" >&2; fail "M119-AC1/AC3: $M119_SRC failed to render to Typst"; }
+capture "$M119_SRC" typst "typst-xref-places"
+M119_PDF="$CAPTURE_ROOT/typst-xref-places/typst-xref-places.pdf"
+[ -s "$M119_PDF" ] || fail "M119-AC1: the render produced no $M119_PDF"
+check_extension_warning_count "$WORK/typst-xref-places.log" 0 \
+  "M119-AC1 ($M119_SRC: every cross-reference names a term the file marks)"
+if grep -qE '(^|\]: .*)warning:' "$WORK/typst-xref-places.log"; then
+  grep -E 'warning:' "$WORK/typst-xref-places.log" >&2
+  fail "M119-AC1: Typst warned while compiling $M119_SRC, so the emitted Typst is not clean"
+fi
+python3 tests/typstindex.py "$M119_PDF" tests/typst-xref-places.tsv \
+    "M119-AC1 (Typst)" "Index" \
+  || fail "M119-AC1: the Typst index of $M119_SRC does not match tests/typst-xref-places.tsv (the report is above)"
+pass "M119-AC1: a Typst render of $M119_SRC builds with no warning, and its index prints the cross-reference of a mark in a listed heading, three listed captions, an image's alt text, a footnote, a callout's title attribute, first heading and body"
+
+# <dir> <fixture>: render the copy in <dir> keeping its .typ, then write what
+# `quarto typst query` lists for `metadata` to <dir>/query.txt. Quarto writes
+# the query's JSON to stderr, beside its warnings, so stderr is the file.
+m119_query() {
+  ( cd "$1" && quarto render "$2" --to typst -M keep-typ:true ) \
+      > "$1/render.log" 2>&1 \
+    || { tail -20 "$1/render.log" >&2; echo "FAIL: M119-AC2: the copy in $1 failed to render to Typst" >&2; return 1; }
+  capture "$1/$2" typst "m119-$(basename "$1")"
+  ( cd "$1" && quarto typst query "${2%.qmd}.typ" metadata ) \
+      > "$1/query.out" 2> "$1/query.txt" \
+    || { cat "$1/query.txt" >&2; echo "FAIL: M119-AC2: quarto typst query failed in $1" >&2; return 1; }
+}
+M119W="$WORK/m119"
+rm -rf "$M119W"
+mkdir -p "$M119W/clean/_extensions"
+cp "$M119_SRC" examples/dot.png "$M119W/clean/"
+cp -R "$QI_EXT_DIR" "$M119W/clean/_extensions/index"
+m119_query "$M119W/clean" typst-xref-places.qmd \
+  || fail "M119-AC2: the labels of $M119_SRC could not be read (the report is above)"
+python3 tests/typstlabels.py labels "$M119W/clean/query.txt" "$M119_SRC" "M119-AC2" \
+  || fail "M119-AC2: a label of a metadata element in the Typst render of $M119_SRC is on two elements, or the query listed too few (the report is above)"
+python3 tests/typstlabels.py links "$M119_PDF" "$M119_SRC" \
+    tests/typst-xref-places-links.tsv 12 "M119-AC3" \
+  || fail "M119-AC3: a link to an author's id in $M119_SRC does not go to its mark's page (the report is above)"
+pass "M119-AC2/AC3: in the Typst render of $M119_SRC each label of a metadata element is on one element, and a link to each mark's author's id, two in an image's alt text, one in the alt text of an image in another image's alt text and one in the alt text of an image in a listed caption among them, goes to that mark's page"
+
+if [ "${1:-}" = "--self-test" ]; then
+  # -------------------------------------------------------------------------
+  # M119 self-test: each check above shown red on the defect it names. Each
+  # plant on a copy is one substitution in a fresh copy of the extension or
+  # the fixture, and the plants that test AC2 take the links out of the copy
+  # so that it builds. The floor plants and the table plant hand the reader a
+  # written input instead.
+  #   altid     the alt-text id move removed: the render stops, as it did
+  #             before M119, on elm's id
+  #   nestid    the alt-text walk blind to the id elements an image in that
+  #             alt text wrote: the render stops on nut's id
+  #   capid     `caption_moves` blind to the moved id elements: the list of
+  #             figures copies lark's id and the render stops
+  #   capspan   `caption_moves` leaving the span's id: beech's id is in the
+  #             copied caption and the render stops
+  #   heading   the heading relocation skipped: ash's label element ends the
+  #             heading's line, the heading's own label, written next,
+  #             replaces qi-mark-1 on that element, and AC2 finds 11 qi-mark
+  #             labels for 12 marks
+  #   float     `float_labels` returning before its move: AC2 finds the labels
+  #             of beech, cork and lark and lark's moved id twice each
+  #   figure    `figure_labels` returning before its move: AC2 finds date's
+  #             label twice
+  #   link      ash's link pointed at kelp's id: AC3 reads page 10 first
+  #   noquery   no JSON in the query's output: the AC2 floor
+  #   badjson   a line opening `[` that is not one JSON array: a FAIL line,
+  #             not a traceback
+  #   nomarks   a JSON array with no qi-mark label: the AC2 mark floor
+  #   noids     the fixture's ids taken out: the AC3 id scan floor
+  #   table     a row for an id the fixture does not write: AC3
+  # -------------------------------------------------------------------------
+  M119P="$M119W/plant"
+  mkdir -p "$M119P"
+
+  m119_splice() {   # <path> <old> <new>: replace the one occurrence of <old>
+    python3 - "$1" "$2" "$3" <<'M119SPLICEPY'
+import sys
+path, old, new = sys.argv[1:4]
+text = open(path, encoding='utf-8').read()
+n = text.count(old)
+if n != 1:
+    sys.exit(f'M119 self-test: {old!r} occurs {n} time(s) in {path}, not once')
+open(path, 'w', encoding='utf-8').write(text.replace(old, new))
+M119SPLICEPY
+  }
+
+  m119_tree() {   # <slug>: a fresh copy of the fixture and the extension
+    local dir="$M119P/$1"
+    [ ! -e "$dir" ] || fail "M119 self-test ($1): $dir already exists"
+    mkdir -p "$dir/_extensions"
+    cp "$M119_SRC" examples/dot.png "$dir/"
+    cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+  }
+
+  # The four lines of links, taken out so that a copy whose ids name two
+  # elements still builds and AC2 can read it.
+  m119_unlink() {   # <slug>
+    python3 - "$M119P/$1/typst-xref-places.qmd" <<'M119UNLINKPY'
+import sys
+path = sys.argv[1]
+lines = open(path, encoding='utf-8').read().split('\n')
+kept = [line for line in lines if '](#id-' not in line]
+if len(lines) - len(kept) != 4:
+    sys.exit(f'M119 self-test: {path} held {len(lines) - len(kept)} link line(s), not four')
+open(path, 'w', encoding='utf-8').write('\n'.join(kept))
+M119UNLINKPY
+  }
+
+  # <slug> <want> <command...>: the command must fail, naming <want>.
+  m119_red() {
+    local slug="$1" want="$2" out rc
+    shift 2
+    out=$("$@" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "M119 self-test ($slug): the check passed the plant, so its green says nothing about this defect"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "M119 self-test ($slug): the check failed, but not with <<$want>>, so the failure is not this check catching this plant"; }
+    pass "M119 self-test ($slug): the check is red on <<$want>>"
+  }
+
+  M119_TYPST_LUA=_extensions/index/modules/typst.lua
+
+  # The render is the AC3 check for an id that names no element or two: Typst
+  # refuses a link to such a label.
+  m119_tree altid
+  m119_splice "$M119P/altid/$M119_TYPST_LUA" \
+    $'          moved[#moved + 1] = id_inline(span.identifier)\n          span.identifier = ""\n' '' \
+    || fail "M119 self-test (altid): the plant could not be written (its own message is above)"
+  m119_red altid 'label `<id-elm>` does not exist in the document' \
+    m119_query "$M119P/altid" typst-xref-places.qmd
+
+  m119_tree nestid
+  m119_splice "$M119P/nestid/$M119_TYPST_LUA" \
+    $'\n                or raw.text:find(ID_INLINE_OPEN, 1, true) == 1)' ')' \
+    || fail "M119 self-test (nestid): the plant could not be written (its own message is above)"
+  m119_red nestid 'label `<id-nut>` does not exist in the document' \
+    m119_query "$M119P/nestid" typst-xref-places.qmd
+
+  m119_tree capid
+  m119_splice "$M119P/capid/$M119_TYPST_LUA" \
+    $'\n            or raw.text:find(ID_INLINE_OPEN, 1, true) == 1)' ')' \
+    || fail "M119 self-test (capid): the plant could not be written (its own message is above)"
+  m119_red capid 'label `<id-lark>` occurs multiple times in the document' \
+    m119_query "$M119P/capid" typst-xref-places.qmd
+
+  m119_tree capspan
+  m119_splice "$M119P/capspan/$M119_TYPST_LUA" \
+    $'      moved:insert(id_inline(span.identifier))\n      span.identifier = ""\n' \
+    $'      moved:insert(id_inline(span.identifier))\n' \
+    || fail "M119 self-test (capspan): the plant could not be written (its own message is above)"
+  m119_red capspan 'label `<id-beech>` occurs multiple times in the document' \
+    m119_query "$M119P/capspan" typst-xref-places.qmd
+
+  # <slug> <file> <old> <new> <want>: an AC2 plant on a copy with no links.
+  m119_ac2_red() {
+    m119_tree "$1"
+    m119_unlink "$1" \
+      || fail "M119 self-test ($1): the links could not be taken out (its own message is above)"
+    m119_splice "$M119P/$1/$2" "$3" "$4" \
+      || fail "M119 self-test ($1): the plant could not be written (its own message is above)"
+    m119_query "$M119P/$1" typst-xref-places.qmd \
+      || fail "M119 self-test ($1): the planted copy could not be read (the report is above)"
+    m119_red "$1" "$5" \
+      python3 tests/typstlabels.py labels "$M119P/$1/query.txt" "$M119_SRC" "M119 self-test ($1)"
+  }
+  m119_ac2_red heading _extensions/index/index.lua \
+    $'      doc = qi_html.relocate_heading_anchors(doc)\n' '' \
+    'the query lists 12 qi-mark label(s), fewer than the 13 marks'
+  m119_ac2_red float "$M119_TYPST_LUA" \
+    $'  local rest, moved = caption_moves(float.caption_long)\n' \
+    $'  do return nil end\n  local rest, moved = caption_moves(float.caption_long)\n' \
+    'the label(s) <id-lark>, <qi-mark-13>, <qi-mark-3>, <qi-mark-4> are each on more than one metadata element'
+  m119_ac2_red figure "$M119_TYPST_LUA" \
+    $'  local rest, moved = caption_moves(figure.caption.long)\n' \
+    $'  do return nil end\n  local rest, moved = caption_moves(figure.caption.long)\n' \
+    'the label(s) <qi-mark-5> are each on more than one metadata element'
+
+  m119_tree link
+  m119_splice "$M119P/link/typst-xref-places.qmd" '[ash](#id-ash)' '[ash](#id-kelp)' \
+    || fail "M119 self-test (link): the plant could not be written (its own message is above)"
+  m119_query "$M119P/link" typst-xref-places.qmd \
+    || fail "M119 self-test (link): the planted copy failed to render (the report is above)"
+  m119_red link 'page 12 carries links to pages [10, 2, 3,' \
+    python3 tests/typstlabels.py links "$M119P/link/typst-xref-places.pdf" \
+      "$M119_SRC" tests/typst-xref-places-links.tsv 12 "M119 self-test (link)"
+
+  grep -v '^\[' "$M119W/clean/query.txt" > "$M119P/noquery.txt" || true
+  m119_red noquery "holds 0 line(s) opening \`[\`" \
+    python3 tests/typstlabels.py labels "$M119P/noquery.txt" "$M119_SRC" "M119 self-test (noquery)"
+  printf '[{"func":"metadata",\n' > "$M119P/badjson.txt"
+  m119_red badjson 'is not one JSON array' \
+    python3 tests/typstlabels.py labels "$M119P/badjson.txt" "$M119_SRC" "M119 self-test (badjson)"
+  printf '[{"func":"metadata","value":null,"label":"<id-beech>"}]\n' > "$M119P/nomarks.txt"
+  m119_red nomarks 'the query lists 0 qi-mark label(s), fewer than the 13 marks' \
+    python3 tests/typstlabels.py labels "$M119P/nomarks.txt" "$M119_SRC" "M119 self-test (nomarks)"
+
+  sed -E 's/\{#id-[a-z]+ /{/g' "$M119_SRC" > "$M119P/noids.qmd"
+  grep -qF '{#id-' "$M119P/noids.qmd" \
+    && fail "M119 self-test (noids): the plant left an id on a mark of the fixture"
+  m119_red noids 'holds no id on a span of class `index`' \
+    python3 tests/typstlabels.py links "$M119_PDF" "$M119P/noids.qmd" \
+      tests/typst-xref-places-links.tsv 12 "M119 self-test (noids)"
+  { cat tests/typst-xref-places-links.tsv; printf 'id-yew\t12\n'; } > "$M119P/table.tsv"
+  m119_red table "and $M119P/table.tsv names" \
+    python3 tests/typstlabels.py links "$M119_PDF" "$M119_SRC" \
+      "$M119P/table.tsv" 12 "M119 self-test (table)"
+
+  pass "M119 self-test: the render is red on an id left in an image's alt text, an id left in the alt text an inner image wrote it to, a moved id left in a caption and a span's id left in a caption; the AC2 check on a label lost in a heading and on labels left in a float's caption and a figure's caption; the AC3 check on a link to another mark; and each floor on an empty domain"
 fi
 
 # ---------------------------------------------------------------------------

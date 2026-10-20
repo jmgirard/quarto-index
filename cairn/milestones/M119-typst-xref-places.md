@@ -149,3 +149,28 @@ backlog", in part.
 - 2026-10-20: claim audit: 51 claims read, 6 corrected — CHANGELOG.md (a link stopped the render unless the image sat in a float's caption), site/typst.qmd (Typst does not print alt text; Pandoc writes it as a plain string), examples/typst-xref-places.qmd (Pandoc drops a label, the links sit on the page before the index), tests/run-tests.sh (floor plants take a written input; the heading plant's label is replaced on its element).
 - 2026-10-20: claim audit re-read of the 6 corrected claims: all true; one comment widened at its note to name the link and table plants (comment only, after run 2).
 - 2026-10-20: T5 run 2 (`PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at ec8c8c8): exit 0, "All checks passed (1859 checks)", 18 M119 ok lines. Status set to review.
+- 2026-10-20: review pass 1: main unmoved (33de9da), Copilot round off; a suite run at 3dcf248 was stopped before its end, since fix-now commits follow and the evidence run goes on the final head.
+
+## Review
+
+- gate: `cairn_validate.py` all checks passed; profile `generic` names no toolchain checks; no principle text changed, so no `cairn_impact` run.
+- spawned: diff-bug, blame-history, prior-review, ripple.
+- diff-bug #1: an image nested in another image's alt text loses its id, because the `Image` RawInline branch moves only qi-mark labels and not the `id_inline` elements it now writes — fix now (pre-existing on main, inside the alt-text id scope).
+- diff-bug #2: the CHANGELOG and `site/typst.qmd` sentences say a link to an alt-text id builds with no exception, and in the caption of a KI290 float a list copies the id and the link fails — fix now (narrow both sentences, extend KI290).
+- diff-bug #3: a figure caption copy that `declass_caption_copies` missed would now give two id elements — reject, false: no input was found where the copy keeps its class, and the reviewer did not reproduce one.
+- diff-bug #4: the link check reads target pages, so links to `id-elm` and `id-gum` swapped on page 6 pass — reject, planned change: AC3 promises the page each link goes to, and both ids are on page 6.
+- diff-bug #5: `typstlabels.py labels` raises a traceback on JSON it cannot parse rather than printing a FAIL line — fix now.
+- diff-bug #6: the heading plant is red on AC2's mark floor, not on a label listed twice — reject, planned change: recorded at T3.
+- diff-bug #7: the mark floor counts `]{…}` blocks and would miss a raw `<span>` mark — reject, false for this fixture, which writes none.
+- diff-bug #8: the float plant's want string pins mark numbers — reject, style.
+- blame-history #1: the docs claim and the KI290 floats — fix now, as diff-bug #2.
+- blame-history #2: an author's raw Typst opening with `#[/* qi-id */` would be moved — reject, planned change: the work log records the comment as the chosen marker.
+- prior-review #1: an id moved beside an image in a laid-out cell changes the image's size, as M115 pass 3 found for a label — reject, false: a `layout-ncol=2` figure with a `width=80%` alt-text mark prints its images at the same size with and without the id, on main and on the branch (pdfimages, 2026-10-20).
+- prior-review #2: the alt-text move is checked only on the local Quarto, not the pin or the floor — follow-up: the parked row "Floor-Quarto CI suite job".
+- prior-review #3: a KI290 float's caption keeps the id and a list copies it — fix now, as diff-bug #2.
+- prior-review #4: M098's unconfirmed break between a boxed image and a moved label — reject, false: the fixture's alt-text links on page 6 build and go to page 6.
+- prior-review #5: the prefix match on the opening comment — reject, planned change, as blame-history #2.
+- ripple #1: `site/typst.qmd` lines 131-134 and KI290 say a caption id in such a float fails, against the new unqualified sentence — fix now, as diff-bug #2.
+- ripple #2: the parked row "Laid-out float caption marks" names caption marks and not an alt-text id in such a caption — follow-up: that row points at KI290, which this pass extends to the id.
+- ripple #3: `site/syntax.qmd` says the alt text is left as written — reject, false: the printed alt text is unchanged.
+- ripple #4: `DESIGN.md` gives only the label form `#[#metadata(none)<label>]` — reject, false: the line is still true, and the same paragraph now names the id element and its comment.

@@ -1,0 +1,38 @@
+# The index examples/typst-caption-lists.qmd prints in a Typst render (M115).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states.
+#
+# The pages come from the source's explicit page breaks: page 1 holds only
+# the three lists, the source giving no title, each break starts the next page, and the same three lists
+# follow on page 10. Each term is one case. A caption mark's locator is its
+# caption's page, never page 1 or page 10, where a list copies the caption:
+#   alder    the caption of a picture with no id, page 2, on a mark carrying
+#            the id `alder-mark`, which a raw Typst link on page 9 names
+#   birch    a principal mark in the caption of a picture with an id, page 3:
+#            one bold locator
+#   cedar    the caption of a picture div, page 4
+#   dogwood  a range opened in the caption of a table with an id on page 5,
+#            closed in the text on page 6: one range, linked to page 5
+#   elder    the caption of a table div, page 7, before juniper
+#   hazel    the caption of a code listing, page 8
+#   juniper  the same caption as elder, page 7, on a mark carrying the id
+#            `juniper-märk`: that id must not take elder's label
+#   larch    a mark in the text, page 9, which no list copies
+group	A
+entry	0	alder	2@2
+group	B
+entry	0	birch	3*@3
+group	C
+entry	0	cedar	4@4
+group	D
+entry	0	dogwood	5–6@5
+group	E
+entry	0	elder	7@7
+group	H
+entry	0	hazel	8@8
+group	J
+entry	0	juniper	7@7
+group	L
+entry	0	larch	9@9

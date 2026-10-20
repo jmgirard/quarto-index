@@ -1,0 +1,101 @@
+---
+# No title: page 1 holds only the three lists (M115-AC1).
+format: typst
+filters:
+  - index
+---
+
+```{=typst}
+#outline(title: [List of Figures], target: figure.where(kind: "quarto-float-fig"))
+#outline(title: [List of Tables], target: figure.where(kind: "quarto-float-tbl"))
+#outline(title: [List of Listings], target: figure.where(kind: "quarto-float-lst"))
+```
+
+{{< pagebreak >}}
+
+The fixture for marks in a caption that a Typst list copies (M115). Typst's
+`outline` copies the caption of each float it lists, so a label written in a
+caption names a second element on the list's page. Page 1 holds only the three
+lists, with no title above them, and the same three lists follow the last caption, so a locator that
+names the list's page is wrong whether the list comes first or last.
+
+Every case ends in an explicit page break, so the page each mark sits on is a
+fact of this source: page 1 is the lists' page, and each break starts the next.
+No term, caption or list title holds the letters `f` and `i`, `f` and `l`, two
+`f`s, or two `!`s in a row, which the Typst floor sets as one glyph.
+
+A picture with no id, whose caption marks one term with an id of its author's:
+
+![A picture with no id, whose caption marks [alder]{#alder-mark .index}.](dot.png)
+
+{{< pagebreak >}}
+
+A picture with an id, whose caption holds a principal mark:
+
+![A picture with an id, whose caption marks [birch]{.index mention="principal"}.](dot.png){#fig-birch}
+
+{{< pagebreak >}}
+
+A picture div, whose caption marks one term:
+
+::: {#fig-cedar}
+![](dot.png)
+
+A picture div, whose caption marks [cedar]{.index}.
+:::
+
+{{< pagebreak >}}
+
+A table with an id, whose caption opens a range that closes on the next page:
+
+| a | b |
+|---|---|
+| 1 | 2 |
+
+: A table with an id, whose caption opens [dogwood]{.index range="open"}. {#tbl-dogwood}
+
+{{< pagebreak >}}
+
+The range of dogwood closes here: [dogwood]{.index range="close"}.
+
+{{< pagebreak >}}
+
+A table div, whose caption marks two terms, the second with an id of its
+author's, which must not take the label of the first:
+
+::: {#tbl-elder}
+| a | b |
+|---|---|
+| 3 | 4 |
+
+A table div, whose caption marks [elder]{.index} and [juniper]{#juniper-märk .index}.
+:::
+
+{{< pagebreak >}}
+
+A code listing, whose caption marks one term:
+
+::: {#lst-hazel}
+```python
+x = 1
+```
+
+A code listing, whose caption marks [hazel]{.index}.
+:::
+
+{{< pagebreak >}}
+
+A mark in the text, which no list copies: [larch]{.index}. The link below goes
+to the id the author gave the mark in the caption on page 2:
+
+```{=typst}
+#link(<alder-mark>)[the caption with an id]
+```
+
+{{< pagebreak >}}
+
+```{=typst}
+#outline(title: [List of Figures (end)], target: figure.where(kind: "quarto-float-fig"))
+#outline(title: [List of Tables (end)], target: figure.where(kind: "quarto-float-tbl"))
+#outline(title: [List of Listings (end)], target: figure.where(kind: "quarto-float-lst"))
+```

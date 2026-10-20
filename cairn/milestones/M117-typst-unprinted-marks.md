@@ -1,6 +1,6 @@
 # M117: A Typst index leaves out a term no page carries
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -72,7 +72,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 
 ## Tasks
 
-- [ ] T1: In `typst.lua`, pass each entry's own labels, and whether any
+- [x] T1: In `typst.lua`, pass each entry's own labels, and whether any
       sub-entry at any depth has a label or a cross-reference, from
       `entry_lines` (typst.lua:179) to `qi-index-entry` (typst.lua:87), and
       have it print nothing where no label names an element, the entry has no
@@ -80,7 +80,7 @@ section "A mark Typst never prints", the Unreleased Typst entry in
       Make the letter-group heading in `index_blocks` (typst.lua:222) print
       only where an entry of its group prints. Update the comments above
       `TYPST_HELPERS` and `entry_lines` to say so.
-- [ ] T2: Write `examples/typst-unprinted.qmd` with the shapes AC1 names,
+- [x] T2: Write `examples/typst-unprinted.qmd` with the shapes AC1 names,
       each parent chain in one column, its hand-derived manifest under
       `tests/`, and a suite section that renders it to Typst, fails naming the
       field if the description's sentence prints before the index, and runs
@@ -88,15 +88,15 @@ section "A mark Typst never prints", the Unreleased Typst entry in
       `site/gallery.yml` (`not-shown:`) and, as it writes `see=`, in M14's
       dangling-count corpus (the M116 lesson). Plant the pre-T1 entry code and
       show the new check red on it before trusting its green.
-- [ ] T3: In `tests/run-tests.sh`, `m098_field_rows` (run-tests.sh:31396)
+- [x] T3: In `tests/run-tests.sh`, `m098_field_rows` (run-tests.sh:31396)
       writes no row and no letter group for a term whose field the render does
       not print, in place of today's row with no locator.
-- [ ] T4: Rewrite the `site/typst.qmd` section "A mark Typst never prints" and
+- [x] T4: Rewrite the `site/typst.qmd` section "A mark Typst never prints" and
       add the sentence to the Unreleased Typst entry in `CHANGELOG.md`, each
       written against T2's observed render (the derived-claims rule). In
       `cairn/DESIGN.md`, strike the known issue that records today's behavior
       and add one entry for each of the three limits the Out list names.
-- [ ] T5: Run `tests/run-tests.sh --self-test` and record the result.
+- [x] T5: Run `tests/run-tests.sh --self-test` and record the result.
 
 ## Work log
 
@@ -117,6 +117,8 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: the heading check also missed `Spare Index` because pdftotext opens each later page with a form feed; it now turns form feeds into newlines. Checked on the clean scratch render (green) and on a planted render that prints Thole (red, naming Thole).
 - 2026-10-20: the first suite run stopped at the PyYAML check: `/usr/local/bin/python3` (3.14.6, installed 2026-10-01) has no PyYAML, and `/usr/bin/python3` (3.9.6) does. The suite runs with `PATH=/usr/bin:$PATH`; nothing was installed. A second run was stopped for the audit fix above before any M117 check.
 - 2026-10-20: suite run 3 failed at M24-AC3 (the plant renders were not captured), fixed in fa45783; run 4 failed at the M099 dropranges self-test, because `qi-index-entry` tested `found` after the span drop, which that plant empties. It now tests whether any label names an element before that drop (`labelled`), as its comment says; checked by hand on that plant (`dune` prints) and on the M117 fixture (green).
+- 2026-10-20: suite run 5 failed at the M098 T11 alt-kept self-test: its plant loses the alt-text labels, and since M117 those entries are left out rather than printed with no locator, so its want is now imgterm's missing row (cc612ed).
+- 2026-10-20: T5: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, "All checks passed (1832 checks)", at cc612ed; M117-AC1 and its four plants green. T1-T5 ticked; status review.
 - 2026-10-20: DESIGN.md: KI289 struck; KI321-KI323 added for the three Out limits and named on the candidate row; the Typst architecture paragraph updated.
 
 ## Decisions

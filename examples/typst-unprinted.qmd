@@ -1,6 +1,7 @@
 ---
 title: "Typst marks no page prints"
-description: 'Marks no page prints: [Halyard]{.index} [Hawser]{.index} [Bitt]{.index} [Horn]{.index entry="Cleat!Horn"} [Davit]{.index} [Fender]{.index} [Rope]{.index entry="Fender!Rope"} [Gaff]{.index} [Sheave]{.index} [oar]{.index entry="Oar" see="Paddle"} [Thole]{.index index="spare"} [Rig]{.index range="open"} [step]{.index entry="Mast!Step" range="open"}.'
+description: 'Marks no page prints: [Halyard]{.index} [Hawser]{.index} [Bitt]{.index} [Horn]{.index entry="Cleat!Horn"} [Davit]{.index} [Fender]{.index} [Rope]{.index entry="Fender!Rope"} [Gaff]{.index} [Sheave]{.index} [oar]{.index entry="Oar" see="Paddle"} [winch]{.index entry="Winch" see-also="Bitt"} [Thwart]{.index see="Paddle"} [Boom]{.index} [vang]{.index entry="Boom!Vang" see="Bitt"} [Thole]{.index index="spare"} [Rig]{.index range="open"} [step]{.index entry="Mast!Step" range="open"}.'
+toc: true
 indexes:
   - name: main
     title: Index
@@ -10,27 +11,41 @@ filters:
   - index
 ---
 
-The fixture for a mark no page prints in a Typst index (M117). Quarto's
-Typst template does not print `description:`, so the label of each mark
-written there names no element. An entry whose marks are all such marks,
-with no cross-reference and no sub-entry that prints, is left out of the
-index, and so is a letter group none of whose entries prints.
+The fixture for a mark no page prints in a Typst index (M117, M118).
+Quarto's Typst template does not print `description:`, so the label of each
+mark written there names no element. An entry whose marks are all such
+marks, with no cross-reference that prints and no sub-entry that prints, is
+left out of the index, and so is a letter group none of whose entries
+prints. A cross-reference prints where a mark that writes it is on a page
+and its target prints.
 
-The description writes thirteen marks. `Halyard` and `Hawser` are marked there
-alone, and are the only terms of their letter, so the index prints neither
-them nor an `H` heading. `Bitt` is also marked in the body, on page 2, so it
-prints that page alone. `Cleat!Horn` is a sub-entry under a parent marked in
-the body, so `Cleat` prints and `Horn` does not. `Davit`, `Fender`,
-`Fender!Rope` and `Gaff` print with no page number, each above a sub-entry
-that prints. `Rig` opens a range there that closes on page 2, so its closing
-mark is on a page: `Rig` prints, with no page number. `Mast!Step` does the
-same as a sub-entry, so `Mast`, which has no mark of its own, prints above
-it.
+The description writes seventeen marks. `Halyard` and `Hawser` are marked
+there alone, and are the only terms of their letter, so the index prints
+neither them nor an `H` heading. `Bitt` is also marked in the body, on page
+2, so it prints that page alone. `Cleat!Horn` is a sub-entry under a parent
+marked in the body, so `Cleat` prints and `Horn` does not. `Davit`,
+`Fender`, `Fender!Rope` and `Gaff` print with no page number, each above a
+sub-entry that prints. `Rig` opens a range there that closes on page 2, so
+its closing mark is on a page: `Rig` prints, with no page number.
+`Mast!Step` does the same as a sub-entry, so `Mast`, which has no mark of
+its own, prints above it.
 
-Three marks there show what is still printed. `Oar` is a cross-reference
-mark, which has no label, so `Oar, see Paddle` prints. `Sheave` is left out,
-and `Block, see Sheave` still prints, with nothing reported. `Thole` is the
-only mark of the second index, so that index prints its heading alone.
+Five of the description's marks write a cross-reference. `Oar, see Paddle`
+and `Winch, see also Bitt` are written there alone, so neither prints, and
+nor does an `O` or a `W` heading. `Boom` is marked there alone, above
+`Boom!Vang`, whose only mark there writes `see Bitt`, so neither prints.
+`Thwart, see Paddle` is also written in the body, so it prints.
+
+`Sheave` is left out, so a cross-reference to it does not print: `Block`
+has no other content and is left out, `Jib`, whose only cross-reference is
+to `Block`, is left out too, and `Clew` prints its second target alone.
+`Tack` and `Yawl` point at each other from the body, and both print.
+`Keel` points at `Rudder`, which no mark files, and keeps it, with the one
+report this render writes.
+
+`Thole` is marked in the second index there alone, and the body's one mark
+in that index writes `Pin, see Thole`, so the second index prints nothing:
+no heading, no line in the table of contents and no page.
 
 The body marks a parent that prints its page: [Cleat]{.index}, and the
 target of a cross-reference: [Paddle]{.index}.
@@ -51,8 +66,26 @@ A sub-entry with a cross-reference and no page prints under such a parent:
 A term with a cross-reference and no page prints:
 [kedge]{.index entry="Kedge" see="Bitt"}.
 
-A cross-reference to a term the index leaves out prints:
+A cross-reference the description also writes prints:
+[thwart]{.index entry="Thwart" see="Paddle"}.
+
+A cross-reference to a term the index leaves out does not print:
 [block]{.index entry="Block" see="Sheave"}.
+
+A cross-reference to a term left out for that reason does not print:
+[jib]{.index entry="Jib" see="Block"}.
+
+Of two targets, the one the index leaves out does not print:
+[clew]{.index entry="Clew" see="Sheave"} and
+[clew]{.index entry="Clew" see="Paddle"}.
+
+Two terms point at each other: [tack]{.index entry="Tack" see="Yawl"} and
+[yawl]{.index entry="Yawl" see="Tack"}.
+
+A target no mark files: [keel]{.index entry="Keel" see="Rudder"}.
+
+A cross-reference in the second index to a term left out there:
+[thole pin]{.index index="spare" entry="Pin" see="Thole"}.
 
 The range the description opens closes here: [Rig]{.index range="close"},
 and so does a sub-entry's: [step]{.index entry="Mast!Step" range="close"}.

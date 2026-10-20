@@ -31425,12 +31425,13 @@ python3 tests/typstindex.py "$CAPTURE_ROOT/front-matter-typst/front-matter.pdf" 
   "$WORK/m098-front-matter.tsv" "M098-AC7 (a field Typst never prints)" "Index" \
   || fail "M098-AC7: the Typst index of examples/front-matter.qmd is not the manifest's (the report is above)"
 
-# M117-AC1: an entry no page carries is left out. examples/typst-unprinted.qmd
-# writes thirteen marks into `description:`, which Quarto's Typst template does
-# not print, and the rest into its body; tests/typst-unprinted.tsv states,
-# by hand, which entries and letter groups print. The check first requires
-# that the description's sentence does not print before the index, since
-# every row of the manifest rests on that.
+# M117-AC1, M118-AC1 and M118-AC2: an entry no page carries is left out, and
+# so is a cross-reference no page backs. examples/typst-unprinted.qmd writes
+# seventeen marks into `description:`, which Quarto's Typst template does not
+# print, and the rest into its body; tests/typst-unprinted.tsv states, by
+# hand, which entries, cross-references and letter groups print. The check
+# first requires that the description's sentence does not print before the
+# index, since every row of the manifest rests on that.
 m117_unprinted() {   # <pdf> <label>
   python3 - "$1" "$2" <<'M117FIELDPY' || return 1
 import subprocess, sys
@@ -31450,34 +31451,65 @@ if 'Marks no page prints' in before:
           f'hold', file=sys.stderr)
     sys.exit(1)
 M117FIELDPY
-  python3 tests/typstindex.py "$1" tests/typst-unprinted.tsv "$2" "Index" "Spare Index" \
+  python3 tests/typstindex.py "$1" tests/typst-unprinted.tsv "$2" "Index" \
     || return 1
-  # The second index's one mark is in the description: its heading prints,
-  # and its term does not.
+  # The second index prints nothing, so no line, the heading or its line in
+  # the table of contents, opens with its title (M118-AC3).
   local text
   text=$(pdftotext "$1" -) || return 1
   # pdftotext opens each page after the first with a form feed.
   text=${text//$'\f'/$'\n'}
-  case $'\n'"$text"$'\n' in
-    *$'\nSpare Index\n'*) ;;
-    *) echo "FAIL: $2: the second index prints no heading" >&2; return 1 ;;
+  case $'\n'"$text" in
+    *$'\nSpare Index'*) echo "FAIL: $2: a line opens with the second index's title" >&2; return 1 ;;
   esac
-  # The fixture's prose names Thole too, so only the text after the heading
-  # is read.
-  case "${text#*$'\n'Spare Index$'\n'}" in
-    *Thole*) echo "FAIL: $2: the second index prints the term Thole" >&2; return 1 ;;
-  esac
+}
+# M118-AC3: the fixture's Typst render prints what its twin prints, where the
+# twin is the fixture with no mark filing in the second index, an index that
+# prints nothing (M098-AC7). Each of the twin's two edits is one substitution
+# that must match once, so a fixture that moved fails here rather than
+# leaving the twin equal to the fixture.
+m118_twin() {   # <dir>
+  local dir="$1"
+  rm -rf "$dir"
+  mkdir -p "$dir/_extensions"
+  cp -R "$QI_EXT_DIR" "$dir/_extensions/index"
+  cp examples/typst-unprinted.qmd "$dir/"
+  perl -0777 -pi -e '(s{ \[Thole\]\{\.index index="spare"\}}{}g == 1) or die "the description mark matched other than once\n"' \
+    "$dir/typst-unprinted.qmd" || return 1
+  perl -0777 -pi -e '(s{\[thole pin\]\{\.index index="spare" entry="Pin" see="Thole"\}}{thole pin}g == 1) or die "the body mark matched other than once\n"' \
+    "$dir/typst-unprinted.qmd" || return 1
+  if grep -q 'index="spare"' "$dir/typst-unprinted.qmd"; then
+    echo "FAIL: M118-AC3: the twin still holds a mark of the second index" >&2
+    return 1
+  fi
 }
 quarto render examples/typst-unprinted.qmd --to typst > "$WORK/typst-unprinted.log" 2>&1 \
   || { tail -40 "$WORK/typst-unprinted.log" >&2; fail "M117-AC1: examples/typst-unprinted.qmd failed to render to Typst"; }
 capture examples/typst-unprinted.qmd typst "typst-unprinted"
 # `Block, see Sheave` points at a term the index leaves out, and nothing
-# reports it: the render writes no extension warning.
-check_extension_warning_count "$WORK/typst-unprinted.log" 0 \
-  "M117-AC1 (examples/typst-unprinted.qmd warned; its cross-reference to a left-out term is not reported)"
+# reports it. The one warning is the dangling-target report for `Keel, see
+# Rudder`, whose target no mark files (M118-AC2).
+check_extension_warning_count "$WORK/typst-unprinted.log" 1 \
+  "M118-AC2 (examples/typst-unprinted.qmd: the one report is Rudder's)"
+grep -qF 'see= on entry="Keel" points at "Rudder", which no mark of index "main" indexes' \
+  "$WORK/typst-unprinted.log" \
+  || fail "M118-AC2: the one extension warning of examples/typst-unprinted.qmd is not the dangling-target report for Rudder"
 m117_unprinted "$CAPTURE_ROOT/typst-unprinted/typst-unprinted.pdf" "M117-AC1" \
   || fail "M117-AC1: the Typst index of examples/typst-unprinted.qmd is not the manifest's (the report is above)"
-pass "M117-AC1: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference mark there, a cross-reference to a left-out term, and the heading of an index left with no entry still print"
+m118_twin "$WORK/m118twin" \
+  || fail "M118-AC3: the twin of examples/typst-unprinted.qmd could not be derived (the report is above)"
+( cd "$WORK/m118twin" && quarto render typst-unprinted.qmd --to typst ) \
+  > "$WORK/m118-twin.log" 2>&1 \
+  || { tail -20 "$WORK/m118-twin.log" >&2; fail "M118-AC3: the twin failed to render to Typst"; }
+capture "$WORK/m118twin/typst-unprinted.qmd" typst "m118-twin"
+pdftotext "$CAPTURE_ROOT/typst-unprinted/typst-unprinted.pdf" "$WORK/m118-fixture.txt"
+pdftotext "$CAPTURE_ROOT/m118-twin/typst-unprinted.pdf" "$WORK/m118-twin.txt"
+diff -u "$WORK/m118-twin.txt" "$WORK/m118-fixture.txt" >&2 \
+  || fail "M118-AC3: the fixture's Typst render does not print what its twin with no mark in the second index prints (+ is the fixture)"
+if grep -q '^Spare Index' "$WORK/m118-twin.txt"; then
+  fail "M118-AC3: the twin, whose second index no mark files in, prints a line opening with that index's title"
+fi
+pass "M117-AC1, M118-AC1, M118-AC2, M118-AC3: a Typst index leaves out an entry whose marks no page prints, with no cross-reference and no sub-entry that prints, and a letter group with no entry that prints; an entry whose range closes on a page is kept; a cross-reference prints where a mark writing it is on a page and its target prints, two terms pointing at each other print, and a target no mark files prints and is reported; an index left with no entry prints what an index no mark files in prints"
 
 if [ "${1:-}" = "--self-test" ]; then
   # M117 T2 self-test: each part of the rule planted on its own in a copy of

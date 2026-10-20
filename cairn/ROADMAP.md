@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M118 | A Typst index leaves out what no page backs | planned | — | normal | milestones/M118-typst-dead-xrefs.md |
+| M118 | A Typst index leaves out what no page backs | in-progress | — | normal | milestones/M118-typst-dead-xrefs.md |
 | M117 | A Typst index leaves out a term no page carries | done | — | normal | milestones/archive/M117-typst-unprinted-marks.md |
 | M116 | One see-word for each kind of cross-reference | done | — | normal | milestones/archive/M116-joined-see-targets.md |
 | M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |

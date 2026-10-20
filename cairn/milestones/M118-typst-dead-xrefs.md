@@ -1,13 +1,13 @@
 # M118: A Typst index leaves out what no page backs
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes what a Typst index prints
-- **Branch/PR:** —
+- **Branch/PR:** m118-typst-dead-xrefs
 
 ## Goal
 
@@ -92,7 +92,7 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 
 ## Tasks
 
-- [ ] T1: Tests first. Add the AC1-AC3 cases to
+- [x] T1: Tests first. Add the AC1-AC3 cases to
       `examples/typst-unprinted.qmd` (`toc: true` among them), re-derive
       `tests/typst-unprinted.tsv` by hand under the suite's oracle rule, add
       the AC3 twin comparison to the M117-AC1 section (`tests/run-tests.sh`
@@ -148,3 +148,4 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 - 2026-10-20: plan gate chose a twin render's text as AC3's oracle over a scan for blank pages, because a page that carries only a page number is not blank to a text scan; falsified by the twin itself printing a heading for an index no mark files in.
 - 2026-10-20: criteria audit (full, fresh Opus reader): 10 findings, all disposed toward the narrower promise. Fixed: AC2 scoped to terms with no page-number mark or sub-entry (1) and "first in the order the index prints them" (2); AC3 adds "no line beginning `Spare Index`" (3), "On Quarto 1.10.19" (4), and a cross-reference route into the second index with a twin that drops every mark of it (5); AC1 adds a `see-also=` row (6); AC4 adds the CHANGELOG "holds at least one mark" sentence and `site/books.qmd` (7) and the left-out entry (8); "derived by hand" moved from AC1 to T1 (9, an instrument property); T1 drops the `"Spare Index"` stop (10). Clean: row format, dangling report on Typst, `toc: true` against M117's `Index` line, twin equality, AC5.
 - 2026-10-20: plan gate chose one cross-reference route into the emptied second index (AC3) over a route through a sub-entry too, because the sub-entry condition is the one M117's letter-group heading already reads and its fixture holds; falsified by a plant reading only top-level own labels at index level staying green.
+- 2026-10-20: T1: fixture gains `toc: true`, four description marks (Winch, Thwart, Boom, Boom!Vang) and nine body marks (Thwart, Jib, Clew twice, Tack, Yawl, Keel, Pin); manifest re-derived by hand, 30 rows; M117-AC1 section drops the `"Spare Index"` stop, checks no line opens `Spare Index`, holds the one warning to Rudder's report, and adds the M118-AC3 twin (derived in `$WORK` by two once-only substitutions, not a second fixture file, so no gallery or corpus row is owed). The pre-fix render fails the manifest from row 2. Minor amendment: the dangling-count corpus row stays 0, because the fixture declares indexes and its report takes the index-naming wording, which that count does not read.

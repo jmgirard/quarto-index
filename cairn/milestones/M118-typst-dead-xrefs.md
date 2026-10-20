@@ -153,6 +153,7 @@ never prints", the Unreleased Typst entry in `CHANGELOG.md`, and the
 - 2026-10-20: first full `--self-test` run stopped at M098's `xreflink` plant, whose substitution aimed at the Lua format string M118 moved into `qi-index-entry`; rewritten for the new site and seen red on `see|Bee@` by hand. Every other plant substitution in the suite that names Typst code was applied to the new `typst.lua` by a script; all matched.
 - 2026-10-20: claim audit: 39 claims read, 2 corrected — examples/typst-unprinted.qmd ("Five" description cross-reference marks, four), tests/run-tests.sh (the M14 comment calling `lookup_entry` the HTML back-end's own and the tree one format's only); the `allentries` plant comment reworded (loose "as before M117").
 - 2026-10-20: T7: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0 at 5fa7cd6, 1838 checks; the ten M117/M118 plants each red on their row. T2-T7 ticked; status review.
+- 2026-10-20: step-7 approval: m118-typst-dead-xrefs approved for merge
 
 ## Decisions
 

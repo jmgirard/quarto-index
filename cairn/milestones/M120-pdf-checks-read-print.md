@@ -128,6 +128,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: status review; handing off to /milestone-review.
 - 2026-10-20: review: default branch unmoved since the cut (origin/main d76e66f); Copilot round off. Review suite run at 1e13b9e green, 1868 checks.
 - 2026-10-20: review fix-now work committed as eafcef2 (19 findings): hand statement for the 255 derived lines, duplicate-line refusal, stricter T1 plants, non-ASCII missing plant, AC3 bound to the heading's page only, NFC in the M04-AC2 and gallery reads, UTF-8 decode in `pdfindex._pages`, wording. KI326 filed for the follow-up.
+- 2026-10-20: step-7 approval: m120-pdf-checks-read-print approved for merge
 
 ## Decisions
 

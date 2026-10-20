@@ -7,8 +7,8 @@ filters:
 ---
 
 A term with two or more cross-reference targets of one kind prints that kind's
-word once, in front of all of them. This document and its twin,
-`xref-joined-separator.qmd`, carry the same body and differ only in whether the
+word once, in front of all of them. `xref-joined.qmd` and
+`xref-joined-separator.qmd` carry the same body and differ only in whether the
 metadata declares the punctuation between two cross-references.
 
 Every subject term below is marked only where its own section says, and each

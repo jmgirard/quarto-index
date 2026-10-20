@@ -14933,10 +14933,12 @@ done <<< "$DANGLING_CORPUS"
 
 # The book chapters' rows are per chapter, but the report is drawn once for
 # the whole book, so what they must add up to is what each book render emits.
-# Five books carry targets. Three report one each, and examples/book-lang and
+# Five books on the roster carry targets (examples/book-placement writes
+# targets too, but each of its attributes opens a line, which the roster's
+# grep does not match). Three report one each, and examples/book-lang and
 # examples/book-xref, whose every target resolves, report none, which is what
 # the sum states. The M116 section renders examples/book-xref and holds its
-# log to no warning at all.
+# log to no warning from this extension.
 # The SHAPE differs between them, and that is the point of reading both:
 # examples/book declares three indexes, so its target is judged inside one of
 # them and the report names it; examples/book-order declares none, has one
@@ -33102,10 +33104,11 @@ for fmt in html epub; do
 done
 
 # AC1. Each printed line whole, in printed order. The fixture writes no
-# sub-entry, so a line `tests/pdfindex.py` reads below the top level is the
-# rest of the line above it, which a two-column index wraps; it is joined
-# back with one space, and a row naming a deeper level would be a defect
-# here, which the comparison then reports.
+# sub-entry, so a line `tests/pdfindex.py` read below the top level would be
+# the rest of the line above it, wrapped by the two-column index, and is
+# joined back with one space. On the pinned engine no line of this index
+# wraps, so the join is a guard for a narrower column, not a path the run
+# takes.
 read -r -d '' M116_PDF <<'MANIFEST' || true
 Ash, 5
 Aster, 5
@@ -33217,7 +33220,7 @@ python3 tests/epubcheck.py links "$CAPTURE_ROOT/xref-joined-epub/xref-joined.epu
 
 # The punctuation between two targets of one kind is the punctuation between
 # two cross-references (S5): `;` in the fixture, U+061B in the twin, with the
-# term's own comma (S1, S3, S4) the same in both.
+# comma after the term (S1, S4) and after the locators (S3) the same in both.
 m116_separators() {   # <S5 code point>
   printf 'section\t%s\n' "$HTML_SECTION_ID"
   for t in Ash Aster Bramble Clover Fern Moss; do printf '0\t%s\tS1=U+002C\n' "$t"; done
@@ -33330,8 +33333,9 @@ M116PLANTPY
       *) fail "M116 self-test ($planted): the HTML reader failed on the plant, but not on its label word: <<$out>>" ;;
     esac
   done
-  # The wrapped-line join in m116_pdf_check: a manifest stating Sorrel's line
-  # in another order is red against the same PDF.
+  # The order comparison in m116_pdf_check: a manifest stating Sorrel's
+  # targets sorted is red against the same PDF. No line of this index wraps,
+  # so the join is not exercised here.
   sed 's/^Sorrel, .*/Sorrel, see Ash; Zed; see also Fern; Moss/' "$WORK/m116-pdf.txt" > "$M116W/pdf-sorted.txt"
   if m116_pdf_check "$CAPTURE_ROOT/xref-joined-pdf/xref-joined.pdf" "$M116W/pdf-sorted.txt" \
       "M116 self-test (pdf-sorted)" 2>/dev/null; then

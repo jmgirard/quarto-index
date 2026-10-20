@@ -129,8 +129,9 @@ local XREF_SEPARATOR = ";"
 -- cross-references. The separators follow print convention — locators and the
 -- first cross-reference are set off from the term with a comma, and two
 -- cross-references are separated with a semicolon, exactly as the LaTeX
--- back-end's dual-target command prints them, two targets of one kind
--- included. Both marks are what an author
+-- back-end prints them: through its dual-target command for a see and a see
+-- also, and inside one `\see` or `\seealso` argument for two targets of one
+-- kind. Both marks are what an author
 -- overrides under `separator:` and `xref-separator:`, resolved on the same
 -- per-index-then-document ladder the printed words use; the LaTeX back-end
 -- reads neither, because makeindex owns its own delimiter (M58).

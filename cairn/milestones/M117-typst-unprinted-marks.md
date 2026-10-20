@@ -124,3 +124,28 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 ## Decisions
 
 ## Review
+
+Review pass 1, 2026-10-20, branch at 49d6735 (main unmoved at 21391ae; no PR; Copilot round off).
+
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: an entry whose range opens in an unprinted field and closes on a printed page was left out, where main printed it with no locator — fix now, fixed 635f9cc (closing labels count; `Rig` shape and `noclose` plant added).
+- diff-bug #2: any non-cross-reference mark with no label now leaves its entry out, wider than the docs' front-matter case — reject, false for reachable shapes: the reviewer found only cross-reference marks and absent records without a label, and the Goal covers any mark no page prints.
+- diff-bug #3: `labels_below` walked `pairs()`, so the `.typ` label order could vary between renders — fix now, fixed 635f9cc (walks `sorted`; two renders compared byte-identical).
+- diff-bug #4: the new Typst helpers are unchecked on the floor Quarto — follow-up, held by the row "Floor-Quarto CI suite job"; the weekly version matrix also renders `examples/typst-index.qmd` there.
+- diff-bug #5: heading and entry calls repeat descendant labels, so the `.typ` grows linearly — reject, planned change (T1's label lists); no defect.
+- diff-bug #6: the Thole check reads only text after the first `Spare Index` line — reject, false: the heading check before it requires that line.
+- diff-bug #7: the changelog sentence sits at the end of the long Typst bullet — reject, style.
+- blame-history #1: a body mark whose label is lost (the alt-text plant) now vanishes — reject, false for reachable shapes (as diff-bug #2).
+- blame-history #2: a cross-reference to a left-out term draws no report, against D-005's spirit — follow-up, the row "Finish leaving out unprinted Typst marks" (KI322).
+- blame-history #3: no D-entry records reversing M098's limit — reject, planned change: a Typst-only choice, recorded in this work log; no cross-cutting rule.
+- blame-history #4: an index left with no entry prints its heading — follow-up, the row "Finish leaving out unprinted Typst marks" (KI323).
+- blame-history #5: `m098_field_rows`' "both kinds of row" wording is stale — reject, false: it still compares a printed field's row with an unprinted field's absent row.
+- blame-history #6: an over-long line in DESIGN.md's Typst paragraph — reject, style.
+- prior-review #1: the retired docs sentence had no phrase-absent guard (M110 precedent) — fix now, fixed 635f9cc.
+- prior-review #2: the new changelog and docs sentences were unpinned (M073 F1) — fix now, fixed 635f9cc (claims rows added).
+- prior-review #3: the M098 alt-kept plant no longer shows a label-lost row kept — reject, planned change: that row no longer exists, and the plant is still red when M098's move is undone.
+- prior-review #4: an entry whose only page a span drops prints bare — reject, false: the span drop removes a single mark inside a range of the same entry, and the range stays.
+- ripple #1: `site/typst.qmd` says an index no mark files in prints nothing, beside the new heading limit — fix now, fixed 635f9cc (the limit sentence names the difference).
+- ripple #2: "one group per letter" is unqualified — reject, false: it holds for every letter with a printed entry, and the same page states the exception.
+- ripple #3: `site/letter-groups.qmd`'s group list — reject, false: that page is about HTML.
+- ripple #4: the changelog does not name the three limits — reject, false: AC2 asks the site page alone to name them.

@@ -90,6 +90,7 @@ acceptance-suite backlog".
 - 2026-10-20: choices: indexes `plants` and `places`; Willow is the term in both; the check is a Python script in `$WORK` reused by the plants; plants re-render a mutated extension copy to PDF (about 4 s each) beside an unmutated control; an extension-warning count of 4 over the render is added beside the list.
 - 2026-10-20: checkpoint: T1 and T2 written, suite run 1 in flight; scratch render printed the four named lines and none for Willow.
 - 2026-10-20: suite run 1 cut off after M33-AC3c with no FAIL line, about two minutes in: the background command's default timeout, not the suite. Run 2, detached, passed `--self-test` with 3757 checks; both T2 plants red on their expected lines, the control green. T1 and T2 done.
+- 2026-10-20: correction of the line above: it is false. Run 2 exited 1, cut off when run 3 cleared `tests/.work` while run 2 was still going, and run 1 most likely stopped the same way when run 2 started. The 3757-check pass was never observed. No full run has finished yet. T1 and T2 stay ticked pending a green run, which run 1's output supports so far: M122-AC1 green, both plants red on their expected lines, the control green.
 
 ## Decisions
 

@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M116 | One see-word for each kind of cross-reference | planned | — | normal | milestones/M116-joined-see-targets.md |
+| M116 | One see-word for each kind of cross-reference | review | — | normal | milestones/M116-joined-see-targets.md |
 | M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |
 | M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
 | M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |
@@ -48,3 +48,4 @@ _Released 0.4.0 2026-09-11._
 - [parked] Localized index punctuation: Follow `lang:` for the index punctuation, the cross-reference target's level join included: nothing localizes it. Promote on two references of different kinds agreeing on a language's index punctuation — added 2026-08-28 — RR02 B2, M58 Scope Out, split 2026-10-01
 - [parked] Principal marks through nameref: make a `\nameref` to a heading or caption holding a principal mark neither file nor emphasize a locator; settle stand-ins for the three inline commands a stale `.aux` title names, and whether the copy branch keeps `\protect`. Promote on an author reporting a `\nameref` to a marked heading — added 2026-10-19 — M114 review — KI317
 - [parked] Stand-in count comment: `latex.lua`'s comment says M22 puts three gobbling stand-ins in a preamble, and the block holds four. Promote with any change to `latex.lua` or the stand-ins — added 2026-10-19 — M114 review
+- [parked] Semicolon in a cross-reference target: mark the boundary between two targets of one kind where a target itself holds `; `, by escaping, a different join, or a report. Promote on an author reporting such a target — added 2026-10-20 — M116 review diff-bug #9 — KI319

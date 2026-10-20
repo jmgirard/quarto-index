@@ -620,9 +620,17 @@ def printed_text(row):
     text = term
     for locator in (locators.split(', ') if locators else []):
         text += ', ' + re.sub(r'\*?(@\d+)?$', '', locator)
+    # A reference is `word|target`, and the targets after the first of a kind
+    # follow it with no word of their own (M116), so a piece without a `|`
+    # prints bare after the semicolon.
     for i, ref in enumerate(refs.split('; ') if refs else []):
-        word, target = ref.rstrip('@').split('|', 1)
-        text += (', ' if i == 0 else '; ') + word + ' ' + target
+        piece = ref.rstrip('@')
+        if '|' in piece:
+            word, target = piece.split('|', 1)
+            piece = word + ' ' + target
+        elif i == 0:
+            raise ValueError(f'the first reference {ref!r} names no word')
+        text += (', ' if i == 0 else '; ') + piece
     return (int(level), text)
 
 

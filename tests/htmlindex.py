@@ -724,15 +724,23 @@ def index_entries(section):
                 links = find_all(targets[0], 'a')
                 # The label word is the emphasized run in front of the
                 # target, which is what the back-end emits and the only text
-                # in the span that is not the target itself.
+                # in the span that is not the target itself. A kind's word
+                # stands in front of its first target only, so a target
+                # following one of its own kind carries none and every other
+                # target carries exactly one (M116): a page that dropped every
+                # word, or repeated it, is refused here, which a manifest
+                # written without the words could not see.
                 words = [n for n in own_nodes(span) if n.tag == 'em']
-                if len(words) != 1:
+                follows_own_kind = bool(xrefs) and xrefs[-1][0] == kind
+                wanted = 0 if follows_own_kind else 1
+                if len(words) != wanted:
                     raise ValueError(
                         f'cross-reference has {len(words)} label word(s), '
-                        f'expected exactly 1')
+                        f'expected exactly {wanted}: a kind\'s word stands '
+                        f'in front of its first target only')
                 xrefs.append((kind, text(targets[0]), bool(links),
                               links[0].attrs.get('href') if links else None,
-                              text(words[0]).strip()))
+                              text(words[0]).strip() if words else ''))
             records.append({
                 'kind': 'entry',
                 'depth': depth,
@@ -824,7 +832,9 @@ def row(record, hrefs=False, labels=False):
               else str(len(record['locators']))]
     for kind, target, linked, _href, word in record['xrefs']:
         token = XREF_TOKEN[(kind, linked)]
-        fields.append(f'{token} {word} {target}' if labels
+        # A target after the first of its kind prints no word, and its field
+        # states none (M116).
+        fields.append(f'{token} {word} {target}' if labels and word
                       else f'{token} {target}')
     return '\t'.join(fields)
 

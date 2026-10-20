@@ -315,10 +315,10 @@ local function mark_encap(xrefs)
 end
 
 -- Record what one mark does with its key: the encapsulation it would emit, and
--- its targets. Targets are kept in a fixed order — `see` before `see also` as
--- print convention has it, and first appearance within a kind — because every
--- mark of a contested key must emit the SAME text or the index tool sees two
--- entries where the author wrote one.
+-- its targets. Targets are kept once each, in the order they first appear;
+-- `fold_xrefs` below groups them by kind, `see` before `see also`. Every mark
+-- of a contested key must emit the SAME text or the index tool sees two
+-- entries where the author wrote one, and both are fixed by the document.
 local function record_contest(index, source, printed, xrefs)
   local keys = contested_for(index)
   local seen = keys[source]
@@ -367,15 +367,22 @@ end
 -- command of our own is what keeps the folded form and the encapsulated form
 -- from drifting in how they print a target. `\see{A}{}; \seealso{B}{}`
 -- expands to exactly what qi_core.XREF_BOTH_COMMAND prints, so a both-attributes mark
--- reads the same whether its key is contested or not.
+-- reads the same whether its key is contested or not. The targets of one kind
+-- share one command, joined by `; ` inside its argument, so the kind's word
+-- prints once in front of all of them: `\see{A; B}{}` prints `see A; B`
+-- (M116).
 local function fold_xrefs(seen)
   local parts = {}
   for _, kind in ipairs(qi_core.XREF_KINDS) do
+    local targets = {}
     for _, xref in ipairs(seen.xrefs) do
       if xref.kind.attr == kind.attr then
-        parts[#parts + 1] = "\\" .. kind.command ..
-          "{" .. qi_levels.target_argument(xref.levels) .. "}{}"
+        targets[#targets + 1] = qi_levels.target_argument(xref.levels)
       end
+    end
+    if #targets > 0 then
+      parts[#parts + 1] = "\\" .. kind.command ..
+        "{" .. table.concat(targets, "; ") .. "}{}"
     end
   end
   return table.concat(parts, "; ")

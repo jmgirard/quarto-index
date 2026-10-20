@@ -280,21 +280,27 @@ local function Pandoc(doc)
   -- risks one; it says what the author's two marks print as, which is the one
   -- thing about the outcome they did not write down.
   --
-  -- Two shapes, two messages, because the outcome they describe differs: a key
-  -- with a plain mark keeps its page numbers, and a key with none has never
-  -- had any. One message covering both would tell the author of a `see=`
+  -- Two shapes, each with its own messages, because the outcome they describe
+  -- differs: a key with a plain mark keeps its page numbers, and a key with
+  -- none has never had any. One message covering both would tell the author of a `see=`
   -- against a `see-also=` that their entry prints page numbers it does not.
   --
   -- One index at a time, and the report says which (D-021): each declared
   -- index writes its own `.idx`, so two marks of one key in two indexes never
   -- meet, and telling an author their entry carries both shapes without saying
   -- where sends them looking through an index whose entry is fine.
+  --
+  -- Each message counts the entry's own cross-references, its distinct
+  -- targets: a key can carry more than two, and a plain mark can stand beside
+  -- more than one (M116). The wordings that held before for one target beside
+  -- a plain mark, and for two with none, are kept for exactly those counts.
   local conflicting = {}
   for _, name in ipairs(qi_indexes.names()) do
     for _, seen in pairs(qi_latex.contested_keys[name] or {}) do
       if qi_latex.is_contested(seen) then
         conflicting[#conflicting + 1] = { printed = seen.printed,
-                                          plain = seen.plain, index = name }
+                                          plain = seen.plain, index = name,
+                                          count = #seen.xrefs }
       end
     end
   end
@@ -305,16 +311,28 @@ local function Pandoc(doc)
     return a.index < b.index
   end)
   for _, clash in ipairs(conflicting) do
-    -- Four literals rather than two with a spliced clause, for the reason
-    -- sortkeys.lua states: the scope sits in the MIDDLE of each message, so
-    -- neither shape's unscoped form is a prefix of its scoped one and a grep
-    -- for the shorter cannot match both.
+    -- Eight literals, two per wording, rather than one per wording with a
+    -- spliced clause, for the reason sortkeys.lua states: the scope sits in
+    -- the MIDDLE of each message, so no wording's unscoped form is a prefix of
+    -- its scoped one and a grep for the shorter cannot match both.
     local scope = qi_indexes.scope_phrase(clash.index, "document")
-    if clash.plain then
+    if clash.plain and clash.count > 1 then
+      if scope == "document" then
+        qi_core.warn(('index entry %s carries a plain locator and %d different cross-references; they are printed as one entry with its page numbers and its cross-references together, so check that is the entry you meant'):format(clash.printed, clash.count))
+      else
+        qi_core.warn(('index entry %s in %s carries a plain locator and %d different cross-references; they are printed as one entry with its page numbers and its cross-references together, so check that is the entry you meant'):format(clash.printed, scope, clash.count))
+      end
+    elseif clash.plain then
       if scope == "document" then
         qi_core.warn(('index entry %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed))
       else
         qi_core.warn(('index entry %s in %s carries both a plain locator and a cross-reference; they are printed as one entry with its page numbers and its cross-reference together, so check that is the entry you meant'):format(clash.printed, scope))
+      end
+    elseif clash.count > 2 then
+      if scope == "document" then
+        qi_core.warn(('index entry %s carries %d different cross-references; they are printed as one entry carrying all %d targets and, since no mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed, clash.count, clash.count))
+      else
+        qi_core.warn(('index entry %s in %s carries %d different cross-references; they are printed as one entry carrying all %d targets and, since no mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed, scope, clash.count, clash.count))
       end
     elseif scope == "document" then
       qi_core.warn(('index entry %s carries two different cross-references; they are printed as one entry carrying both targets and, since neither mark contributes one, no page numbers at all, so check that is the entry you meant'):format(clash.printed))

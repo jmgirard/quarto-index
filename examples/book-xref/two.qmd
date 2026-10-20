@@ -1,0 +1,7 @@
+# Second chapter
+
+The same term pointing at a second target: [Hazel]{.index see="Alder"}. The
+target is marked here too: [Alder]{.index}.
+
+::: {.qi-index-here}
+:::

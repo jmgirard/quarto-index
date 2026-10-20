@@ -1,0 +1,20 @@
+# The cross-chapter target book fixture (M116). One term carries a `see`
+# target in each of its two chapters, and each chapter renders in its own
+# process, so the two targets meet only where the book's index is built, from
+# the chapters' records in book order. The first chapter's target sorts after
+# the second's, so a book index that sorted the targets would print them in
+# another order than book order.
+project:
+  type: book
+
+book:
+  title: "Index Book Fixture With Cross-Chapter Targets"
+  chapters:
+    - index.qmd
+    - two.qmd
+
+format:
+  html: default
+
+filters:
+  - index

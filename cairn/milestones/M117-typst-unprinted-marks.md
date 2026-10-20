@@ -1,13 +1,13 @@
 # M117: A Typst index leaves out a term no page carries
 
-- **Status:** planned
+- **Status:** in-progress
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** IP2, GP2, GP6
 - **Resolves:** —
 - **Surface tier:** user-facing — it changes what a Typst index prints
-- **Branch/PR:** —
+- **Branch/PR:** m117-typst-unprinted-marks
 
 ## Goal
 
@@ -109,6 +109,11 @@ section "A mark Typst never prints", the Unreleased Typst entry in
 - 2026-10-20: lessons harvested: M116 (fixture registration in gallery.yml and the dangling-count corpus), M30 (compare extracted PDF text in NFC from a hand-derived table).
 - 2026-10-20: render check before planning: on Quarto 1.10.18, examples/front-matter.qmd's Typst index printed `Halyard` with no page, and its LaTeX output wrote no `\index{Halyard}`.
 - 2026-10-20: criteria audit (full mode, fresh Opus reader) returned 6 findings, all fixed: Goal and AC2 narrowed to entries with no cross-reference and no printing sub-entry; AC2's grep narrowed to the old sentence; AC1 gained a two-level chain and a see-only sub-entry, and its see= row names a printed target; the left-out-target cross-reference joined Out; the description-prints guard moved from AC1 to T2; AC2 requires the docs to name the three Out limits. AC3 passed.
+- 2026-10-20: implement started on branch m117-typst-unprinted-marks, cut from main at 21391ae.
+- 2026-10-20: T1-T4 written, suite not yet run: `labels_below` passes sub-entry labels (or `true` for a cross-reference) to `qi-index-entry`, which prints nothing without a found label; letter headings print under `qi-index-live`. Chose a Lua-side label list over a Typst-side tree walk, since the tree is known before typesetting.
+- 2026-10-20: added to the fixture the three Out limits (`Oar`, `Block, see Sheave`, `Spare Index`), each observed in a scratch render first, so each claim the docs page now makes has a check (What gets a test); the M117-AC1 check also counts zero extension warnings.
+- 2026-10-20: four plants rendered by hand before writing their want strings (all-entries, all-groups, one-depth, no-xref), each red on its own row; the one-depth plant first broke the one-level case too, so `labels_below` was restructured to keep depth in its recursion alone.
+- 2026-10-20: DESIGN.md: KI289 struck; KI321-KI323 added for the three Out limits and named on the candidate row; the Typst architecture paragraph updated.
 
 ## Decisions
 

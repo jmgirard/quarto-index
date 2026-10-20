@@ -1,0 +1,39 @@
+# The index examples/typst-unprinted.qmd prints in a Typst render (M117).
+#
+# Derived BY HAND from that source, under the ORACLE RULE at the head of
+# tests/run-tests.sh, and never copied from a render. The row shape is the one
+# tests/typst-index-main.tsv states. Page 1 runs to the source's one page
+# break, and page 2 follows it. Quarto's Typst template does not print
+# `description:`, so no mark written there adds a locator.
+#   Bitt     in the description and on page 2: page 2 alone
+#   Cleat    page 1; its sub-entry Horn is in the description alone: no row
+#   Davit    the description alone, above Arm on page 2: no locator
+#   Fender   the description alone, as is Rope under it, above Eye on page 2
+#   Gaff     the description alone, above Jaw, which has a see and no page
+#   Halyard  the description alone, as is Hawser: neither row, no H group
+#   Kedge    page 2, a see and no page
+#   Block    page 2, a see to Sheave, which the description alone marks
+#   Oar      a see mark in the description: it has no label and still prints
+#   Paddle   page 1
+# Thole, the description's mark in the second index, is not in this one.
+group	B
+entry	0	Bitt	2@2
+entry	0	Block		see|Sheave
+group	C
+entry	0	Cleat	1@1
+group	D
+entry	0	Davit
+entry	1	Arm	2@2
+group	F
+entry	0	Fender
+entry	1	Rope
+entry	2	Eye	2@2
+group	G
+entry	0	Gaff
+entry	1	Jaw		see|Bitt
+group	K
+entry	0	Kedge		see|Bitt
+group	O
+entry	0	Oar		see|Paddle
+group	P
+entry	0	Paddle	1@1

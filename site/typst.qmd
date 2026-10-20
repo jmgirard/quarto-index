@@ -137,5 +137,13 @@ with `output: asis` take the label in their content.
 ## A mark Typst never prints
 
 A mark in a front-matter field that Quarto's Typst template does not print,
-such as `description:`, has no label on any page. Its term is still in the
-index, with no page number.
+such as `description:`, has no label on any page, so it adds no page number.
+If all the page-number marks of an entry are such marks, and it has no
+cross-reference and no sub-entry that prints, the Typst index leaves it out.
+A letter group none of whose entries prints has no heading. Such an entry
+that is kept for a sub-entry that prints shows no page number of its own.
+
+Three limits remain. A `see=` or `see-also=` mark in such a field still
+prints its cross-reference. A cross-reference whose target is left out still
+prints, and nothing reports it. An index whose every entry is left out still
+prints its heading.

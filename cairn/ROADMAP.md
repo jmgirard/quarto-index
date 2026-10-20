@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M117 | A Typst index leaves out a term no page carries | planned | — | normal | milestones/M117-typst-unprinted-marks.md |
+| M117 | A Typst index leaves out a term no page carries | in-progress | — | normal | milestones/M117-typst-unprinted-marks.md |
 | M116 | One see-word for each kind of cross-reference | done | — | normal | milestones/archive/M116-joined-see-targets.md |
 | M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |
 | M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
@@ -33,7 +33,7 @@ _Released 0.4.0 2026-09-11._
 - [parked] Typst numbering pattern's first symbol: Test that the first counting symbol of a Typst page numbering pattern sets a locator's kind: a pattern with two symbols of different kinds, where taking the last symbol changes an entry's order. Promote on any change to `qi-index-rank` or `qi-index-symbols` — added 2026-09-14 — M100 review round 2 F1
 - [parked] Laid-out float caption marks: split from M115; in Typst, file a caption mark of a float whose content is not one paragraph, table or code block (layout cells, a code cell's output) at its caption's page under a list, without changing the layout. Promote on a placement shown not to move Quarto's cells, widths or alignment — added 2026-10-19 — M115 review — KI290
 - [parked] Breakable float caption marks: in a Typst document that makes floats breakable, file a caption mark at its caption's page, not where the float's content ends. Promote on an author reporting such a locator — added 2026-10-19 — M115 review — KI318
-- [parked] Finish leaving out unprinted Typst marks: in Typst, drop a cross-reference whose mark no page prints, report or drop one whose target term M117 leaves out, and settle the heading of an index left with no entry. Promote on an author reporting any of the three — added 2026-10-20 — M117 plan gate
+- [parked] Finish leaving out unprinted Typst marks: in Typst, drop a cross-reference whose mark no page prints, report or drop one whose target term M117 leaves out, and settle the heading of an index left with no entry. Promote on an author reporting any of the three — added 2026-10-20 — M117 plan gate — KI321, KI322, KI323
 - [parked] Id census inside svg or math: close the last id-census shape M081 and M082 leave in `note_raw`, a `style` or `script` inside `svg` or `math`. Promote on evidence checked against a browser, or on an author reporting one — added 2026-09-06, narrowed 2026-09-06 — M080 review round 2 F5 — KI261
 - [parked] Reach the id-census shapes M080 leaves: an `id=` written in the text content of a `title`, `noscript` or `plaintext` element, none of which a case can exercise on a rendered page. Promote on an author reporting one, or with the reading of the written page KI255 needs — added 2026-09-06, narrowed 2026-09-06 when M080 took the rest — M079 review X1/X4/X5, X7 — KI254
 - [parked] Writer-generated ids outside the census: See an id Quarto's writer generates after the filter runs (`fn1`, `cb1`, `title-block-header`), which the census cannot: a mark written with one keeps it and the page carries it twice, unreported. Needs a reading of the written page rather than of the AST. Promote on an author reporting one — added 2026-09-06 — M079 review X2 — KI255

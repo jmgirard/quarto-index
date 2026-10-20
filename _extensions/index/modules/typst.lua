@@ -40,7 +40,13 @@ local M = {}
 -- `(opening label, closing label or none, principal)` triple per locator the
 -- tree recorded. Each label is looked up while the document is typeset, and
 -- a label no element carries adds no locator rather than failing the render
--- (IP2). The locators are ordered by the class and value of their opening
+-- (IP2). Such a label is a mark no page prints, as one in a front-matter field
+-- the template leaves out is. `below` is `true` where a sub-entry at any depth
+-- has a cross-reference, and otherwise the opening labels of every sub-entry
+-- at any depth. An entry none of whose labels names an element, with no
+-- cross-reference, and none of whose `below` labels names one prints nothing
+-- (M117). `qi-index-live` says whether any label of a list names an element.
+-- The locators are ordered by the class and value of their opening
 -- page, then by opening and closing physical page, a single mark before a
 -- range, one stable sort per field, least significant first (M100). A range whose two ends print the same text
 -- prints that text alone, and is a single mark. A range whose two ends have
@@ -84,7 +90,8 @@ local TYPST_HELPERS = [[
     numbering(pattern, ..counter(page).at(loc))
   }
 }
-#let qi-index-entry(depth, term, items, xrefs) = context {
+#let qi-index-live(labels) = labels.any(l => query(l).len() > 0)
+#let qi-index-entry(depth, term, items, xrefs, below) = context {
   let found = ()
   for item in items {
     let opened = query(item.at(0))
@@ -123,14 +130,16 @@ local TYPST_HELPERS = [[
       merged.at(at) = kept
     }
   }
-  let line = [#term]
-  for f in merged {
-    line = line + [, ] + link(f.start.position(), if f.bold { strong(f.shown) } else { f.shown })
+  if found.len() > 0 or xrefs.len() > 0 or below == true or qi-index-live(below) {
+    let line = [#term]
+    for f in merged {
+      line = line + [, ] + link(f.start.position(), if f.bold { strong(f.shown) } else { f.shown })
+    }
+    for (i, xref) in xrefs.enumerate() {
+      line = line + (if i == 0 { [, ] } else { [; ] }) + xref
+    }
+    block(above: 0.45em, below: 0.45em, inset: (left: depth * 1.2em), par(hanging-indent: 2.4em, justify: false, line))
   }
-  for (i, xref) in xrefs.enumerate() {
-    line = line + (if i == 0 { [, ] } else { [; ] }) + xref
-  }
-  block(above: 0.45em, below: 0.45em, inset: (left: depth * 1.2em), par(hanging-indent: 2.4em, justify: false, line))
 }
 ]]
 
@@ -175,6 +184,43 @@ local function typst_locator(node, mark)
   end
 end
 
+-- What `qi-index-entry` reads as `below` for the sub-entries of `node`, at any
+-- depth: `true` where one has a cross-reference, which prints whatever page
+-- its marks are on, and otherwise a Typst array of their opening labels.
+-- `self` adds `node`'s own, for a letter group, whose heading prints where
+-- any of its entries does.
+local function labels_below(node, self)
+  local labels = {}
+  local function walk(entry)
+    if #entry.xrefs > 0 then
+      return true
+    end
+    for _, locator in ipairs(entry.locators) do
+      labels[#labels + 1] = "<" .. locator.label .. ">,"
+    end
+    for _, child in pairs(entry.children) do
+      if walk(child) then
+        return true
+      end
+    end
+    return false
+  end
+  if self then
+    if #node.xrefs > 0 then
+      return "true"
+    end
+    for _, locator in ipairs(node.locators) do
+      labels[#labels + 1] = "<" .. locator.label .. ">,"
+    end
+  end
+  for _, child in pairs(node.children) do
+    if walk(child) then
+      return "true"
+    end
+  end
+  return "(" .. table.concat(labels, " ") .. ")"
+end
+
 -- One entry's call to `qi-index-entry`, then its sub-entries', depth first.
 local function entry_lines(node, depth, name, out)
   local items = {}
@@ -199,8 +245,9 @@ local function entry_lines(node, depth, name, out)
     end
     previous_kind = xref.kind.attr
   end
-  out[#out + 1] = ("#qi-index-entry(%d, %s, (%s), (%s))"):format(depth,
-    typst_string(node.key), table.concat(items, " "), table.concat(xrefs, " "))
+  out[#out + 1] = ("#qi-index-entry(%d, %s, (%s), (%s), %s)"):format(depth,
+    typst_string(node.key), table.concat(items, " "), table.concat(xrefs, " "),
+    labels_below(node, false))
   for _, key in ipairs(node.sorted) do
     entry_lines(node.children[key], depth + 1, name, out)
   end
@@ -219,8 +266,24 @@ end
 local function index_blocks(root, name)
   local out = { "#[", TYPST_HELPERS, "#columns(2, gutter: 2em)[" }
   for _, group in ipairs(qi_entries.letter_groups(root, name)) do
-    out[#out + 1] = ("#block(above: 1.1em, below: 0.6em)[#strong(%s)]"):format(
+    -- A group's heading prints where one of its entries prints (M117).
+    local live = {}
+    for _, key in ipairs(group.keys) do
+      local below = labels_below(root.children[key], true)
+      if below == "true" then
+        live = nil
+        break
+      end
+      live[#live + 1] = below:sub(2, -2)
+    end
+    local heading = ("block(above: 1.1em, below: 0.6em)[#strong(%s)]"):format(
       typst_string(group.heading))
+    if live == nil then
+      out[#out + 1] = "#" .. heading
+    else
+      out[#out + 1] = ("#context if qi-index-live((%s)) { %s }"):format(
+        table.concat(live, " "), heading)
+    end
     for _, key in ipairs(group.keys) do
       entry_lines(root.children[key], 0, name, out)
     end

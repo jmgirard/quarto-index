@@ -1,0 +1,52 @@
+---
+title: "Typst marks no page prints"
+description: 'Marks no page prints: [Halyard]{.index} [Hawser]{.index} [Bitt]{.index} [Horn]{.index entry="Cleat!Horn"} [Davit]{.index} [Fender]{.index} [Rope]{.index entry="Fender!Rope"} [Gaff]{.index} [Sheave]{.index} [oar]{.index entry="Oar" see="Paddle"} [Thole]{.index index="spare"}.'
+indexes:
+  - name: main
+    title: Index
+  - name: spare
+    title: Spare Index
+filters:
+  - index
+---
+
+The fixture for a mark no page prints in a Typst index (M117). Quarto's
+Typst template does not print `description:`, so the label of each mark
+written there names no element. An entry whose marks are all such marks,
+with no cross-reference and no sub-entry that prints, is left out of the
+index, and so is a letter group none of whose entries prints.
+
+The description marks eleven terms. `Halyard` and `Hawser` are marked there
+alone, and are the only terms of their letter, so the index prints neither
+them nor an `H` heading. `Bitt` is also marked in the body, on page 2, so it
+prints that page alone. `Cleat!Horn` is a sub-entry under a parent marked in
+the body, so `Cleat` prints and `Horn` does not. `Davit`, `Fender`,
+`Fender!Rope` and `Gaff` print with no page number, each above a sub-entry
+that prints.
+
+Three marks there show what is still printed. `Oar` is a cross-reference
+mark, which has no label, so `Oar, see Paddle` prints. `Sheave` is left out,
+and `Block, see Sheave` still prints, with nothing reported. `Thole` is the
+only mark of the second index, so that index prints its heading alone.
+
+The body marks a parent that prints its page: [Cleat]{.index}, and the
+target of a cross-reference: [Paddle]{.index}.
+
+{{< pagebreak >}}
+
+The body marks a term the description marks too: [Bitt]{.index}.
+
+A sub-entry prints under a parent the description alone marks:
+[arm]{.index entry="Davit!Arm"}.
+
+A sub-entry two levels down prints under two such entries:
+[eye]{.index entry="Fender!Rope!Eye"}.
+
+A sub-entry with a cross-reference and no page prints under such a parent:
+[jaw]{.index entry="Gaff!Jaw" see="Bitt"}.
+
+A term with a cross-reference and no page prints:
+[kedge]{.index entry="Kedge" see="Bitt"}.
+
+A cross-reference to a term the index leaves out prints:
+[block]{.index entry="Block" see="Sheave"}.

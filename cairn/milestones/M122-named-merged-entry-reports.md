@@ -105,6 +105,7 @@ acceptance-suite backlog".
 - 2026-10-20: review return 1: AC1 — the check held only the span of each line from "index entry" to "meant", so a report with text after it passed; the fix (patterns anchored at the line's end, plus a plant) is in 1fff89b, and run 7 is in flight.
 - 2026-10-20: resumed for review return 1; added T5 for it (minor amendment, Coverage updated). Its code landed in 1fff89b; T5 waits on run 7.
 - 2026-10-20: run 7 (alone, on 1fff89b; later commits touch only `cairn/` milestone and ROADMAP files) passed `--self-test`: exit 0, "All checks passed (1884 checks)", no FAIL line; the new trailing-text and missing-log plants red as expected. T5 done; status review.
+- 2026-10-20: review pass 2: AC1 failed a second time by a new mechanism of the same shape. Return 1 left text after a report unheld; pass 2 shows text before "index entry" and after a bare `\r` unheld. The check holds a span of each line, not the line. Repeated review-failure stop; the plan gate recorded no alternative for the check's approach, so the escalation offer stands beside the recommendation.
 
 ## Decisions
 
@@ -136,3 +137,29 @@ acceptance-suite backlog".
 - Pass 2: main had not moved (0 commits behind). Evidence is run 7, a `--self-test` run on 1fff89b with nothing outside `cairn/` changed since.
 - AC1 evidence: `examples/xref-conflict-named.qmd` declares `plants` and `places`. In `plants` it marks Alder (plain + one `see=`), Cedar (plain + two), Hazel (two, no plain) and Oak (three, no plain), and it marks Willow plainly in `plants` and with `see=` in `places`. Run 7 rendered it to PDF and printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check selects lines by all eight literals, anchored at the line's end, and holds them to a four-line hand-stated list, each line naming its term and `index "plants"`. Run 7's render log holds 4 report lines and no line naming Willow. The plants were red on the `document` form (line 1), a removed Oak report (line 4) and text after a report (line 4), and the control was green.
 - AC2 evidence: run 7, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, run alone, wrote exit code 0 and ended "All checks passed (1884 checks)" with no FAIL line, read from its log.
+- Pass 2 spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the patterns are not anchored at the line's start, and `m.group(0)` drops what comes before "index entry", so `(W) JUNK index entry Oak …` passes — AC1 fails a second time ("line for line"); pending the user's decision on the repeated-failure stop.
+- diff-bug #2: Python's default newline reading splits a bare `\r`, so `…meant\r(and more text)` passes — same AC1 failure; pending.
+- diff-bug #3: ANSI codes are stripped anywhere in the line, which only widens what passes; the real report lines carry none — same AC1 failure; pending.
+- diff-bug #4: the comments say "line for line" and "part of no match", which the two holes above make false — fix with the AC1 repair.
+- diff-bug #5: an empty log fails as four "no such line" rows, blaming the list — fix with the AC1 repair: name a log holding no report.
+- diff-bug #6: KI60's "round trip … is held" rests on a probe of the write side — fix with the AC1 repair: KI60 names only what the probe showed.
+- diff-bug #7: the trailing-text plant asserts line 4 only — reject (false as a gap): the unmutated control holds lines 1 to 3.
+- blame-history #1: the ROADMAP row was not rewritten in the commit that struck KI320 (D-013) — reject (planned change): hygiene graduates the row, as at M121.
+- blame-history #2: "narrowed M122" belongs in KI60's citation tail, as most narrowed entries put it — fix with the AC1 repair.
+- blame-history #3: "a back-end that keeps them apart" names a condition no branch tests — fix with the AC1 repair, as prior-review #6.
+- blame-history #4: "every log line that matches … is read" overstates after the anchor — fix with the AC1 repair.
+- blame-history #5: trailing spaces now turn the check red — reject (false as a defect): red is the intended result for text the list does not hold.
+- blame-history #6: KI327 sits at the edge of the coverage-gaps subheading — reject (style): KI61 and KI249 are docs items under the same subheading.
+- blame-history #7: `printf | grep -q` could take SIGPIPE under `pipefail` — reject (false in practice): the output is a few hundred bytes in one write, the pattern the other plant helpers use.
+- prior-review #1: only a span of each line is held, the left edge open — same AC1 failure as diff-bug #1; pending.
+- prior-review #2: the two new plants do not assert the `FAIL:` header (M45) — fix with the AC1 repair.
+- prior-review #3: the record does not show the new plants passing on the pre-fix check (M01, M41) — fix with the AC1 repair: record each plant against the check before and after.
+- prior-review #4: a directory is refused as "does not exist" (M38) — fix with the AC1 repair: "is not a file", as M076 words it.
+- prior-review #5: KI60's M21-AC5 claim has no plant — reject (false): the T3 probe is that revert, recorded with run 3's FAIL line.
+- prior-review #6: the comment cites D-021's fold premise, which DESIGN.md retires ("No back-end folds any more", corrected M55) — fix with the AC1 repair: back to "declares two or more", which first-pass diff-bug #5 had changed.
+- ripple #1, #3: `site/examples.qmd` and README contradict KI327 — reject (already recorded): KI327 is that follow-up.
+- ripple #2: `site/build_gallery.py:222-223` says the rest of the corpus is described on Examples — follow-up: added to KI327 with the AC1 repair.
+- ripple #4: the candidate row's KI60 ask is now half met — reject (planned change): hygiene graduates the row, and narrowed KI60 stands on its own.
+- ripple #5: "keeps them apart" clashes with "a back-end that keeps one index" elsewhere — fix with the AC1 repair, as prior-review #6.
+- ripple #6: "`%s` matches any text", where `.+?` needs one character — fix with the AC1 repair.

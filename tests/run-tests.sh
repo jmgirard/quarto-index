@@ -2819,6 +2819,7 @@ if [ "${1:-}" = "--self-test" ]; then
     ( cd "$M122W/$slug" && quarto render xref-conflict-named.qmd --to pdf ) \
       > "$WORK/m122-$slug.log" 2>&1 \
       || { tail -20 "$WORK/m122-$slug.log" >&2; fail "$label: the copy failed to render"; }
+    capture "$M122W/$slug/xref-conflict-named.qmd" pdf "m122-$slug"
   }
   m122_copy() {   # <slug>
     mkdir -p "$M122W/$1"

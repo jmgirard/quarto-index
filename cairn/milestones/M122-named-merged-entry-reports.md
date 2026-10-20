@@ -93,6 +93,7 @@ acceptance-suite backlog".
 - 2026-10-20: correction of the line above: it is false. Run 2 exited 1, cut off when run 3 cleared `tests/.work` while run 2 was still going, and run 1 most likely stopped the same way when run 2 started. The 3757-check pass was never observed. No full run has finished yet. T1 and T2 stay ticked pending a green run, which run 1's output supports so far: M122-AC1 green, both plants red on their expected lines, the control green.
 - 2026-10-20: T3 probe: with `role = mark.role` removed from `build_record`, the suite's first and only FAIL was M21-AC5, which read `"Ranged Term"`'s `sub/two.html` locator without `qi-principal` and `strong`, so a chapter record's `role` is exercised. Line restored; KI60 struck citing M21-AC5. A chat-written notice had named a different M21-AC5 message; the run log shows the one above.
 - 2026-10-20: T4 (checkpoint): KI320 struck; the full `--self-test` run follows, alone.
+- 2026-10-20: run 4 (alone) exited 1 on M24 and M24-AC3: the plant helper's render had no `capture` call. M122-AC1, the control and both plants printed ok in it. Added the capture; run 5 follows.
 
 ## Decisions
 

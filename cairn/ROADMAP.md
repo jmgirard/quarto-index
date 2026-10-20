@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (M115 done: "Typst caption marks and a list of figures" graduated; M112 row pruned; two LESSONS lines pruned at the cap for M115's; validate green.)_
+_Last hygiene check: 2026-10-19 (lessons triage: merged 2026-08-17 (M05) into (M29), 2026-08-18 (M10) into (M11), 2026-08-24 (M33) xelatex into (M33; corrected M34), 2026-09-06 (M080) into (M38); compressed near the cap (M08), (M13), (M21), (M30), (M31) shell escape, (M36) fatal error, both (M37), (M39), (M41), (M42), both (M43), (M073), (M082); no drops; no decision entry; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._

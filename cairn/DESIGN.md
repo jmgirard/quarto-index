@@ -1244,9 +1244,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   false about today's behavior. — M46
 - **KI123.** README and `site/index.qmd` promise a description on every class
   where `check_schema` requires one only under `attributes:`. — M50 review
-- **KI126.** `minted_carried` is an existence test, so a page whose only
-  locator points at an anchor it does not carry dumps at exit 0 and a partial
-  rename passes. — M48 review
 - **KI160.** The published URL is derived from the remote by convention, so a
   custom domain would leave README and the site's entry page naming a URL the
   deploy job does not publish to with the suite green. — M42 review
@@ -1262,21 +1259,6 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   back, so a claim rewritten rather than added carries no row and a reword back
   to the old wording is green. The sentence M073 review F1 failed on
   (`site/books.qmd:171`) is such a claim. — M074 review N4
-- **KI267.** `tests/epubcheck.py links` cannot be run over `id-collision.epub`
-  at all. It finds index sections by the minted id prefix, and that fixture
-  plants an element claiming the prefixed name with no heading inside it, on
-  which `epubindex.index_sections` raises rather than reporting; `unique` finds
-  its sections by heading and reads the publication fine. So the one fixture
-  built to carry contested ids is out of reach of the one check that resolves
-  every link inside an index section. — M085 implement
-- **KI274.** The M079-AC1 leg in `tests/run-tests.sh` groups the minted
-  anchors on the spans printing each contested cross-reference term written
-  outside a heading and requires exactly one per group, a clause no rendered
-  case reaches: on the fixture each of those groups holds one anchor
-  (`rho`, `sigma`, `phi` — observed 2026-09-10), so reverting the grouping
-  to first-wins or weakening exactly-one to at-least-one leaves the leg green,
-  and no plant holds it. M090 removed the M084 self-test that exercised a copy
-  of the read rather than the leg's own. — M084 review F1, M090 plan gate
 - **KI302.** On the floor leg of the version matrix, the book render in the
   render job can finish at exit 0 without the index. On dispatched run
   34899204830 (attempt 1, 2026-09-14) it wrote `_book/index.html` and no index

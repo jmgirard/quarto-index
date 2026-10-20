@@ -1291,6 +1291,11 @@ pointing at it (D-013). A candidate row states the work; the finding lives here.
   either wording ships with the suite green. M116's review probe rendered both
   correctly. The older index-naming forms of that report are unpinned too.
   — M116 review diff-bug #4
+- **KI326.** M02-AC3's derived cross-reference rows are counted on each printed
+  line's text alone. So a cross-reference printed at the wrong level of the PDF
+  index passes, and so does a cross-reference line that the source does not
+  derive. M098-AC8 compares the Typst index of the same fixture in both
+  directions and with levels. — M120 review diff-bug #6
 
 ### The repo and its packaging
 

@@ -56,6 +56,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'site'))
@@ -452,14 +453,19 @@ def check_pdf(gallery, registry, captured):
             continue
         # Read line by line from the `Index` heading (M120): each entry must
         # print on as many lines, compared on the line's term, as the manifest
-        # states it. A manifest can state one term more than once, under two
-        # parents, so the count to match is the manifest's, never one.
+        # states it. A manifest can state one term more than once, at two
+        # places in the index, so the count to match is the manifest's, never
+        # one. Both sides are compared in NFC (the M30 lesson): a text layer
+        # can hand back a precomposed character decomposed, or the other way.
         try:
             lines = pdfindex.read(target)
         except LookupError as error:
             wrong.append('%s: %s' % (name, error))
             continue
-        stated = collections.Counter(want)
+        for line in lines:
+            line.text = unicodedata.normalize('NFC', line.text)
+        stated = collections.Counter(unicodedata.normalize('NFC', entry)
+                                     for entry in want)
         printed = pdfindex.line_counts(lines, list(stated), field='term')
         off = ['%r stated %d time(s), printed on %d line(s)'
                % (entry, stated[entry], printed[entry])

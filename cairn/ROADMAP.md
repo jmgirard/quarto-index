@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-19 (triage: dropped rows "EPUB check dead code", "Missing-log counts", "Give the suite's banner headings a form the run can use", "M32 marker-less plants read the capture", "Narrow M32's HTML-cost check", "Site and gallery check repairs", "Tidy the M105 cell-guard self-test" and the suite-construction Known issues D-068 lists, all rejected on principle; compressed KI216, KI263, KI226; decision entry D-068 written; validate green.)_
+_Last hygiene check: 2026-10-20 (M116 review: archived M116, pruned the M113 row; added parked row "Semicolon in a cross-reference target", KI319, KI320 and one LESSONS line; caps and budgets within limits; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M116 | One see-word for each kind of cross-reference | review | — | normal | milestones/M116-joined-see-targets.md |
+| M116 | One see-word for each kind of cross-reference | done | — | normal | milestones/archive/M116-joined-see-targets.md |
 | M115 | Typst caption marks and a list of figures | done | — | high | milestones/archive/M115-typst-caption-lists.md |
 | M114 | A principal mention in a LaTeX heading or caption builds | done | — | high | milestones/archive/M114-principal-in-headings.md |
-| M113 | PDF index checks count whole printed lines | done | — | normal | milestones/archive/M113-pdf-checks-count-lines.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 

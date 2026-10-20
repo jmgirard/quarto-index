@@ -15,6 +15,7 @@
 #   Block    page 2, a see to Sheave, which the description alone marks
 #   Oar      a see mark in the description: it has no label and still prints
 #   Paddle   page 1
+#   Rig      a range opened in the description, closed on page 2: no locator
 # Thole, the description's mark in the second index, is not in this one.
 group	B
 entry	0	Bitt	2@2
@@ -37,3 +38,5 @@ group	O
 entry	0	Oar		see|Paddle
 group	P
 entry	0	Paddle	1@1
+group	R
+entry	0	Rig

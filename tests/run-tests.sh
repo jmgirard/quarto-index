@@ -31229,7 +31229,8 @@ unprinted entry	and it has no cross-reference and no sub-entry that prints, the 
 unprinted group	A letter group none of whose entries prints has no heading.
 unprinted see mark	A `see=` or `see-also=` mark in such a field still prints its cross-reference.
 unprinted target	A cross-reference whose target is left out still prints, and nothing reports it.
-unprinted heading	An index whose every entry is left out still prints its heading.
+unprinted kept	Such an entry that is kept for a sub-entry that prints shows no page number of its own, and so does an entry whose range opens in such a field and closes on a page.
+unprinted heading	An index whose every entry is left out still prints its heading, where an index that no mark files in prints nothing.
 M098PAGE
 python3 tests/sitecheck.py claims site/typst.qmd "$WORK/m098-typst-claims.txt" \
   || fail "M098-AC7: site/typst.qmd no longer states what a Typst render prints (its own FAIL line is above)"
@@ -31286,9 +31287,10 @@ python3 tests/sitecheck.py claims site/books.qmd "$WORK/m098-other-claims.txt" \
 # two test books exit differently. Its retired clause is held off every page.
 cat > "$WORK/m110-retired.txt" <<'M110RETIRED'
 floor exit	exits without an error
+unprinted term kept	Its term is still in the index
 M110RETIRED
 python3 tests/sitecheck.py phrase-absent "$WORK/m110-retired.txt" \
-  || fail "M110-AC3: a page a reader meets still carries the phrase <<exits without an error>> (its own FAIL line is above)"
+  || fail "M110-AC3 and M117: a page a reader meets still carries a retired phrase, <<exits without an error>> or <<Its term is still in the index>> (its own FAIL line is above)"
 cat > "$WORK/m098-tests-claims.txt" <<'M098TESTS'
 matrix typst	`typst-index.qmd` must print both of its indexes as the acceptance suite's manifests state them
 M098TESTS
@@ -31311,6 +31313,9 @@ ordering	Entries are ordered and grouped by letter as in HTML, and nest as deep 
 locators	A principal mention's page number is set in bold, a range prints its first and last pages, and each page number links to its page.
 words	The see and see-also words follow `lang:` and `index-labels:`.
 books	Books were tested on Quarto 1.10.18, where Quarto's Typst book template needs an `author:`.
+unprinted field	`description:`, adds no page number.
+unprinted entry	and it has no cross-reference and no sub-entry that prints, the Typst index leaves it out.
+unprinted group	It also leaves out a letter group with no entry left.
 M098CHANGE
 python3 tests/sitecheck.py claims CHANGELOG.md "$WORK/m098-changelog-claims.txt" \
   || fail "M098-AC7: CHANGELOG.md no longer states the Typst back-end (its own FAIL line is above)"
@@ -31506,10 +31511,13 @@ if [ "${1:-}" = "--self-test" ]; then
   m117_plant allgroups 's{if live == nil then}{if true then}' "got 'group\tH'"
   # Only an entry's direct sub-entries are read, so Fender, whose only
   # printing sub-entry is two levels down, is left out with its group.
-  m117_plant onedepth 's{for _, child in pairs\(entry\.children\) do}{for _, child in pairs({}) do}' "-> 8: got 'entry\t1\tRope"
+  m117_plant onedepth 's{for _, key in ipairs\(entry\.sorted\) do}{for _, key in ipairs({}) do}' "-> 8: got 'entry\t1\tRope"
   # A sub-entry's cross-reference does not keep its parent, so Gaff is left
   # out with its group.
   m117_plant noxref 's{if #entry\.xrefs > 0 then}{if false then}' "-> 12: got 'entry\t1\tJaw"
+  # Only opening labels are read, so Rig, whose range opens in the
+  # description and closes on page 2, is left out.
+  m117_plant noclose 's{ \+ items\.map\(item => item\.at\(1\)\)\.filter\(l => l != none\)}{}' "-> 22: want 'entry\t0\tRig"
 fi
 
 # A mark in image alt text (M098 review). Pandoc's Typst writer prints alt text

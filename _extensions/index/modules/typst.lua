@@ -42,10 +42,12 @@ local M = {}
 -- a label no element carries adds no locator rather than failing the render
 -- (IP2). A mark in a front-matter field the template does not print has such
 -- a label. `below` is `true` where a sub-entry at any depth
--- has a cross-reference, and otherwise the opening labels of every sub-entry
--- at any depth. An entry none of whose labels names an element, with no
--- cross-reference, and none of whose `below` labels names one prints nothing
--- (M117). `qi-index-live` says whether any label of a list names an element.
+-- has a cross-reference, and otherwise the opening and closing labels of
+-- every sub-entry at any depth. An entry none of whose opening or closing
+-- labels names an element, with no cross-reference, and none of whose `below`
+-- labels names one prints nothing (M117). A range whose closing label alone
+-- names one adds no locator and keeps its entry. `qi-index-live` says whether
+-- any label of a list names an element.
 -- The locators are ordered by the class and value of their opening
 -- page, then by opening and closing physical page, a single mark before a
 -- range, one stable sort per field, least significant first (M100). A range whose two ends print the same text
@@ -111,7 +113,7 @@ local TYPST_HELPERS = [[
       found.push((start: start, stop: stop, shown: shown, bold: item.at(2), class: class, value: value, high: high, single: single, spans: not single and high-class == class and high > value))
     }
   }
-  let labelled = found.len() > 0
+  let labelled = qi-index-live(items.map(item => item.at(0)) + items.map(item => item.at(1)).filter(l => l != none))
   found = found.sorted(key: f => if f.single { 0 } else { 1 })
   found = found.sorted(key: f => f.stop.page())
   found = found.sorted(key: f => f.start.page())
@@ -187,20 +189,28 @@ end
 
 -- What `qi-index-entry` reads as `below` for the sub-entries of `node`, at any
 -- depth: `true` where one has a cross-reference, which prints whatever page
--- its marks are on, and otherwise a Typst array of their opening labels.
--- `self` adds `node`'s own, for a letter group, whose heading prints where
--- any of its entries does.
+-- its marks are on, and otherwise a Typst array of their opening and closing
+-- labels. `self` adds `node`'s own, for a letter group, whose heading prints
+-- where any of its entries does. Sub-entries are read in their printed order,
+-- `sorted`, which `number_entries` has set, so the Typst written is the same
+-- on every render.
 local function labels_below(node, self)
   local labels = {}
+  local function add(entry)
+    for _, locator in ipairs(entry.locators) do
+      labels[#labels + 1] = "<" .. locator.label .. ">,"
+      if locator.close ~= nil then
+        labels[#labels + 1] = "<" .. locator.close .. ">,"
+      end
+    end
+  end
   local function walk(entry)
     if #entry.xrefs > 0 then
       return true
     end
-    for _, locator in ipairs(entry.locators) do
-      labels[#labels + 1] = "<" .. locator.label .. ">,"
-    end
-    for _, child in pairs(entry.children) do
-      if walk(child) then
+    add(entry)
+    for _, key in ipairs(entry.sorted) do
+      if walk(entry.children[key]) then
         return true
       end
     end
@@ -210,12 +220,10 @@ local function labels_below(node, self)
     if #node.xrefs > 0 then
       return "true"
     end
-    for _, locator in ipairs(node.locators) do
-      labels[#labels + 1] = "<" .. locator.label .. ">,"
-    end
+    add(node)
   end
-  for _, child in pairs(node.children) do
-    if walk(child) then
+  for _, key in ipairs(node.sorted) do
+    if walk(node.children[key]) then
       return "true"
     end
   end

@@ -175,3 +175,7 @@ acceptance-suite backlog".
 - ripple #4: the candidate row's KI60 ask is now half met — reject (planned change): hygiene graduates the row, and narrowed KI60 stands on its own.
 - ripple #5: "keeps them apart" clashes with "a back-end that keeps one index" elsewhere — fix with the AC1 repair, as prior-review #6.
 - ripple #6: "`%s` matches any text", where `.+?` needs one character — fix with the AC1 repair.
+- Pass 2 fixes: all items marked "fix with the AC1 repair" landed in 56b52d0 (T6), with the KI327 addition; the escalation and pause options at the stop were declined.
+- Pass 3: main had not moved. Evidence is run 8, a `--self-test` run on 56b52d0; later commits touch only the milestone file and ROADMAP. `cairn_validate.py` exit 0.
+- AC1 evidence (pass 3): run 8 rendered the fixture to PDF and printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check picks out every line holding any of the eight literals, splits the log on `\n` alone, and holds each picked line whole, `(W) ` prefix included, to the four hand-stated lines. Run 8's render log holds 4 lines starting `(W) index entry` and none naming Willow. Plants red in run 8: `document` form (line 1), Oak's report removed (line 4), text after, before, and after a `\r` (each on its line), and a missing, directory and empty log by name.
+- AC2 evidence (pass 3): run 8, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, alone, wrote exit code 0 and ended "All checks passed (1889 checks)" with no FAIL line.

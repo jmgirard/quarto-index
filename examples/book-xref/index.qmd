@@ -1,4 +1,4 @@
 # First chapter
 
-A term that points elsewhere, the first of its two targets: [Hazel]{.index
-see="Yew"}. The target is marked here too: [Yew]{.index}.
+A term that points elsewhere, the first of its two targets:
+[Hazel]{.index see="Yew"}. The target is marked here too: [Yew]{.index}.

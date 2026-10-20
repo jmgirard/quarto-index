@@ -14833,6 +14833,10 @@ pass "M14-AC5: in a book whose marker sits first, a target another chapter index
 #                  mark indexes, and `see-also="apple"`, naming a term the file
 #                  marks four times. Both in the first of its two indexes, where
 #                  both terms are marked. 0.
+#   xref-joined, xref-joined-separator   ten targets, each naming a term the
+#                  file's last section marks. 0.
+#   book-xref/index, book-xref/two   one target each, `Yew` and `Alder`, each
+#                  marked in the same chapter. 0.
 # ---------------------------------------------------------------------------
 section 'The corpus reconciliation the report forces. Every example that writes a'
 read -r -d '' DANGLING_CORPUS <<'MANIFEST' || true
@@ -14842,6 +14846,8 @@ examples/book-order/index.qmd	0
 examples/book-order/later chapter.qmd	1
 examples/book-scopes/index.qmd	0
 examples/book-scopes/last.qmd	1
+examples/book-xref/index.qmd	0
+examples/book-xref/two.qmd	0
 examples/book/sub/two.qmd	1
 examples/content.qmd	0
 examples/dangling-xref.qmd	7
@@ -14884,6 +14890,8 @@ examples/state-reuse.qmd	1
 examples/typst-index.qmd	0
 examples/xref-conflict.qmd	1
 examples/xref-escaping.qmd	0
+examples/xref-joined-separator.qmd	0
+examples/xref-joined.qmd	0
 MANIFEST
 
 printf '%s\n' "$DANGLING_CORPUS" > "$WORK/dangling-corpus.txt"
@@ -14925,14 +14933,16 @@ done <<< "$DANGLING_CORPUS"
 
 # The book chapters' rows are per chapter, but the report is drawn once for
 # the whole book, so what they must add up to is what each book render emits.
-# Four books carry targets. Three report one each and examples/book-lang,
-# whose every target resolves, reports none, which is what the sum states.
+# Five books carry targets. Three report one each, and examples/book-lang and
+# examples/book-xref, whose every target resolves, report none, which is what
+# the sum states. The M116 section renders examples/book-xref and holds its
+# log to no warning at all.
 # The SHAPE differs between them, and that is the point of reading both:
 # examples/book declares three indexes, so its target is judged inside one of
 # them and the report names it; examples/book-order declares none, has one
 # namespace, and keeps the wording it has always drawn (D-021).
 [ "$BOOK_EXPECTED_TOTAL" = "3" ] \
-  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but three of the four book fixtures report one each and examples/book-lang reports none"
+  || fail "M14: the book chapters' expected counts total $BOOK_EXPECTED_TOTAL, but three of the five book fixtures report one each and examples/book-lang and examples/book-xref report none"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING_INDEX" 1 "M14/M55-AC4 (corpus, examples/book)"
 check_warning_count "$WORK/book-html.log" "$WARN_DANGLING" 0 "M14/M55-AC4 (corpus, examples/book, not the one-namespace shape)"
 check_warning_count "$WORK/book-order-2.log" "$WARN_DANGLING" 1 "M14 (corpus, examples/book-order)"
@@ -33031,10 +33041,11 @@ fi
 # M116 — a term with two or more cross-reference targets of one kind prints
 # that kind's word once, in front of all of them, in every back-end.
 #
-# examples/xref-joined.qmd and its twin share examples/_xref-joined-body.qmd,
-# and the twin adds only an `index-labels:` block setting `xref-separator`.
-# Every row below is derived BY HAND from that body, under the ORACLE RULE at
-# the head of this file, and never copied from a render.
+# examples/xref-joined-separator.qmd is examples/xref-joined.qmd with one
+# `index-labels:` block setting `xref-separator` added, which
+# `derive_labels_twin` holds below. Every row is derived BY HAND from that
+# body, under the ORACLE RULE at the head of this file, and never copied from
+# a render.
 #
 # Pages, from the body's four explicit breaks: the title, the opening and
 # Quince are on page 1, Rowan on page 2, Sorrel on page 3, Tansy on page 4,
@@ -33061,7 +33072,7 @@ fi
 #   Typst    as HTML, with a fixed `; `.
 # ---------------------------------------------------------------------------
 section 'M116-AC1..AC5 — a term with two targets of one kind prints the word once.'
-M116_BODY=examples/_xref-joined-body.qmd
+M116_BODY=examples/xref-joined.qmd
 M116_BREAKS=$( { grep -cxF '{{< pagebreak >}}' "$M116_BODY" || true; } | tr -d ' ')
 [ "$M116_BREAKS" = "4" ] \
   || fail "M116-AC1: $M116_BODY carries $M116_BREAKS page breaks, not the four its rows number pages by"
@@ -33073,10 +33084,6 @@ for needle in '[Quince]{.index see="Zinnia"} and' '[Quince]{.index see="Aster"}.
     '[Tansy]{.index see="Wort"} and [Tansy]{.index see="Clover"}.'; do
   grep -qF -- "$needle" "$M116_BODY" \
     || fail "M116-AC1: $M116_BODY no longer carries <<$needle>>, so the case the rows below state is no longer rendered"
-done
-for f in examples/xref-joined.qmd examples/xref-joined-separator.qmd; do
-  grep -qxF '{{< include _xref-joined-body.qmd >}}' "$f" \
-    || fail "M116-AC1: $f does not include $M116_BODY, so the rows below do not describe it"
 done
 derive_labels_twin examples/xref-joined-separator.qmd examples/xref-joined.qmd \
   1 "M116-AC3 (derivation)" "xref-separator" \
@@ -33264,6 +33271,8 @@ rm -rf "$BOOK_XREF_DIR/_book" "$BOOK_XREF_DIR/.quarto"
 ( cd "$BOOK_XREF_DIR" && quarto render --to html ) > "$WORK/book-xref.log" 2>&1 \
   || { tail -30 "$WORK/book-xref.log" >&2; fail "M116-AC4: examples/book-xref failed to render to HTML"; }
 capture --project "$BOOK_XREF_DIR" html "book-xref"
+check_extension_warning_count "$WORK/book-xref.log" 0 \
+  "M116-AC4 (examples/book-xref: every target resolves and nothing is contested)"
 read -r -d '' M116_BOOK <<'MANIFEST' || true
 letter	A
 0	Alder	#qi-mark-1

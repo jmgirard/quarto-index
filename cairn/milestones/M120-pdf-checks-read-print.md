@@ -1,6 +1,6 @@
 # M120: Four PDF index checks read what the index prints
 
-- **Status:** in-progress
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
@@ -100,7 +100,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
       Add a self-test case beside the gallery self-tests
       (`tests/run-tests.sh:21330`) that plants a manifest entry printed
       twice.
-- [ ] T5: Update the comments that call these checks presence tests, strike
+- [x] T5: Update the comments that call these checks presence tests, strike
       KI164 and KI316 in `cairn/DESIGN.md`, and run
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
 
@@ -123,6 +123,9 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: T2 done: `sortesc_pdf_check` counts the 94 scanned marks on the line's term in `sortesc-pdf/sort-escaping.pdf`; self-test plants a mark printed twice and a renamed mark the PDF does not print. Checked alone against the last run's capture. Per-task checks run each new block alone because editing `tests/run-tests.sh` mid-run corrupts the run (M073); one full `--self-test` run at T5 is the verify.
 - 2026-10-20: T3 done: `marker_pdf_check` reads `marker.pdf` unbounded and keeps lines on earlier pages or above the `After the marker` line on its page (here page 2, y 96-120 kept, heading at y 157); the dropped `pdftotext -layout` file had no other reader. Self-test plants a term printed twice, a term not printed, and an ending heading the PDF lacks. Checked alone against the last run's capture.
 - 2026-10-20: T4 done: `check_pdf` reads each linked PDF through `pdfindex.read` and compares per-entry line counts on the term with the manifest's own counts; `extracted_text` removed. The M41 wrong-PDF plant's want string moved to the new message; two new plants change a registry copy (sortkey manifest stating `von Neumann` once, demo manifest stating `pandoc` twice). Checked alone: 5 fixtures, 65 entries, all four PDF plants red with their own message.
+- 2026-10-20: T5 done: KI164 and KI316 struck; no other comment in `tests/` called these four checks presence tests (grep for `presence`, `KI164`, `KI316`, `compile-and-accept`). `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green, 1868 checks, 2026-10-20 12:58-13:12, every M120 check and plant line present.
+- 2026-10-20: claim audit: not owed — internal tier.
+- 2026-10-20: status review; handing off to /milestone-review.
 
 ## Decisions
 

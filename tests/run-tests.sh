@@ -21710,10 +21710,41 @@ NOFRAMEPY
   cmp -s "$M41_WRONGPDF/gallery/rendered/demo.pdf" \
          "$SITE_OUT/gallery/rendered/demo.pdf" \
     && fail "M41 self-test: substituting one PDF for another changed nothing, so the plant below would be about the right PDF"
-  m41_planted 'a PDF whose extraction drops the entries its fixture manifest states' \
-    'does not contain these manifest entries' \
+  m41_planted 'a PDF whose index drops the entries its fixture manifest states' \
+    "'pandoc' stated 1 time(s), printed on 0 line(s)" \
     python3 tests/gallerycheck.py pdf "$GALLERY_YML" \
       "$GALLERY_MANIFEST_INDEX" "$M41_WRONGPDF"
+
+  # M120 T4: the count, both ways, against the real print. The sortkey PDF
+  # prints `von Neumann` on two lines, under two parents, and its manifest
+  # states it twice; a manifest stating it once is a term printed twice. The
+  # demo PDF prints `pandoc` once; a manifest stating it twice is a term
+  # printed once too few. Each plant is a registry copy pointing one fixture
+  # at a changed manifest, so the PDFs and the site stay as captured.
+  M120G="$WORK/m120-gallery"
+  rm -rf "$M120G"; mkdir -p "$M120G"
+  m120_registry() {   # <fixture> <changed manifest> <registry to write>
+    awk -F'\t' -v OFS='\t' -v f="$1" -v p="$2" \
+      '$1 == f && $2 == "pdf" { $5 = p } { print }' "$GALLERY_MANIFEST_INDEX" > "$3"
+    grep -qF "$2" "$3" || fail "M120 T4 self-test: the registry copy does not point $1 at $2"
+  }
+  m120_sortkey=$(awk -F'\t' '$1 == "sortkey" && $2 == "pdf" { print $5 }' "$GALLERY_MANIFEST_INDEX")
+  [ "$(grep -c "	von Neumann$" "$m120_sortkey")" = 2 ] \
+    || fail "M120 T4 self-test: the sortkey PDF manifest does not state von Neumann twice, so removing one says nothing"
+  awk -F'\t' '$2 == "von Neumann" && !done { done = 1; next } { print }' \
+    "$m120_sortkey" > "$M120G/sortkey-once.txt"
+  m120_registry sortkey "$M120G/sortkey-once.txt" "$M120G/once.tsv"
+  m41_planted 'a manifest stating once a term its PDF prints twice' \
+    "'von Neumann' stated 1 time(s), printed on 2 line(s)" \
+    python3 tests/gallerycheck.py pdf "$GALLERY_YML" "$M120G/once.tsv" "$SITE_OUT"
+  m120_demo=$(awk -F'\t' '$1 == "demo" && $2 == "pdf" { print $5 }' "$GALLERY_MANIFEST_INDEX")
+  grep -qx 'pandoc' "$m120_demo" \
+    || fail "M120 T4 self-test: the demo PDF manifest has no pandoc row to state twice"
+  { cat "$m120_demo"; printf 'pandoc\n'; } > "$M120G/demo-twice.txt"
+  m120_registry demo "$M120G/demo-twice.txt" "$M120G/twice.tsv"
+  m41_planted 'a manifest stating twice a term its PDF prints once' \
+    "'pandoc' stated 2 time(s), printed on 1 line(s)" \
+    python3 tests/gallerycheck.py pdf "$GALLERY_YML" "$M120G/twice.tsv" "$SITE_OUT"
 
   # --- the fixture directory being written into ----------------------------
   # The comparison AC5 makes, over a copy of the real fixture directory: a

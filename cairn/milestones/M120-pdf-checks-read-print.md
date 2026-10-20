@@ -94,7 +94,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
       (`tests/run-tests.sh:6881`) with the bounded `pdfindex` read of AC3.
       Add `--self-test` plants for a term printed twice, a term missing, and
       a read with no `After the marker` line.
-- [ ] T4: Change `check_pdf` in `tests/gallerycheck.py` to read through
+- [x] T4: Change `check_pdf` in `tests/gallerycheck.py` to read through
       `pdfindex.read` and compare counts. Update the module docstring's `pdf`
       paragraph and the M41-AC4 pass line to say what the check now reads.
       Add a self-test case beside the gallery self-tests
@@ -122,6 +122,7 @@ paths no fixture reaches" and "Older acceptance-suite backlog".
 - 2026-10-20: T1 done: `xref_derived_rows` writes 255 rows from `typstcheck.derived_entries`, refusing a row with an unmodelled ligature input (shown red on a planted `a--b`); `xref_typeset_check` now compares in NFC; self-test plants six cases. Checked alone against the last run's capture; the full suite runs at T5. No M112/M113 want string moved: the hand manifest call is unchanged.
 - 2026-10-20: T2 done: `sortesc_pdf_check` counts the 94 scanned marks on the line's term in `sortesc-pdf/sort-escaping.pdf`; self-test plants a mark printed twice and a renamed mark the PDF does not print. Checked alone against the last run's capture. Per-task checks run each new block alone because editing `tests/run-tests.sh` mid-run corrupts the run (M073); one full `--self-test` run at T5 is the verify.
 - 2026-10-20: T3 done: `marker_pdf_check` reads `marker.pdf` unbounded and keeps lines on earlier pages or above the `After the marker` line on its page (here page 2, y 96-120 kept, heading at y 157); the dropped `pdftotext -layout` file had no other reader. Self-test plants a term printed twice, a term not printed, and an ending heading the PDF lacks. Checked alone against the last run's capture.
+- 2026-10-20: T4 done: `check_pdf` reads each linked PDF through `pdfindex.read` and compares per-entry line counts on the term with the manifest's own counts; `extracted_text` removed. The M41 wrong-PDF plant's want string moved to the new message; two new plants change a registry copy (sortkey manifest stating `von Neumann` once, demo manifest stating `pandoc` twice). Checked alone: 5 fixtures, 65 entries, all four PDF plants red with their own message.
 
 ## Decisions
 

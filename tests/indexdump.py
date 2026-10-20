@@ -65,7 +65,9 @@ import pdfindex  # noqa: E402
 # carries. Each of the three is held against the rendered page — `SECTION_ID`
 # by the no-section clause in `html_rows`, the other two by `minted_carried`
 # below — so a rename is a loud failure naming the identifier that was not
-# found, and never a dump two legs agree about.
+# found, and never a dump two legs agree about. `minted_links_land` then holds
+# each same-page index link naming one of the two prefixes to exactly one
+# element carrying its id (M121).
 #
 # Two bounds on that, neither of them the row form's: `ANCHOR_PREFIX` and
 # `ENTRY_PREFIX` reach no field this mode prints, so what they are held
@@ -139,6 +141,37 @@ def minted_carried(root, path):
                  f'an identifier this render does not use')
 
 
+def minted_links_land(root, path, minted):
+    """Each link inside a generated index section that names an id of ours on
+    this page, held to exactly one element carrying that id.
+
+    `minted_carried` above asks only whether some id with each prefix is on the
+    page, so a page whose only locator names an anchor it does not carry, or
+    one where a rename reached some anchors and not others, passed it (M121).
+    The domain is the links this page can settle: an href naming no file, whose
+    fragment begins with one of the two minted prefixes. A link into another
+    file of a book, and one naming an id an author wrote, are not read here.
+    `minted_carried` stays beside this, since a renamed prefix leaves no link
+    in that domain at all.
+    """
+    bad = []
+    for found in htmlindex.index_sections(root, SECTION_ID, minted):
+        section = htmlindex.find_id(root, found['ident'])
+        for node in htmlindex.walk(section):
+            href = node.attrs.get('href') if node.tag == 'a' else None
+            if href is None:
+                continue
+            target, _, fragment = href.strip().partition('#')
+            if target or not fragment.startswith((ANCHOR_PREFIX, ENTRY_PREFIX)):
+                continue
+            count = htmlindex.count_id(root, fragment)
+            if count != 1:
+                bad.append(f'{href} (carried {count} time(s))')
+    if bad:
+        fail(f'{path}: {len(bad)} index link(s) name a minted id the page does '
+             f'not carry exactly once: {", ".join(bad)}')
+
+
 def dump_html(path):
     """Every generated index section on the page, in href row form."""
     minted = (SECTION_ID, ANCHOR_PREFIX, ENTRY_PREFIX)
@@ -153,6 +186,7 @@ def dump_html(path):
     # After the row judgements, so a page carrying no section at all is
     # reported as that rather than as two missing prefixes.
     minted_carried(root, path)
+    minted_links_land(root, path, minted)
     return rows
 
 

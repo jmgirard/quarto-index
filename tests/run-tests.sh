@@ -23907,6 +23907,21 @@ if [ "${1:-}" = "--self-test" ]; then
     "no id on the page begins with '$HTML_ENTRY_PREFIX'" \
     python3 tests/indexdump.py html "$M43W/staleentry.html"
 
+  # M121 T3. The two plants above rename every id with a prefix; these touch one
+  # anchor, so the page still carries ids with both prefixes and the existence
+  # test passes it. One takes `qi-mark-1` off the element the index's link to
+  # it names; the other gives `qi-mark-2`'s element that name instead, so one
+  # name is carried twice and another not at all.
+  m43_plant oneanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-1"|id="gone-mark-1"|'
+  m43_planted 'a render where one index link names a minted anchor the page does not carry' \
+    "#${HTML_ANCHOR_PREFIX}1 (carried 0 time(s))" \
+    python3 tests/indexdump.py html "$M43W/oneanchor.html"
+
+  m43_plant twoanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-2"|id="qi-mark-1"|'
+  m43_planted 'a render where one minted anchor an index link names is carried by two elements' \
+    "#${HTML_ANCHOR_PREFIX}1 (carried 2 time(s))" \
+    python3 tests/indexdump.py html "$M43W/twoanchor.html"
+
   m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
     'no index heading' \
     python3 tests/indexdump.py pdf "$M43_DEMO_PDF" 'Not The Index Heading'

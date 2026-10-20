@@ -45,7 +45,7 @@ backlog", in part.
 
 ## Acceptance criteria
 
-- [ ] AC1: On Quarto 1.10.19, `examples/typst-xref-places.qmd` puts a `see=`
+- [x] AC1: On Quarto 1.10.19, `examples/typst-xref-places.qmd` puts a `see=`
       or `see-also=` mark in each of nine places. One is a heading the table
       of contents lists. Three are captions: a picture with an id, a table
       with an id and a picture with no id. A list of figures and a list of
@@ -55,20 +55,20 @@ backlog", in part.
       Its log carries no Typst `warning:` line and no extension warning. The
       printed index gives each of those nine terms its cross-reference, as
       `tests/typstindex.py` reads it against `tests/typst-xref-places.tsv`.
-- [ ] AC2: In that render, no label of a `metadata` element is on two
+- [x] AC2: In that render, no label of a `metadata` element is on two
       elements, where the elements are those that `quarto typst query` lists
       for the selector `metadata`. The extension writes each mark's label and
       each author's id it moves as such an element.
-- [ ] AC3: In that render, a Markdown link to every author's id on a mark of
+- [x] AC3: In that render, a Markdown link to every author's id on a mark of
       the fixture builds and goes to the page that mark is on. These marks
       include a cross-reference mark and a page-number mark in an image's alt
       text, and a page-number mark in the alt text of an image inside a
       listed float's caption.
-- [ ] AC4: The Unreleased Typst entry in `CHANGELOG.md` says that a link to an
+- [x] AC4: The Unreleased Typst entry in `CHANGELOG.md` says that a link to an
       author's id on a mark in an image's alt text builds in Typst, where
       before it stopped the render. `site/typst.qmd` says that the Typst
       back-end writes such an id just after the image.
-- [ ] AC5: The active profile's `verify` slot passes:
+- [x] AC5: The active profile's `verify` slot passes:
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
@@ -153,6 +153,12 @@ backlog", in part.
 
 ## Review
 
+- evidence run: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` at 915f75c on Quarto 1.10.19, exit 0, "All checks passed (1861 checks)".
+- AC1: in that run, the needle check (each of the nine places present, eleven page breaks), the render with no extension warning and no Typst `warning:` line, and `typstindex.py` matching all 26 lines of `Index` to `tests/typst-xref-places.tsv` (each of the nine terms with its cross-reference to Oak) each printed `ok`.
+- AC2: in that run, `typstlabels.py labels` over `quarto typst query … metadata` printed "20 labels on 20 metadata elements, each on one, 13 of them for the 13 marks"; the plants show it red on a label on two elements (float, figure) and on a lost label (heading).
+- AC3: in that run, `typstlabels.py links` printed "the 13 links on page 12 go to the pages of their marks", the 13 ids being every id the fixture writes on a mark, among them `id-elm` and `id-gum` (alt text), `id-nut` (alt text of an image in alt text) and `id-lark` (alt text of an image in a listed caption); the `altid` and `nestid` plants show the render stopping on ``label `<id-elm>` does not exist`` and ``label `<id-nut>` does not exist`` without the fix.
+- AC4: `CHANGELOG.md:27-28` (Unreleased, Typst entry) says an alt-text mark's id "is written just after the image, so a link to the id builds. Before this change, a link to such an id stopped the render", and `site/typst.qmd:85` says the extension writes the mark's label "and an id you give the mark, just after the image".
+- AC5: the evidence run above exited 0.
 - gate: `cairn_validate.py` all checks passed; profile `generic` names no toolchain checks; no principle text changed, so no `cairn_impact` run.
 - spawned: diff-bug, blame-history, prior-review, ripple.
 - diff-bug #1: an image nested in another image's alt text loses its id, because the `Image` RawInline branch moves only qi-mark labels and not the `id_inline` elements it now writes — fix now (pre-existing on main, inside the alt-text id scope), fixed 424dab7: the branch moves them too, the fixture holds `nut` in a nested alt text on page 6, and the `nestid` plant is red on ``label `<id-nut>` does not exist``.

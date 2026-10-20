@@ -55,14 +55,14 @@ acceptance-suite backlog".
 
 ## Tasks
 
-- [ ] T1: Write `examples/xref-conflict-named.qmd` with an `indexes:` list
+- [x] T1: Write `examples/xref-conflict-named.qmd` with an `indexes:` list
       of two, the four shapes in one index, and the term marked in both.
       Add it to `site/gallery.yml` under `not-shown:` and give it a
       `DANGLING_CORPUS` row with a hand-derived count
       (`tests/run-tests.sh:15163`). Render it to PDF beside M02-AC5
       (`tests/run-tests.sh:2680`) and capture it. No new `warn()` literal is
       added, so `tests/scans/warn-distinct.py`'s `EXPECTED` stays 90.
-- [ ] T2: Hold the render log's lines to the hand-stated list of AC1,
+- [x] T2: Hold the render log's lines to the hand-stated list of AC1,
       matching on all eight literals so that a stray `document` form shows.
       Add `--self-test` plants: `scope_phrase` returning `document`, and one
       shape's report removed.
@@ -89,6 +89,7 @@ acceptance-suite backlog".
 - 2026-10-20: implement started on branch m122-named-merged-entry-reports.
 - 2026-10-20: choices: indexes `plants` and `places`; Willow is the term in both; the check is a Python script in `$WORK` reused by the plants; plants re-render a mutated extension copy to PDF (about 4 s each) beside an unmutated control; an extension-warning count of 4 over the render is added beside the list.
 - 2026-10-20: checkpoint: T1 and T2 written, suite run 1 in flight; scratch render printed the four named lines and none for Willow.
+- 2026-10-20: suite run 1 cut off after M33-AC3c with no FAIL line, about two minutes in: the background command's default timeout, not the suite. Run 2, detached, passed `--self-test` with 3757 checks; both T2 plants red on their expected lines, the control green. T1 and T2 done.
 
 ## Decisions
 

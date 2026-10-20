@@ -4960,6 +4960,22 @@ printf '%s' "$M083_UNPLANTED" \
   || { printf '%s\n' "$M083_UNPLANTED" >&2; fail "M083 T5: the verdict does not say that the section it read is the only one it reads in each document, so it still reads as a sweep of every section a document carries"; }
 pass "M083 T5: the verdict names the one index section per document it read, and no link of this publication was skipped as leaving it"
 
+# M121-AC2. `links` resolves every link inside the publication's generated
+# index section, where `unique` above reads only one section per document and
+# finds it by its heading. `links` finds sections by the minted prefix, and
+# this fixture's author writes five ids with that prefix on elements with no
+# heading inside them, so each is named here as the author's, stated out of the
+# fixture source, the same five M08-AC1 holds. Any other prefixed element with
+# no heading still stops the command, which the self-test below plants.
+M121_AUTHORED=(--authored qi-index --authored qi-index-1 --authored qi-index-2
+               --authored qi-index-3 --authored qi-index-4)
+M121_LINKS=$(python3 tests/epubcheck.py links \
+  "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" "$HTML_SECTION_ID" \
+  "${M121_AUTHORED[@]}" 2>&1) \
+  || { printf '%s\n' "$M121_LINKS" >&2; fail "M121-AC2: a link inside the generated index section of id-collision.epub names nothing in the publication, or the section holds none that stays in it"; }
+printf '%s\n' "$M121_LINKS"
+pass "M121-AC2: every link inside the generated index section of id-collision.epub resolves, the five ids its author wrote with the section prefix read as the author's"
+
 # The repack machinery this milestone's plants and the M085 section further down
 # both drive: a script that copies a publication rewriting one run of text in one
 # of its members. Outside the self-test block because M085's own legs read a
@@ -5178,6 +5194,35 @@ if [ "${1:-}" = "--self-test" ]; then
     'M083 T4 self-test: an index link whose href opens `//`, so it leaves the publication' \
     green '; 1 fragment-carrying link(s) leave the publication' \
     "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"//example.invalid/$M083_LOCATOR\""
+
+  # M121 T2. The `links` reading M121-AC2 runs above, over two copies of the
+  # same publication, each rewritten once by the script above: an index link
+  # whose fragment names no element, and the generated section's heading
+  # turned into a paragraph, so the section is a prefixed element with no
+  # heading that the author did not write. Both must go red with the five
+  # author ids still named.
+  m121_links_plant() {   # <slug> <label> <expected substring> <member> <pattern> <replacement>
+    local slug="$1" label="$2" want="$3"
+    shift 3
+    local dest="$M083W/m121-$slug.epub" out rc
+    python3 "$M083W/plant.py" "$M083_SRC" "$dest" "$@" \
+      || fail "$label: the publication could not be rewritten (the plant's own message is above)"
+    out=$(python3 tests/epubcheck.py links "$dest" "$HTML_SECTION_ID" \
+      "${M121_AUTHORED[@]}" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "$label: links passed a publication carrying the planted defect"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "$label: links failed on the planted copy, but not with <<$want>>"; }
+    pass "$label: links is red on <<$want>>"
+  }
+  m121_links_plant dangling-fragment \
+    'M121 T2 self-test: an index link whose fragment names no element of the publication' \
+    'carries no element with id qi-mark-no-such' \
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"$M083_LOCATOR_DOC#qi-mark-no-such\""
+  m121_links_plant section-unheaded \
+    'M121 T2 self-test: the generated index section with its heading removed' \
+    'carries no heading element' \
+    "$M083_MEMBER" '<h1 class="unnumbered">Index</h1>' '<p>Index</p>'
 fi
 
 # ---------------------------------------------------------------------------
@@ -25588,9 +25633,9 @@ fi
 #
 # The publication is the demo capture the M52 checks above read, not the
 # id-collision one M083's plants use: `links` finds its sections by the minted
-# id prefix, and the id-collision fixture plants an element claiming that name
-# with no heading inside it, on which the section reader raises (DESIGN.md
-# Known issues).
+# id prefix, and the id-collision fixture plants elements claiming that prefix
+# with no heading inside them, which `links` reads only when each of their ids
+# is named with `--authored` (M121-AC2 above).
 # ---------------------------------------------------------------------------
 section 'M085 — the link readers give one answer to whether an href leaves'
 

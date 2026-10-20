@@ -280,3 +280,28 @@ Pass 5, after review return 4 and the second narrowing. Evidence base: HEAD 92e8
 - AC6 (pass 5): `site/typst.qmd` keeps the `List of Figures` call and now scopes the caption rule to content of one image or paragraph, table or code block, with the rest and the author-id limit stated; suite run 9 `ok M115-AC6`, plant `lof` red; `CHANGELOG.md` ends "A mark in the caption of other floats still files the list's page. Examples are a grid of subfigures laid out in cells and a figure from a code cell."
 - Consistency gate (pass 5): `cairn_validate.py` all checks passed; no principle changed; profile gate none.
 - spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug (pass 5): 64 cases the stage still touches (images with every attribute, tables, listings, knitr output, subfloats, one-block layout floats) rendered with the same images and index as main; only caption words moved, by 0.05 to 0.11 pt of kerning once the label left the caption text.
+- diff-bug #1 (pass 5): a listing with `filename=` reaches the stage as a Div and keeps its label, unlike what `site/typst.qmd` says of a code listing, and KI290 omits it — fix now (docs, KI290)
+- diff-bug #2 (pass 5): the docs say a figure or table from a code cell keeps its label, but knitr plots, `include_graphics` and `output: asis` tables move — fix now (name the output-div shape)
+- diff-bug #3 (pass 5): subfigure and subtable caption labels move, which KI290 calls unprobed — fix now (KI290 says they move, with no fixture)
+- diff-bug #4 (pass 5): the layout checks run on the local Quarto only — follow-up: absorbed into the candidate row "Floor-Quarto CI suite job", which runs the whole suite on the floor
+- diff-bug #5 (pass 5): `m115_center_check` compares the two caption x values as exact strings — fix now (a 0.5 pt tolerance)
+- diff-bug #6 (pass 5): caption words shift by up to 0.11 pt — reject, false as a defect: kerning of the caption text once the invisible label leaves it
+- diff-bug #7 (pass 5): a mark in a footnote inside a caption now files the float's page — reject, false as a defect: the note belongs to the caption on the float's page, and Typst prints its text there
+- blame-history #1, #2 (pass 5): unscoped lead sentences in `site/typst.qmd` and `CHANGELOG.md` — fix now
+- blame-history #3 (pass 5): the layout fixture has no list — reject, planned: its checks are layout checks against unmarked twins, and its comment states what the filter does
+- blame-history #4 (pass 5): the `float_labels` comment says "wrapped with a Plain" where the code wraps in a Div — fix now
+- blame-history #5 (pass 5): "Quarto writes only the first block of a figure with no id" is unverified — reject, false: T2's render dropped a second block (work log)
+- blame-history #6 (pass 5): a bare Table or CodeBlock from a code cell is untested — reject, false: diff-bug pass 5 rendered knitr `output: asis` tables and echoed listings identical to main
+- prior-review #1 (pass 5): unscoped leads — same as blame-history #1
+- prior-review #2 (pass 5): `m115_images_check` stays green if both twins change alike — reject, false: the stage returns before any change to a float whose caption holds no mark, so the twin cannot change
+- prior-review #3 (pass 5): the plants' expected messages also match the count branches — fix now (distinct messages for count and mismatch)
+- prior-review #4 (pass 5): two `versions.yml` comment lines over 80 columns — reject, style
+- prior-review #5 (pass 5): verbless fragments in the `float_labels` comment — fix now
+- ripple #1 (pass 5): `site/typst.qmd:18` unscoped — same as blame-history #1
+- ripple #2 (pass 5): the wrapper comment — same as blame-history #4
+- ripple #3 (pass 5): code-cell tables — same as diff-bug #2
+- ripple #4 (pass 5): the candidate row "Laid-out float caption marks" is narrower than KI290's kind — fix now
+- ripple #5 (pass 5): CHANGELOG lead — same as blame-history #2
+- ripple #6 (pass 5): DESIGN.md's "five passes" count — reject, present before this milestone, which only added the Typst stage to it
+- ripple #7 (pass 5): KI318's "at the end of that content" for a wrapped table — fix now

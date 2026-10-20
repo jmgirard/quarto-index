@@ -179,9 +179,11 @@ def cmd_links(argv):
 
     A fixture whose author writes ids with the section prefix names each of
     them with `--authored`, stated out of its source: those elements are the
-    author's, and the section reader skips them where it would otherwise
-    raise on one with no heading inside it. Any other prefixed element with
-    no heading still stops this command (M121).
+    author's, and the section reader skips each of them that has no heading
+    inside it, where it would otherwise raise. Any other prefixed element with
+    no heading still stops this command. A named id that no element of the
+    publication carries fails it, since the list then no longer describes the
+    publication, and the ok line counts the elements skipped (M121).
     """
     usage = 'usage: epubcheck.py links <epub> <prefix> [--authored <id>]...'
     if len(argv) < 2:
@@ -197,6 +199,16 @@ def cmd_links(argv):
         rest = rest[2:]
     authored = tuple(authored)
     book = epubindex.read(path)
+    carried = [ident for _, root in book.documents
+               for ident in htmlindex.all_ids(root)]
+    stale = [ident for ident in authored if ident not in carried]
+    if stale:
+        print(f'FAIL: {path}: no element of the publication carries '
+              f'{", ".join(repr(ident) for ident in stale)}, named with '
+              f'--authored, so that list no longer describes this publication',
+              file=sys.stderr)
+        return 1
+    skipped = sum(carried.count(ident) for ident in set(authored))
     try:
         found = epubindex.links(book, prefix, authored=authored)
     except ValueError as err:
@@ -226,7 +238,8 @@ def cmd_links(argv):
     print(f'ok   {path}: all {len(found) - len(left)} of {len(found)} link(s) '
           f'inside a generated index section resolve — each names one of the '
           f'{files} manifest-listed document(s) and an element it carries; '
-          f'{len(left)} link(s) skipped as leaving the publication')
+          f'{len(left)} link(s) skipped as leaving the publication; '
+          f'{skipped} element(s) carrying an id named with --authored')
     return 0
 
 

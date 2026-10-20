@@ -416,18 +416,21 @@ def index_sections(root, prefix, minted=(), authored=()):
     page and reach neither the table of contents nor a reader's outline.
 
     `authored` names ids the CALLER knows an author wrote with the prefix,
-    stated out of the fixture source: an element carrying one is the author's
-    and not a section, and is skipped rather than raised on. Any other prefixed
-    element with no heading still raises (M121).
+    stated out of the fixture source. An element carrying one of them with no
+    heading inside it is the author's and not a section, so it is skipped
+    rather than raised on. An element carrying one WITH a heading is read as a
+    section like any other, so a generated section that took an author's name
+    is still read, never dropped. Any other prefixed element with no heading
+    still raises (M121).
     """
     out = []
     for node in walk(root):
         ident = node.attrs.get('id', '')
         if ident != prefix and not ident.startswith(prefix + '-'):
             continue
-        if ident in authored:
-            continue
         heads = [n for n in walk(node) if n.tag in ('h1', 'h2', 'h3')]
+        if not heads and ident in authored:
+            continue
         if not heads:
             raise ValueError(
                 f'the generated index section {ident!r} carries no heading '

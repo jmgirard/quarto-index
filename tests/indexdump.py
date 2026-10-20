@@ -130,7 +130,8 @@ def minted_carried(root, path):
     An id and not an href: an href may point at an anchor an author wrote
     (`one.html#gamma-anchor` in the book fixture), so "every locator names one
     of ours" is false on a page this command must dump. What a rename cannot
-    leave behind is the id itself.
+    leave behind is the id itself. Whether each same-page link lands on one
+    element is `minted_links_land`'s question, below (M121).
     """
     ids = htmlindex.all_ids(root)
     for variable, prefix in (('HTML_ANCHOR_PREFIX', ANCHOR_PREFIX),
@@ -146,11 +147,12 @@ def minted_links_land(root, path, minted):
     this page, held to exactly one element carrying that id.
 
     `minted_carried` above asks only whether some id with each prefix is on the
-    page, so a page whose only locator names an anchor it does not carry, or
-    one where a rename reached some anchors and not others, passed it (M121).
-    The domain is the links this page can settle: an href naming no file, whose
-    fragment begins with one of the two minted prefixes. A link into another
-    file of a book, and one naming an id an author wrote, are not read here.
+    page, so a page whose only locator names an anchor it does not carry
+    passed it (M121). The domain is an href whose part before any `#` is empty
+    and whose fragment begins with one of the two minted prefixes, whoever
+    wrote that id. A link naming any file is not read here, this page's own
+    filename included, and neither is a fragment without one of the prefixes,
+    so a page whose links are all into other files of a book reads none.
     `minted_carried` stays beside this, since a renamed prefix leaves no link
     in that domain at all.
     """

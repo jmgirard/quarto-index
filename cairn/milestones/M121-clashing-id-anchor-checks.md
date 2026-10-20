@@ -119,7 +119,35 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 - 2026-10-20: suite run 2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, 1877 checks, 0 FAIL; the M079-AC1 leg, M121-AC2 and the six M121 plants each printed ok. T1 to T4 ticked.
 - 2026-10-20: claim audit: not owed — internal tier.
 - 2026-10-20: implementation complete; status review.
+- 2026-10-20: review started; default branch not moved since the cut, Copilot round off. M121 reverses the choice M090 made and M111 kept, to leave KI274 open; the plan promoted that row, so this is the record of the reversal.
 
 ## Decisions
 
 ## Review
+
+- 2026-10-20: gate: `cairn_validate.py` exit 0, all checks passed; profile `generic` names no toolchain checks; no principle changed, so no `cairn_impact` run.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: KI126's "a partial rename passes" clause is still open, since an id and href renamed together fall outside the prefix domain — reject (false as a defect): every link still resolves on such a page, so no author or reader sees a defect, and D-068 records no gap that cannot hide one.
+- diff-bug #2: the section-unheaded plant's want `carries no heading element` is also printed if `--authored` stops reaching the finder — fix now: the want names `qi-index-5`.
+- diff-bug #3: the M121-AC2 leg reads exit status only — fix now: it pins `; 0 link(s) skipped as leaving the publication; 5 element(s) carrying an id named with --authored`.
+- diff-bug #4: the M121-AC2 failure message omits the headingless-element path — fix now: the message names all four failure paths.
+- diff-bug #5: `minted_links_land` has no floor on its domain, and its docstring overclaims "the links this page can settle" — fix now (docstring): it states the domain exactly; the floor is rejected (planned change), since a book's last page legitimately has no same-page link and `minted_carried` covers a renamed prefix.
+- diff-bug #6: docstring says ids an author wrote are not read, false for `qi-mark-3`/`qi-mark-9` — fix now: rewritten.
+- diff-bug #7: the twoanchor plant changes two ids at once — fix now: it writes an empty span carrying `qi-mark-1` and changes no other id; verified red on `#qi-mark-1 (carried 2 time(s))` alone.
+- diff-bug #8: the five author ids are stated twice, and plants hard-code `qi-mark-1` — fix now for the ids: `ID_COLLISION_CLAIMED` is read by M08-AC1 and M121-AC2; the `qi-mark-1` literal rejected (style), matching the existing staleanchor plant's form.
+- diff-bug #9: the M085 comment reads backwards — fix now: rewritten.
+- diff-bug #10: no unplanted control for `links --authored` on a repack — fix now: a straight repack is run through `links` green before the two plants.
+- diff-bug #11: the `dict(...)` merge's refusal of a term in two groups is gone — fix now: the leg refuses a term in both `REFUSED_LOCATOR` and `CONTESTED_XREF`.
+- diff-bug #12: a string passed as `authored` matches substrings — reject (style): no caller passes one, and the CLI builds a tuple.
+- diff-bug #13: `links` catches every `ValueError` as FAIL — reject (planned change): a reader's refusal is a finding, the form `indexdump.py`'s `dump_html` already takes; exit stays 1.
+- blame-history #1: the `authored` skip runs before the heading check with no check that the element is the author's — fix now: only an element with no heading is skipped, a named id on no element fails `links`, and the ok line counts the skipped elements.
+- blame-history #2: `minted_links_land` is new red on the version matrix, unverified on other Quarto versions — reject (false): `versions.yml` runs on every push, so step 8's push runs it on each leg before the merge, which never goes past red.
+- blame-history #3: `partition('#')` is a second answer beside `htmlindex.leaves_publication` (D-057) — reject (false): it answers a different question, and any href that leaves has a part before `#`, so it is skipped either way.
+- blame-history #4: M111's record of leaving KI274 open is not cited — fix now: work-log line above.
+- blame-history #5: the broad `ValueError` catch — reject (planned change), as diff-bug #13.
+- blame-history #6: the new level-1 heading adds an EPUB member — reject (false as a defect): it is appended, so `ch002.xhtml` and every earlier member are unchanged, and no pin counts members.
+- prior-review #1: the version matrix never ran the new HTML check — reject (false), as blame-history #2.
+- prior-review #2: the `authored` skip is unscoped and silent — fix now, as blame-history #1.
+- prior-review #3: `minted_links_land` has no non-empty clause — reject (planned change), as diff-bug #5.
+- prior-review #4: `minted_carried`'s docstring not updated — fix now: it points at `minted_links_land`.
+- ripple #1: `tests/indexdump.py:66` names only `minted_carried` as holding the prefixes — reject (false): the next sentence of that comment, added by this diff, names `minted_links_land`.

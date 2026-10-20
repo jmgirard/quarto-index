@@ -4035,12 +4035,16 @@ quarto render examples/id-collision.qmd --to html \
   || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
 capture examples/id-collision.qmd html "id-collision-html"
 
+# The five names the fixture's author writes with the section prefix, stated
+# once out of its source and read here and by M121-AC2's EPUB `links` reading.
+export ID_COLLISION_CLAIMED='qi-index qi-index-1 qi-index-2 qi-index-3 qi-index-4'
 python3 - "$CAPTURE_ROOT/id-collision-html/id-collision.html" <<'PY'
+import os
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
-claimed = ['qi-index', 'qi-index-1', 'qi-index-2', 'qi-index-3', 'qi-index-4']
+claimed = os.environ['ID_COLLISION_CLAIMED'].split()
 errs = []
 
 # The universal is over the ids this extension mints and the names the fixture
@@ -4441,6 +4445,14 @@ REFUSED = {term for term, _ in YIELDS}
 KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT,
                 **KEPT_UNRENDERED)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
+# The `dict(...)` merge this replaced refused a term written in two groups;
+# the pairs list would take it silently, so the refusal is kept by hand.
+_twice = set(REFUSED_LOCATOR) & set(CONTESTED_XREF)
+if _twice:
+    print('FAIL: M079-AC1: the hand-derived groups name %s as both a locator '
+          'mark and a cross-reference mark' % ', '.join(sorted(_twice)),
+          file=sys.stderr)
+    sys.exit(2)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
 # is stated as well as swept — a reader that found no id at all would report no
@@ -4964,17 +4976,24 @@ pass "M083 T5: the verdict names the one index section per document it read, and
 # index section, where `unique` above reads only one section per document and
 # finds it by its heading. `links` finds sections by the minted prefix, and
 # this fixture's author writes five ids with that prefix on elements with no
-# heading inside them, so each is named here as the author's, stated out of the
-# fixture source, the same five M08-AC1 holds. Any other prefixed element with
-# no heading still stops the command, which the self-test below plants.
-M121_AUTHORED=(--authored qi-index --authored qi-index-1 --authored qi-index-2
-               --authored qi-index-3 --authored qi-index-4)
+# heading inside them, so each is named here as the author's: the five
+# M08-AC1 holds, read from `ID_COLLISION_CLAIMED`. Any other prefixed element
+# with no heading still stops the command, which the self-test below plants.
+# Read by the counts the command prints and not by exit status alone: no link
+# skipped as leaving, and one skipped element per named id.
+M121_AUTHORED=()
+for M121_ID in $ID_COLLISION_CLAIMED; do
+  M121_AUTHORED+=(--authored "$M121_ID")
+done
 M121_LINKS=$(python3 tests/epubcheck.py links \
   "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" "$HTML_SECTION_ID" \
   "${M121_AUTHORED[@]}" 2>&1) \
-  || { printf '%s\n' "$M121_LINKS" >&2; fail "M121-AC2: a link inside the generated index section of id-collision.epub names nothing in the publication, or the section holds none that stays in it"; }
+  || { printf '%s\n' "$M121_LINKS" >&2; fail "M121-AC2: links failed on id-collision.epub: a link inside its generated index section names nothing in the publication, the section holds none that stays in it, a prefixed element with no heading is not one the author wrote, or a named author id is on no element"; }
+printf '%s' "$M121_LINKS" \
+  | grep -qF -- '; 0 link(s) skipped as leaving the publication; 5 element(s) carrying an id named with --authored' \
+  || { printf '%s\n' "$M121_LINKS" >&2; fail "M121-AC2: links passed id-collision.epub, but not with no link skipped as leaving and one skipped element for each of the five named ids"; }
 printf '%s\n' "$M121_LINKS"
-pass "M121-AC2: every link inside the generated index section of id-collision.epub resolves, the five ids its author wrote with the section prefix read as the author's"
+pass "M121-AC2: every link inside the generated index section of id-collision.epub resolves, none skipped as leaving, and the five ids its author wrote with the section prefix each read as one element of the author's"
 
 # The repack machinery this milestone's plants and the M085 section further down
 # both drive: a script that copies a publication rewriting one run of text in one
@@ -5200,7 +5219,10 @@ if [ "${1:-}" = "--self-test" ]; then
   # whose fragment names no element, and the generated section's heading
   # turned into a paragraph, so the section is a prefixed element with no
   # heading that the author did not write. Both must go red with the five
-  # author ids still named.
+  # author ids still named. The second plant's line names the generated
+  # section's own id, minted past the five claimed names as M08-AC1 holds, so
+  # a run that raised on one of the author's elements instead is not taken
+  # for it.
   m121_links_plant() {   # <slug> <label> <expected substring> <member> <pattern> <replacement>
     local slug="$1" label="$2" want="$3"
     shift 3
@@ -5215,13 +5237,23 @@ if [ "${1:-}" = "--self-test" ]; then
       || { printf '%s\n' "$out" >&2; fail "$label: links failed on the planted copy, but not with <<$want>>"; }
     pass "$label: links is red on <<$want>>"
   }
+  # The control first: a straight repack, rewritten nowhere, read by `links`
+  # with the same ids, green on the same counts as the captured publication.
+  python3 "$M083W/plant.py" "$M083_SRC" "$M083W/m121-clean.epub" \
+    || fail "M121 T2 self-test: the straight repack could not be written (the plant's own message is above)"
+  M121_CLEAN=$(python3 tests/epubcheck.py links "$M083W/m121-clean.epub" \
+    "$HTML_SECTION_ID" "${M121_AUTHORED[@]}" 2>&1) \
+    || { printf '%s\n' "$M121_CLEAN" >&2; fail "M121 T2 self-test: links is red on a straight repack of the captured publication, so a red below would be the repacking and not the plant"; }
+  printf '%s' "$M121_CLEAN" | grep -qF -- '; 5 element(s) carrying an id named with --authored' \
+    || { printf '%s\n' "$M121_CLEAN" >&2; fail "M121 T2 self-test: links passed the straight repack without counting the five author elements it skipped"; }
+  pass "M121 T2 self-test: a straight repack of the captured publication leaves links green with the five author elements skipped"
   m121_links_plant dangling-fragment \
     'M121 T2 self-test: an index link whose fragment names no element of the publication' \
     'carries no element with id qi-mark-no-such' \
     "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"$M083_LOCATOR_DOC#qi-mark-no-such\""
   m121_links_plant section-unheaded \
     'M121 T2 self-test: the generated index section with its heading removed' \
-    'carries no heading element' \
+    "the generated index section '$HTML_SECTION_ID-5' carries no heading element" \
     "$M083_MEMBER" '<h1 class="unnumbered">Index</h1>' '<p>Index</p>'
 fi
 
@@ -23910,14 +23942,14 @@ if [ "${1:-}" = "--self-test" ]; then
   # M121 T3. The two plants above rename every id with a prefix; these touch one
   # anchor, so the page still carries ids with both prefixes and the existence
   # test passes it. One takes `qi-mark-1` off the element the index's link to
-  # it names; the other gives `qi-mark-2`'s element that name instead, so one
-  # name is carried twice and another not at all.
+  # it names; the other writes an empty span carrying that name just before the
+  # element, so the name is carried twice and no other id changes.
   m43_plant oneanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-1"|id="gone-mark-1"|'
   m43_planted 'a render where one index link names a minted anchor the page does not carry' \
     "#${HTML_ANCHOR_PREFIX}1 (carried 0 time(s))" \
     python3 tests/indexdump.py html "$M43W/oneanchor.html"
 
-  m43_plant twoanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-2"|id="qi-mark-1"|'
+  m43_plant twoanchor.html "$M43_DEMO_HTML" 's|<span id="qi-mark-1"|<span id="qi-mark-1"></span><span id="qi-mark-1"|'
   m43_planted 'a render where one minted anchor an index link names is carried by two elements' \
     "#${HTML_ANCHOR_PREFIX}1 (carried 2 time(s))" \
     python3 tests/indexdump.py html "$M43W/twoanchor.html"
@@ -25647,10 +25679,10 @@ fi
 # alone being what a plant that deleted the links would also produce.
 #
 # The publication is the demo capture the M52 checks above read, not the
-# id-collision one M083's plants use: `links` finds its sections by the minted
-# id prefix, and the id-collision fixture plants elements claiming that prefix
-# with no heading inside them, which `links` reads only when each of their ids
-# is named with `--authored` (M121-AC2 above).
+# id-collision one M083's plants use. Each leg here runs `links` with no
+# `--authored` list, and the id-collision fixture writes elements claiming the
+# section prefix with no heading inside them, which `links` skips only for the
+# ids such a list names (M121-AC2 above runs it that way).
 # ---------------------------------------------------------------------------
 section 'M085 — the link readers give one answer to whether an href leaves'
 

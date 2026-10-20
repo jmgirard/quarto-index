@@ -11,7 +11,7 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M122 | Merged-entry reports are checked where they name their index | in-progress | — | normal | milestones/M122-named-merged-entry-reports.md |
+| M122 | Merged-entry reports are checked where they name their index | review | — | normal | milestones/M122-named-merged-entry-reports.md |
 | M121 | Three anchor checks read clashing ids | done | — | normal | milestones/archive/M121-clashing-id-anchor-checks.md |
 | M120 | Four PDF index checks read what the index prints | done | — | normal | milestones/archive/M120-pdf-checks-read-print.md |
 | M119 | A Typst cross-reference mark keeps one label wherever it sits | done | — | normal | milestones/archive/M119-typst-xref-places.md |

@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-20 (M119 review: archived M119, pruned the M116 row, narrowed "Older acceptance-suite backlog"; KI325 struck, KI290 extended; one LESSONS line; caps and budgets within limits; validate green.)_
+_Last hygiene check: 2026-10-20 (M120 review: archived M120, pruned the M117 row, graduated "Read the printed PDF in more checks"; KI164 and KI316 struck, KI326 filed; one LESSONS line; caps and budgets within limits; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
@@ -11,10 +11,9 @@ _Released 0.4.0 2026-09-11._
 
 | ID | Title | Status | Depends on | Priority | File/Archive |
 |---|---|---|---|---|---|
-| M120 | Four PDF index checks read what the index prints | review | — | normal | milestones/M120-pdf-checks-read-print.md |
+| M120 | Four PDF index checks read what the index prints | done | — | normal | milestones/archive/M120-pdf-checks-read-print.md |
 | M119 | A Typst cross-reference mark keeps one label wherever it sits | done | — | normal | milestones/archive/M119-typst-xref-places.md |
 | M118 | A Typst index leaves out what no page backs | done | — | normal | milestones/archive/M118-typst-dead-xrefs.md |
-| M117 | A Typst index leaves out a term no page carries | done | — | normal | milestones/archive/M117-typst-unprinted-marks.md |
 <!-- rows grouped by status, not sorted by ID; keep only the 3 most recent
      terminal (done or dropped) rows — older ones live in milestones/archive/ + git -->
 
@@ -22,7 +21,6 @@ _Released 0.4.0 2026-09-11._
 <!-- proposed work only; one row per line, at most 400 bytes: the work, its promotion condition — added YYYY-MM-DD — sources — and the KI<n> labels motivating it, restating none of them; a row motivated by a whole DESIGN.md Known-issues subheading names the subheading, never a label range (D-034).
      A finding about today's behavior is a DESIGN.md Known-issues entry, not a row (D-013). -->
 - Older acceptance-suite backlog: The older acceptance-suite backlog held under `DESIGN.md`'s two acceptance-suite subheadings, which no single milestone can take whole; promote a named cluster of it, never the subheadings — added 2026-08-16, scoped 2026-08-31, narrowed 2026-10-20 by M119 — M35-M50
-- Read the printed PDF in more checks: hold the cross-reference and sort-key probes to the index the PDF prints, not to a clean compile, and make M04-AC2's term check and `gallerycheck.py`'s pdf mode fail on a term printed twice — added 2026-10-20 — promoted from the acceptance-suite backlog — KI164, KI316 — started M120
 - Cover clashing ids in anchor checks: give the M079-AC1 leg a case where one contested term has two anchors outside a heading, with a plant; let `epubcheck.py links` read `id-collision.epub`; make `minted_carried` fail on a locator whose anchor its page does not carry — added 2026-10-20 — promoted from the acceptance-suite backlog — KI274, KI267, KI126
 - Exercise two paths no fixture reaches: a fixture that draws the index-naming forms of the composed-entry reports, and a book fixture that round-trips `book.lua`'s `role` field through a chapter record — added 2026-10-20 — promoted from the acceptance-suite backlog — KI320, KI60
 - [parked] Run the suite in parts: independent sections in parallel, or a named subset once the three whole-run accumulator sweeps declare their own domains. Promote on a section growing past a couple of minutes — added 2026-09-03 — M075 plan gate, split 2026-10-01 — KI238, KI241, KI242, KI243, KI244, KI245

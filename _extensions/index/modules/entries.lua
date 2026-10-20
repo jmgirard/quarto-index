@@ -129,6 +129,12 @@ local function new_entry(key)
            locators = {}, xrefs = {} }
 end
 
+-- Each cross-reference kind's place in `qi_core.XREF_KINDS`, `see` first.
+local XREF_KIND_RANK = {}
+for rank, kind in ipairs(qi_core.XREF_KINDS) do
+  XREF_KIND_RANK[kind.attr] = rank
+end
+
 -- Walk the recorded marks into a tree of entries, one level per node.
 -- `add_locator(node, mark)` is the back-end's: it reads the fields that name
 -- the mark's place in that back-end and adds whatever locator the mark
@@ -166,8 +172,19 @@ local function build_entry_tree(marks, add_locator)
           already = true
         end
       end
+      -- Kept grouped by kind, `see` before `see also`, and in arrival order
+      -- inside a kind, so a back-end prints each kind's word once in front of
+      -- that kind's targets, as the LaTeX back-end does (M116). A target goes
+      -- after the last one whose kind ranks at or before its own.
       if not already then
-        node.xrefs[#node.xrefs + 1] = xref
+        local rank = XREF_KIND_RANK[xref.kind.attr]
+        local at = 1
+        for i, existing in ipairs(node.xrefs) do
+          if XREF_KIND_RANK[existing.kind.attr] <= rank then
+            at = i + 1
+          end
+        end
+        table.insert(node.xrefs, at, xref)
       end
     end
   end

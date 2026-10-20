@@ -33255,10 +33255,10 @@ pass "M116-AC3: the HTML and EPUB indexes print each kind's word once, see befor
 
 # AC4. examples/book-xref: Hazel points at Yew in the first chapter and at
 # Alder in the second, which holds the marker, so the book index is in the
-# second chapter's page. Each target is one mark in its own chapter. The anchor
-# counter counts every minted anchor down one chapter in document order, the
-# cross-reference mark included, so in each chapter Hazel's mark mints
-# `qi-mark-1` and the target's mark `qi-mark-2`.
+# second chapter's page. Each target is one mark in its own chapter. Only a
+# locator-contributing mark mints an anchor (`passes.lua`'s Span pass), and
+# Hazel's marks contribute none, so each chapter's target is its `qi-mark-1`;
+# Alder's is on the index's own page, so its link names no file.
 BOOK_XREF_DIR="examples/book-xref"
 rm -rf "$BOOK_XREF_DIR/_book" "$BOOK_XREF_DIR/.quarto"
 ( cd "$BOOK_XREF_DIR" && quarto render --to html ) > "$WORK/book-xref.log" 2>&1 \
@@ -33266,11 +33266,11 @@ rm -rf "$BOOK_XREF_DIR/_book" "$BOOK_XREF_DIR/.quarto"
 capture --project "$BOOK_XREF_DIR" html "book-xref"
 read -r -d '' M116_BOOK <<'MANIFEST' || true
 letter	A
-0	Alder	two.html#qi-mark-2
+0	Alder	#qi-mark-1
 letter	H
 0	Hazel		see-link see Yew	see-link Alder
 letter	Y
-0	Yew	index.html#qi-mark-2
+0	Yew	index.html#qi-mark-1
 MANIFEST
 check_html_index_manifest "$CAPTURE_ROOT/book-xref/_book/two.html" \
   "$M116_BOOK" "M116-AC4 (HTML book)" hrefs labels

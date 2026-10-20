@@ -129,7 +129,8 @@ local XREF_SEPARATOR = ";"
 -- cross-references. The separators follow print convention — locators and the
 -- first cross-reference are set off from the term with a comma, and two
 -- cross-references are separated with a semicolon, exactly as the LaTeX
--- back-end's dual-target command prints them. Both marks are what an author
+-- back-end's dual-target command prints them, two targets of one kind
+-- included. Both marks are what an author
 -- overrides under `separator:` and `xref-separator:`, resolved on the same
 -- per-index-then-document ladder the printed words use; the LaTeX back-end
 -- reads neither, because makeindex owns its own delimiter (M58).
@@ -169,11 +170,20 @@ local function entry_inlines(root, node, name)
                   span = pandoc.Span(locators,
                                      pandoc.Attr("", { "qi-locators" })) })
   end
+  -- `node.xrefs` holds each kind's targets together, `see` first, so the
+  -- kind's word goes in front of its first target only and the targets after
+  -- it print bare: `see A; B` (M116). Each target keeps a `qi-xref` span of
+  -- its own, which is the styling hook `site/html.qmd` documents as one
+  -- cross-reference.
+  local previous_kind = nil
   for _, xref in ipairs(node.xrefs) do
     local body = pandoc.List()
-    body:insert(pandoc.Emph(qi_entries.literal_inlines(
-      qi_indexes.label(name, xref.kind.label_key, xref.kind.label))))
-    body:insert(pandoc.Space())
+    if xref.kind.attr ~= previous_kind then
+      body:insert(pandoc.Emph(qi_entries.literal_inlines(
+        qi_indexes.label(name, xref.kind.label_key, xref.kind.label))))
+      body:insert(pandoc.Space())
+    end
+    previous_kind = xref.kind.attr
     body:insert(target_span(root, xref))
     tail:insert({ xref = true,
                   span = pandoc.Span(body, pandoc.Attr("",

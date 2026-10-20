@@ -115,6 +115,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 - 2026-10-20: T2 written: `htmlindex.index_sections` takes `authored` ids it skips, threaded through `epubindex` and `epubcheck.py links --authored`; `links` now prints a FAIL line where the finder raises, not a traceback. On a scratch EPUB it resolves 70 of 70 links with the five ids named, and is red on both plants (a dangling fragment, the `qi-index-5` heading removed).
 - 2026-10-20: T3 written: `minted_links_land` in `tests/indexdump.py` holds each same-page index link with a minted-prefix fragment to one carrying element; `minted_carried` stays for the renamed-prefix case. Green on the last run's demo capture; red on both new plants (`qi-mark-1` gone, `qi-mark-1` carried twice).
 - 2026-10-20: T4 in part: KI274, KI267 and KI126 struck in `cairn/DESIGN.md`; the full `--self-test` run over T1 to T3 is in flight, and no task is ticked until it is green.
+- 2026-10-20: suite run 1 stopped at M58 on a Quarto segmentation fault rendering `index-separators-twin.qmd`, its only FAIL; every M121 check it reached passed. Re-run, per the DESIGN.md entry treating a segfault-only red as toolchain noise.
 
 ## Decisions
 

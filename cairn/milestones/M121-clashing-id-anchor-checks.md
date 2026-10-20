@@ -1,13 +1,13 @@
 # M121: Three anchor checks read clashing ids
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it changes acceptance-suite checks and one test fixture, which no external consumer of the repo relies on
-- **Branch/PR:** —
+- **Branch/PR:** m121-clashing-id-anchor-checks
 
 ## Goal
 
@@ -33,7 +33,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 
 ## Acceptance criteria
 
-- [ ] AC1: `examples/id-collision.qmd` holds one contested cross-reference
+- [x] AC1: `examples/id-collision.qmd` holds one contested cross-reference
       term that two marks outside any heading print. Each of the two marks
       writes an id that another element of the page also carries. The
       M079-AC1 leg in `tests/run-tests.sh` reads each term that
@@ -42,7 +42,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
       that term. It holds each count to a hand-stated number: two for the
       new term, one for each other term. It fails naming each term whose
       count differs.
-- [ ] AC2: The suite runs `tests/epubcheck.py links` over the EPUB of
+- [x] AC2: The suite runs `tests/epubcheck.py links` over the EPUB of
       `examples/id-collision.qmd` that it renders. If the generated index
       section holds no link, or every link in it leaves the publication, the
       run fails. The run also fails naming each link inside that section
@@ -51,13 +51,13 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
       to `qi-index-4`. `links` does not read the elements with those ids as
       index sections. On a copy of that EPUB whose generated index section
       has its heading removed, `links` still fails.
-- [ ] AC3: For each page it dumps, `tests/indexdump.py`'s HTML dump reads
+- [x] AC3: For each page it dumps, `tests/indexdump.py`'s HTML dump reads
       each link inside each section that `htmlindex.index_sections` returns
       for that page, where the link's href names no file. It takes each such
       link whose fragment begins with `qi-mark-` or `qi-entry-`. If the page
       does not carry exactly one element with that id, the dump fails naming
       that link.
-- [ ] AC4: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
+- [x] AC4: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
 
@@ -68,7 +68,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 
 ## Tasks
 
-- [ ] T1: In `examples/id-collision.qmd`, add one new contested
+- [x] T1: In `examples/id-collision.qmd`, add one new contested
       cross-reference term after the existing marks, printed by two marks
       outside any heading. Give each mark an id that another element also
       carries. Change `CONTESTED_XREF` (`tests/run-tests.sh:4332`) and the
@@ -80,7 +80,7 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
       Before the first run, grep the self-tests for want strings that the
       new marks move (the M117 lesson). Add `--self-test` plants that leave
       the new term with one minted anchor and with three.
-- [ ] T2: Let `tests/epubcheck.py links` take the ids an author wrote with
+- [x] T2: Let `tests/epubcheck.py links` take the ids an author wrote with
       the section prefix, and pass them to the section finder so it skips
       those elements. Keep the raise for any other prefixed element with no
       heading (`tests/htmlindex.py:419-427`). Run it in the suite over the
@@ -88,13 +88,13 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
       count it prints. Rewrite the comment at `tests/run-tests.sh:25528-25532`.
       Add plants: a copy with one index link's target id removed, and a copy
       with the generated section's heading removed.
-- [ ] T3: In `dump_html` (`tests/indexdump.py:142-156`), check each
+- [x] T3: In `dump_html` (`tests/indexdump.py:142-156`), check each
       same-page link with a minted-prefix fragment against
       `htmlindex.count_id`. Keep or replace `minted_carried`
       (`tests/indexdump.py:116-139`) and update its docstring and the comment
       at `tests/indexdump.py:65-68`. Add plants that remove one
       `id="qi-mark-N"` from a captured page and that write one twice.
-- [ ] T4: Strike KI274, KI267 and KI126 in `cairn/DESIGN.md`. Run
+- [x] T4: Strike KI274, KI267 and KI126 in `cairn/DESIGN.md`. Run
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
 
 ## Work log
@@ -109,7 +109,50 @@ backlog stays under the candidate row "Older acceptance-suite backlog".
 - 2026-10-20: criteria audit (reduced, internal tier): fresh Opus reader returned 3 findings here. AC1 narrowed to the terms `CONTESTED_XREF` names; AC2's no-link clause matched to `cmd_links`' two conditions; AC3 narrowed to the sections `htmlindex.index_sections` returns.
 - 2026-10-20: plan gate chose passing the author's prefixed ids to `links` over finding sections by heading as `unique` does, because `links` also reads books and named indexes whose headings differ, and over dropping the raise, which guards a section that lost its heading; falsified by a generated section that a hand-stated id list cannot tell from an author's element.
 - 2026-10-20: lessons surfaced: M079 (cases in one unit), M117 (plants resting on old output), M118 (apply plant substitutions by script), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`), M116 (fixture registration).
+- 2026-10-20: implement started on branch m121-clashing-id-anchor-checks.
+- 2026-10-20: T1 written: two `iota` marks appended to `examples/id-collision.qmd`, so no earlier minted number moves; `CONTESTED_XREF` maps each term to its marks' ids, and the leg counts yields per mark. A scratch render showed the extension right (both marks yield, `qi-mark-42` and `qi-mark-43`); the leg passes on it and is red on both plants and on a first-wins read. `DANGLING_CORPUS` stays 0 and the gallery does not show the fixture.
+- 2026-10-20: implement choice: the verify slot runs once over T1 to T3 together, since bash reads `tests/run-tests.sh` lazily and no task can be edited while a run is in flight (the M073 lesson).
+- 2026-10-20: T2 written: `htmlindex.index_sections` takes `authored` ids it skips, threaded through `epubindex` and `epubcheck.py links --authored`; `links` now prints a FAIL line where the finder raises, not a traceback. On a scratch EPUB it resolves 70 of 70 links with the five ids named, and is red on both plants (a dangling fragment, the `qi-index-5` heading removed).
+- 2026-10-20: T3 written: `minted_links_land` in `tests/indexdump.py` holds each same-page index link with a minted-prefix fragment to one carrying element; `minted_carried` stays for the renamed-prefix case. Green on the last run's demo capture; red on both new plants (`qi-mark-1` gone, `qi-mark-1` carried twice).
+- 2026-10-20: T4 in part: KI274, KI267 and KI126 struck in `cairn/DESIGN.md`; the full `--self-test` run over T1 to T3 is in flight, and no task is ticked until it is green.
+- 2026-10-20: suite run 1 stopped at M58 on a Quarto segmentation fault rendering `index-separators-twin.qmd`, its only FAIL; every M121 check it reached passed. Re-run, per the DESIGN.md entry treating a segfault-only red as toolchain noise.
+- 2026-10-20: suite run 2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exited 0, 1877 checks, 0 FAIL; the M079-AC1 leg, M121-AC2 and the six M121 plants each printed ok. T1 to T4 ticked.
+- 2026-10-20: claim audit: not owed — internal tier.
+- 2026-10-20: implementation complete; status review.
+- 2026-10-20: review started; default branch not moved since the cut, Copilot round off. M121 reverses the choice M090 made and M111 kept, to leave KI274 open; the plan promoted that row, so this is the record of the reversal.
+- 2026-10-20: step-7 approval: m121-clashing-id-anchor-checks approved for merge
 
 ## Decisions
 
 ## Review
+
+- 2026-10-20: gate: `cairn_validate.py` exit 0, all checks passed; profile `generic` names no toolchain checks; no principle changed, so no `cairn_impact` run.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: KI126's "a partial rename passes" clause is still open, since an id and href renamed together fall outside the prefix domain — reject (false as a defect): every link still resolves on such a page, so no author or reader sees a defect, and D-068 records no gap that cannot hide one.
+- diff-bug #2: the section-unheaded plant's want `carries no heading element` is also printed if `--authored` stops reaching the finder — fix now: the want names `qi-index-5`, fixed e412d9b.
+- diff-bug #3: the M121-AC2 leg reads exit status only — fix now: it pins `; 0 link(s) skipped as leaving the publication; 5 element(s) carrying an id named with --authored`, fixed e412d9b.
+- diff-bug #4: the M121-AC2 failure message omits the headingless-element path — fix now: the message names all four failure paths, fixed e412d9b.
+- diff-bug #5: `minted_links_land` has no floor on its domain, and its docstring overclaims "the links this page can settle" — fix now (docstring): it states the domain exactly; the floor is rejected (planned change), since a book's last page legitimately has no same-page link and `minted_carried` covers a renamed prefix; fixed e412d9b.
+- diff-bug #6: docstring says ids an author wrote are not read, false for `qi-mark-3`/`qi-mark-9` — fix now: rewritten, fixed e412d9b.
+- diff-bug #7: the twoanchor plant changes two ids at once — fix now: it writes an empty span carrying `qi-mark-1` and changes no other id; verified red on `#qi-mark-1 (carried 2 time(s))` alone, fixed e412d9b.
+- diff-bug #8: the five author ids are stated twice, and plants hard-code `qi-mark-1` — fix now for the ids: `ID_COLLISION_CLAIMED` is read by M08-AC1 and M121-AC2; the `qi-mark-1` literal rejected (style), matching the existing staleanchor plant's form; fixed e412d9b.
+- diff-bug #9: the M085 comment reads backwards — fix now: rewritten, fixed e412d9b.
+- diff-bug #10: no unplanted control for `links --authored` on a repack — fix now: a straight repack is run through `links` green before the two plants, fixed e412d9b.
+- diff-bug #11: the `dict(...)` merge's refusal of a term in two groups is gone — fix now: the leg refuses a term in both `REFUSED_LOCATOR` and `CONTESTED_XREF`, fixed e412d9b.
+- diff-bug #12: a string passed as `authored` matches substrings — reject (style): no caller passes one, and the CLI builds a tuple.
+- diff-bug #13: `links` catches every `ValueError` as FAIL — reject (planned change): a reader's refusal is a finding, the form `indexdump.py`'s `dump_html` already takes; exit stays 1.
+- blame-history #1: the `authored` skip runs before the heading check with no check that the element is the author's — fix now: only an element with no heading is skipped, a named id on no element fails `links`, and the ok line counts the skipped elements, fixed e412d9b.
+- blame-history #2: `minted_links_land` is new red on the version matrix, unverified on other Quarto versions — reject (false): `versions.yml` runs on every push, so step 8's push runs it on each leg before the merge, which never goes past red.
+- blame-history #3: `partition('#')` is a second answer beside `htmlindex.leaves_publication` (D-057) — reject (false): it answers a different question, and any href that leaves has a part before `#`, so it is skipped either way.
+- blame-history #4: M111's record of leaving KI274 open is not cited — fix now: work-log line above, fixed e412d9b.
+- blame-history #5: the broad `ValueError` catch — reject (planned change), as diff-bug #13.
+- blame-history #6: the new level-1 heading adds an EPUB member — reject (false as a defect): it is appended, so `ch002.xhtml` and every earlier member are unchanged, and no pin counts members.
+- prior-review #1: the version matrix never ran the new HTML check — reject (false), as blame-history #2.
+- prior-review #2: the `authored` skip is unscoped and silent — fix now, as blame-history #1, fixed e412d9b.
+- prior-review #3: `minted_links_land` has no non-empty clause — reject (planned change), as diff-bug #5.
+- prior-review #4: `minted_carried`'s docstring not updated — fix now: it points at `minted_links_land`, fixed e412d9b.
+- AC1 evidence (fresh run on `e412d9b`, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, exit 0): `examples/id-collision.qmd` writes `iota` twice outside any heading, as `#xref-pair-one` and `#xref-pair-two`, each also on a div; `CONTESTED_XREF` lists both ids for `iota` and one for `rho`, `sigma` and `phi` (`tau` is in `RELOCATED`); the leg printed ok over 240 ids, 38 yields and 7 cross-reference marks, and its self-test plants were red on `1 minted anchor(s) are on the span(s) printing 'iota'` and on `3 minted anchor(s)`.
+- AC2 evidence (same run): M121-AC2 ran `tests/epubcheck.py links` over the captured `id-collision.epub` with the five ids of `ID_COLLISION_CLAIMED`, green and pinned on `; 0 link(s) skipped as leaving the publication; 5 element(s) carrying an id named with --authored` (70 of 70 links resolved on the scratch copy); a straight repack stayed green; the dangling-fragment plant was red on `carries no element with id qi-mark-no-such`; the copy with the generated section's heading removed was red on `the generated index section 'qi-index-5' carries no heading element`. The run fails on the no-link and all-leave paths by `cmd_links`' own two clauses (`tests/epubcheck.py`), exercised by M52/M085.
+- AC3 evidence (same run): `dump_html` now calls `minted_links_land`, which walks each section `htmlindex.index_sections` returns and holds each link with an empty file part and a `qi-mark-`/`qi-entry-` fragment to `htmlindex.count_id == 1`, failing with the link named; the run's HTML dumps of `book-html/_book/last.html`, `demo.html`, `html-index.html`, `figure-marks.html` and `named-indexes.html` passed; the plants were red on `#qi-mark-1 (carried 0 time(s))` and `#qi-mark-1 (carried 2 time(s))`.
+- AC4 evidence: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` on `e412d9b` exited 0, "All checks passed (1878 checks)", 0 FAIL lines.
+- ripple #1: `tests/indexdump.py:66` names only `minted_carried` as holding the prefixes — reject (false): the next sentence of that comment, added by this diff, names `minted_links_land`.

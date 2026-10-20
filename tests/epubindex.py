@@ -133,17 +133,18 @@ def read(path):
     return Book(path, opf, manifest, documents)
 
 
-def index_sections(book, prefix, minted=()):
+def index_sections(book, prefix, minted=(), authored=()):
     """Every generated index section in the publication, in reading order.
 
     Each hit is htmlindex.index_sections' own dict with a `document` field
     added, naming the zip member the section is in. The `after` field is that
     document's own preceding authored id, which in an EPUB is a statement
-    about the split file rather than about the whole publication.
+    about the split file rather than about the whole publication. `authored`
+    is htmlindex.index_sections' own, passed straight through.
     """
     out = []
     for name, root in book.documents:
-        for found in htmlindex.index_sections(root, prefix, minted):
+        for found in htmlindex.index_sections(root, prefix, minted, authored):
             found = dict(found)
             found['document'] = name
             out.append(found)
@@ -163,7 +164,7 @@ def section_rows(book, prefix, minted=(), hrefs=False):
     return rows
 
 
-def links(book, prefix, minted=()):
+def links(book, prefix, minted=(), authored=()):
     """Every `<a href>` inside a generated index section.
 
     Not only the locator links: a cross-reference the back-end hyperlinks is
@@ -179,10 +180,10 @@ def links(book, prefix, minted=()):
     name no manifest can list, and a reader downstream handed that name reported
     a link that is not broken as one that is. What a caller does with a leaving
     row is its own policy — `unresolved` below skips it, and `epubcheck.py
-    links` counts what was skipped.
+    links` counts what was skipped. `authored` is `index_sections`' own.
     """
     out = []
-    for found in index_sections(book, prefix, minted):
+    for found in index_sections(book, prefix, minted, authored):
         section = htmlindex.find_id(book.document(found['document']),
                                     found['ident'])
         if section is None:
@@ -209,7 +210,7 @@ def links(book, prefix, minted=()):
     return out
 
 
-def unresolved(book, prefix, minted=()):
+def unresolved(book, prefix, minted=(), authored=()):
     """Every link inside an index section that names nothing in the publication.
 
     A link fails to resolve three ways, and the reason is reported rather than
@@ -226,7 +227,7 @@ def unresolved(book, prefix, minted=()):
     resolved.
     """
     bad = []
-    for link in links(book, prefix, minted):
+    for link in links(book, prefix, minted, authored):
         if link['leaves']:
             continue
         name = link['file'] or link['document']

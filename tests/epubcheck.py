@@ -23,9 +23,11 @@ Subcommands, each printing its own `ok`/`FAIL` line and exiting 0/1:
   same <epub> <html> <prefix> <manifest>
       The EPUB's entry rows against the HTML render's, both first held to the
       manifest that pins them.
-  links <epub> <prefix>
+  links <epub> <prefix> [--authored <id>]...
       Every link inside a generated index section that stays in the
       publication resolves in it; one that leaves is skipped and counted.
+      Each `--authored` id is one the fixture's author wrote with the prefix,
+      whose element is not read as a section (M121).
   unique <epub>
       No manifest-listed document carries an id twice, and every index link
       fragment names an id its own document carries exactly once.
@@ -174,13 +176,44 @@ def cmd_links(argv):
     the resolved one, and a publication ALL of whose index links leave is
     refused: the skip is the second way this domain empties out, and exit status
     alone cannot tell an empty sweep from a clean one.
+
+    A fixture whose author writes ids with the section prefix names each of
+    them with `--authored`, stated out of its source: those elements are the
+    author's, and the section reader skips each of them that has no heading
+    inside it, where it would otherwise raise. Any other prefixed element with
+    no heading still stops this command. A named id that no element of the
+    publication carries fails it, since the list then no longer describes the
+    publication, and the ok line counts the elements skipped (M121).
     """
-    if len(argv) != 2:
-        print('usage: epubcheck.py links <epub> <prefix>', file=sys.stderr)
+    usage = 'usage: epubcheck.py links <epub> <prefix> [--authored <id>]...'
+    if len(argv) < 2:
+        print(usage, file=sys.stderr)
         return 2
-    path, prefix = argv
+    path, prefix, rest = argv[0], argv[1], argv[2:]
+    authored = []
+    while rest:
+        if rest[0] != '--authored' or len(rest) < 2:
+            print(usage, file=sys.stderr)
+            return 2
+        authored.append(rest[1])
+        rest = rest[2:]
+    authored = tuple(authored)
     book = epubindex.read(path)
-    found = epubindex.links(book, prefix)
+    carried = [ident for _, root in book.documents
+               for ident in htmlindex.all_ids(root)]
+    stale = [ident for ident in authored if ident not in carried]
+    if stale:
+        print(f'FAIL: {path}: no element of the publication carries '
+              f'{", ".join(repr(ident) for ident in stale)}, named with '
+              f'--authored, so that list no longer describes this publication',
+              file=sys.stderr)
+        return 1
+    skipped = sum(carried.count(ident) for ident in set(authored))
+    try:
+        found = epubindex.links(book, prefix, authored=authored)
+    except ValueError as err:
+        print(f'FAIL: {path}: {err}', file=sys.stderr)
+        return 1
     if not found:
         print(f'FAIL: {path}: no link inside a generated index section, so '
               f'this check would pass over an empty set', file=sys.stderr)
@@ -191,7 +224,7 @@ def cmd_links(argv):
               f'generated index section leaves the publication, so the '
               f'resolving below would pass over an empty set', file=sys.stderr)
         return 1
-    bad = epubindex.unresolved(book, prefix)
+    bad = epubindex.unresolved(book, prefix, authored=authored)
     if bad:
         print(f'FAIL: {path}: {len(bad)} of {len(found)} link(s) inside a '
               f'generated index section name nothing in the publication',
@@ -205,7 +238,8 @@ def cmd_links(argv):
     print(f'ok   {path}: all {len(found) - len(left)} of {len(found)} link(s) '
           f'inside a generated index section resolve — each names one of the '
           f'{files} manifest-listed document(s) and an element it carries; '
-          f'{len(left)} link(s) skipped as leaving the publication')
+          f'{len(left)} link(s) skipped as leaving the publication; '
+          f'{skipped} element(s) carrying an id named with --authored')
     return 0
 
 

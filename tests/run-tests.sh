@@ -4035,12 +4035,16 @@ quarto render examples/id-collision.qmd --to html \
   || { tail -20 "$WORK/id-collision-html.log" >&2; fail "M08-AC1: id-collision.qmd failed to render to HTML"; }
 capture examples/id-collision.qmd html "id-collision-html"
 
+# The five names the fixture's author writes with the section prefix, stated
+# once out of its source and read here and by M121-AC2's EPUB `links` reading.
+export ID_COLLISION_CLAIMED='qi-index qi-index-1 qi-index-2 qi-index-3 qi-index-4'
 python3 - "$CAPTURE_ROOT/id-collision-html/id-collision.html" <<'PY'
+import os
 import sys
 sys.path.insert(0, 'tests')
 import htmlindex as H
 doc = H.parse(sys.argv[1])
-claimed = ['qi-index', 'qi-index-1', 'qi-index-2', 'qi-index-3', 'qi-index-4']
+claimed = os.environ['ID_COLLISION_CLAIMED'].split()
 errs = []
 
 # The universal is over the ids this extension mints and the names the fixture
@@ -4222,10 +4226,12 @@ PY
 # `id=` on the page and not over this extension's own namespace, because the
 # case that started this is a mark colliding with an element the author wrote.
 #
-# Sixty-seven marks are hand-derived here from examples/id-collision.qmd,
+# Sixty-nine marks are hand-derived here from examples/id-collision.qmd,
 # never read back out of the render: an expectation taken from the artifact is
 # blind in the dimension it is taken from. Twenty-two are M079's, twenty
-# M080's, twelve M081's, twelve M082's and one M084's.
+# M080's, twelve M081's, twelve M082's, one M084's and two M121's. M121's two
+# are cross-reference marks printing one term, `iota`, each written with a name
+# a div also carries, so both yield and the term's spans carry two anchors.
 #
 # Twelve of them yield a name something else on the page carries — one per
 # spelling the id census reads, one written as a name the numbering would
@@ -4329,8 +4335,13 @@ KEPT = {'kappa': 'twin', 'mu': 'solo', 'nu': 'in-heading', 'xi': 'qi-mark-9',
 # and a locator mark written with one name. The locator mark keeps it whichever
 # is written first — here the cross-reference is first and yields anyway — so
 # `chi` is in KEPT below and the order is not what settles this pair.
-CONTESTED_XREF = {'rho': 'xref-dup', 'sigma': 'xref-raw', 'tau': 'xref-heading',
-                  'phi': 'twin-xref'}
+# Each term maps to the ids its marks were written with, one per mark, so the
+# length of the list is the number of minted anchors the term's spans must
+# carry. `iota` is printed by two marks, each written with a name a div of the
+# author's also carries, so both yield and the term has two (M121 T1).
+CONTESTED_XREF = {'rho': ('xref-dup',), 'sigma': ('xref-raw',),
+                  'tau': ('xref-heading',), 'phi': ('twin-xref',),
+                  'iota': ('xref-pair-one', 'xref-pair-two')}
 KEPT_XREF = {'upsilon': 'xref-solo'}
 # The four shapes the census used to read a raw HTML string wrongly (M080).
 # Seven elements' text content is text and not markup — `script`, `style`,
@@ -4422,20 +4433,35 @@ UNTAGGED = {'untagged-in-heading'}
 # span rather than off the mark's own, which is what the criterion promises for
 # this shape — checked below rather than exempted (M079 T14).
 RELOCATED = {'tau', 'after-textarea'}
-REFUSED = dict(CONTESTED, **CONTESTED_XREF, **CONTESTED_RAW,
-               **CONTESTED_COMMENT, **CONTESTED_UNRENDERED)
+# The marks that file a locator, term to the one id each gave up, and then
+# every yield as a (term, id) pair: one per mark, so a term two marks print is
+# two yields and two reports.
+REFUSED_LOCATOR = dict(CONTESTED, **CONTESTED_RAW, **CONTESTED_COMMENT,
+                       **CONTESTED_UNRENDERED)
+YIELDS = sorted(list(REFUSED_LOCATOR.items())
+                + [(term, wrote) for term, ids in CONTESTED_XREF.items()
+                   for wrote in ids])
+REFUSED = {term for term, _ in YIELDS}
 KEPT_ALL = dict(KEPT, **KEPT_XREF, **KEPT_RAW, **KEPT_COMMENT,
                 **KEPT_UNRENDERED)
 NO_LOCATOR = set(CONTESTED_XREF) | set(KEPT_XREF)
+# The `dict(...)` merge this replaced refused a term written in two groups;
+# the pairs list would take it silently, so the refusal is kept by hand.
+_twice = set(REFUSED_LOCATOR) & set(CONTESTED_XREF)
+if _twice:
+    print('FAIL: M079-AC1: the hand-derived groups name %s as both a locator '
+          'mark and a cross-reference mark' % ', '.join(sorted(_twice)),
+          file=sys.stderr)
+    sys.exit(2)
 
 # AC1. Every id on the page, counted; nothing may be carried twice. The domain
 # is stated as well as swept — a reader that found no id at all would report no
 # duplicate exactly as a correct page does.
 ids = H.all_ids(doc)
-if len(ids) < len(REFUSED) + len(KEPT_ALL):
+if len(ids) < len(YIELDS) + len(KEPT_ALL):
     errs.append('the page carries %d id(s) in all, fewer than the %d this '
                 'fixture writes by hand, so this sweep read something other '
-                'than the rendered probe' % (len(ids), len(REFUSED) + len(KEPT_ALL)))
+                'than the rendered probe' % (len(ids), len(YIELDS) + len(KEPT_ALL)))
 dupes = sorted({name for name in ids if ids.count(name) > 1})
 if dupes:
     errs.append('ids carried by more than one element: %s' % ', '.join(dupes))
@@ -4444,7 +4470,8 @@ if dupes:
 # and each uncontested one on its own mark. Counted at one either way: a name
 # gone from the page altogether would be a link to nowhere, and is no more
 # acceptable than a name on two elements.
-for name in sorted(set(REFUSED.values()) | set(KEPT_ALL.values()) | UNTAGGED):
+for name in sorted({wrote for _, wrote in YIELDS} | set(KEPT_ALL.values())
+                   | UNTAGGED):
     n = H.count_id(doc, name)
     if n != 1:
         errs.append('the author-written id %r is on %d element(s), want 1'
@@ -4478,7 +4505,7 @@ else:
     seen = {}
     for record in H.entry_records(section):
         seen[record['term']] = record['locators']
-    for term in sorted(set(REFUSED) | set(KEPT_ALL)):
+    for term in sorted(REFUSED | set(KEPT_ALL)):
         hrefs = seen.get(term)
         if hrefs is None:
             errs.append('the index has no entry for the term %r' % term)
@@ -4507,7 +4534,7 @@ else:
                 errs.append('the locator for %r names %r; its author wrote '
                             '%r and nothing contests it' % (term, got, KEPT_ALL[term]))
             continue
-        if got == REFUSED[term]:
+        if got == REFUSED_LOCATOR[term]:
             errs.append('the locator for %r still names %r, the contested id'
                         % (term, got))
         elif not got.startswith(prefix):
@@ -4546,23 +4573,25 @@ else:
 # printing one string are two entries here and not one. Grouped by the printed
 # string, and the group read whole — a term whose marks carry two minted
 # anchors is two destinations for one name, which a first-wins map reported as
-# one and this counts as the two it is (M084 T1). No rendered case reaches a
-# group of two: on the fixture the group for each term read here holds one
-# anchor, so no plant holds this clause either (KI274; M090 T5).
+# one and this counts as the two it is (M084 T1). Each group is held to the
+# number of marks CONTESTED_XREF lists for its term: one for most, and two for
+# `iota`, the group a first-wins map would read as one (M121 T1).
 minted = {}
 for printed, name in H.minted_anchors(doc, prefix):
     minted.setdefault(printed, []).append(name)
-for term, wrote in sorted(CONTESTED_XREF.items()):
-    landed = H.find_id(doc, wrote)
-    if landed is not None and H.text(landed).strip() == term:
-        errs.append('the contested id %r is still on the span printing %r'
-                    % (wrote, term))
+for term, wrote_all in sorted(CONTESTED_XREF.items()):
+    for wrote in wrote_all:
+        landed = H.find_id(doc, wrote)
+        if landed is not None and H.text(landed).strip() == term:
+            errs.append('the contested id %r is still on the span printing %r'
+                        % (wrote, term))
     if term not in RELOCATED:
         got = minted.get(term, [])
-        if len(got) != 1:
+        if len(got) != len(wrote_all):
             errs.append('%d minted anchor(s) are on the span(s) printing %r, '
-                        'which gave up %r; want exactly 1 (%s)'
-                        % (len(got), term, wrote, ', '.join(got) or 'none'))
+                        'whose marks gave up %s; want exactly %d (%s)'
+                        % (len(got), term, ', '.join(map(repr, wrote_all)),
+                           len(wrote_all), ', '.join(got) or 'none'))
 # And where a refused mark is written inside a heading, the minted anchor is on
 # the empty span the extension emits after that heading, with nothing left on
 # the mark's own span for the table of contents to copy.
@@ -4625,7 +4654,7 @@ lines = [line for line in open(log, encoding='utf-8').read().splitlines()
          if 'carries the id' in line and 'which another element of this page' in line]
 reported = set()
 for line in lines:
-    for term, wrote in REFUSED.items():
+    for term in sorted(REFUSED):
         if ('term "%s"' % term) not in line:
             continue
         # The wording is read on every report naming the term, whatever id it
@@ -4639,19 +4668,22 @@ for line in lines:
         if other in line:
             errs.append('the refusal report naming %r carries <<%s>>'
                         % (term, other))
-        if ('"%s"' % wrote) in line:
-            reported.add(term)
+    # A yield is reported once its term and the id its mark gave up are both
+    # on one line, so each of a term's two marks needs a report of its own.
+    for term, wrote in YIELDS:
+        if ('term "%s"' % term) in line and ('"%s"' % wrote) in line:
+            reported.add((term, wrote))
     for term, wrote in KEPT_ALL.items():
         if ('term "%s"' % term) in line:
             errs.append('a refusal report names %r, whose author id nothing '
                         'contests: %s' % (term, line))
-if len(lines) != len(REFUSED):
+if len(lines) != len(YIELDS):
     errs.append('%d refusal report(s) in the render log, want %d'
-                % (len(lines), len(REFUSED)))
-missing = sorted(set(REFUSED) - reported)
+                % (len(lines), len(YIELDS)))
+missing = sorted(set(YIELDS) - reported)
 if missing:
     errs.append('no refusal report names both the term and the id given up '
-                'for: %s' % ', '.join(missing))
+                'for: %s' % ', '.join('%s (%s)' % pair for pair in missing))
 
 if errs:
     print('FAIL: M079-AC1: ' + '; '.join(errs), file=sys.stderr)
@@ -4662,7 +4694,8 @@ print('ok   M079-AC1: no id among the page\'s %d is carried twice; %d '
       'are still their mark\'s anchor, and each yield is reported once by term '
       'and id in the wording for its kind of mark; the %d cross-reference '
       'mark(s) among them file no locator'
-      % (len(ids), len(REFUSED), len(KEPT_ALL), len(NO_LOCATOR)))
+      % (len(ids), len(YIELDS), len(KEPT_ALL),
+         sum(len(w) for w in CONTESTED_XREF.values()) + len(KEPT_XREF)))
 PY
 python3 "$WORK/id-collision-ids.py" \
   "$CAPTURE_ROOT/id-collision-html/id-collision.html" \
@@ -4855,6 +4888,47 @@ if [ "${1:-}" = "--self-test" ]; then
     'M111 T4 self-test: a yielding cross-reference mark reported in the locator wording' \
     "the refusal report naming 'rho' lacks <<$M111_XREF_CLAUSE>>" \
     's{if record and record\.anchorless then}{if false and record and record.anchorless then}'
+
+  # M121 T1. The check holds the spans printing `iota` to the two minted
+  # anchors its two marks were written for. Two plants over a copy of the
+  # unmutated copy's page, one substitution each: one drops the minted id from
+  # the first `iota` span, which is the page a first-wins reading of the
+  # anchors would describe, and one writes a third `iota` span with a minted id
+  # of its own, which a check weakened to at-least-two would pass. Each is
+  # held to the count it leaves, read off the check's own line.
+  m121_iota_plant() {   # <slug> <label> <expected substring> <perl substitution>
+    local slug="$1" label="$2" want="$3" sub="$4"
+    local dir="$M081W/m121-$slug"
+    mkdir -p "$dir"
+    perl -0777 -e '
+      my ($sub) = @ARGV;
+      my $text = do { local $/; <STDIN> };
+      my $n = eval "\$text =~ $sub";
+      die "the substitution could not be applied: $@" if $@;
+      die "the substitution matched nothing\n" unless $n;
+      print $text;
+    ' "$sub" < "$CAPTURE_ROOT/m081-clean/id-collision.html" > "$dir/id-collision.html" \
+      || fail "$label: the substitution could not be applied to the page (its own message is above)"
+    if cmp -s "$CAPTURE_ROOT/m081-clean/id-collision.html" "$dir/id-collision.html"; then
+      fail "$label: the substitution reported a match and the page is unchanged"
+    fi
+    local out rc
+    out=$(python3 "$WORK/id-collision-ids.py" "$dir/id-collision.html" \
+      "$HTML_ANCHOR_PREFIX" "$WORK/m081-clean.log" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check passed the planted page"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "$label: the check failed on the planted page, but not with <<$want>>"; }
+    pass "$label: the check is red on <<$want>>"
+  }
+  m121_iota_plant one-anchor \
+    'M121 T1 self-test: one of the two marks printing `iota` left with no minted anchor' \
+    "1 minted anchor(s) are on the span(s) printing 'iota'" \
+    's{<span id="qi-mark-\d+" (class="index" data-see="mu">iota</span>)}{<span $1}'
+  m121_iota_plant three-anchors \
+    'M121 T1 self-test: a third span printing `iota` with a minted anchor of its own' \
+    "3 minted anchor(s) are on the span(s) printing 'iota'" \
+    's{(<span id="qi-mark-\d+" class="index" data-see="mu">iota</span>)}{$1<span id="qi-mark-990" class="index" data-see="mu">iota</span>}'
 fi
 
 # ---------------------------------------------------------------------------
@@ -4897,6 +4971,29 @@ printf '%s' "$M083_UNPLANTED" \
   | grep -qF -- 'the one index section this check reads in each document that carries one' \
   || { printf '%s\n' "$M083_UNPLANTED" >&2; fail "M083 T5: the verdict does not say that the section it read is the only one it reads in each document, so it still reads as a sweep of every section a document carries"; }
 pass "M083 T5: the verdict names the one index section per document it read, and no link of this publication was skipped as leaving it"
+
+# M121-AC2. `links` resolves every link inside the publication's generated
+# index section, where `unique` above reads only one section per document and
+# finds it by its heading. `links` finds sections by the minted prefix, and
+# this fixture's author writes five ids with that prefix on elements with no
+# heading inside them, so each is named here as the author's: the five
+# M08-AC1 holds, read from `ID_COLLISION_CLAIMED`. Any other prefixed element
+# with no heading still stops the command, which the self-test below plants.
+# Read by the counts the command prints and not by exit status alone: no link
+# skipped as leaving, and one skipped element per named id.
+M121_AUTHORED=()
+for M121_ID in $ID_COLLISION_CLAIMED; do
+  M121_AUTHORED+=(--authored "$M121_ID")
+done
+M121_LINKS=$(python3 tests/epubcheck.py links \
+  "$CAPTURE_ROOT/id-collision-epub/id-collision.epub" "$HTML_SECTION_ID" \
+  "${M121_AUTHORED[@]}" 2>&1) \
+  || { printf '%s\n' "$M121_LINKS" >&2; fail "M121-AC2: links failed on id-collision.epub: a link inside its generated index section names nothing in the publication, the section holds none that stays in it, a prefixed element with no heading is not one the author wrote, or a named author id is on no element"; }
+printf '%s' "$M121_LINKS" \
+  | grep -qF -- '; 0 link(s) skipped as leaving the publication; 5 element(s) carrying an id named with --authored' \
+  || { printf '%s\n' "$M121_LINKS" >&2; fail "M121-AC2: links passed id-collision.epub, but not with no link skipped as leaving and one skipped element for each of the five named ids"; }
+printf '%s\n' "$M121_LINKS"
+pass "M121-AC2: every link inside the generated index section of id-collision.epub resolves, none skipped as leaving, and the five ids its author wrote with the section prefix each read as one element of the author's"
 
 # The repack machinery this milestone's plants and the M085 section further down
 # both drive: a script that copies a publication rewriting one run of text in one
@@ -5116,6 +5213,48 @@ if [ "${1:-}" = "--self-test" ]; then
     'M083 T4 self-test: an index link whose href opens `//`, so it leaves the publication' \
     green '; 1 fragment-carrying link(s) leave the publication' \
     "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"//example.invalid/$M083_LOCATOR\""
+
+  # M121 T2. The `links` reading M121-AC2 runs above, over two copies of the
+  # same publication, each rewritten once by the script above: an index link
+  # whose fragment names no element, and the generated section's heading
+  # turned into a paragraph, so the section is a prefixed element with no
+  # heading that the author did not write. Both must go red with the five
+  # author ids still named. The second plant's line names the generated
+  # section's own id, minted past the five claimed names as M08-AC1 holds, so
+  # a run that raised on one of the author's elements instead is not taken
+  # for it.
+  m121_links_plant() {   # <slug> <label> <expected substring> <member> <pattern> <replacement>
+    local slug="$1" label="$2" want="$3"
+    shift 3
+    local dest="$M083W/m121-$slug.epub" out rc
+    python3 "$M083W/plant.py" "$M083_SRC" "$dest" "$@" \
+      || fail "$label: the publication could not be rewritten (the plant's own message is above)"
+    out=$(python3 tests/epubcheck.py links "$dest" "$HTML_SECTION_ID" \
+      "${M121_AUTHORED[@]}" 2>&1) && rc=0 || rc=$?
+    [ "$rc" -ne 0 ] \
+      || { printf '%s\n' "$out" >&2; fail "$label: links passed a publication carrying the planted defect"; }
+    printf '%s' "$out" | grep -qF -- "$want" \
+      || { printf '%s\n' "$out" >&2; fail "$label: links failed on the planted copy, but not with <<$want>>"; }
+    pass "$label: links is red on <<$want>>"
+  }
+  # The control first: a straight repack, rewritten nowhere, read by `links`
+  # with the same ids, green on the same counts as the captured publication.
+  python3 "$M083W/plant.py" "$M083_SRC" "$M083W/m121-clean.epub" \
+    || fail "M121 T2 self-test: the straight repack could not be written (the plant's own message is above)"
+  M121_CLEAN=$(python3 tests/epubcheck.py links "$M083W/m121-clean.epub" \
+    "$HTML_SECTION_ID" "${M121_AUTHORED[@]}" 2>&1) \
+    || { printf '%s\n' "$M121_CLEAN" >&2; fail "M121 T2 self-test: links is red on a straight repack of the captured publication, so a red below would be the repacking and not the plant"; }
+  printf '%s' "$M121_CLEAN" | grep -qF -- '; 5 element(s) carrying an id named with --authored' \
+    || { printf '%s\n' "$M121_CLEAN" >&2; fail "M121 T2 self-test: links passed the straight repack without counting the five author elements it skipped"; }
+  pass "M121 T2 self-test: a straight repack of the captured publication leaves links green with the five author elements skipped"
+  m121_links_plant dangling-fragment \
+    'M121 T2 self-test: an index link whose fragment names no element of the publication' \
+    'carries no element with id qi-mark-no-such' \
+    "$M083_MEMBER" "href=\"$M083_LOCATOR_RE\"" "href=\"$M083_LOCATOR_DOC#qi-mark-no-such\""
+  m121_links_plant section-unheaded \
+    'M121 T2 self-test: the generated index section with its heading removed' \
+    "the generated index section '$HTML_SECTION_ID-5' carries no heading element" \
+    "$M083_MEMBER" '<h1 class="unnumbered">Index</h1>' '<p>Index</p>'
 fi
 
 # ---------------------------------------------------------------------------
@@ -23800,6 +23939,21 @@ if [ "${1:-}" = "--self-test" ]; then
     "no id on the page begins with '$HTML_ENTRY_PREFIX'" \
     python3 tests/indexdump.py html "$M43W/staleentry.html"
 
+  # M121 T3. The two plants above rename every id with a prefix; these touch one
+  # anchor, so the page still carries ids with both prefixes and the existence
+  # test passes it. One takes `qi-mark-1` off the element the index's link to
+  # it names; the other writes an empty span carrying that name just before the
+  # element, so the name is carried twice and no other id changes.
+  m43_plant oneanchor.html "$M43_DEMO_HTML" 's|id="qi-mark-1"|id="gone-mark-1"|'
+  m43_planted 'a render where one index link names a minted anchor the page does not carry' \
+    "#${HTML_ANCHOR_PREFIX}1 (carried 0 time(s))" \
+    python3 tests/indexdump.py html "$M43W/oneanchor.html"
+
+  m43_plant twoanchor.html "$M43_DEMO_HTML" 's|<span id="qi-mark-1"|<span id="qi-mark-1"></span><span id="qi-mark-1"|'
+  m43_planted 'a render where one minted anchor an index link names is carried by two elements' \
+    "#${HTML_ANCHOR_PREFIX}1 (carried 2 time(s))" \
+    python3 tests/indexdump.py html "$M43W/twoanchor.html"
+
   m43_planted 'a PDF printing no line that is the index heading, where the entry list starts' \
     'no index heading' \
     python3 tests/indexdump.py pdf "$M43_DEMO_PDF" 'Not The Index Heading'
@@ -25525,10 +25679,10 @@ fi
 # alone being what a plant that deleted the links would also produce.
 #
 # The publication is the demo capture the M52 checks above read, not the
-# id-collision one M083's plants use: `links` finds its sections by the minted
-# id prefix, and the id-collision fixture plants an element claiming that name
-# with no heading inside it, on which the section reader raises (DESIGN.md
-# Known issues).
+# id-collision one M083's plants use. Each leg here runs `links` with no
+# `--authored` list, and the id-collision fixture writes elements claiming the
+# section prefix with no heading inside them, which `links` skips only for the
+# ids such a list names (M121-AC2 above runs it that way).
 # ---------------------------------------------------------------------------
 section 'M085 — the link readers give one answer to whether an href leaves'
 

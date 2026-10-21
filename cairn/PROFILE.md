@@ -36,7 +36,10 @@ Run it SEQUENTIALLY — never two invocations at once. The script does
 mid-flight and the abort surfaces as an unrelated missing-artifact failure in
 whatever check reads next, not as a collision (M46 review round 3). A reviewer
 or subagent that needs one check's behavior extracts it into its own scratch
-directory instead of invoking the suite.
+directory instead of invoking the suite. In the Claude desktop app, the app
+can report a background command as finished while its suite still runs
+(M122). Before you start another run, look in `ps` for a live
+`bash tests/run-tests.sh`.
 
 Do not edit `tests/run-tests.sh` while a run reads it from the same checkout.
 Bash reads a script by byte offset as it goes, so an edit can break the run in

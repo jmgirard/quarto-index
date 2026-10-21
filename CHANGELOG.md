@@ -1,6 +1,24 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-10-20)
+
+This release requires Quarto 1.5 or later, so a Quarto 1.4 user stays on
+0.4.0. It adds a Typst back-end: a document or a book rendered to Typst
+prints its indexes with page numbers. A term with two or more cross-reference
+targets of one kind now prints the see word once, in every index. No record
+0.4.0 wrote is refused by this version, so a book keeps its terms without
+being rendered again. A record 0.4.0 wrote still holds what 0.4.0 filed.
+The caption and alt-text fixes below reach a book's index for a chapter
+after that chapter renders again. The other changes fix marks in figure
+captions, image alt text and headings, and containers that hold only a
+placement marker.
+They also fix `lang:` tags written with letters outside ASCII, and the report
+that an HTML book failed to write a chapter's record.
+
+### Project
+
+- The extension now requires Quarto 1.5 or later. Quarto 1.4 users stay on
+  release 0.4.0, the last release that installs on it.
 
 ### Output
 
@@ -14,21 +32,24 @@
   prints `5 / 30`. Page numbers that print the same text, as they can after a
   page counter reset, print once. The see and see-also words follow `lang:` and
   `index-labels:`. Books were tested on Quarto 1.10.18, where Quarto's Typst
-  book template needs an `author:`. Take a figure, a table or a code listing
+  book template needs an `author:`.
+- In Typst, take a figure, a table or a code listing
   whose content is one image or paragraph, one table or one code block. A
   mark in its caption files the page its caption prints on. That is also true
   under a list of those floats that Typst's `outline` prints, which copies
   each caption. This needs a float that does not break across pages, which is
   Quarto's default. In a document that makes floats breakable, such a mark
-  files the page where the float's content ends. A mark in the caption of
-  other floats still files the list's page. Examples are a grid of images
+  files the page where the float's content ends. Where the list prints before
+  the float, a mark in the caption of other floats still files the list's
+  page. Examples are a grid of images
   laid out in cells and a figure inside a code cell's output div. A mark in
   an image's alt text files the image's page, and an id you give that mark is
   written just after the image, so a link to the id builds. Before this
   change, a link to such an id stopped the render, unless the image sat in
   the caption of a float of the kind above. In the caption of other floats,
   such as a grid of images, a list of those floats copies the id with the
-  caption, and a link to it still fails. A mark in
+  caption, and a link to it still fails.
+- In Typst, a mark in
   a front-matter field the Typst template does not print, such as
   `description:`, adds no page number. If all the page-number marks of an
   entry are such marks, and no cross-reference or sub-entry of it prints,
@@ -45,11 +66,22 @@
   numbering. So after a page counter reset, `1` comes before a
   `3` from an earlier page. A range whose two ends print different numbers
   spans the numbers from its opening number to a higher closing number of the
-  same kind, and a mark of that entry on a spanned number of that kind prints
+  same kind. A range whose two ends print the same text counts as a single
+  mark. A single mark of that entry on a spanned number of that kind prints
   no page number of its own, even on a page after the range. A range whose
-  two ends print the same text counts as a single mark. Page numbers that
+  two ends print different text is never dropped this way. Page numbers that
   print the same text print once, at the place of the first of them in this
   order, linked to the earliest of their pages.
+- A term with two or more cross-reference targets of one kind prints the
+  word once, in front of the first target. This holds in the PDF, HTML, EPUB
+  and Typst indexes. Such a term now prints `cats, see Felines; Pets`, not
+  `cats, see Felines; see Pets`. Every
+  `see` target comes before every `see also` target. Inside a kind, the
+  targets keep the order of their first marks. So the HTML, EPUB and Typst
+  indexes no longer print a `see also` target between two `see` targets. In
+  PDF, the warning for a term marked more than one way now gives the number
+  of its cross-references. It does this for a term with more than two, and
+  for a term with a plain mark and more than one.
 - A `lang:` tag that holds a letter outside ASCII, such as `es-êê`, is no
   longer a language tag under any system locale. The HTML and EPUB index
   keeps its English words for it, and an index the document does not declare
@@ -91,21 +123,6 @@
   Quarto 1.10.18, such a callout no longer carries Quarto's
   `callout-empty-content` class, so its title bar is drawn as on a titled
   callout with content.
-- A term with two or more cross-reference targets of one kind prints the
-  word once, in front of the first target. This holds in the PDF, HTML, EPUB
-  and Typst indexes. Such a term now prints `cats, see Felines; Pets`, not
-  `cats, see Felines; see Pets`. Every
-  `see` target comes before every `see also` target. Inside a kind, the
-  targets keep the order of their first marks. So the HTML, EPUB and Typst
-  indexes no longer print a `see also` target between two `see` targets. In
-  PDF, the warning for a term marked more than one way now gives the number
-  of its cross-references. It does this for a term with more than two, and
-  for a term with a plain mark and more than one.
-
-### Project
-
-- The extension now requires Quarto 1.5 or later. Quarto 1.4 users stay on
-  release 0.4.0, the last release that installs on it.
 
 ## 0.4.0 (2026-09-11)
 

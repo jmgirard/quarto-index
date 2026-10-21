@@ -1,0 +1,49 @@
+---
+title: "Merged entries, per index"
+indexes:
+  - name: plants
+    title: Index of Plants
+  - name: places
+    title: Index of Places
+filters:
+  - index
+---
+
+A term marked in different ways is printed as one entry, and the LaTeX
+back-end reports each entry it merged. This document declares two indexes, so
+each report also names the index the entry is in. The first index holds one
+term for each of the four merged shapes. A fifth term is marked in both
+indexes, plainly in one and with a cross-reference in the other, so neither
+index merges anything for it and neither reports it.
+
+## The four merged shapes
+
+A plain mark beside one cross-reference: [Alder]{.index index="plants"} and
+[Alder]{.index index="plants" see="Birch"}.
+
+A plain mark beside two different cross-references:
+[Cedar]{.index index="plants"}, [Cedar]{.index index="plants" see="Elm"} and
+[Cedar]{.index index="plants" see="Fir"}.
+
+Two different cross-references and no plain mark:
+[Hazel]{.index index="plants" see="Larch"} and
+[Hazel]{.index index="plants" see="Maple"}.
+
+Three different cross-references and no plain mark:
+[Oak]{.index index="plants" see="Pine"},
+[Oak]{.index index="plants" see="Rowan"} and
+[Oak]{.index index="plants" see="Spruce"}.
+
+## One term in both indexes
+
+A plain mark in the first index, [Willow]{.index index="plants"}, and a
+cross-reference in the second, [Willow]{.index index="places" see="Yukon"}.
+
+## The targets
+
+Every target above is a term of its own, marked in the index its
+cross-reference is in: [Birch]{.index index="plants"},
+[Elm]{.index index="plants"}, [Fir]{.index index="plants"},
+[Larch]{.index index="plants"}, [Maple]{.index index="plants"},
+[Pine]{.index index="plants"}, [Rowan]{.index index="plants"},
+[Spruce]{.index index="plants"} and [Yukon]{.index index="places"}.

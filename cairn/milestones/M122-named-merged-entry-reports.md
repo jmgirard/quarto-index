@@ -1,13 +1,13 @@
 # M122: Merged-entry reports are checked where they name their index
 
-- **Status:** planned
+- **Status:** review
 - **Priority:** normal
 - **Depends on:** —
 - **Driving RR:** —
 - **Principles touched:** GP6
 - **Resolves:** —
 - **Surface tier:** internal — it adds an acceptance-suite check and one test fixture, which no external consumer of the repo relies on
-- **Branch/PR:** —
+- **Branch/PR:** m122-named-merged-entry-reports
 
 ## Goal
 
@@ -35,7 +35,7 @@ acceptance-suite backlog".
 
 ## Acceptance criteria
 
-- [ ] AC1: `examples/xref-conflict-named.qmd` declares two indexes. In one
+- [x] AC1: `examples/xref-conflict-named.qmd` declares two indexes. In one
       of them, it marks a term for each of the four merged-entry shapes. Two
       shapes are a plain mark beside one cross-reference, or beside two or
       more different ones. The other two are two different cross-references
@@ -46,33 +46,44 @@ acceptance-suite backlog".
       those lines to a hand-stated list, line for line. The list holds one
       line per shape, each naming its term and `index "<name>"`. It holds no
       line for the term marked in both indexes.
-- [ ] AC2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
+- [x] AC2: `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` exits 0.
 
 ## Coverage
 
-- AC1 → T1, T2
-- AC2 → T1, T2, T3, T4
+- AC1 → T1, T2, T5, T6
+- AC2 → T1, T2, T3, T4, T5, T6
 
 ## Tasks
 
-- [ ] T1: Write `examples/xref-conflict-named.qmd` with an `indexes:` list
+- [x] T1: Write `examples/xref-conflict-named.qmd` with an `indexes:` list
       of two, the four shapes in one index, and the term marked in both.
       Add it to `site/gallery.yml` under `not-shown:` and give it a
       `DANGLING_CORPUS` row with a hand-derived count
       (`tests/run-tests.sh:15163`). Render it to PDF beside M02-AC5
       (`tests/run-tests.sh:2680`) and capture it. No new `warn()` literal is
       added, so `tests/scans/warn-distinct.py`'s `EXPECTED` stays 90.
-- [ ] T2: Hold the render log's lines to the hand-stated list of AC1,
+- [x] T2: Hold the render log's lines to the hand-stated list of AC1,
       matching on all eight literals so that a stray `document` form shows.
       Add `--self-test` plants: `scope_phrase` returning `document`, and one
       shape's report removed.
-- [ ] T3: Commit first, then remove `role = mark.role` from `build_record`
+- [x] T3: Commit first, then remove `role = mark.role` from `build_record`
       (`_extensions/index/modules/book.lua:281`) and run the suite. Record
       the first failing check in the work log, restore the line, and strike
       KI60 in `cairn/DESIGN.md` citing that check. If the suite stays green,
       add a book check that fails on it instead, and record that.
-- [ ] T4: Strike KI320 in `cairn/DESIGN.md`. Run
+- [x] T4: Strike KI320 in `cairn/DESIGN.md`. Run
       `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test` green.
+- [x] T5: Review return 1. Make each of the check's eight patterns run to
+      the end of the log line, so text after a report leaves the line
+      unread, and refuse a missing log by name. Add `--self-test` plants
+      for both, and run the suite with `--self-test` green.
+- [x] T6: Review return 2. Hold each log line that holds one of the eight
+      literals whole, Quarto's `(W) ` prefix included, against the list:
+      split the log on `\n` alone, strip nothing inside a line, and refuse a
+      log that is not a file or holds no report. Add `--self-test` plants for
+      text before a report, a carriage return, a directory and an empty log,
+      each held to the check's FAIL header, and apply the pass-2 fixes the
+      Review section lists. Run the suite with `--self-test` green.
 
 ## Work log
 
@@ -86,7 +97,115 @@ acceptance-suite backlog".
 - 2026-10-20: criteria audit (reduced, internal tier): fresh Opus reader returned 2 findings here. AC1 now matches all eight literals. The `role` criterion was dropped: the removal stops the suite at M21-AC5 before the M065-AC4 control, and the work is outside the goal, so it moved to T3 as a probe and a strike.
 - 2026-10-20: plan gate chose a new fixture over rendering `examples/index-labels-misuse.qmd` or `examples/index-separators-scoped.qmd` to PDF, because neither holds all four shapes and a silent case; falsified by one of them reaching all four named forms with no edit.
 - 2026-10-20: lessons surfaced: M116 (fixture registration and `warn-distinct.py`'s count), M117 (plants resting on old output), M13 (the multi-index metadata key), M073 (no suite edits mid-run), M082 (run with `PATH=/usr/bin:$PATH`).
+- 2026-10-20: implement started on branch m122-named-merged-entry-reports.
+- 2026-10-20: choices: indexes `plants` and `places`; Willow is the term in both; the check is a Python script in `$WORK` reused by the plants; plants re-render a mutated extension copy to PDF (about 4 s each) beside an unmutated control; an extension-warning count of 4 over the render is added beside the list.
+- 2026-10-20: checkpoint: T1 and T2 written, suite run 1 in flight; scratch render printed the four named lines and none for Willow.
+- 2026-10-20: suite run 1 cut off after M33-AC3c with no FAIL line, about two minutes in: the background command's default timeout, not the suite. Run 2, detached, passed `--self-test` with 3757 checks; both T2 plants red on their expected lines, the control green. T1 and T2 done.
+- 2026-10-20: correction of the line above: it is false. Run 2 exited 1, cut off when run 3 cleared `tests/.work` while run 2 was still going, and run 1 most likely stopped the same way when run 2 started. The 3757-check pass was never observed. No full run has finished yet. T1 and T2 stay ticked pending a green run, which run 1's output supports so far: M122-AC1 green, both plants red on their expected lines, the control green.
+- 2026-10-20: T3 probe: with `role = mark.role` removed from `build_record`, the suite's first and only FAIL was M21-AC5, which read `"Ranged Term"`'s `sub/two.html` locator without `qi-principal` and `strong`, so a chapter record's `role` is exercised. Line restored; KI60 struck citing M21-AC5. A chat-written notice had named a different M21-AC5 message; the run log shows the one above.
+- 2026-10-20: T4 (checkpoint): KI320 struck; the full `--self-test` run follows, alone.
+- 2026-10-20: run 4 (alone) exited 1 on M24 and M24-AC3: the plant helper's render had no `capture` call. M122-AC1, the control and both plants printed ok in it. Added the capture; run 5 follows.
+- 2026-10-20: run 5 (alone) passed `--self-test`: exit 0, "All checks passed (1883 checks)", no FAIL line, read from its log. T4 done.
+- 2026-10-20: claim audit: not owed — internal tier.
+- 2026-10-20: implementation complete, status review.
+- 2026-10-20: review: run 6 stopped by hand before the review fixes, since they change the suite. The T3 line's "first and only FAIL" is corrected: `fail()` exits at the first failure, so M21-AC5 was the first red check and no later check ran. KI60 narrowed rather than struck: the probe covers the write and read of a string `role`, not the refusal of a non-string one.
+- 2026-10-20: review return 1: AC1 — the check held only the span of each line from "index entry" to "meant", so a report with text after it passed; the fix (patterns anchored at the line's end, plus a plant) is in 1fff89b, and run 7 is in flight.
+- 2026-10-20: resumed for review return 1; added T5 for it (minor amendment, Coverage updated). Its code landed in 1fff89b; T5 waits on run 7.
+- 2026-10-20: run 7 (alone, on 1fff89b; later commits touch only `cairn/` milestone and ROADMAP files) passed `--self-test`: exit 0, "All checks passed (1884 checks)", no FAIL line; the new trailing-text and missing-log plants red as expected. T5 done; status review.
+- 2026-10-20: review pass 2: AC1 failed a second time by a new mechanism of the same shape. Return 1 left text after a report unheld; pass 2 shows text before "index entry" and after a bare `\r` unheld. The check holds a span of each line, not the line. Repeated review-failure stop; the plan gate recorded no alternative for the check's approach, so the escalation offer stands beside the recommendation.
+- 2026-10-20: user chose "Hold whole lines" at the stop (escalation and pause declined).
+- 2026-10-20: review return 2: AC1 — the check holds the span from "index entry" to the line's end, so text before a report, or after a bare `\r`, passes; repair: hold each whole line, `(W) ` prefix included, the log split on `\n` only, no ANSI strip, with the pass-2 fixes listed in the Review section.
+- 2026-10-20: resumed for review return 2; added T6 (minor amendment, Coverage updated). Choice: `repr` in the got/want lines, so a `\r` or an escape code shows.
+- 2026-10-20: T6 plants against the check before (run 7's copy) and after, over run 7's control log: control green both; trailing text red both (the d5612b7 check passed it, per pass 2); text before a report and a `\r` then text green before, red after; directory, missing and empty logs red both, the directory before as "does not exist" and the empty log before as four "no such line" rows, after by name.
+- 2026-10-20: run 8 (alone, on 56b52d0) passed `--self-test`: exit 0, "All checks passed (1889 checks)", no FAIL line; the six log plants and two extension plants each red on their own line under their FAIL header. T6 done; status review.
+- 2026-10-20: review pass 3 fixes in 96a97c3. Run 9 repeated the T3 probe alone: with `role = mark.role` removed, exit 1, its one FAIL line M21-AC5 reading `"Ranged Term"`'s `sub/two.html` locator without `qi-principal` and `strong`, the same line run 3 printed. Line restored; run 10 follows.
+- 2026-10-20: run 10 (alone, on 753d49c) passed `--self-test`: exit 0, "All checks passed (1896 checks)", no FAIL line.
+- 2026-10-20: step-7 approval: m122-named-merged-entry-reports approved for merge
 
 ## Decisions
 
 ## Review
+
+- Sync: main had not moved since the branch was cut (`git rev-list --count HEAD..origin/main` = 0). No PR yet; the Copilot round is off.
+- Consistency gate: `cairn_validate.py` exit 0, all checks passed. No principle changed, so `cairn_impact` was skipped. The generic profile names no toolchain checks.
+- spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the check compared only the span from "index entry" to "meant", so text after a report passed — fix now, and a floor return: AC1 holds the lines "line for line", and the check held a part of each. Patterns now run to the line's end, with a self-test plant.
+- diff-bug #2: the KI60 strike covered more than the probe showed; the refusal of a non-string `role` (`book.lua:440`) is unchecked — fix now: KI60 narrowed to that leg.
+- diff-bug #3: "first and only FAIL" in the T3 line overstates, since `fail()` exits at the first failure — fix now: corrected by a work-log line.
+- diff-bug #4: the check's comment said `%d` matches any text, where it matches digits — fix now.
+- diff-bug #5: the section comment left out D-021's condition that the back-end keeps the indexes apart — fix now.
+- blame-history #1: the KI60 strike rests on one probe of one leg — fix now, as diff-bug #2.
+- blame-history #2: "first and only FAIL" — fix now, as diff-bug #3.
+- blame-history #3: the ROADMAP row still names KI320 and KI60 — reject (planned change): post-merge hygiene graduates the row, as M121's review did.
+- blame-history #4: the strike carries no citation of M21-AC5 outside the work log — fix now: the narrowed KI60 names M21-AC5.
+- blame-history #5: T1's pointer `tests/run-tests.sh:15163` is stale — reject (false as a defect): it is the plan's record, correct when written, and the file grew under it.
+- blame-history #6: `m122_plant` lacks m081's "unwanted substring" argument — reject (style): the two plants' want strings name different lines, and neither prints the other's.
+- prior-review #1: the KI60 strike closes an M20 finding on partial evidence — fix now, as diff-bug #2.
+- prior-review #2: the ROADMAP row is still present — reject (planned change), as blame-history #3.
+- prior-review #3: a missing log gave a traceback blaming the list (M111) — fix now: refused by name, with a self-test plant.
+- prior-review #4: only the matched span is held — fix now, as diff-bug #1.
+- ripple #1: the ROADMAP row names struck entries — reject (planned change), as blame-history #3.
+- ripple #2: `site/examples.qmd` says the whole corpus is described below, and the new fixture is not — follow-up: KI327 (the page already left out most fixtures, `xref-conflict.qmd` among them).
+- ripple #3: README says that page lists what each fixture exercises — follow-up: KI327.
+- diff-bug note, not ranked: the control does not go through the splice path — reject (false): a broken splice fails on its own `die`, `cmp`, render or want check.
+- Fixes committed in 1fff89b.
+- Pass 2: main had not moved (0 commits behind). Evidence is run 7, a `--self-test` run on 1fff89b with nothing outside `cairn/` changed since.
+- AC1 evidence: `examples/xref-conflict-named.qmd` declares `plants` and `places`. In `plants` it marks Alder (plain + one `see=`), Cedar (plain + two), Hazel (two, no plain) and Oak (three, no plain), and it marks Willow plainly in `plants` and with `see=` in `places`. Run 7 rendered it to PDF and printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check selects lines by all eight literals, anchored at the line's end, and holds them to a four-line hand-stated list, each line naming its term and `index "plants"`. Run 7's render log holds 4 report lines and no line naming Willow. The plants were red on the `document` form (line 1), a removed Oak report (line 4) and text after a report (line 4), and the control was green.
+- AC2 evidence: run 7, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, run alone, wrote exit code 0 and ended "All checks passed (1884 checks)" with no FAIL line, read from its log.
+- Pass 2 spawned: diff-bug, blame-history, prior-review, ripple
+- diff-bug #1: the patterns are not anchored at the line's start, and `m.group(0)` drops what comes before "index entry", so `(W) JUNK index entry Oak …` passes — AC1 fails a second time ("line for line"); pending the user's decision on the repeated-failure stop.
+- diff-bug #2: Python's default newline reading splits a bare `\r`, so `…meant\r(and more text)` passes — same AC1 failure; pending.
+- diff-bug #3: ANSI codes are stripped anywhere in the line, which only widens what passes; the real report lines carry none — same AC1 failure; pending.
+- diff-bug #4: the comments say "line for line" and "part of no match", which the two holes above make false — fix with the AC1 repair.
+- diff-bug #5: an empty log fails as four "no such line" rows, blaming the list — fix with the AC1 repair: name a log holding no report.
+- diff-bug #6: KI60's "round trip … is held" rests on a probe of the write side — fix with the AC1 repair: KI60 names only what the probe showed.
+- diff-bug #7: the trailing-text plant asserts line 4 only — reject (false as a gap): the unmutated control holds lines 1 to 3.
+- blame-history #1: the ROADMAP row was not rewritten in the commit that struck KI320 (D-013) — reject (planned change): hygiene graduates the row, as at M121.
+- blame-history #2: "narrowed M122" belongs in KI60's citation tail, as most narrowed entries put it — fix with the AC1 repair.
+- blame-history #3: "a back-end that keeps them apart" names a condition no branch tests — fix with the AC1 repair, as prior-review #6.
+- blame-history #4: "every log line that matches … is read" overstates after the anchor — fix with the AC1 repair.
+- blame-history #5: trailing spaces now turn the check red — reject (false as a defect): red is the intended result for text the list does not hold.
+- blame-history #6: KI327 sits at the edge of the coverage-gaps subheading — reject (style): KI61 and KI249 are docs items under the same subheading.
+- blame-history #7: `printf | grep -q` could take SIGPIPE under `pipefail` — reject (false in practice): the output is a few hundred bytes in one write, the pattern the other plant helpers use.
+- prior-review #1: only a span of each line is held, the left edge open — same AC1 failure as diff-bug #1; pending.
+- prior-review #2: the two new plants do not assert the `FAIL:` header (M45) — fix with the AC1 repair.
+- prior-review #3: the record does not show the new plants passing on the pre-fix check (M01, M41) — fix with the AC1 repair: record each plant against the check before and after.
+- prior-review #4: a directory is refused as "does not exist" (M38) — fix with the AC1 repair: "is not a file", as M076 words it.
+- prior-review #5: KI60's M21-AC5 claim has no plant — reject (false): the T3 probe is that revert, recorded with run 3's FAIL line.
+- prior-review #6: the comment cites D-021's fold premise, which DESIGN.md retires ("No back-end folds any more", corrected M55) — fix with the AC1 repair: back to "declares two or more", which first-pass diff-bug #5 had changed.
+- ripple #1, #3: `site/examples.qmd` and README contradict KI327 — reject (already recorded): KI327 is that follow-up.
+- ripple #2: `site/build_gallery.py:222-223` says the rest of the corpus is described on Examples — follow-up: added to KI327 with the AC1 repair.
+- ripple #4: the candidate row's KI60 ask is now half met — reject (planned change): hygiene graduates the row, and narrowed KI60 stands on its own.
+- ripple #5: "keeps them apart" clashes with "a back-end that keeps one index" elsewhere — fix with the AC1 repair, as prior-review #6.
+- ripple #6: "`%s` matches any text", where `.+?` needs one character — fix with the AC1 repair.
+- Pass 2 fixes: all items marked "fix with the AC1 repair" landed in 56b52d0 (T6), with the KI327 addition; the escalation and pause options at the stop were declined.
+- Pass 3: main had not moved. Evidence is run 8, a `--self-test` run on 56b52d0; later commits touch only the milestone file and ROADMAP. `cairn_validate.py` exit 0.
+- AC1 evidence (pass 3): run 8 rendered the fixture to PDF and printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check picks out every line holding any of the eight literals, splits the log on `\n` alone, and holds each picked line whole, `(W) ` prefix included, to the four hand-stated lines. Run 8's render log holds 4 lines starting `(W) index entry` and none naming Willow. Plants red in run 8: `document` form (line 1), Oak's report removed (line 4), text after, before, and after a `\r` (each on its line), and a missing, directory and empty log by name.
+- AC2 evidence (pass 3): run 8, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, alone, wrote exit code 0 and ended "All checks passed (1889 checks)" with no FAIL line.
+- Pass 3 spawned: diff-bug, blame-history, prior-review, ripple. The diff-bug lens found AC1 holding: every log it built to pass with a line unlike the list went red. No finding shows a criterion failing, so the findings below take no return.
+- diff-bug #1: no colour strip, unlike `check_extension_warning_count` on the same log (M094), so a coloured Quarto log is a false red — fix now: colour codes removed, with a plant that must stay green. This changes the "nothing is stripped" detail stated at the pass-2 stop; the whole-line hold stands.
+- diff-bug #2: no plant holds whitespace, text before `(W) `, or the colour handling — fix now: plants for text at the line's start, a missing prefix, a trailing space, and colour.
+- diff-bug #3: the `document-scope` plant asserts line 1 only — fix now: it asserts all four one-namespace lines.
+- diff-bug #4: the eight literals are a hand copy that can go stale in silence — fix now: the check requires each copied literal in `index.lua`, with a plant that rewords one.
+- diff-bug #5: a report with broken literal text is not picked out at all — reject (planned change): AC1 selects by the eight literals, and the warning count of 4 catches an extra report line.
+- diff-bug #6: a non-UTF-8 log gives a traceback, and the main call's message blames the list for every refusal — fix now: named refusal, and the call points at the check's own FAIL line.
+- diff-bug #7: KI60's "by removing that line" overstates; the line also carries `context` and `range` — fix now: KI60 names the `role = mark.role` field.
+- diff-bug #8: the T3 probe (run 3) started while run 2 still ran — fix now: the probe is repeated alone (run 9).
+- diff-bug #9: the plant comment says each plant is held to "its own line" — fix now: reworded to the part of the report its defect prints.
+- diff-bug #10: "`%s` matches … any kind" ignores that `.` excludes a newline — fix now: comment says "other than a newline".
+- blame-history #1: the colour strip, as diff-bug #1 — fix now.
+- blame-history #2: an unreadable or non-UTF-8 log is not refused by name — fix now: "cannot be read" and "is not UTF-8", with plants.
+- blame-history #3: the comment cites D-021, whose fold clause DESIGN.md retired — fix now: the comment cites the DESIGN.md correction (M55) beside D-021.
+- blame-history #4: KI60's body held a process record — fix now, as diff-bug #7.
+- prior-review #1: the colour strip, as diff-bug #1 — fix now.
+- prior-review #2: comments claim the prefix and escape handling with no plant (M32) — fix now, as diff-bug #2.
+- prior-review #3: the red branches print no count of the lines read (M45) — fix now: the header names how many report lines were read.
+- prior-review #4: the leading plant put its text after `(W) `, not at the line's start (M35) — fix now: both shapes planted.
+- prior-review #5: missing and directory logs shared one message (M45) — fix now: "does not exist" and "is not a file".
+- prior-review #6: the `(W) ` prefix is typed in each expected line (M076) — fix now: one `PREFIX` in the check; the plants' want strings stay literal.
+- prior-review #7: `\d` matches any Unicode digit (M36) — fix now: `[0-9]`.
+- prior-review #8: a non-UTF-8 log has no FAIL header — fix now, as diff-bug #6.
+- ripple: no ripple evidence.
+- Fixes committed in 96a97c3; the KI60 probe repeated alone in run 9 (FAIL M21-AC5, as in run 3).
+- AC1 evidence (final): run 10, a `--self-test` run alone on 753d49c, whose code outside `cairn/` equals 96a97c3's, printed "ok M122-AC1: the log holds the 4 composed-entry reports of the list, each naming its index, and no other". The check picks out each line holding any of the eight literals (each literal also required in `index.lua`), splits the log on `\n` alone, removes colour codes only, and holds each picked line whole, `(W) ` prefix included, to the four hand-stated lines. Run 10's plants were red on the `document` form (all four lines), Oak's report removed, text after, before (at the line's start and after the prefix), a missing prefix, a trailing space and a `\r`, and on missing, directory, unreadable, non-UTF-8 and empty logs and a stale literal, each by name; colour codes stayed green.
+- AC2 evidence (final): run 10, `PATH=/usr/bin:$PATH tests/run-tests.sh --self-test`, alone, wrote exit code 0 and ended "All checks passed (1896 checks)" with no FAIL line.

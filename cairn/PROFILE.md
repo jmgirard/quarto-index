@@ -1,99 +1,112 @@
-# Toolchain profile: generic
+# Toolchain profile: quarto-extension
 
-<!-- A cairn *toolchain profile*: the language/toolchain-specific slots the
-     operational skills read. cairn-init instantiates the chosen reference
-     profile into the repo's `cairn/PROFILE.md`. The oracle / Validation
-     doctrine is UNIVERSAL and deliberately NOT a slot here — it is the
-     orthogonal domain axis (D-024/D-025), stated once in
-     skills/shared/validation-doctrine.md (referenced from tracking-rules).
-     Every profile defines all seven `## <slot>` sections below; a slot with no
-     toolchain-specific content says so explicitly rather than being omitted
-     (cairn_validate FAILs on a missing or empty slot). -->
+<!-- From cairn's quarto-extension reference profile. The oracle doctrine is
+     universal and not a slot. cairn_validate FAILs on a missing or empty slot. -->
 
-The language-agnostic default: cairn's core with no toolchain-specific gates.
-Selected by `cairn-init` when no `DESCRIPTION` (or other recognized toolchain
-marker) is present. A repo replaces the placeholder in `verify` with its own
-test command; the other slots stand as-is until a richer profile is authored.
+The deliverable is the Quarto filter extension `_extensions/index/`. Users
+install it with `quarto add jmgirard/quarto-index`, which reads `main`, so a
+merge reaches users at once. A `v<version>` tag and a GitHub release mark the
+version for `quarto add jmgirard/quarto-index@v<version>`.
 
 ## verify
-The command(s) `/milestone-implement` and `/hotfix` run to check a task before
-ticking it off:
+`/milestone-implement` and `/hotfix` run this on a task before they tick it:
 
     tests/run-tests.sh
 
-Add `--self-test` to also run the planted-defect self-test (one manifest
-entry removed, one altered, one spurious added), which the pre-review check
-uses:
+The pre-review check adds `--self-test`, which also runs the planted-defect
+self-test (one manifest entry removed, one altered, one spurious added):
 
     tests/run-tests.sh --self-test
 
-The script fails loudly (`set -euo pipefail`) and refuses to skip its
-end-to-end PDF check: a missing TinyTeX, `makeindex`, or `pdftotext` is an
-error, never a silent pass.
+The script fails loudly (`set -euo pipefail`). A missing TinyTeX, `makeindex`,
+or `pdftotext` fails its end-to-end PDF check, never a silent skip.
 
-Run it SEQUENTIALLY — never two invocations at once. The script does
+Run it SEQUENTIALLY, never two invocations at once. The script does
 `rm -rf "$WORK"` at startup, so a second run wipes the first's work directory
-mid-flight and the abort surfaces as an unrelated missing-artifact failure in
-whatever check reads next, not as a collision (M46 review round 3). A reviewer
-or subagent that needs one check's behavior extracts it into its own scratch
-directory instead of invoking the suite. In the Claude desktop app, the app
-can report a background command as finished while its suite still runs
-(M122). Before you start another run, look in `ps` for a live
-`bash tests/run-tests.sh`.
+mid-flight. The abort then surfaces as an unrelated missing-artifact failure
+in whatever check reads next, not as a collision (M46 review round 3). A
+reviewer or subagent that needs one check's behavior extracts it into its own
+scratch directory instead of invoking the suite. The Claude desktop app can
+report a background command as finished while its suite still runs (M122).
+Before you start another run, look in `ps` for a live `bash tests/run-tests.sh`.
 
 Do not edit `tests/run-tests.sh` while a run reads it from the same checkout.
 Bash reads a script by byte offset as it goes, so an edit can break the run in
-progress (M108). Two runs at once are safe in separate git worktrees, each
-with its own `tests/.work`. That is how M108 ran Quarto 1.5.52 and 1.10.18
-side by side.
+progress (M108). Two runs in separate git worktrees are safe, each with its
+own `tests/.work`. M108 ran Quarto 1.5.52 and 1.10.18 side by side that way.
 
 Quarto 1.10.18 sometimes crashes during a suite render. The log shows
 `Segmentation fault: 11` from Quarto's own Deno at `/usr/local/bin/quarto`
 line 210, and the check that rendered fails with "failed to render". M109 saw
-it twice, on renders the branch did not change. Each re-run passed. If a
+it twice, on renders the branch did not change, and each re-run passed. If a
 run fails this way, re-run it before you read the failure as the change's.
 
 The suite needs a `python3` with PyYAML (D-030). On this machine the first
 `python3` on `PATH`, `/usr/local/bin/python3`, has none (observed 2026-10-10,
-M110), and the run stops at its PyYAML check. Put a `python3` link to
-`/usr/bin/python3` first on `PATH` for the run.
+M110), and the run stops at its PyYAML check. For the run, put a `python3`
+link to `/usr/bin/python3` first on `PATH`.
 
 ## consistency-gate
 Toolchain checks `/milestone-review` runs *in addition to* the universal
-cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`).
-Generic default: **none** — the universal cairn-file checks are the whole
-consistency gate.
+cairn-file checks (`cairn_validate`, coverage completeness, `cairn_impact`):
+- Every version marker that `release-walk` names holds the same version.
+- The `verify` command succeeds on the review head.
+- The declared changelog (`## changelog` slot) has an entry for this
+  milestone's user-visible changes. A milestone whose work log carries a
+  `feature series:` line is in a series (tracking-rules "Feature series").
+  Where the series has an entry, such a milestone edits that entry. A
+  milestone before the series' last with no user-visible change needs no entry.
 
 ## test-doctrine
-Toolchain-specific test expectations layered on the universal "What gets a
-test" rules in tracking-rules. Generic default: **none beyond the universal
-rules** — every bug fix gets a regression test, every documented claim a test,
-contract-not-implementation, and the oracle doctrine for any numeric result.
+Test expectations layered on the universal "What gets a test" rules in
+tracking-rules. An extension is tested by rendering, not by calling functions:
+- To test a filter change, render a fixture document that uses it and read
+  the output (a string in the output, or a snapshot of it).
+- A bug fix gets a fixture document that renders wrong before the fix.
+- The extension ships no JavaScript or CSS that browsers cache by a versioned
+  path, so no asset change raises the version.
 
 ## release-walk
-The release procedure `/cairn-release` follows. Generic default: a minimal
-language-agnostic walk — no package-registry submission; the tag is the release:
-- Decide the version bump (patch/minor/major) from the declared changelog
-  (`## changelog` slot; "none" → derive the bump from git history).
-- Consolidate the declared changelog: retitle the dev heading to the version,
-  group entries, prune noise ("none" → skip this step).
-- Bump the repo's version marker and commit the release prep to the default
-  branch (docs/metadata only).
-- Tag `v<version>` and push the tag at the user's approval — no registry step.
-- Where the `origin` remote is GitHub and `gh` is available, the handoff also
-  provides a `gh release create` command whose body is the new changelog
-  section (provided, never run — the universal step 4).
+The release procedure `/cairn-release` follows. The one version marker is
+`version:` in `_extensions/index/_extension.yml`, and it rises at release, not
+at merge. Before step 1 of `/cairn-release`, run `git fetch --tags <base>`.
+Then read the remote default branch's tip:
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cairn_versions.py" _extensions/index/_extension.yml --at <base>/main`.
+If `CLAUDE_PLUGIN_ROOT` is unset, use the cairn plugin's install directory.
+The script refuses a shallow clone. It prints the tip's version, the first
+commit of that version's unbroken run of first-parent commits (`start`), and
+whether a `v<version>` tag exists.
+- **Release-time arm** (tag present, the usual case). Decide the bump
+  (patch/minor/major) from `CHANGELOG.md`. Retitle its development heading to
+  the version, group entries, and prune noise. Raise the marker and commit the
+  release prep to `main`. At the user's approval, tag that commit
+  `v<version>` and push the tag.
+- **Tag-only arm** (tag absent). The tip's version is unreleased. Raise
+  nothing and make no prep commit. Find the `CHANGELOG.md` section at the
+  remote tip whose heading names the version (`## 1.2.9`, not `## 1.2.90`).
+  Step 1 asks the user to approve the version and `start` (its subject)
+  instead of choosing a bump. Step 2 makes no edit, but its
+  claim-read runs on that section against the code at `start`. At the user's
+  approval, tag the run's start with `git tag -a v<version> <start>
+  -m "v<version>"` and push the tag.
+- **Stops.** A changelog with no section for the version, a false claim, or the
+  user's refusal ends the run with the reason and no tag. A merged changelog
+  edit clears a missing section or a false claim: retitle the development
+  heading, reword the claim, or move a later entry back under the development
+  heading. Then run `/cairn-release` again.
+- **Release notes.** The notes are the `CHANGELOG.md` section for the
+  version. Where `gh` is available, the handoff gives a `gh release create`
+  command with these notes. cairn never runs it (the universal step 4). No
+  registry step applies: the tag is the release.
 
 ## init-detection
-How `cairn-init` recognizes this toolchain. Generic is the **fallback**: no
-`DESCRIPTION` and no other recognized toolchain marker.
+`cairn-init` picks this profile from `_extensions/*/_extension.yml` or `.yaml`
+with no language, plugin, or `Dockerfile` marker. This repo adopted cairn on
+the generic profile and moved to this one after the 0.5.0 release.
 
 ## greenfield-openers
-Opener questions `cairn-init` asks in a new/empty repo of this type. Generic
-default: **no language-specific openers** — the universal opener layer
-(distribution ambition, rendered here as a **tagged public release** vs.
-internal-only choice, and numeric-work-needs-oracle-verification) is the whole
-greenfield flow for a generic repo; a richer profile adds its own on top.
+None apply, because this repo is past greenfield. The reference openers are
+settled above: the extension is a filter, and its version rises at release.
 
 ## changelog
 The repo's changelog file, read by `/hotfix`, the release-walk, and the
@@ -101,7 +114,6 @@ consistency-gate:
 
     CHANGELOG.md
 
-Added at the 0.1.0 release, whose section is the file's first. Entries are
-grouped under the version heading by what they touch (marking syntax, output,
-project), and name behavior rather than milestones — the DESIGN "changelog
-discipline from the start" commitment, which had no file until then.
+The 0.1.0 release added it. Entries are grouped under the version heading by
+what they touch (marking syntax, output, project). They name behavior rather
+than milestones, per the DESIGN commitment to "changelog discipline".

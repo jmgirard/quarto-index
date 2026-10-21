@@ -18,7 +18,7 @@ minimal personal tool.
 Distribution ambition (declared at init 2026-08-16): **tagged public
 releases**, with changelog discipline from the start; at first release, submit
 to the Quarto extension listing and aim for discoverability. Release timing
-stays user-declared. Toolchain profile: generic (see `cairn/PROFILE.md`).
+stays user-declared. Toolchain profile: quarto-extension (see `cairn/PROFILE.md`).
 
 ## Contract boundary
 

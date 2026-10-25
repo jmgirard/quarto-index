@@ -1,7 +1,7 @@
 # Roadmap
 
 _The only authority on milestone status. Grouped by status, not ID._
-_Last hygiene check: 2026-10-21 (M122 review: archived M122, pruned the M119 row, graduated "Exercise two paths no fixture reaches"; KI320 struck, KI60 narrowed, KI327 added; M120 lesson extended, LESSONS at 49 of 50; caps and budgets within limits; validate green.)_
+_Last hygiene check: 2026-10-25 (lessons pass: rank drops 2026-08-16 (M02) rank 2, 2026-08-17 (M04) ×2 rank 4, 2026-08-17 (M05) rank 5, 2026-08-18 (M08; corrected M12) rank 8, 2026-08-18 (M09) ×2 rank 9, 2026-08-18 (M10, M11) and (M11) rank 11, 2026-08-19 (M14) rank 14, 2026-08-22 (M21) rank 21, 2026-08-22 (M22) rank 22, 2026-08-24 (M05, M29) rank 29, 2026-08-24 (M31) ×2 rank 31, 2026-08-24 (M33; corrected M34) rank 33, 2026-08-25 (M36) TeX fatal-error lesson rank 36; ownership drop 2026-09-06 (M079; trimmed M080), held by check-design.md's M55 line; compressed the M01, M13, M30, M38, M41, M42, two M43, M082, M116, M117, M118, M119 and M120 lessons; LESSONS at 20 lessons; no decision entry; validate green.)_
 _Released 0.1.0 2026-08-26._
 _Released 0.2.0 2026-09-02._
 _Released 0.3.0 2026-09-05._
